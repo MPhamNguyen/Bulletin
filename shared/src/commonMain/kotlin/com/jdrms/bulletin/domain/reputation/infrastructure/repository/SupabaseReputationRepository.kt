@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.reputation.domain.repository.ReputationReposito
  * TODO: Implement Supabase PostgREST client calls once KMP Supabase SDK is wired up.
  */
 class SupabaseReputationRepository(
+    @Suppress("UnusedPrivateProperty")
     private val supabaseConfig: SupabaseConfig
 ) : ReputationRepository {
 

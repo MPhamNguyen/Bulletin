@@ -3,6 +3,8 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.identity.domain.model.UserId
 import com.jdrms.bulletin.domain.marketplace.application.CreateListing
 import com.jdrms.bulletin.domain.marketplace.application.ManageListing
@@ -84,14 +86,14 @@ class MarketplaceViewModel(
         val priceVal = _uiState.value.newPrice.toDoubleOrNull() ?: 0.0
 
         val newListing = Listing(
-            id = ListingId("item_" + com.jdrms.bulletin.core.common.generateUuid()),
+            id = ListingId("item_" + generateUuid()),
             sellerId = SellerId(currentUserId.value),
             sellerName = "Dominic Alfonso",
             title = title,
             description = desc,
             price = Price(priceVal),
             category = _uiState.value.newCategory,
-            createdAtMillis = com.jdrms.bulletin.core.common.currentTimeMillis()
+            createdAtMillis = currentTimeMillis()
         )
 
         viewModelScope.launch {

@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.messaging.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.messaging.domain.model.*
 import com.jdrms.bulletin.domain.messaging.domain.repository.MessagingRepository
@@ -67,12 +69,12 @@ class SupabaseMessagingRepository(
         text: String
     ): Result<Message> {
         val msgDto = MessageDto(
-            id = "msg_" + com.jdrms.bulletin.core.common.generateUuid(),
+            id = "msg_" + generateUuid(),
             conversationId = conversationId.value,
             senderId = senderId.value,
             senderName = senderName,
             text = text,
-            timestampMillis = com.jdrms.bulletin.core.common.currentTimeMillis()
+            timestampMillis = currentTimeMillis()
         )
         val list = messagesMap.getOrPut(conversationId.value) { mutableListOf() }
         list.add(msgDto)
@@ -105,12 +107,12 @@ class SupabaseMessagingRepository(
         participant2: ParticipantId,
         name2: String
     ): Result<Conversation> {
-        val convId = "conv_" + com.jdrms.bulletin.core.common.generateUuid()
+        val convId = "conv_" + generateUuid()
         val convDto = ConversationDto(
             id = convId,
             participantIds = listOf(participant1.value, participant2.value),
             participantNames = listOf(name1, name2),
-            updatedAtMillis = com.jdrms.bulletin.core.common.currentTimeMillis()
+            updatedAtMillis = currentTimeMillis()
         )
         conversationsMap[convId] = convDto
         messagesMap[convId] = mutableListOf()

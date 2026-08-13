@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.reputation.domain.service.ReputationCalculation
 import com.jdrms.bulletin.domain.reputation.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.reputation.infrastructure.mapper.ReputationMapper
 import com.jdrms.bulletin.domain.reputation.infrastructure.repository.InMemoryReputationRepository
+import com.jdrms.bulletin.domain.reputation.presentation.ReputationViewModel
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -116,5 +117,30 @@ class ReputationDomainTest {
 
         val domain = ReputationMapper.toDomain(outOfBoundsDto)
         assertEquals(5, domain.rating.score)
+    }
+
+    @Test
+    fun testViewModelLoadReputationWithExplicitUserId() = runTest {
+        val repository = InMemoryReputationRepository(initialReviews = mapOf(
+            "other_user" to listOf(
+                ReviewDto(
+                    id = "r99",
+                    reviewerId = "reviewer",
+                    reviewerName = "Reviewer",
+                    revieweeId = "other_user",
+                    score = 5,
+                    comment = "Great profile",
+                    createdAtMillis = 1000L
+                )
+            )
+        ))
+        val getReputation = GetStudentReputation(repository, policy)
+        val submit = SubmitReview(repository, policy)
+        val viewModel = ReputationViewModel(getReputation, submit, targetUserId = RevieweeId("default_user"))
+
+        viewModel.loadReputation(RevieweeId("other_user"))
+        val state = viewModel.uiState.value
+        assertEquals("other_user", state.userReputation?.userId?.value)
+        assertEquals(5.0, state.userReputation?.averageRating)
     }
 }

@@ -34,6 +34,12 @@ class ReputationViewModel(
         loadReputation()
     }
 
+    /**
+     * Loads the student's reputation profile.
+     * @param userId The ID of the student whose reputation is being loaded. Defaults to [targetUserId]
+     * for the primary profile view, but can be overridden to inspect arbitrary student profiles
+     * (e.g., when viewing a seller or buyer profile card).
+     */
     fun loadReputation(userId: RevieweeId = targetUserId) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
