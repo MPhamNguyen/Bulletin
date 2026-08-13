@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.reputation.domain.model
 
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -24,7 +25,7 @@ data class Review(
     val revieweeId: RevieweeId,
     val rating: Rating,
     val comment: String,
-    val createdAtMillis: Long = System.currentTimeMillis()
+    val createdAtMillis: Long = currentTimeMillis()
 )
 
 data class UserReputation(

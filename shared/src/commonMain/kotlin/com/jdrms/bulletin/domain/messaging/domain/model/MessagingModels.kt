@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.messaging.domain.model
 
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -17,7 +18,7 @@ data class Message(
     val senderId: ParticipantId,
     val senderName: String,
     val text: String,
-    val timestampMillis: Long = System.currentTimeMillis(),
+    val timestampMillis: Long = currentTimeMillis(),
     val isReported: Boolean = false
 )
 
@@ -26,5 +27,5 @@ data class Conversation(
     val participantIds: List<ParticipantId>,
     val participantNames: List<String>,
     val lastMessage: Message? = null,
-    val updatedAtMillis: Long = System.currentTimeMillis()
+    val updatedAtMillis: Long = currentTimeMillis()
 )

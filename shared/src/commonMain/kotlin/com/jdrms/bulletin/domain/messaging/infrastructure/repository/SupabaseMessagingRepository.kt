@@ -67,12 +67,12 @@ class SupabaseMessagingRepository(
         text: String
     ): Result<Message> {
         val msgDto = MessageDto(
-            id = "msg_" + System.currentTimeMillis(),
+            id = "msg_" + com.jdrms.bulletin.core.common.generateUuid(),
             conversationId = conversationId.value,
             senderId = senderId.value,
             senderName = senderName,
             text = text,
-            timestampMillis = System.currentTimeMillis()
+            timestampMillis = com.jdrms.bulletin.core.common.currentTimeMillis()
         )
         val list = messagesMap.getOrPut(conversationId.value) { mutableListOf() }
         list.add(msgDto)
@@ -105,12 +105,12 @@ class SupabaseMessagingRepository(
         participant2: ParticipantId,
         name2: String
     ): Result<Conversation> {
-        val convId = "conv_" + System.currentTimeMillis()
+        val convId = "conv_" + com.jdrms.bulletin.core.common.generateUuid()
         val convDto = ConversationDto(
             id = convId,
             participantIds = listOf(participant1.value, participant2.value),
             participantNames = listOf(name1, name2),
-            updatedAtMillis = System.currentTimeMillis()
+            updatedAtMillis = com.jdrms.bulletin.core.common.currentTimeMillis()
         )
         conversationsMap[convId] = convDto
         messagesMap[convId] = mutableListOf()

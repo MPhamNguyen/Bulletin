@@ -24,7 +24,7 @@ import com.jdrms.bulletin.domain.recommendations.infrastructure.repository.Supab
 import com.jdrms.bulletin.domain.recommendations.presentation.RecommendationsViewModel
 import com.jdrms.bulletin.domain.reputation.application.GetStudentReputation
 import com.jdrms.bulletin.domain.reputation.application.SubmitReview
-import com.jdrms.bulletin.domain.reputation.infrastructure.repository.SupabaseReputationRepository
+import com.jdrms.bulletin.domain.reputation.infrastructure.repository.InMemoryReputationRepository
 import com.jdrms.bulletin.domain.reputation.presentation.ReputationViewModel
 
 class AppContainer(
@@ -35,7 +35,7 @@ class AppContainer(
     val profileRepository by lazy { SupabaseProfileRepository(supabaseConfig) }
     val listingRepository by lazy { SupabaseListingRepository(supabaseConfig) }
     val messagingRepository by lazy { SupabaseMessagingRepository(supabaseConfig) }
-    val reputationRepository by lazy { SupabaseReputationRepository(supabaseConfig) }
+    val reputationRepository by lazy { InMemoryReputationRepository() }
     val recommendationRepository by lazy { SupabaseRecommendationRepository(listingRepository, supabaseConfig = supabaseConfig) }
 
     // Use Cases - Identity

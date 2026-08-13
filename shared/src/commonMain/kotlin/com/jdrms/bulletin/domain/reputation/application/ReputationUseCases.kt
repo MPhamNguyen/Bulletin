@@ -8,10 +8,12 @@ import com.jdrms.bulletin.domain.reputation.domain.repository.ReputationReposito
 import com.jdrms.bulletin.domain.reputation.domain.service.ReputationCalculationPolicy
 
 class GetStudentReputation(
-    private val reputationRepository: ReputationRepository
+    private val reputationRepository: ReputationRepository,
+    private val reputationPolicy: ReputationCalculationPolicy = ReputationCalculationPolicy()
 ) {
     suspend operator fun invoke(userId: RevieweeId): UserReputation {
-        return reputationRepository.getReviewsForUser(userId)
+        val reviews = reputationRepository.getReviewsForUser(userId)
+        return reputationPolicy.calculateUserReputation(userId, reviews)
     }
 }
 
@@ -21,8 +23,8 @@ class SubmitReview(
 ) {
     suspend operator fun invoke(review: Review): Result<Review> {
         val validation = reputationPolicy.validateNewReview(review)
-        if (validation.isError()) {
-            return Result.Error((validation as Result.Error).exception)
+        if (validation is Result.Error) {
+            return validation
         }
         return reputationRepository.submitReview(review)
     }

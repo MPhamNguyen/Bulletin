@@ -71,10 +71,15 @@ fun ReputationScreen(viewModel: ReputationViewModel) {
             }
         }
 
-        if (state.errorMessage != null) {
+        val errorMessage = state.errorMessage
+        if (errorMessage != null) {
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                    Text(state.errorMessage!!, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                    Text(
+                        text = errorMessage,
+                        modifier = Modifier.padding(12.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 }
             }
         }
@@ -99,7 +104,10 @@ fun ReputationScreen(viewModel: ReputationViewModel) {
                     OutlinedTextField(
                         value = state.newComment,
                         onValueChange = { viewModel.onCommentChanged(it) },
-                        label = { Text("Review comment") }
+                        label = { Text("Review comment") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 4
                     )
                 }
             },

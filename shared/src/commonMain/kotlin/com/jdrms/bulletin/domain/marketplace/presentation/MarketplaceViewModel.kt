@@ -84,14 +84,14 @@ class MarketplaceViewModel(
         val priceVal = _uiState.value.newPrice.toDoubleOrNull() ?: 0.0
 
         val newListing = Listing(
-            id = ListingId("item_" + System.currentTimeMillis()),
+            id = ListingId("item_" + com.jdrms.bulletin.core.common.generateUuid()),
             sellerId = SellerId(currentUserId.value),
             sellerName = "Dominic Alfonso",
             title = title,
             description = desc,
             price = Price(priceVal),
             category = _uiState.value.newCategory,
-            createdAtMillis = System.currentTimeMillis()
+            createdAtMillis = com.jdrms.bulletin.core.common.currentTimeMillis()
         )
 
         viewModelScope.launch {

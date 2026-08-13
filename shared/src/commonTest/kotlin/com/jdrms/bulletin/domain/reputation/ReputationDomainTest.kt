@@ -1,7 +1,14 @@
 package com.jdrms.bulletin.domain.reputation
 
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.reputation.application.GetStudentReputation
+import com.jdrms.bulletin.domain.reputation.application.SubmitReview
 import com.jdrms.bulletin.domain.reputation.domain.model.*
 import com.jdrms.bulletin.domain.reputation.domain.service.ReputationCalculationPolicy
+import com.jdrms.bulletin.domain.reputation.infrastructure.dto.ReviewDto
+import com.jdrms.bulletin.domain.reputation.infrastructure.mapper.ReputationMapper
+import com.jdrms.bulletin.domain.reputation.infrastructure.repository.InMemoryReputationRepository
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -48,5 +55,66 @@ class ReputationDomainTest {
         )
         val result = policy.validateNewReview(review)
         assertTrue(result.isError())
+    }
+
+    @Test
+    fun testInMemoryRepositorySubmitAndGet() = runTest {
+        val repository = InMemoryReputationRepository(initialReviews = emptyMap())
+        val getReputation = GetStudentReputation(repository, policy)
+        val submit = SubmitReview(repository, policy)
+
+        val target = RevieweeId("target_user")
+        val reviewer = ReviewerId("reviewer_user")
+
+        val newReview = Review(
+            id = ReviewId("r_test"),
+            reviewerId = reviewer,
+            reviewerName = "Tester",
+            revieweeId = target,
+            rating = Rating(5),
+            comment = "Awesome seller!"
+        )
+
+        val submitResult = submit(newReview)
+        assertTrue(submitResult.isSuccess())
+
+        val rep = getReputation(target)
+        assertEquals(5.0, rep.averageRating)
+        assertEquals(1, rep.totalReviews)
+        assertEquals("Awesome seller!", rep.reviews.first().comment)
+    }
+
+    @Test
+    fun testSubmitBlankCommentReturnsError() = runTest {
+        val repository = InMemoryReputationRepository(initialReviews = emptyMap())
+        val submit = SubmitReview(repository, policy)
+
+        val badReview = Review(
+            id = ReviewId("r_bad"),
+            reviewerId = ReviewerId("u1"),
+            reviewerName = "Tester",
+            revieweeId = RevieweeId("u2"),
+            rating = Rating(4),
+            comment = "   "
+        )
+
+        val result = submit(badReview)
+        assertTrue(result.isError())
+    }
+
+    @Test
+    fun testMapperScoreClamping() {
+        val outOfBoundsDto = ReviewDto(
+            id = "dto_1",
+            reviewerId = "u1",
+            reviewerName = "User",
+            revieweeId = "u2",
+            score = 10, // out of range score from external DTO
+            comment = "Clamped",
+            createdAtMillis = 1000L
+        )
+
+        val domain = ReputationMapper.toDomain(outOfBoundsDto)
+        assertEquals(5, domain.rating.score)
     }
 }

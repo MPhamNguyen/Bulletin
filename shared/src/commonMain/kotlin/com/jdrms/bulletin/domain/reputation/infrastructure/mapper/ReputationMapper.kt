@@ -10,7 +10,7 @@ object ReputationMapper {
             reviewerId = ReviewerId(dto.reviewerId),
             reviewerName = dto.reviewerName,
             revieweeId = RevieweeId(dto.revieweeId),
-            rating = Rating(dto.score),
+            rating = Rating(dto.score.coerceIn(1, 5)),
             comment = dto.comment,
             createdAtMillis = dto.createdAtMillis
         )
