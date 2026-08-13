@@ -1,4 +1,4 @@
-package com.jdrms.bulletin
+package com.jdrms.bulletin.core.common
 
 class Greeting {
     private val platform = getPlatform()

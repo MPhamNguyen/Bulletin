@@ -124,6 +124,30 @@ The requirements describe the following planned technology direction:
 
 ---
 
+## 🏛️ Repository Architecture
+
+Bulletin follows a **DDD-inspired + Feature-First Clean Architecture**:
+
+```text
+shared/src/commonMain/kotlin/com/jdrms/bulletin/
+├── app/                  # Application composition, root Navigation, and manual DI (AppContainer)
+├── core/                 # Shared technical concerns (common, designsystem, network, database)
+└── domain/               # Business domains (bounded contexts)
+    ├── identity/         # Authentication, Email Verification, Profiles
+    ├── marketplace/      # Listings, Categories, Search, Favorites
+    ├── messaging/        # Real-Time Chat, Inbox, Message Reporting
+    ├── reputation/       # Ratings, Reviews, Reputation Calculation
+    └── recommendations/  # Personalized Feed, Ranking Engine, User Preferences
+```
+
+Each business domain adheres to a 4-layer structure:
+* `domain/`: Pure Kotlin entities, value objects, domain policies, and repository interfaces.
+* `application/`: Single-responsibility use cases orchestrating domain workflows.
+* `infrastructure/`: Repository implementations, DTOs, and mappers.
+* `presentation/`: Compose screens, ViewModels, UI State, and feature UI components.
+
+---
+
 ## 🔐 Security & Privacy
 
 Bulletin is intended to prioritize trust and student privacy.

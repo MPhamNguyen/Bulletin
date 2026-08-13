@@ -1,4 +1,4 @@
-package com.jdrms.bulletin
+package com.jdrms.bulletin.core.common
 
 import android.os.Build
 

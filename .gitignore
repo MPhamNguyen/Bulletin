@@ -1,19 +1,33 @@
+# Build & Cache
 *.iml
-.kotlin
-.gradle
+.gradle/
+build/
 **/build/
-xcuserdata
-!src/**/build/
 local.properties
-.idea
+
+# IDE & Editor
+.idea/
+*.iws
+*.ipr
+.vscode/
 .DS_Store
-captures
-.externalNativeBuild
-.cxx
+*.swp
+*~
+
+# Kotlin & Multiplatform
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Xcode & iOS
+xcuserdata/
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
 !*.xcodeproj/project.xcworkspace/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
+
+# Dependencies
 node_modules/

@@ -1,12 +1,14 @@
 package com.jdrms.bulletin
 
+import com.jdrms.bulletin.core.common.Greeting
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class SharedLogicAndroidHostTest {
 
     @Test
-    fun example() {
-        assertEquals(3, 1 + 2)
+    fun testAndroidHostGreeting() {
+        val greeting = Greeting().greet()
+        assertTrue(greeting.contains("Android") || greeting.startsWith("Hello,"))
     }
 }
