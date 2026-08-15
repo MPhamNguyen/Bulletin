@@ -61,9 +61,12 @@ abstract class FormatTask : DefaultTask() {
             file.isFile && (file.extension in setOf("kt", "kts", "xml", "yml", "yaml", "toml", "properties", "pro")) &&
                 !file.path.contains("/build/") && !file.path.contains("/.gradle/") && !file.path.contains("/.idea/")
         }.forEach { file ->
-            val bytes = file.readBytes()
-            if (bytes.isNotEmpty() && bytes.last() != '\n'.code.toByte()) {
-                file.appendBytes(byteArrayOf('\n'.code.toByte()))
+            val text = file.readText()
+            if (text.isNotEmpty()) {
+                val trimmed = text.trimEnd('\r', '\n') + "\n"
+                if (trimmed != text) {
+                    file.writeText(trimmed)
+                }
             }
         }
     }
@@ -75,5 +78,3 @@ tasks.register<FormatTask>("format") {
     projectDirectory.set(layout.projectDirectory)
     dependsOn(subprojects.map { it.tasks.matching { t -> t.name == "detekt" } })
 }
-
-
