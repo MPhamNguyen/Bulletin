@@ -63,7 +63,11 @@ fun ReputationScreen(viewModel: ReputationViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(review.reviewerName, fontWeight = FontWeight.Bold)
-                        Text("★ ${review.rating.score}/5", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                        Text(
+                            "★ ${review.rating.score}/5",
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(review.comment, style = MaterialTheme.typography.bodyMedium)
@@ -93,7 +97,7 @@ fun ReputationScreen(viewModel: ReputationViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Select Rating (1 to 5 stars)")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        (1..5).forEach { score ->
+                        for (score in 1..5) {
                             FilterChip(
                                 selected = state.newScore == score,
                                 onClick = { viewModel.onScoreChanged(score) },

@@ -27,7 +27,7 @@ object RecommendationMapper {
 
     fun preferencesToDomain(dto: PreferencesDto): UserPreferences {
         val cats = dto.preferredCategories.mapNotNull { catStr ->
-            try { Category.valueOf(catStr.uppercase()) } catch (e: Exception) { null }
+            try { Category.valueOf(catStr.uppercase()) } catch (ignored: IllegalArgumentException) { null }
         }
         return UserPreferences(
             preferredCategories = cats,

@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -78,7 +79,11 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
         if (state.errorMessage != null) {
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                    Text(state.errorMessage!!, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                    Text(
+                        state.errorMessage!!,
+                        modifier = Modifier.padding(12.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 }
             }
         }
@@ -138,14 +143,18 @@ fun ListingCard(
     onToggleFavorite: () -> Unit,
     onSelect: () -> Unit
 ) {
-    BulletinCard {
+    BulletinCard(modifier = Modifier.clickable(onClick = onSelect)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(listing.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(listing.price.formatted, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(
+                listing.price.formatted,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
         Spacer(Modifier.height(4.dp))
         Text("Seller: ${listing.sellerName}", style = MaterialTheme.typography.bodySmall)

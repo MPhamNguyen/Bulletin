@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.identity
 
 import com.jdrms.bulletin.domain.identity.domain.model.Email
-import com.jdrms.bulletin.domain.identity.domain.model.UserId
 import com.jdrms.bulletin.domain.identity.domain.service.IdentityValidationPolicy
 import kotlin.test.Test
 import kotlin.test.assertEquals

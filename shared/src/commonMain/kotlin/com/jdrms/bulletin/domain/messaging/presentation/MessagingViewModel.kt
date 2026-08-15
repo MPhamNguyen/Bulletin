@@ -33,7 +33,7 @@ class MessagingViewModel(
     fun loadConversations() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val convs = getConversations.getConversations(currentUserId)
+            val convs = getConversations(currentUserId)
             val selected = _uiState.value.selectedConversationId ?: convs.firstOrNull()?.id
             _uiState.update { it.copy(conversations = convs, selectedConversationId = selected, isLoading = false) }
             selected?.let { loadMessages(it) }

@@ -7,12 +7,20 @@ androidx-activity = "1.13.0"
 androidx-appcompat = "1.7.1"
 androidx-core = "1.19.0"
 androidx-espresso = "3.7.0"
-androidx-lifecycle = "2.11.0-beta01"
+# 2.11.0 is newer but requires AGP 9.1+/compileSdk 37; 2.10.0 is the newest stable that
+# targets the AGP 9.0 / compileSdk 36 toolchain this project uses.
+androidx-lifecycle = "2.10.0"
 androidx-testExt = "1.3.0"
 composeMultiplatform = "1.11.1"
+# Latest STABLE detekt. It is built against Kotlin 2.0.21, so it logs an "unsupported Kotlin
+# version" warning on 2.4.10 but still runs (rule-based checks are unaffected). The only line
+# built against Kotlin 2.4.x is detekt 2.0.0-alpha.x, which is pre-release.
+detekt = "1.23.8"
 junit = "4.13.2"
 kotlin = "2.4.10"
-material3 = "1.11.0-alpha07"
+# Latest STABLE Compose Multiplatform material3. The 1.10/1.11/1.12 lines are still alpha;
+# material3 versions independently of compose core (1.11.1), so this trails core by design.
+material3 = "1.9.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -32,6 +40,7 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -39,3 +48,4 @@ androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library",
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

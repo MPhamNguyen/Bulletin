@@ -4,23 +4,23 @@ import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.identity.application.AuthenticateUser
 import com.jdrms.bulletin.domain.identity.application.ManageProfile
 import com.jdrms.bulletin.domain.identity.application.VerifyStudentEmail
-import com.jdrms.bulletin.domain.identity.infrastructure.repository.SupabaseAuthRepository
-import com.jdrms.bulletin.domain.identity.infrastructure.repository.SupabaseProfileRepository
+import com.jdrms.bulletin.domain.identity.infrastructure.repository.InMemoryAuthRepository
+import com.jdrms.bulletin.domain.identity.infrastructure.repository.InMemoryProfileRepository
 import com.jdrms.bulletin.domain.identity.presentation.IdentityViewModel
 import com.jdrms.bulletin.domain.marketplace.application.CreateListing
 import com.jdrms.bulletin.domain.marketplace.application.ManageListing
 import com.jdrms.bulletin.domain.marketplace.application.SearchListings
 import com.jdrms.bulletin.domain.marketplace.application.ToggleFavorite
-import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseListingRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingRepository
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messaging.application.GetConversations
 import com.jdrms.bulletin.domain.messaging.application.ReportMessage
 import com.jdrms.bulletin.domain.messaging.application.SendMessage
-import com.jdrms.bulletin.domain.messaging.infrastructure.repository.SupabaseMessagingRepository
+import com.jdrms.bulletin.domain.messaging.infrastructure.repository.InMemoryMessagingRepository
 import com.jdrms.bulletin.domain.messaging.presentation.MessagingViewModel
 import com.jdrms.bulletin.domain.recommendations.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.recommendations.application.UpdateUserPreferences
-import com.jdrms.bulletin.domain.recommendations.infrastructure.repository.SupabaseRecommendationRepository
+import com.jdrms.bulletin.domain.recommendations.infrastructure.repository.InMemoryRecommendationRepository
 import com.jdrms.bulletin.domain.recommendations.presentation.RecommendationsViewModel
 import com.jdrms.bulletin.domain.reputation.application.GetStudentReputation
 import com.jdrms.bulletin.domain.reputation.application.SubmitReview
@@ -28,15 +28,18 @@ import com.jdrms.bulletin.domain.reputation.infrastructure.repository.InMemoryRe
 import com.jdrms.bulletin.domain.reputation.presentation.ReputationViewModel
 
 class AppContainer(
+    // Injection seam for the future Supabase-backed repositories. The in-memory
+    // implementations below ignore it; swap them for Supabase*Repository impls when the
+    // KMP Supabase SDK is wired up.
     val supabaseConfig: SupabaseConfig = SupabaseConfig()
 ) {
-    // Repositories
-    val authRepository by lazy { SupabaseAuthRepository(supabaseConfig) }
-    val profileRepository by lazy { SupabaseProfileRepository(supabaseConfig) }
-    val listingRepository by lazy { SupabaseListingRepository(supabaseConfig) }
-    val messagingRepository by lazy { SupabaseMessagingRepository(supabaseConfig) }
+    // Repositories (in-memory development implementations)
+    val authRepository by lazy { InMemoryAuthRepository() }
+    val profileRepository by lazy { InMemoryProfileRepository() }
+    val listingRepository by lazy { InMemoryListingRepository() }
+    val messagingRepository by lazy { InMemoryMessagingRepository() }
     val reputationRepository by lazy { InMemoryReputationRepository() }
-    val recommendationRepository by lazy { SupabaseRecommendationRepository(listingRepository, supabaseConfig = supabaseConfig) }
+    val recommendationRepository by lazy { InMemoryRecommendationRepository(listingRepository) }
 
     // Use Cases - Identity
     val authenticateUser by lazy { AuthenticateUser(authRepository) }

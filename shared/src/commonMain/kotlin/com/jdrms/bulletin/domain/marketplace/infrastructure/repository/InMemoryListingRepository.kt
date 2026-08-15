@@ -1,16 +1,17 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.identity.domain.model.UserId
 import com.jdrms.bulletin.domain.marketplace.domain.model.*
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.ListingMapper
 
-class SupabaseListingRepository(
-    private val supabaseConfig: SupabaseConfig = SupabaseConfig()
-) : ListingRepository {
+/**
+ * In-memory [ListingRepository] with seeded mock listings, for development before the
+ * Supabase-backed implementation is wired up.
+ */
+class InMemoryListingRepository : ListingRepository {
 
     private val listingsMap = mutableMapOf<String, ListingDto>(
         "item_1" to ListingDto(
@@ -63,8 +64,8 @@ class SupabaseListingRepository(
             .map { ListingMapper.toDomain(it) }
             .filter { listing ->
                 val matchesQuery = query.isBlank() ||
-                        listing.title.contains(query, ignoreCase = true) ||
-                        listing.description.contains(query, ignoreCase = true)
+                    listing.title.contains(query, ignoreCase = true) ||
+                    listing.description.contains(query, ignoreCase = true)
                 val matchesCategory = category == null || listing.category == category
                 matchesQuery && matchesCategory
             }

@@ -8,7 +8,7 @@ import com.jdrms.bulletin.domain.messaging.domain.service.MessagingPolicy
 class GetConversations(
     private val messagingRepository: MessagingRepository
 ) {
-    suspend fun getConversations(userId: ParticipantId): List<Conversation> {
+    suspend operator fun invoke(userId: ParticipantId): List<Conversation> {
         return messagingRepository.getConversations(userId)
     }
 

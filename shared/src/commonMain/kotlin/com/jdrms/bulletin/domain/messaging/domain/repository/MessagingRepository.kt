@@ -10,7 +10,17 @@ import com.jdrms.bulletin.domain.messaging.domain.model.ParticipantId
 interface MessagingRepository {
     suspend fun getConversations(userId: ParticipantId): List<Conversation>
     suspend fun getMessages(conversationId: ConversationId): List<Message>
-    suspend fun sendMessage(conversationId: ConversationId, senderId: ParticipantId, senderName: String, text: String): Result<Message>
+    suspend fun sendMessage(
+        conversationId: ConversationId,
+        senderId: ParticipantId,
+        senderName: String,
+        text: String
+    ): Result<Message>
     suspend fun reportMessage(messageId: MessageId, reason: String): Result<Unit>
-    suspend fun startConversation(participant1: ParticipantId, name1: String, participant2: ParticipantId, name2: String): Result<Conversation>
+    suspend fun startConversation(
+        participant1: ParticipantId,
+        name1: String,
+        participant2: ParticipantId,
+        name2: String
+    ): Result<Conversation>
 }

@@ -37,11 +37,23 @@ fun RecommendationsScreen(viewModel: RecommendationsViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(rec.listing.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(rec.listing.price.formatted, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        rec.listing.price.formatted,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
                 Spacer(Modifier.height(4.dp))
-                Text("Match Score: ${rec.score}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                Text(rec.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Match Score: ${rec.score}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                Text(
+                    rec.reason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(Modifier.height(8.dp))
                 Text(rec.listing.description, style = MaterialTheme.typography.bodyMedium)
             }

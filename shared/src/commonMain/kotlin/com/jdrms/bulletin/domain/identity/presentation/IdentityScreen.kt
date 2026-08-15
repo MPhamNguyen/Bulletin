@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,7 +46,10 @@ fun IdentityScreen(viewModel: IdentityViewModel) {
         if (session != null && session.isLoggedIn) {
             item {
                 BulletinCard {
-                    Text("Logged in as ${state.profile?.fullName ?: session.userId.value}", fontWeight = FontWeight.Bold)
+                    Text(
+                        "Logged in as ${state.profile?.fullName ?: session.userId.value}",
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(Modifier.height(4.dp))
                     Text("University: ${state.profile?.university ?: "CSU Long Beach"}")
                     Text("Email: ${state.profile?.email?.value ?: ""}")
@@ -83,7 +85,11 @@ fun IdentityScreen(viewModel: IdentityViewModel) {
         } else {
             item {
                 BulletinCard {
-                    Text("Student Authentication", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Student Authentication",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.emailInput,
@@ -109,7 +115,11 @@ fun IdentityScreen(viewModel: IdentityViewModel) {
 
             item {
                 BulletinCard {
-                    Text("Verify University Email", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Verify University Email",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.verificationCodeInput,
