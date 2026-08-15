@@ -140,6 +140,7 @@ class ReputationDomainTest {
         val viewModel = ReputationViewModel(getReputation, submit, targetUserId = RevieweeId("default_user"))
 
         viewModel.loadReputation(RevieweeId("other_user"))
+        testScheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
         assertEquals("other_user", state.userReputation?.userId?.value)
         assertEquals(5.0, state.userReputation?.averageRating)
