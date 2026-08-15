@@ -2,10 +2,10 @@ name: Scan with Detekt
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "ci"]
 
   pull_request:
-    branches: ["main"]
+    branches: ["main", "ci"]
 
   schedule:
     - cron: "19 2 * * 6"
