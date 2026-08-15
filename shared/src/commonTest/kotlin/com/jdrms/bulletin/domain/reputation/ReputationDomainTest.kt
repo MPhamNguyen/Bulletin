@@ -8,15 +8,33 @@ import com.jdrms.bulletin.domain.reputation.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.reputation.infrastructure.mapper.ReputationMapper
 import com.jdrms.bulletin.domain.reputation.infrastructure.repository.InMemoryReputationRepository
 import com.jdrms.bulletin.domain.reputation.presentation.ReputationViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ReputationDomainTest {
 
     private val policy = ReputationCalculationPolicy()
+
+    @BeforeTest
+    fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun testRatingBoundaries() {

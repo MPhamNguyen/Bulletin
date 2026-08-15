@@ -30,6 +30,8 @@ class ReputationViewModel(
     private val _uiState = MutableStateFlow(ReputationUiState())
     val uiState: StateFlow<ReputationUiState> = _uiState.asStateFlow()
 
+    private var fetchJob: kotlinx.coroutines.Job? = null
+
     init {
         loadReputation()
     }
@@ -41,7 +43,8 @@ class ReputationViewModel(
      * (e.g., when viewing a seller or buyer profile card).
      */
     fun loadReputation(userId: RevieweeId = targetUserId) {
-        viewModelScope.launch {
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val rep = getStudentReputation(userId)
             _uiState.update { it.copy(userReputation = rep, isLoading = false) }
