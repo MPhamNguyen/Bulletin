@@ -39,6 +39,7 @@ subprojects {
     }
 
     tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+        autoCorrect = true
         reports {
             html.required.set(true)
             sarif.required.set(true)
@@ -48,3 +49,31 @@ subprojects {
         }
     }
 }
+
+abstract class FormatTask : DefaultTask() {
+    @get:org.gradle.api.tasks.Internal
+    abstract val projectDirectory: DirectoryProperty
+
+    @TaskAction
+    fun execute() {
+        val root = projectDirectory.get().asFile
+        root.walkTopDown().filter { file ->
+            file.isFile && (file.extension in setOf("kt", "kts", "xml", "yml", "yaml", "toml", "properties", "pro")) &&
+                !file.path.contains("/build/") && !file.path.contains("/.gradle/") && !file.path.contains("/.idea/")
+        }.forEach { file ->
+            val bytes = file.readBytes()
+            if (bytes.isNotEmpty() && bytes.last() != '\n'.code.toByte()) {
+                file.appendBytes(byteArrayOf('\n'.code.toByte()))
+            }
+        }
+    }
+}
+
+tasks.register<FormatTask>("format") {
+    group = "formatting"
+    description = "Formats all Kotlin source files and Gradle build scripts."
+    projectDirectory.set(layout.projectDirectory)
+    dependsOn(subprojects.map { it.tasks.matching { t -> t.name == "detekt" } })
+}
+
+
