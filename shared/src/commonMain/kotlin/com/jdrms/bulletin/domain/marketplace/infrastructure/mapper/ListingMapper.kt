@@ -7,12 +7,12 @@ object ListingMapper {
     fun toDomain(dto: ListingDto): Listing {
         val category = try {
             Category.valueOf(dto.categoryName.uppercase())
-        } catch (e: Exception) {
+        } catch (ignored: IllegalArgumentException) {
             Category.OTHER
         }
         val status = try {
             ListingStatus.valueOf(dto.statusCode.uppercase())
-        } catch (e: Exception) {
+        } catch (ignored: IllegalArgumentException) {
             ListingStatus.AVAILABLE
         }
 

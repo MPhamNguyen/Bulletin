@@ -62,6 +62,15 @@ class MarketplaceViewModel(
         _uiState.update { it.copy(selectedListing = listing) }
     }
 
+    fun deleteListing(listingId: ListingId) {
+        viewModelScope.launch {
+            when (val res = manageListing.deleteListing(listingId)) {
+                is Result.Success -> loadListings()
+                is Result.Error -> _uiState.update { it.copy(errorMessage = res.message) }
+            }
+        }
+    }
+
     fun onToggleFavorite(listingId: ListingId) {
         viewModelScope.launch {
             when (val res = toggleFavorite(currentUserId, listingId)) {

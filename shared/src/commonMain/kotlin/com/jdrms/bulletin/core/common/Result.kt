@@ -2,7 +2,10 @@ package com.jdrms.bulletin.core.common
 
 sealed interface Result<out T> {
     data class Success<out T>(val data: T) : Result<T>
-    data class Error(val exception: Throwable, val message: String = exception.message ?: "Unknown error") : Result<Nothing>
+    data class Error(
+        val exception: Throwable,
+        val message: String = exception.message ?: "Unknown error"
+    ) : Result<Nothing>
 
     fun isSuccess(): Boolean = this is Success
     fun isError(): Boolean = this is Error

@@ -6,8 +6,6 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.identity.application.AuthenticateUser
 import com.jdrms.bulletin.domain.identity.application.ManageProfile
 import com.jdrms.bulletin.domain.identity.application.VerifyStudentEmail
-import com.jdrms.bulletin.domain.identity.domain.model.Profile
-import com.jdrms.bulletin.domain.identity.domain.model.UserId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

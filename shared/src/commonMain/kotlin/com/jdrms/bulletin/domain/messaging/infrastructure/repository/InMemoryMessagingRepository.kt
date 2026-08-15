@@ -3,16 +3,17 @@ package com.jdrms.bulletin.domain.messaging.infrastructure.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
-import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.messaging.domain.model.*
 import com.jdrms.bulletin.domain.messaging.domain.repository.MessagingRepository
 import com.jdrms.bulletin.domain.messaging.infrastructure.dto.ConversationDto
 import com.jdrms.bulletin.domain.messaging.infrastructure.dto.MessageDto
 import com.jdrms.bulletin.domain.messaging.infrastructure.mapper.MessagingMapper
 
-class SupabaseMessagingRepository(
-    private val supabaseConfig: SupabaseConfig = SupabaseConfig()
-) : MessagingRepository {
+/**
+ * In-memory [MessagingRepository] with a seeded mock conversation, for development before the
+ * Supabase-backed implementation is wired up.
+ */
+class InMemoryMessagingRepository : MessagingRepository {
 
     private val conversationsMap = mutableMapOf<String, ConversationDto>(
         "conv_1" to ConversationDto(

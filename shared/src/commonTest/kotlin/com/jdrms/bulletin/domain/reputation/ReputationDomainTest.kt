@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.reputation
 
-import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.reputation.application.GetStudentReputation
 import com.jdrms.bulletin.domain.reputation.application.SubmitReview
 import com.jdrms.bulletin.domain.reputation.domain.model.*
@@ -121,19 +120,21 @@ class ReputationDomainTest {
 
     @Test
     fun testViewModelLoadReputationWithExplicitUserId() = runTest {
-        val repository = InMemoryReputationRepository(initialReviews = mapOf(
-            "other_user" to listOf(
-                ReviewDto(
-                    id = "r99",
-                    reviewerId = "reviewer",
-                    reviewerName = "Reviewer",
-                    revieweeId = "other_user",
-                    score = 5,
-                    comment = "Great profile",
-                    createdAtMillis = 1000L
+        val repository = InMemoryReputationRepository(
+            initialReviews = mapOf(
+                "other_user" to listOf(
+                    ReviewDto(
+                        id = "r99",
+                        reviewerId = "reviewer",
+                        reviewerName = "Reviewer",
+                        revieweeId = "other_user",
+                        score = 5,
+                        comment = "Great profile",
+                        createdAtMillis = 1000L
+                    )
                 )
             )
-        ))
+        )
         val getReputation = GetStudentReputation(repository, policy)
         val submit = SubmitReview(repository, policy)
         val viewModel = ReputationViewModel(getReputation, submit, targetUserId = RevieweeId("default_user"))

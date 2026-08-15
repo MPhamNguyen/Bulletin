@@ -17,7 +17,9 @@ class SupabaseReputationRepository(
 
     override suspend fun getReviewsForUser(userId: RevieweeId): List<Review> {
         // TODO: Replace with Supabase client query when SDK is configured
-        throw NotImplementedError("Supabase integration pending SDK setup. Use InMemoryReputationRepository for development.")
+        throw NotImplementedError(
+            "Supabase integration pending SDK setup. Use InMemoryReputationRepository for development."
+        )
     }
 
     override suspend fun submitReview(review: Review): Result<Review> {

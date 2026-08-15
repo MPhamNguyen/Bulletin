@@ -43,7 +43,11 @@ fun MessagingScreen(viewModel: MessagingViewModel) {
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable { viewModel.selectConversation(conv.id) },
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                containerColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                }
                             )
                         ) {
                             Column(modifier = Modifier.padding(8.dp)) {
@@ -68,14 +72,26 @@ fun MessagingScreen(viewModel: MessagingViewModel) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (msg.isReported) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
+                                    containerColor = if (msg.isReported) {
+                                        MaterialTheme.colorScheme.errorContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    }
                                 )
                             ) {
                                 Column(modifier = Modifier.padding(8.dp)) {
-                                    Text(msg.senderName, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        msg.senderName,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                     Text(msg.text, style = MaterialTheme.typography.bodyMedium)
                                     if (msg.isReported) {
-                                        Text("[Reported]", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                        Text(
+                                            "[Reported]",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
                                     } else {
                                         TextButton(onClick = { viewModel.report(msg.id, "Inappropriate content") }) {
                                             Text("Report", style = MaterialTheme.typography.labelSmall)

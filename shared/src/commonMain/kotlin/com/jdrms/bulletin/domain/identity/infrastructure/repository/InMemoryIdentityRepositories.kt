@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.identity.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.identity.domain.model.Profile
 import com.jdrms.bulletin.domain.identity.domain.model.Session
 import com.jdrms.bulletin.domain.identity.domain.model.UserId
@@ -11,9 +10,11 @@ import com.jdrms.bulletin.domain.identity.infrastructure.dto.SessionDto
 import com.jdrms.bulletin.domain.identity.infrastructure.dto.UserDto
 import com.jdrms.bulletin.domain.identity.infrastructure.mapper.IdentityMapper
 
-class SupabaseAuthRepository(
-    private val supabaseConfig: SupabaseConfig = SupabaseConfig()
-) : AuthRepository {
+/**
+ * In-memory [AuthRepository] with a seeded mock session, for development before the
+ * Supabase-backed implementation is wired up.
+ */
+class InMemoryAuthRepository : AuthRepository {
 
     private var currentSession: SessionDto? = SessionDto(
         userId = "user_101",
@@ -45,9 +46,11 @@ class SupabaseAuthRepository(
     }
 }
 
-class SupabaseProfileRepository(
-    private val supabaseConfig: SupabaseConfig = SupabaseConfig()
-) : ProfileRepository {
+/**
+ * In-memory [ProfileRepository] with seeded mock profiles, for development before the
+ * Supabase-backed implementation is wired up.
+ */
+class InMemoryProfileRepository : ProfileRepository {
 
     private val userProfiles = mutableMapOf<String, UserDto>(
         "user_101" to UserDto(

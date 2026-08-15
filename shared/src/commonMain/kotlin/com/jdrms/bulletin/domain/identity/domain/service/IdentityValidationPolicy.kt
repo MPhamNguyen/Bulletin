@@ -13,7 +13,7 @@ class IdentityValidationPolicy {
             } else {
                 Result.Success(email)
             }
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             Result.Error(e)
         }
     }
