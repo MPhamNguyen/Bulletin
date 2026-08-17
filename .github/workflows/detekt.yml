@@ -1,0 +1,65 @@
+name: Scan with Detekt
+
+on:
+  push:
+    branches: ["main", "ci"]
+
+  pull_request:
+    branches: ["main", "ci"]
+
+  schedule:
+    - cron: "19 2 * * 6"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  DETEKT_VERSION: "1.23.8"
+
+jobs:
+  scan:
+    name: Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Download Detekt CLI
+        run: |
+          curl -sSLO \
+            "https://github.com/detekt/detekt/releases/download/v${DETEKT_VERSION}/detekt-cli-${DETEKT_VERSION}.zip"
+
+          unzip "detekt-cli-${DETEKT_VERSION}.zip"
+
+          echo "$GITHUB_WORKSPACE/detekt-cli-${DETEKT_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Download Detekt formatting plugin
+        run: |
+          curl -sSL \
+            "https://repo1.maven.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/${DETEKT_VERSION}/detekt-formatting-${DETEKT_VERSION}.jar" \
+            --output "$GITHUB_WORKSPACE/detekt-formatting.jar"
+
+      - name: Run Detekt
+        run: |
+          detekt-cli \
+            --input "$GITHUB_WORKSPACE" \
+            --config "$GITHUB_WORKSPACE/config/detekt/detekt.yml" \
+            --build-upon-default-config \
+            --plugins "$GITHUB_WORKSPACE/detekt-formatting.jar" \
+            --report "sarif:$GITHUB_WORKSPACE/detekt.sarif.json"
+
+      - name: Upload Detekt SARIF
+        if: always() && hashFiles('detekt.sarif.json') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: detekt.sarif.json
