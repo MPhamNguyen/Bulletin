@@ -4,6 +4,9 @@
 build/
 **/build/
 local.properties
+.env
+*.env
+!.env.example
 
 # IDE & Editor
 .idea/
