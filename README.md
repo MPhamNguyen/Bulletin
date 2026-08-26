@@ -7,7 +7,7 @@
 
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Language](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
-![Course](https://img.shields.io/badge/CECS-491B-FFC72C?style=for-the-badge)
+![Course](https://img.shields.io/badge/CECS-491A/B-FFC72C?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-In%20Development-2563EB?style=for-the-badge)
 
 </div>
