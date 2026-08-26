@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -30,5 +32,87 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Detect Changed Paths
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            global:
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle.properties'
+              - 'gradle/**'
+              - 'config/**'
+              - '.github/workflows/**'
+              - 'shared/build.gradle.kts'
+              - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/core/**'
+              - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/app/**'
+              - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/App.kt'
+              - 'shared/src/commonMain/composeResources/**'
+              - 'shared/src/androidMain/**'
+              - 'shared/src/androidHostTest/**'
+              - 'shared/src/commonTest/kotlin/com/jdrms/bulletin/GreetingTest.kt'
+            identity:
+              - 'shared/src/**/domain/identity/**'
+            marketplace:
+              - 'shared/src/**/domain/marketplace/**'
+            messaging:
+              - 'shared/src/**/domain/messaging/**'
+            recommendations:
+              - 'shared/src/**/domain/recommendations/**'
+            reputation:
+              - 'shared/src/**/domain/reputation/**'
+            androidApp:
+              - 'androidApp/**'
+
       - name: Run Build and Tests
-        run: ./gradlew check --no-daemon
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ steps.filter.outputs.global }}" = "true" ]; then
+            echo "Running full build and check (pull request, manual trigger, or global/core changes)..."
+            ./gradlew check --no-daemon
+          else
+            GRADLE_TASKS=()
+            TEST_FILTERS=()
+
+            if [ "${{ steps.filter.outputs.identity }}" = "true" ]; then
+              echo "Changes detected in Identity domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.identity.*")
+            fi
+
+            if [ "${{ steps.filter.outputs.marketplace }}" = "true" ]; then
+              echo "Changes detected in Marketplace domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.marketplace.*")
+            fi
+
+            if [ "${{ steps.filter.outputs.messaging }}" = "true" ]; then
+              echo "Changes detected in Messaging domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.messaging.*")
+            fi
+
+            if [ "${{ steps.filter.outputs.recommendations }}" = "true" ]; then
+              echo "Changes detected in Recommendations domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.recommendations.*")
+            fi
+
+            if [ "${{ steps.filter.outputs.reputation }}" = "true" ]; then
+              echo "Changes detected in Reputation domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.reputation.*")
+            fi
+
+            if [ ${#TEST_FILTERS[@]} -gt 0 ]; then
+              GRADLE_TASKS+=(:shared:compileAndroidMain :shared:testAndroidHostTest "${TEST_FILTERS[@]}")
+            fi
+
+            if [ "${{ steps.filter.outputs.androidApp }}" = "true" ]; then
+              echo "Changes detected in Android App module"
+              GRADLE_TASKS+=(:androidApp:check)
+            fi
+
+            if [ ${#GRADLE_TASKS[@]} -gt 0 ]; then
+              echo "Running targeted build tasks: ${GRADLE_TASKS[*]}"
+              ./gradlew "${GRADLE_TASKS[@]}" --no-daemon
+            else
+              echo "No application code changes detected on push. Skipping build."
+            fi
+          fi
