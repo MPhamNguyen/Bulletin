@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Mortarboard cap top (diamond) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M48,22 L14,41 L48,60 L82,41 Z"/>
+    <!-- Mortarboard cap base (skullcap) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24,47.5 V59 C24,67.5 34.7,74.5 48,74.5 C61.3,74.5 72,67.5 72,59 V47.5 L48,61 Z"/>
+    <!-- Tassel cord and fringe -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M75,43 V63.5 C73.2,65 72.5,67 72.5,69 L70,78 C69.8,78.8 70.4,79.5 71.2,79.5 H78.8 C79.6,79.5 80.2,78.8 80,78 L77.5,69 C77.5,67 76.8,65 75,63.5 V43 Z"/>
+</vector>
