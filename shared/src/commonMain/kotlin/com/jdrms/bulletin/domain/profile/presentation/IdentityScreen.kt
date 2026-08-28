@@ -1,198 +1,286 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.SectionHeader
+import bulletin.shared.generated.resources.Res
+import bulletin.shared.generated.resources.ic_arrow_back
+import bulletin.shared.generated.resources.ic_graduation_cap
+import bulletin.shared.generated.resources.ic_visibility
+import bulletin.shared.generated.resources.ic_visibility_off
+import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
+@Suppress("UnusedParameter")
 fun IdentityScreen(viewModel: IdentityViewModel) {
-    val state by viewModel.uiState.collectAsState()
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var isPasswordVisible by remember { mutableStateOf(false) }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    val inputFieldColors = BulletinTextFieldDefaults.colors()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        item {
-            SectionHeader(
-                title = "Account & Identity",
-                subtitle = "Manage student profile, email verification, and authentication"
+        // Top App Bar with back button and centered "Sign Up" title
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { }) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_arrow_back),
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = "Sign Up",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 48.dp)
             )
         }
 
-        if (state.errorMessage != null) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+        // Scrollable Content
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(108.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.tertiary,
+                        shape = MaterialTheme.shapes.extraLarge
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_graduation_cap),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiary,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Text(
+                text = "Get started on Bulletin",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Sign up to access your campus marketplace and connect with peers safely.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Adjacent input boxes for First Name and Last Name
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    RequiredFieldLabel(text = "First Name")
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedTextField(
+                        value = firstName,
+                        onValueChange = { firstName = it },
+                        placeholder = {
+                            Text(text = "First Name")
+                        },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium,
+                        colors = inputFieldColors,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                ) {
-                    Text(
-                        text = state.errorMessage!!,
-                        modifier = Modifier.padding(12.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    RequiredFieldLabel(text = "Last Name")
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedTextField(
+                        value = lastName,
+                        onValueChange = { lastName = it },
+                        placeholder = {
+                            Text(text = "Last Name")
+                        },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium,
+                        colors = inputFieldColors,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
-        }
 
-        val session = state.currentSession
-        if (session != null && session.isLoggedIn) {
-            item {
-                BulletinCard {
-                    Text(
-                        "Logged in as ${state.profile?.fullName ?: session.userId.value}",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "University: ${state.profile?.university ?: "CSU Long Beach"}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Email: ${state.profile?.email?.value ?: ""}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Verified: ${if (state.profile?.isVerified == true) "Yes (Student Verified)" else "No"}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Bio: ${state.profile?.bio ?: "No bio yet."}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = { viewModel.logout() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text("Log Out")
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            item {
-                SectionHeader(title = "Student Directory Search")
+            // Email input box
+            Column(modifier = Modifier.fillMaxWidth()) {
+                RequiredFieldLabel(text = "Email")
+                Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = { viewModel.onSearchQueryChanged(it) },
-                    label = { Text("Search by name or email") },
+                    value = email,
+                    onValueChange = { email = it },
+                    placeholder = {
+                        Text(text = "Email")
+                    },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = inputFieldColors,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            items(state.searchResults) { foundProfile ->
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            foundProfile.fullName,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            foundProfile.university,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            foundProfile.email.value,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        } else {
-            item {
-                BulletinCard {
-                    Text(
-                        "Student Authentication",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.emailInput,
-                        onValueChange = { viewModel.onEmailChanged(it) },
-                        label = { Text("School Email (.edu)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.passwordInput,
-                        onValueChange = { viewModel.onPasswordChanged(it) },
-                        label = { Text("Password") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = { viewModel.login() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Password input box with eye toggle
+            Column(modifier = Modifier.fillMaxWidth()) {
+                RequiredFieldLabel(text = "Password")
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    placeholder = {
+                        Text(text = "Password")
+                    },
+                    singleLine = true,
+                    visualTransformation = if (isPasswordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                            val icon = if (isPasswordVisible) {
+                                Res.drawable.ic_visibility
+                            } else {
+                                Res.drawable.ic_visibility_off
+                            }
+                            Icon(
+                                painter = painterResource(icon),
+                                contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        ) {
-                            Text("Log In")
                         }
-                    }
-                }
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                    colors = inputFieldColors,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
-            item {
-                BulletinCard {
-                    Text(
-                        "Verify University Email",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.verificationCodeInput,
-                        onValueChange = { viewModel.onVerificationCodeChanged(it) },
-                        label = { Text("Verification Code") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = { viewModel.verifyEmail() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text("Verify Code")
-                    }
-                }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Disclosure text
+            Text(
+                text = "By tapping Create Account, you agree to create an account and to Bulletin's " +
+                    "Terms, Privacy Policy and Cookies Policy.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = BulletinButtonDefaults.buttonColors()
+            ) {
+                Text(
+                    text = "Create Account",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = BulletinButtonDefaults.buttonColors()
+            ) {
+                Text(
+                    text = "I already have an account",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun RequiredFieldLabel(text: String) {
+    Row {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = " *",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.error
+        )
     }
 }
