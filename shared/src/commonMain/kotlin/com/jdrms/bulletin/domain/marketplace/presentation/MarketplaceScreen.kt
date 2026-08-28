@@ -42,7 +42,11 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
         item {
             Button(
                 onClick = { viewModel.showCreateModal(true) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text("+ Create New Listing")
             }
@@ -78,7 +82,12 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
 
         if (state.errorMessage != null) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
                     Text(
                         state.errorMessage!!,
                         modifier = Modifier.padding(12.dp),
@@ -123,12 +132,23 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                 }
             },
             confirmButton = {
-                Button(onClick = { viewModel.createNewListing() }) {
+                Button(
+                    onClick = { viewModel.createNewListing() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
                     Text("Post Listing")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.showCreateModal(false) }) {
+                TextButton(
+                    onClick = { viewModel.showCreateModal(false) },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
                     Text("Cancel")
                 }
             }
@@ -149,7 +169,12 @@ fun ListingCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(listing.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                listing.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Text(
                 listing.price.formatted,
                 style = MaterialTheme.typography.titleMedium,
@@ -157,13 +182,30 @@ fun ListingCard(
             )
         }
         Spacer(Modifier.height(4.dp))
-        Text("Seller: ${listing.sellerName}", style = MaterialTheme.typography.bodySmall)
-        Text("Category: ${listing.category.name}", style = MaterialTheme.typography.bodySmall)
+        Text(
+            "Seller: ${listing.sellerName}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            "Category: ${listing.category.name}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(Modifier.height(8.dp))
-        Text(listing.description, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            listing.description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = onToggleFavorite) {
+            OutlinedButton(
+                onClick = onToggleFavorite,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
                 Text(if (isFavorite) "★ Saved" else "☆ Save")
             }
         }

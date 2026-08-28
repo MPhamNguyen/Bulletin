@@ -5,12 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
-import com.jdrms.bulletin.domain.identity.domain.model.UserId
 import com.jdrms.bulletin.domain.marketplace.application.CreateListing
 import com.jdrms.bulletin.domain.marketplace.application.ManageListing
 import com.jdrms.bulletin.domain.marketplace.application.SearchListings
 import com.jdrms.bulletin.domain.marketplace.application.ToggleFavorite
 import com.jdrms.bulletin.domain.marketplace.domain.model.*
+import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

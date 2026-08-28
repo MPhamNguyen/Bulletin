@@ -45,11 +45,15 @@ naming:
     # KMP expect/actual files (Platform.android.kt) and grouping files
     # (AppNavigation.kt holding AppDestination) intentionally break this.
     active: false
+  PackageNaming:
+    active: false
 
 formatting:
   active: true
   android: true
   autoCorrect: true
+  PackageName:
+    active: false
   FunctionName:
     active: false
   Filename:
