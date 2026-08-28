@@ -8,7 +8,11 @@ Bulletin is an in-development campus marketplace. It is a Kotlin Multiplatform p
 
 Keep implementation claims, documentation, and tests aligned with that current state. Do not describe a mocked or planned integration as production-ready.
 
-Domain-driven design is mandatory for business changes. Treat architectural boundary violations as defects, not optional cleanup.
+Domain-driven design is mandatory for business changes. In this document, a business change is any change that adds or
+alters domain behavior, business invariants, application orchestration, or data flow across a bounded-context boundary.
+Documentation, formatting, build/configuration maintenance, mechanical refactors that preserve behavior, and visual-only
+UI or copy polish are not business changes. When a change mixes exempt and business work, apply the business-change rules
+to the affected behavior. Treat architectural boundary violations as defects, not optional cleanup.
 
 ## Repository map
 
@@ -53,6 +57,9 @@ The allowed dependency direction is `presentation -> application -> domain`. Inf
 - A stable typed identifier from another context may cross a boundary when identity is all that is needed. Do not navigate from that ID to another context's aggregate from inside the domain model.
 - Translate external and cross-context data at the boundary. Transport and persistence models must not leak into domain or presentation APIs.
 - Existing direct coupling from `recommendations` to marketplace `Listing`, `ListingRepository`, `ListingDto`, and `ListingMapper` is legacy debt, not a pattern. Do not add more such imports. When changing that integration, introduce a recommendations-owned port and recommendation input snapshot, then map marketplace data at the boundary.
+- Note pre-existing boundary violations encountered outside the requested scope in the handoff, including their paths, but
+  do not fix them or broaden the patch unless asked. Never use a legacy violation as precedent. If the in-scope change must
+  touch one, avoid worsening it and stop to propose a scoped boundary-safe change when that is not possible.
 
 ### Aggregates, repositories, and use cases
 
@@ -64,7 +71,9 @@ The allowed dependency direction is `presentation -> application -> domain`. Inf
 
 ### Required workflow for business changes
 
-Before implementation, state in the working notes or change description:
+Before implementation, record the following in the task's visible working notes. An AI agent must put it in a commentary
+update; a human contributor may use the PR or change description. Do not add a scratch file to the repository unless the
+task explicitly requests one.
 
 1. The owning bounded context and the domain terms being used.
 2. The aggregate root, entities/value objects, and invariants affected.
@@ -73,6 +82,13 @@ Before implementation, state in the working notes or change description:
 5. Every bounded-context crossing and the translation mechanism used.
 
 Then implement from the domain outward: domain model and tests, application use case, infrastructure adapter, presentation state/UI, and finally composition. If a requested design violates a boundary, stop and propose a domain-safe alternative instead of implementing the violation.
+
+Example (architecture only, not a statement of implemented behavior): to add “reserve a listing,” identify `marketplace`
+as the owner and `Listing` as the aggregate root; define and test the reservation invariants; initiate the behavior through
+a focused `ReserveListing` command/use case and the marketplace-owned listing repository port; persist it with an
+infrastructure adapter; expose it through immutable ViewModel state; then wire it in composition. If identity data is
+needed, translate it through a marketplace-owned application port or immutable snapshot rather than importing identity
+entities or repositories.
 
 Place reusable code in `commonMain`. Add Android-specific code to `androidMain` only when a common implementation is impossible; expose platform behavior through an `expect`/`actual` boundary in `core/common`. Keep `androidApp` limited to platform startup and Android resources.
 
@@ -149,24 +165,32 @@ Run the smallest relevant task while iterating, then run `./gradlew check --no-d
 
 ## Testing expectations
 
+Every change that adds or changes executable logic must add or update unit tests in the same patch. Logic includes validation, branching, calculations, transformations, mapping, filtering, sorting, ranking, state transitions, coroutine behavior, error handling, repository behavior, and ViewModel event handling. A logic change without unit tests is incomplete and must not be handed off.
+
+- Write tests before or alongside the implementation so the desired behavior and boundaries are explicit.
+- Test observable behavior and domain rules rather than private methods or implementation details.
+- Cover the successful path, expected failure paths, and meaningful boundary values for every changed behavior.
+- Every bug fix requires a regression test that would fail before the fix and pass afterward.
+- A visual-only Compose change may omit a unit test only when it changes no event handling, state transition, semantics, formatting logic, or business behavior. If any of those change, test the ViewModel, use case, formatter, or state reducer that owns the behavior.
+- If logic is difficult to unit test because it is coupled to Android, time, randomness, storage, or networking, introduce an interface or deterministic seam and test through it. Test difficulty is a design signal, not a reason to skip coverage.
 - Put platform-independent tests in the matching package under `shared/src/commonTest`.
 - Put tests that require Android APIs or resources in `shared/src/androidHostTest`.
 - Use `kotlin.test` assertions and `kotlinx.coroutines.test.runTest` for suspend behavior.
-- Cover the successful path and meaningful validation/error paths. A bug fix should include a regression test when practical.
 - Prefer deterministic fakes or the existing in-memory repositories. Common tests must not depend on live services, real credentials, wall-clock timing, or network availability.
 - When changing a repository contract, update every implementation, use case, DI binding, and affected test in the same change.
+- Run the narrowest affected unit-test task while iterating and record the result. Before handoff, run the broader `./gradlew check --no-daemon` when the environment supports it; if it does not, report the exact blocker without claiming the tests passed.
 
 ### DDD acceptance gate
 
 A business change is not complete unless all of the following are true:
 
+- Every added or changed piece of logic has a corresponding unit test.
 - Domain tests prove every added or changed invariant and aggregate state transition.
 - Application tests prove orchestration and expected failures with fake/in-memory ports.
 - Mapper/adapter tests cover any new external or cross-context translation.
-- No domain package imports Android, Compose, infrastructure, transport, or persistence types.
-- No application package imports a concrete repository or other infrastructure adapter.
-- No presentation code contains business rules or calls a repository directly.
-- No new cross-context entity, DTO, mapper, or repository dependency was introduced.
+- The dependency direction defined under “Domain-driven design rules” is preserved in every changed path.
+- The canonical rules under “Keep bounded contexts independent” are satisfied; no new cross-context dependency is
+  introduced.
 - Names in code and tests use the bounded context's ubiquitous language.
 
 Review boundary imports before handoff:
@@ -175,12 +199,16 @@ Review boundary imports before handoff:
 rg -n '^import (android\.|androidx\.|.*\.infrastructure\.)' \
   shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/*/domain
 rg -n '\.infrastructure\.' \
-  shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/*/{application,presentation}
+  shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/*/application
+rg -n '\.infrastructure\.' \
+  shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/*/presentation
 rg -n '^import com\.jdrms\.bulletin\.domain\.' \
   shared/src/commonMain/kotlin/com/jdrms/bulletin/domain
 ```
 
-The first two commands must return no violations. Review every result from the third command for a cross-context dependency; existing legacy dependencies do not authorize new ones.
+The first three commands must return no violations. Review every result from the fourth command for a cross-context
+dependency; follow “Keep bounded contexts independent” when assessing results, and report out-of-scope legacy violations
+as directed there.
 
 ## Change hygiene
 
