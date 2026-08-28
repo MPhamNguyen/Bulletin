@@ -1,11 +1,11 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.identity.domain.model.UserId
 import com.jdrms.bulletin.domain.marketplace.domain.model.*
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.ListingMapper
+import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 /**
  * In-memory [ListingRepository] with seeded mock listings, for development before the

@@ -1,10 +1,10 @@
 package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.identity.domain.model.UserId
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingRepository
+import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 class ManageListing(
     private val listingRepository: ListingRepository
