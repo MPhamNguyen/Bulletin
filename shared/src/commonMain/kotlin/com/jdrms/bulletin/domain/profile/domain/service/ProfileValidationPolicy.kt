@@ -12,18 +12,20 @@ class ProfileValidationPolicy {
         password: String,
         fullName: String
     ): Result<Unit> {
-        if (fullName.isBlank()) {
-            return Result.Error(IllegalArgumentException("Full name cannot be blank."))
+        val errorMessage = when {
+            fullName.isBlank() -> "Full name is required."
+            emailStr.isBlank() -> "Email is required."
+            !StudentEmail.isValid(emailStr) -> "Invalid email address format."
+            password.isBlank() -> "Password is required."
+            password.length < MIN_PASSWORD_LENGTH ->
+                "Password must be at least $MIN_PASSWORD_LENGTH characters."
+            else -> null
         }
-        if (!StudentEmail.isValid(emailStr)) {
-            return Result.Error(IllegalArgumentException("Invalid email address format."))
+        return if (errorMessage != null) {
+            Result.Error(IllegalArgumentException(errorMessage))
+        } else {
+            Result.Success(Unit)
         }
-        if (password.isBlank() || password.length < MIN_PASSWORD_LENGTH) {
-            return Result.Error(
-                IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters.")
-            )
-        }
-        return Result.Success(Unit)
     }
 
     fun validateUniversityRegistration(emailStr: String): Result<Unit> {

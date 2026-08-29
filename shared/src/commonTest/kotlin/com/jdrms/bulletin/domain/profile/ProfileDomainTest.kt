@@ -87,6 +87,18 @@ class ProfileDomainTest {
             fullName = "   "
         )
         assertTrue(result.isError())
+        assertEquals("Full name is required.", (result as Result.Error).exception.message)
+    }
+
+    @Test
+    fun testValidateRegistrationFailsForEmptyEmail() {
+        val result = policy.validateRegistration(
+            emailStr = "",
+            password = "securePassword123",
+            fullName = "Jane Student"
+        )
+        assertTrue(result.isError())
+        assertEquals("Email is required.", (result as Result.Error).exception.message)
     }
 
     @Test
@@ -97,6 +109,18 @@ class ProfileDomainTest {
             fullName = "Jane Student"
         )
         assertTrue(result.isError())
+        assertEquals("Invalid email address format.", (result as Result.Error).exception.message)
+    }
+
+    @Test
+    fun testValidateRegistrationFailsForEmptyPassword() {
+        val result = policy.validateRegistration(
+            emailStr = "student@gmail.com",
+            password = "",
+            fullName = "Jane Student"
+        )
+        assertTrue(result.isError())
+        assertEquals("Password is required.", (result as Result.Error).exception.message)
     }
 
     @Test
@@ -107,6 +131,7 @@ class ProfileDomainTest {
             fullName = "Jane Student"
         )
         assertTrue(result.isError())
+        assertEquals("Password must be at least 8 characters.", (result as Result.Error).exception.message)
     }
 
     @Test
@@ -296,17 +321,32 @@ class ProfileDomainTest {
             )
             advanceUntilIdle()
 
-            // Blank name check (from policy)
-            viewModel.createAccount("", "", "test@example.com", "password123")
+            // Blank first name check
+            viewModel.createAccount("", "Doe", "test@example.com", "password123")
             advanceUntilIdle()
-            assertEquals("Full name cannot be blank.", viewModel.uiState.value.errorMessage)
+            assertEquals("First name is required.", viewModel.uiState.value.errorMessage)
+
+            // Blank last name check
+            viewModel.createAccount("John", "", "test@example.com", "password123")
+            advanceUntilIdle()
+            assertEquals("Last name is required.", viewModel.uiState.value.errorMessage)
+
+            // Blank email check
+            viewModel.createAccount("John", "Doe", "", "password123")
+            advanceUntilIdle()
+            assertEquals("Email is required.", viewModel.uiState.value.errorMessage)
 
             // Invalid email check
             viewModel.createAccount("John", "Doe", "notanemail", "password123")
             advanceUntilIdle()
             assertEquals("Invalid email address format.", viewModel.uiState.value.errorMessage)
 
-            // Short password check (from policy)
+            // Empty password check
+            viewModel.createAccount("John", "Doe", "test@example.com", "")
+            advanceUntilIdle()
+            assertEquals("Password is required.", viewModel.uiState.value.errorMessage)
+
+            // Short password check
             viewModel.createAccount("John", "Doe", "test@example.com", "123")
             advanceUntilIdle()
             assertEquals("Password must be at least 8 characters.", viewModel.uiState.value.errorMessage)
@@ -326,6 +366,46 @@ class ProfileDomainTest {
             viewModel.clearMessages()
             assertNull(viewModel.uiState.value.errorMessage)
             assertNull(viewModel.uiState.value.successMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelLoginValidation() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authenticateUser = AuthenticateUser(authRepo, policy)
+            val verifyStudentEmail = VerifyStudentEmail(authRepo)
+            val manageProfile = ManageProfile(profileRepo)
+            val submitStudentReview = SubmitStudentReview(profileRepo, policy)
+
+            val viewModel = ProfileViewModel(
+                authenticateUser = authenticateUser,
+                verifyStudentEmail = verifyStudentEmail,
+                manageProfile = manageProfile,
+                submitStudentReview = submitStudentReview
+            )
+            advanceUntilIdle()
+
+            // Empty email check
+            viewModel.login("", "password123")
+            advanceUntilIdle()
+            assertEquals("Email is required.", viewModel.uiState.value.errorMessage)
+
+            // Invalid email check
+            viewModel.login("invalid-email", "password123")
+            advanceUntilIdle()
+            assertEquals("Invalid email address format.", viewModel.uiState.value.errorMessage)
+
+            // Empty password check
+            viewModel.login("john@example.com", "")
+            advanceUntilIdle()
+            assertEquals("Password is required.", viewModel.uiState.value.errorMessage)
         } finally {
             Dispatchers.resetMain()
         }

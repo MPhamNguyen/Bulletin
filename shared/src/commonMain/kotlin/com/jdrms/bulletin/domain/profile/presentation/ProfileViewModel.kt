@@ -12,8 +12,10 @@ import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,19 +59,18 @@ class ProfileViewModel(
         passwordStr: String,
         university: String = "CSU Long Beach"
     ) {
-        val trimmedFirstName = firstName.trim()
-        val trimmedLastName = lastName.trim()
-        val fullName = if (trimmedFirstName.isNotEmpty() && trimmedLastName.isNotEmpty()) {
-            "$trimmedFirstName $trimmedLastName"
-        } else {
-            trimmedFirstName.ifEmpty { trimmedLastName }
-        }
+        val trimmedFirst = firstName.trim()
+        val trimmedLast = lastName.trim()
+        val trimmedEmail = emailStr.trim()
 
-        val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()
-        if (studentEmail == null) {
-            _uiState.update { it.copy(errorMessage = "Invalid email address format.") }
+        val validationError = validateRegistrationInput(trimmedFirst, trimmedLast, trimmedEmail, passwordStr)
+        if (validationError != null) {
+            _uiState.update { it.copy(errorMessage = validationError) }
             return
         }
+
+        val studentEmail = StudentEmail(trimmedEmail)
+        val fullName = "$trimmedFirst $trimmedLast"
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
@@ -79,25 +80,45 @@ class ProfileViewModel(
                 fullName = fullName,
                 university = university
             )
-            when (result) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            profile = result.data,
-                            isAccountCreated = true,
-                            successMessage = "Account created successfully!",
-                            errorMessage = null
-                        )
-                    }
+            handleRegistrationResult(result)
+        }
+    }
+
+    private fun validateRegistrationInput(
+        first: String,
+        last: String,
+        email: String,
+        pass: String
+    ): String? = when {
+        first.isEmpty() -> "First name is required."
+        last.isEmpty() -> "Last name is required."
+        email.isEmpty() -> "Email is required."
+        !StudentEmail.isValid(email) -> "Invalid email address format."
+        pass.isEmpty() -> "Password is required."
+        pass.length < ProfileValidationPolicy.MIN_PASSWORD_LENGTH ->
+            "Password must be at least ${ProfileValidationPolicy.MIN_PASSWORD_LENGTH} characters."
+        else -> null
+    }
+
+    private fun handleRegistrationResult(result: Result<StudentProfile>) {
+        when (result) {
+            is Result.Success -> {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        profile = result.data,
+                        isAccountCreated = true,
+                        successMessage = "Account created successfully!",
+                        errorMessage = null
+                    )
                 }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = result.exception.message ?: "Failed to create account"
-                        )
-                    }
+            }
+            is Result.Error -> {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = result.exception.message ?: "Failed to create account"
+                    )
                 }
             }
         }
@@ -118,16 +139,15 @@ class ProfileViewModel(
     }
 
     fun login(emailStr: String, pass: String) {
-        if (emailStr.isBlank() || pass.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Email and password are required.") }
+        val trimmedEmail = emailStr.trim()
+        val validationError = validateLoginInput(trimmedEmail, pass)
+        if (validationError != null) {
+            _uiState.update { it.copy(errorMessage = validationError) }
             return
         }
+
         viewModelScope.launch {
-            val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()
-            if (studentEmail == null) {
-                _uiState.update { it.copy(errorMessage = "Invalid email format") }
-                return@launch
-            }
+            val studentEmail = StudentEmail(trimmedEmail)
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authenticateUser.login(studentEmail, pass)
             when (result) {
@@ -139,6 +159,13 @@ class ProfileViewModel(
                 }
             }
         }
+    }
+
+    private fun validateLoginInput(email: String, pass: String): String? = when {
+        email.isEmpty() -> "Email is required."
+        !StudentEmail.isValid(email) -> "Invalid email address format."
+        pass.isEmpty() -> "Password is required."
+        else -> null
     }
 
     fun verifyEmail(emailStr: String, code: String) {
