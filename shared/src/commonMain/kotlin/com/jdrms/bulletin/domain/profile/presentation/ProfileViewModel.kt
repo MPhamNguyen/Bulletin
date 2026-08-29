@@ -50,6 +50,84 @@ class ProfileViewModel(
         }
     }
 
+    fun createAccount(
+        firstName: String,
+        lastName: String,
+        emailStr: String,
+        passwordStr: String,
+        university: String = "CSU Long Beach"
+    ) {
+        val trimmedFirstName = firstName.trim()
+        val trimmedLastName = lastName.trim()
+        val trimmedEmail = emailStr.trim()
+        val fullName = if (trimmedFirstName.isNotEmpty() && trimmedLastName.isNotEmpty()) {
+            "$trimmedFirstName $trimmedLastName"
+        } else {
+            trimmedFirstName.ifEmpty { trimmedLastName }
+        }
+
+        if (trimmedFirstName.isEmpty() || trimmedLastName.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "First name and last name are required.") }
+            return
+        }
+
+        val studentEmail = runCatching { StudentEmail(trimmedEmail) }.getOrNull()
+        if (studentEmail == null) {
+            _uiState.update { it.copy(errorMessage = "Invalid email address format.") }
+            return
+        }
+
+        if (passwordStr.isBlank() || passwordStr.length < 6) {
+            _uiState.update { it.copy(errorMessage = "Password must be at least 6 characters.") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+            val result = authenticateUser.register(
+                email = studentEmail,
+                password = passwordStr,
+                fullName = fullName,
+                university = university
+            )
+            when (result) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            profile = result.data,
+                            isAccountCreated = true,
+                            successMessage = "Account created successfully!",
+                            errorMessage = null
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = result.exception.message ?: "Failed to create account"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun clearMessages() {
+        _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    }
+
+    fun resetRegistration() {
+        _uiState.update {
+            it.copy(
+                isAccountCreated = false,
+                successMessage = null,
+                errorMessage = null
+            )
+        }
+    }
+
     fun login(emailStr: String, pass: String) {
         viewModelScope.launch {
             val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()

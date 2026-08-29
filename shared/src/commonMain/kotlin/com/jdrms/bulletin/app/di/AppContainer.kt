@@ -24,21 +24,48 @@ import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
+import io.github.jan.supabase.SupabaseClient
 
 class AppContainer(
-    // Injection seam for future Supabase repositories
-    val supabaseConfig: SupabaseConfig = SupabaseConfig()
+    val supabaseConfig: SupabaseConfig = SupabaseConfig(),
+    private val isInspectionMode: Boolean = false,
 ) {
+    val supabaseClient: SupabaseClient? by lazy {
+        if (!isInspectionMode && supabaseConfig.isConfigured) {
+            supabaseConfig.createClient()
+        } else {
+            null
+        }
+    }
+
     // Repositories
     val homeRepository by lazy { InMemoryHomeRepository() }
     val marketplaceRepository by lazy { InMemoryMarketplaceRepository() }
     val listingsRepository by lazy { InMemoryListingsRepository() }
     val messagesRepository by lazy { InMemoryMessagesRepository() }
-    val profileRepository by lazy { InMemoryProfileRepository() }
-    val authRepository by lazy { InMemoryAuthRepository(profileRepository) }
+    val profileRepository: ProfileRepository by lazy {
+        val client = supabaseClient
+        if (client != null && !isInspectionMode) {
+            SupabaseProfileRepository(client)
+        } else {
+            InMemoryProfileRepository()
+        }
+    }
+    val authRepository: AuthRepository by lazy {
+        val client = supabaseClient
+        if (client != null && !isInspectionMode) {
+            SupabaseAuthRepository(client, profileRepository)
+        } else {
+            InMemoryAuthRepository(profileRepository)
+        }
+    }
 
     // Use Cases - Home
     val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }

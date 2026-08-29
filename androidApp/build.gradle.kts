@@ -19,6 +19,22 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
 
+fun readEnvProperty(key: String, defaultValue: String = ""): String {
+    val envFile = rootProject.file(".env")
+    if (envFile.exists()) {
+        envFile.readLines().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
+                val parts = trimmed.split("=", limit = 2)
+                if (parts[0].trim() == key) {
+                    return parts[1].trim().removeSurrounding("\"").removeSurrounding("'")
+                }
+            }
+        }
+    }
+    return System.getenv(key) ?: (project.findProperty(key) as? String) ?: defaultValue
+}
+
 android {
     namespace = "com.jdrms.bulletin"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -29,6 +45,17 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        val supabaseUrl = readEnvProperty("SUPABASE_URL", "")
+        val supabaseApiKey = readEnvProperty(
+            "SUPABASE_API_KEY",
+            readEnvProperty("SUPABASE_ANON_KEY", "")
+        )
+        val supabaseIsConnected = readEnvProperty("SUPABASE_IS_CONNECTED", "false").toBoolean()
+
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_API_KEY", "\"$supabaseApiKey\"")
+        buildConfigField("boolean", "SUPABASE_IS_CONNECTED", "$supabaseIsConnected")
     }
     packaging {
         resources {
@@ -50,5 +77,6 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }

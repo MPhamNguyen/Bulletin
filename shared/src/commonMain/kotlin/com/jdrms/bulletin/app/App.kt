@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.di.AppContainer
@@ -46,15 +47,18 @@ import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 
 @Composable
-fun App(appContainer: AppContainer = remember { AppContainer() }) {
+fun App(appContainer: AppContainer? = null) {
+    val isInspectionMode = LocalInspectionMode.current
+    val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
+
     BulletinTheme {
         var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
 
-        val homeViewModel = remember { appContainer.createHomeViewModel() }
-        val marketplaceViewModel = remember { appContainer.createMarketplaceViewModel() }
-        val listingsViewModel = remember { appContainer.createListingsViewModel() }
-        val messagesViewModel = remember { appContainer.createMessagesViewModel() }
-        val profileViewModel = remember { appContainer.createProfileViewModel() }
+        val homeViewModel = remember { container.createHomeViewModel() }
+        val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
+        val listingsViewModel = remember { container.createListingsViewModel() }
+        val messagesViewModel = remember { container.createMessagesViewModel() }
+        val profileViewModel = remember { container.createProfileViewModel() }
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,

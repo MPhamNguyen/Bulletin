@@ -87,13 +87,35 @@ class InMemoryAuthRepository(
     private val profileRepository: ProfileRepository = InMemoryProfileRepository()
 ) : AuthRepository {
 
+    private val credentials = mutableMapOf<String, String>()
+    private val profilesByEmail = mutableMapOf<String, StudentProfile>()
+
+    init {
+        val seedEmail = "dominic.alfonso@student.csulb.edu"
+        credentials[seedEmail] = "password123"
+    }
+
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
-        val defaultProfile = profileRepository.getProfile(UserId("current_student"))
-        return if (defaultProfile != null) {
-            Result.Success(defaultProfile)
-        } else {
-            Result.Error(IllegalArgumentException("Invalid credentials"))
+        val normalizedEmail = email.value.lowercase()
+        val storedPassword = credentials[normalizedEmail]
+
+        if (storedPassword != null && storedPassword == password) {
+            val userProfile = profilesByEmail[normalizedEmail]
+                ?: profileRepository.getProfile(UserId("current_student"))
+            if (userProfile != null) {
+                return Result.Success(userProfile)
+            }
         }
+
+        // Backward compatibility fallback for seed profile
+        if (normalizedEmail == "dominic.alfonso@student.csulb.edu") {
+            val defaultProfile = profileRepository.getProfile(UserId("current_student"))
+            if (defaultProfile != null) {
+                return Result.Success(defaultProfile)
+            }
+        }
+
+        return Result.Error(IllegalArgumentException("Invalid credentials"))
     }
 
     override suspend fun register(
@@ -102,14 +124,24 @@ class InMemoryAuthRepository(
         fullName: String,
         university: String
     ): Result<StudentProfile> {
+        val normalizedEmail = email.value.lowercase()
+        if (credentials.containsKey(normalizedEmail) && profilesByEmail.containsKey(normalizedEmail)) {
+            return Result.Error(IllegalArgumentException("An account with this email already exists."))
+        }
+
+        val generatedId = "user_${email.value.hashCode().toUInt() and 0x7FFFFFFFu}"
         val newProfile = StudentProfile(
-            id = UserId("user_${email.value.hashCode()}"),
+            id = UserId(generatedId),
             email = email,
             fullName = fullName,
             university = university,
-            isVerified = true
+            isVerified = false
         )
-        return profileRepository.updateProfile(newProfile)
+
+        credentials[normalizedEmail] = password
+        profilesByEmail[normalizedEmail] = newProfile
+        profileRepository.updateProfile(newProfile)
+        return Result.Success(newProfile)
     }
 
     override suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean> {

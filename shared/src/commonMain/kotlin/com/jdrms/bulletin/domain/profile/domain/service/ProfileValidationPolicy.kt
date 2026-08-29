@@ -7,6 +7,25 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 class ProfileValidationPolicy {
+    fun validateRegistration(
+        emailStr: String,
+        password: String,
+        fullName: String
+    ): Result<Unit> {
+        if (fullName.isBlank()) {
+            return Result.Error(IllegalArgumentException("Full name cannot be blank."))
+        }
+        if (!StudentEmail.isValid(emailStr)) {
+            return Result.Error(IllegalArgumentException("Invalid email address format."))
+        }
+        if (password.isBlank() || password.length < MIN_PASSWORD_LENGTH) {
+            return Result.Error(
+                IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters.")
+            )
+        }
+        return Result.Success(Unit)
+    }
+
     fun validateUniversityRegistration(emailStr: String): Result<Unit> {
         val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()
             ?: return Result.Error(IllegalArgumentException("Invalid email address format."))
@@ -39,5 +58,9 @@ class ProfileValidationPolicy {
             totalReviews = reviews.size,
             reviews = reviews
         )
+    }
+
+    companion object {
+        const val MIN_PASSWORD_LENGTH = 6
     }
 }

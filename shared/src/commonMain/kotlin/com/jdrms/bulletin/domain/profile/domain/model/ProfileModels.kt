@@ -10,13 +10,18 @@ value class ReviewId(val value: String)
 
 data class StudentEmail(val value: String) {
     init {
-        require(value.isNotBlank() && value.contains("@") && value.contains(".")) {
+        require(EMAIL_REGEX.matches(value.trim())) {
             "Invalid student email format: $value"
         }
     }
 
     val isUniversityEmail: Boolean
         get() = value.lowercase().endsWith(".edu")
+
+    companion object {
+        val EMAIL_REGEX = Regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
+        fun isValid(email: String): Boolean = EMAIL_REGEX.matches(email.trim())
+    }
 }
 
 data class Rating(val score: Int) {
