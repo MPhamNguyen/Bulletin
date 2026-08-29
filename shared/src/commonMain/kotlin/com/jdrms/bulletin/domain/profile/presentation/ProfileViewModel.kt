@@ -27,6 +27,7 @@ class ProfileViewModel(
     private val verifyStudentEmail: VerifyStudentEmail,
     private val manageProfile: ManageProfile,
     private val submitStudentReview: SubmitStudentReview,
+    private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student")
 ) : ViewModel() {
 
@@ -40,14 +41,27 @@ class ProfileViewModel(
     fun loadProfile(userId: UserId = defaultUserId) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val studentProfile = manageProfile.getProfile(userId)
-            val rep = manageProfile.getReputation(userId)
-            _uiState.update {
-                it.copy(
-                    profile = studentProfile,
-                    reputation = rep,
-                    isLoading = false
-                )
+            val profileResult = manageProfile.getProfile(userId)
+            when (profileResult) {
+                is Result.Success -> {
+                    val studentProfile = profileResult.data
+                    val rep = manageProfile.getReputation(userId)
+                    _uiState.update {
+                        it.copy(
+                            profile = studentProfile,
+                            reputation = rep,
+                            isLoading = false
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = profileResult.exception.message ?: "Failed to load profile"
+                        )
+                    }
+                }
             }
         }
     }
@@ -63,9 +77,14 @@ class ProfileViewModel(
         val trimmedLast = lastName.trim()
         val trimmedEmail = emailStr.trim()
 
-        val validationError = validateRegistrationInput(trimmedFirst, trimmedLast, trimmedEmail, passwordStr)
-        if (validationError != null) {
-            _uiState.update { it.copy(errorMessage = validationError) }
+        val validationResult = policy.validateRegistration(
+            firstName = trimmedFirst,
+            lastName = trimmedLast,
+            emailStr = trimmedEmail,
+            password = passwordStr
+        )
+        if (validationResult is Result.Error) {
+            _uiState.update { it.copy(errorMessage = validationResult.exception.message) }
             return
         }
 
@@ -82,22 +101,6 @@ class ProfileViewModel(
             )
             handleRegistrationResult(result)
         }
-    }
-
-    private fun validateRegistrationInput(
-        first: String,
-        last: String,
-        email: String,
-        pass: String
-    ): String? = when {
-        first.isEmpty() -> "First name is required."
-        last.isEmpty() -> "Last name is required."
-        email.isEmpty() -> "Email is required."
-        !StudentEmail.isValid(email) -> "Invalid email address format."
-        pass.isEmpty() -> "Password is required."
-        pass.length < ProfileValidationPolicy.MIN_PASSWORD_LENGTH ->
-            "Password must be at least ${ProfileValidationPolicy.MIN_PASSWORD_LENGTH} characters."
-        else -> null
     }
 
     private fun handleRegistrationResult(result: Result<StudentProfile>) {
@@ -140,9 +143,12 @@ class ProfileViewModel(
 
     fun login(emailStr: String, pass: String) {
         val trimmedEmail = emailStr.trim()
-        val validationError = validateLoginInput(trimmedEmail, pass)
-        if (validationError != null) {
-            _uiState.update { it.copy(errorMessage = validationError) }
+        val validationResult = policy.validateLogin(
+            emailStr = trimmedEmail,
+            password = pass
+        )
+        if (validationResult is Result.Error) {
+            _uiState.update { it.copy(errorMessage = validationResult.exception.message) }
             return
         }
 
@@ -159,13 +165,6 @@ class ProfileViewModel(
                 }
             }
         }
-    }
-
-    private fun validateLoginInput(email: String, pass: String): String? = when {
-        email.isEmpty() -> "Email is required."
-        !StudentEmail.isValid(email) -> "Invalid email address format."
-        pass.isEmpty() -> "Password is required."
-        else -> null
     }
 
     fun verifyEmail(emailStr: String, code: String) {

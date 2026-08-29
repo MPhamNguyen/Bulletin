@@ -36,10 +36,19 @@ import io.github.jan.supabase.SupabaseClient
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
+    private val allowInMemoryFallback: Boolean = true
 ) {
     val supabaseClient: SupabaseClient? by lazy {
         if (!isInspectionMode && supabaseConfig.isConfigured) {
-            runCatching { supabaseConfig.createClient() }.getOrNull()
+            runCatching {
+                supabaseConfig.createClient()
+            }.fold(
+                onSuccess = { it },
+                onFailure = { error ->
+                    println("Failed to initialize SupabaseClient: ${error.message}")
+                    null
+                }
+            )
         } else {
             null
         }
@@ -52,17 +61,23 @@ class AppContainer(
     val messagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
-        if (client != null && !isInspectionMode) {
+        if (client != null) {
             SupabaseProfileRepository(client)
         } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
             InMemoryProfileRepository()
         }
     }
     val authRepository: AuthRepository by lazy {
         val client = supabaseClient
-        if (client != null && !isInspectionMode) {
+        if (client != null) {
             SupabaseAuthRepository(client, profileRepository)
         } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
             InMemoryAuthRepository(profileRepository)
         }
     }

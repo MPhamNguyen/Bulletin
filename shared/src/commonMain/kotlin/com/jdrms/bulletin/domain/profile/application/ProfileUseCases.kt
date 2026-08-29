@@ -47,7 +47,7 @@ class VerifyStudentEmail(
 class ManageProfile(
     private val profileRepository: ProfileRepository
 ) {
-    suspend fun getProfile(userId: UserId): StudentProfile? {
+    suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
         return profileRepository.getProfile(userId)
     }
 

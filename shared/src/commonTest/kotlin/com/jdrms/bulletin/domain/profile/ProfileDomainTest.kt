@@ -138,21 +138,36 @@ class ProfileDomainTest {
     fun testStudentEmailTrimsWhitespaceAndPreservesEquality() {
         val email1 = StudentEmail("  dominic@csulb.edu  ")
         val email2 = StudentEmail("dominic@csulb.edu")
+        val emailUpper = StudentEmail("DOMINIC@CSULB.EDU")
         assertEquals("dominic@csulb.edu", email1.value)
         assertEquals(email1, email2)
+        assertEquals(email1, emailUpper)
         assertEquals(email1.hashCode(), email2.hashCode())
+        assertEquals(email1.hashCode(), emailUpper.hashCode())
     }
 
     @Test
-    fun testSeedAccountWrongPasswordFails() = runTest {
+    fun testAuthRepositoryWithExplicitCredentials() = runTest {
         val profileRepo = InMemoryProfileRepository()
-        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authRepo = InMemoryAuthRepository(
+            profileRepository = profileRepo,
+            initialCredentials = mapOf("dominic.alfonso@student.csulb.edu" to "password123")
+        )
         val email = StudentEmail("dominic.alfonso@student.csulb.edu")
         val loginResult = authRepo.login(email, "wrongPassword")
         assertTrue(loginResult.isError())
 
         val loginCorrect = authRepo.login(email, "password123")
         assertTrue(loginCorrect.isSuccess())
+    }
+
+    @Test
+    fun testAuthRepositoryWithoutCredentialsFailsByDefault() = runTest {
+        val profileRepo = InMemoryProfileRepository()
+        val authRepo = InMemoryAuthRepository(profileRepo) // empty credentials by default
+        val email = StudentEmail("dominic.alfonso@student.csulb.edu")
+        val loginResult = authRepo.login(email, "password123")
+        assertTrue(loginResult.isError())
     }
 
     @Test
@@ -446,5 +461,56 @@ class ProfileDomainTest {
             "Unable to connect to server. Please check your internet connection.",
             SupabaseAuthRepository.mapAuthErrorMessage(connectionError)
         )
+    }
+
+    @Test
+    fun testAppContainerRejectsInMemoryFallbackWhenDisabled() {
+        val container = com.jdrms.bulletin.app.di.AppContainer(
+            supabaseConfig = com.jdrms.bulletin.core.network.SupabaseConfig(isConnected = false),
+            isInspectionMode = false,
+            allowInMemoryFallback = false
+        )
+
+        assertFailsWith<IllegalStateException> {
+            container.profileRepository
+        }
+
+        assertFailsWith<IllegalStateException> {
+            container.authRepository
+        }
+    }
+
+    @Test
+    fun testProfileRepositoryGetProfileReturnsResult() = runTest {
+        val repo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val notFoundResult = repo.getProfile(UserId("nonexistent_user"))
+        assertTrue(notFoundResult is Result.Success)
+        assertNull(notFoundResult.data)
+
+        val newProfile = com.jdrms.bulletin.domain.profile.domain.model.StudentProfile(
+            id = UserId("u_100"),
+            email = StudentEmail("test@csulb.edu"),
+            fullName = "Test User"
+        )
+        repo.updateProfile(newProfile)
+
+        val foundResult = repo.getProfile(UserId("u_100"))
+        assertTrue(foundResult is Result.Success)
+        assertEquals("Test User", foundResult.data?.fullName)
+    }
+
+    @Test
+    fun testPolicyValidationMethods() {
+        val loginResult = policy.validateLogin("invalid-email", "pass")
+        assertTrue(loginResult.isError())
+        assertEquals("Invalid email address format.", (loginResult as Result.Error).exception.message)
+
+        val regFirstNameResult = policy.validateRegistration("", "Last", "test@csulb.edu", "password123")
+        assertTrue(regFirstNameResult.isError())
+        assertEquals("First name is required.", (regFirstNameResult as Result.Error).exception.message)
+
+        val regLastNameResult = policy.validateRegistration("First", "", "test@csulb.edu", "password123")
+        assertTrue(regLastNameResult.isError())
+        assertEquals("Last name is required.", (regLastNameResult as Result.Error).exception.message)
     }
 }

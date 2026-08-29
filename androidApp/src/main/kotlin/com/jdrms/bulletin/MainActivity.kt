@@ -25,7 +25,10 @@ class MainActivity : ComponentActivity() {
             SupabaseConfig()
         }
 
-        val appContainer = AppContainer(supabaseConfig = supabaseConfig)
+        val appContainer = AppContainer(
+            supabaseConfig = supabaseConfig,
+            allowInMemoryFallback = BuildConfig.DEBUG
+        )
 
         setContent {
             App(appContainer = appContainer)

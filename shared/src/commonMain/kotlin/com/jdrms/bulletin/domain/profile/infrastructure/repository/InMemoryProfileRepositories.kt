@@ -25,10 +25,10 @@ class InMemoryProfileRepository(
         entry.value.map { ProfileMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
 
-    override suspend fun getProfile(userId: UserId): StudentProfile? {
-        val baseProfile = profiles[userId.value] ?: return null
+    override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+        val baseProfile = profiles[userId.value] ?: return Result.Success(null)
         val rep = getReputation(userId)
-        return baseProfile.copy(reputation = rep)
+        return Result.Success(baseProfile.copy(reputation = rep))
     }
 
     override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
@@ -85,30 +85,29 @@ class InMemoryProfileRepository(
 }
 
 class InMemoryAuthRepository(
-    private val profileRepository: ProfileRepository = InMemoryProfileRepository()
+    private val profileRepository: ProfileRepository = InMemoryProfileRepository(),
+    initialCredentials: Map<String, String> = emptyMap()
 ) : AuthRepository {
 
-    private val credentials = mutableMapOf<String, String>()
+    private val credentials = initialCredentials.toMutableMap()
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
 
-    init {
-        val seedEmail = "dominic.alfonso@student.csulb.edu"
-        credentials[seedEmail] = "password123"
-    }
-
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
-        val normalizedEmail = email.value.lowercase()
+        val normalizedEmail = email.value
         val storedPassword = credentials[normalizedEmail]
 
         if (storedPassword != null && storedPassword == password) {
             val userProfile = profilesByEmail[normalizedEmail]
-                ?: profileRepository.getProfile(UserId("current_student"))
+                ?: when (val res = profileRepository.getProfile(UserId("current_student"))) {
+                    is Result.Success -> res.data
+                    is Result.Error -> null
+                }
             if (userProfile != null) {
                 return Result.Success(userProfile)
             }
         }
 
-        return Result.Error(IllegalArgumentException("Invalid credentials"))
+        return Result.Error(IllegalArgumentException("Invalid email or password. Please try again."))
     }
 
     override suspend fun register(

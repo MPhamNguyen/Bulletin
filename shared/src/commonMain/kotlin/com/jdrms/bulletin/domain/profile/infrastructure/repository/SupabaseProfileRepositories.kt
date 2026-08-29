@@ -26,7 +26,7 @@ class SupabaseProfileRepository(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy()
 ) : ProfileRepository {
 
-    override suspend fun getProfile(userId: UserId): StudentProfile? {
+    override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
         return runCatching {
             val dto = supabase.from(PROFILES_TABLE).select {
                 filter {
@@ -38,7 +38,10 @@ class SupabaseProfileRepository(
                 val reputation = getReputation(userId)
                 ProfileMapper.toDomain(it, reputation)
             }
-        }.getOrNull()
+        }.fold(
+            onSuccess = { Result.Success(it) },
+            onFailure = { Result.Error(it) }
+        )
     }
 
     override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
@@ -105,7 +108,8 @@ class SupabaseAuthRepository(
 
             val currentUser = supabase.auth.currentUserOrNull()
             val resolvedUserId = authUser?.id ?: currentUser?.id
-            val userId = UserId(resolvedUserId ?: "pending_confirmation")
+            val generatedFallbackId = "user_${email.value.hashCode().toUInt() and 0x7FFFFFFFu}"
+            val userId = UserId(resolvedUserId ?: generatedFallbackId)
 
             val newProfile = StudentProfile(
                 id = userId,
@@ -116,8 +120,9 @@ class SupabaseAuthRepository(
             )
 
             if (resolvedUserId != null) {
-                runCatching {
-                    profileRepository.updateProfile(newProfile)
+                val updateResult = profileRepository.updateProfile(newProfile)
+                if (updateResult is Result.Error) {
+                    throw updateResult.exception
                 }
             }
 
@@ -139,22 +144,38 @@ class SupabaseAuthRepository(
                 ?: error("Failed to retrieve authenticated user session.")
 
             val userId = UserId(currentUser.id)
-            val metadataName = (currentUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content
-            val metadataUniversity = (currentUser.userMetadata?.get("university") as? JsonPrimitive)?.content
+            val metadataName = (currentUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
+                it.isNotBlank()
+            }
+            val metadataUniversity = (currentUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
+                it.isNotBlank()
+            }
 
-            val existingProfile = profileRepository.getProfile(userId)
-            val profile = if (existingProfile != null) {
-                existingProfile
-            } else {
-                val newProfile = StudentProfile(
-                    id = userId,
-                    email = email,
-                    fullName = metadataName ?: "Student",
-                    university = metadataUniversity ?: "CSU Long Beach",
-                    isVerified = currentUser.emailConfirmedAt != null
-                )
-                runCatching { profileRepository.updateProfile(newProfile) }
-                newProfile
+            val profileResult = profileRepository.getProfile(userId)
+            val profile = when (profileResult) {
+                is Result.Success -> {
+                    if (profileResult.data != null) {
+                        profileResult.data
+                    } else {
+                        // Profile row does not exist in DB yet, create it with user metadata
+                        val newProfile = StudentProfile(
+                            id = userId,
+                            email = email,
+                            fullName = metadataName ?: "Student",
+                            university = metadataUniversity ?: "CSU Long Beach",
+                            isVerified = currentUser.emailConfirmedAt != null
+                        )
+                        val saveResult = profileRepository.updateProfile(newProfile)
+                        if (saveResult is Result.Error) {
+                            throw saveResult.exception
+                        }
+                        newProfile
+                    }
+                }
+                is Result.Error -> {
+                    // Propagate repository errors instead of silently overwriting existing profile data
+                    throw profileResult.exception
+                }
             }
 
             profile

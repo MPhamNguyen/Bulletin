@@ -8,17 +8,63 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 class ProfileValidationPolicy {
     fun validateRegistration(
+        firstName: String,
+        lastName: String,
+        emailStr: String,
+        password: String
+    ): Result<Unit> {
+        val trimmedFirst = firstName.trim()
+        val trimmedLast = lastName.trim()
+        val trimmedEmail = emailStr.trim()
+        val errorMessage = when {
+            trimmedFirst.isEmpty() -> "First name is required."
+            trimmedLast.isEmpty() -> "Last name is required."
+            trimmedEmail.isEmpty() -> "Email is required."
+            !StudentEmail.isValid(trimmedEmail) -> "Invalid email address format."
+            password.isEmpty() -> "Password is required."
+            password.length < MIN_PASSWORD_LENGTH ->
+                "Password must be at least $MIN_PASSWORD_LENGTH characters."
+            else -> null
+        }
+        return if (errorMessage != null) {
+            Result.Error(IllegalArgumentException(errorMessage))
+        } else {
+            Result.Success(Unit)
+        }
+    }
+
+    fun validateRegistration(
         emailStr: String,
         password: String,
         fullName: String
     ): Result<Unit> {
+        val trimmedName = fullName.trim()
+        val trimmedEmail = emailStr.trim()
         val errorMessage = when {
-            fullName.isBlank() -> "Full name is required."
-            emailStr.isBlank() -> "Email is required."
-            !StudentEmail.isValid(emailStr) -> "Invalid email address format."
-            password.isBlank() -> "Password is required."
+            trimmedName.isEmpty() -> "Full name is required."
+            trimmedEmail.isEmpty() -> "Email is required."
+            !StudentEmail.isValid(trimmedEmail) -> "Invalid email address format."
+            password.isEmpty() -> "Password is required."
             password.length < MIN_PASSWORD_LENGTH ->
                 "Password must be at least $MIN_PASSWORD_LENGTH characters."
+            else -> null
+        }
+        return if (errorMessage != null) {
+            Result.Error(IllegalArgumentException(errorMessage))
+        } else {
+            Result.Success(Unit)
+        }
+    }
+
+    fun validateLogin(
+        emailStr: String,
+        password: String
+    ): Result<Unit> {
+        val trimmedEmail = emailStr.trim()
+        val errorMessage = when {
+            trimmedEmail.isEmpty() -> "Email is required."
+            !StudentEmail.isValid(trimmedEmail) -> "Invalid email address format."
+            password.isEmpty() -> "Password is required."
             else -> null
         }
         return if (errorMessage != null) {
