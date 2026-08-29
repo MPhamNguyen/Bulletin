@@ -133,11 +133,11 @@ shared/src/commonMain/kotlin/com/jdrms/bulletin/
 ├── app/                  # Application composition, root Navigation, and manual DI (AppContainer)
 ├── core/                 # Shared technical concerns (common, designsystem, network, database)
 └── domain/               # Business domains (bounded contexts)
-    ├── identity/         # Authentication, Email Verification, Profiles
-    ├── marketplace/      # Listings, Categories, Search, Favorites
-    ├── messaging/        # Real-Time Chat, Inbox, Message Reporting
-    ├── reputation/       # Ratings, Reviews, Reputation Calculation
-    └── recommendations/  # Personalized Feed, Ranking Engine, User Preferences
+    ├── home/             # Personalized Feed, Ranking Engine, User Preferences
+    ├── marketplace/      # Marketplace Catalog, Search, Categories, Saved Items
+    ├── listings/         # Create, Post, Publish, and Manage Student Listings
+    ├── messages/         # Real-Time Chat, Inbox, Message Reporting
+    └── profile/          # Student Profile, Identity, .edu Verification, Reputation
 ```
 
 Each business domain adheres to a 4-layer structure:

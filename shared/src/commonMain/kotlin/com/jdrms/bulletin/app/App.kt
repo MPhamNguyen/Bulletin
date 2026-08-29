@@ -39,22 +39,22 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
-import com.jdrms.bulletin.domain.create_listings.presentation.ReputationScreen
-import com.jdrms.bulletin.domain.home.presentation.RecommendationsScreen
-import com.jdrms.bulletin.domain.inbox.presentation.MessagingScreen
+import com.jdrms.bulletin.domain.home.presentation.HomeScreen
+import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
-import com.jdrms.bulletin.domain.profile.presentation.IdentityScreen
+import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
+import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 
 @Composable
 fun App(appContainer: AppContainer = remember { AppContainer() }) {
     BulletinTheme {
-        var currentDestination by remember { mutableStateOf(AppDestination.MARKETPLACE) }
+        var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
 
-        val identityViewModel = remember { appContainer.createIdentityViewModel() }
+        val homeViewModel = remember { appContainer.createHomeViewModel() }
         val marketplaceViewModel = remember { appContainer.createMarketplaceViewModel() }
-        val messagingViewModel = remember { appContainer.createMessagingViewModel() }
-        val reputationViewModel = remember { appContainer.createReputationViewModel() }
-        val recommendationsViewModel = remember { appContainer.createRecommendationsViewModel() }
+        val listingsViewModel = remember { appContainer.createListingsViewModel() }
+        val messagesViewModel = remember { appContainer.createMessagesViewModel() }
+        val profileViewModel = remember { appContainer.createProfileViewModel() }
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -68,11 +68,11 @@ fun App(appContainer: AppContainer = remember { AppContainer() }) {
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                 when (currentDestination) {
-                    AppDestination.HOME -> RecommendationsScreen(recommendationsViewModel)
+                    AppDestination.HOME -> HomeScreen(homeViewModel)
                     AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
-                    AppDestination.CREATE_LISTING -> ReputationScreen(reputationViewModel)
-                    AppDestination.MESSAGING -> MessagingScreen(messagingViewModel)
-                    AppDestination.PROFILE -> IdentityScreen(identityViewModel)
+                    AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
+                    AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
+                    AppDestination.PROFILE -> ProfileScreen(profileViewModel)
                 }
             }
         }
@@ -106,7 +106,7 @@ fun BulletinBottomNavigationBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AppDestination.entries.forEach { destination ->
-                    if (destination == AppDestination.CREATE_LISTING) {
+                    if (destination == AppDestination.LISTINGS) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)

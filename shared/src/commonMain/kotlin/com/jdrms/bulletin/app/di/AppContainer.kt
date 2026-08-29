@@ -1,97 +1,98 @@
 package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.core.network.SupabaseConfig
-import com.jdrms.bulletin.domain.create_listings.application.GetStudentReputation
-import com.jdrms.bulletin.domain.create_listings.application.SubmitReview
-import com.jdrms.bulletin.domain.create_listings.infrastructure.repository.InMemoryReputationRepository
-import com.jdrms.bulletin.domain.create_listings.presentation.ReputationViewModel
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
-import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemoryRecommendationRepository
-import com.jdrms.bulletin.domain.home.presentation.RecommendationsViewModel
-import com.jdrms.bulletin.domain.inbox.application.GetConversations
-import com.jdrms.bulletin.domain.inbox.application.ReportMessage
-import com.jdrms.bulletin.domain.inbox.application.SendMessage
-import com.jdrms.bulletin.domain.inbox.infrastructure.repository.InMemoryMessagingRepository
-import com.jdrms.bulletin.domain.inbox.presentation.MessagingViewModel
-import com.jdrms.bulletin.domain.marketplace.application.CreateListing
-import com.jdrms.bulletin.domain.marketplace.application.ManageListing
-import com.jdrms.bulletin.domain.marketplace.application.SearchListings
-import com.jdrms.bulletin.domain.marketplace.application.ToggleFavorite
-import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingRepository
+import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemoryHomeRepository
+import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
+import com.jdrms.bulletin.domain.listings.application.CreateListing
+import com.jdrms.bulletin.domain.listings.application.GetSellerListings
+import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
+import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
+import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
+import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
+import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
+import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.ReportMessage
+import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
-import com.jdrms.bulletin.domain.profile.presentation.IdentityViewModel
+import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 
 class AppContainer(
-    // Injection seam for the future Supabase-backed repositories. The in-memory
-    // implementations below ignore it; swap them for Supabase*Repository impls when the
-    // KMP Supabase SDK is wired up.
+    // Injection seam for future Supabase repositories
     val supabaseConfig: SupabaseConfig = SupabaseConfig()
 ) {
-    // Repositories (in-memory development implementations)
-    val authRepository by lazy { InMemoryAuthRepository() }
+    // Repositories
+    val homeRepository by lazy { InMemoryHomeRepository() }
+    val marketplaceRepository by lazy { InMemoryMarketplaceRepository() }
+    val listingsRepository by lazy { InMemoryListingsRepository() }
+    val messagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository by lazy { InMemoryProfileRepository() }
-    val listingRepository by lazy { InMemoryListingRepository() }
-    val messagingRepository by lazy { InMemoryMessagingRepository() }
-    val reputationRepository by lazy { InMemoryReputationRepository() }
-    val recommendationRepository by lazy { InMemoryRecommendationRepository(listingRepository) }
+    val authRepository by lazy { InMemoryAuthRepository(profileRepository) }
 
-    // Use Cases - Identity
+    // Use Cases - Home
+    val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }
+    val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
+
+    // Use Cases - Marketplace
+    val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository) }
+    val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
+
+    // Use Cases - Listings
+    val createListing by lazy { CreateListing(listingsRepository) }
+    val manageListing by lazy { ManageListing(listingsRepository) }
+    val getSellerListings by lazy { GetSellerListings(listingsRepository) }
+
+    // Use Cases - Messages
+    val getConversations by lazy { GetConversations(messagesRepository) }
+    val getConversationMessages by lazy { GetConversationMessages(messagesRepository) }
+    val sendMessage by lazy { SendMessage(messagesRepository) }
+    val reportMessage by lazy { ReportMessage(messagesRepository) }
+
+    // Use Cases - Profile
     val authenticateUser by lazy { AuthenticateUser(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
     val manageProfile by lazy { ManageProfile(profileRepository) }
-
-    // Use Cases - Marketplace
-    val searchListings by lazy { SearchListings(listingRepository) }
-    val createListing by lazy { CreateListing(listingRepository) }
-    val manageListing by lazy { ManageListing(listingRepository) }
-    val toggleFavorite by lazy { ToggleFavorite(listingRepository) }
-
-    // Use Cases - Messaging
-    val getConversations by lazy { GetConversations(messagingRepository) }
-    val sendMessage by lazy { SendMessage(messagingRepository) }
-    val reportMessage by lazy { ReportMessage(messagingRepository) }
-
-    // Use Cases - Reputation
-    val getStudentReputation by lazy { GetStudentReputation(reputationRepository) }
-    val submitReview by lazy { SubmitReview(reputationRepository) }
-
-    // Use Cases - Recommendations
-    val getPersonalizedFeed by lazy { GetPersonalizedFeed(recommendationRepository) }
-    val updateUserPreferences by lazy { UpdateUserPreferences(recommendationRepository) }
+    val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
 
     // ViewModels
-    fun createIdentityViewModel() = IdentityViewModel(
-        authenticateUser = authenticateUser,
-        verifyStudentEmail = verifyStudentEmail,
-        manageProfile = manageProfile
+    fun createHomeViewModel() = HomeViewModel(
+        getPersonalizedFeed = getPersonalizedFeed,
+        updateUserPreferences = updateUserPreferences
     )
 
     fun createMarketplaceViewModel() = MarketplaceViewModel(
-        searchListings = searchListings,
-        createListing = createListing,
-        manageListing = manageListing,
-        toggleFavorite = toggleFavorite
+        searchMarketplace = searchMarketplace,
+        toggleSaveItem = toggleSaveMarketplaceItem
     )
 
-    fun createMessagingViewModel() = MessagingViewModel(
+    fun createListingsViewModel() = ListingsViewModel(
+        createListing = createListing,
+        manageListing = manageListing,
+        getSellerListings = getSellerListings
+    )
+
+    fun createMessagesViewModel() = MessagesViewModel(
         getConversations = getConversations,
+        getConversationMessages = getConversationMessages,
         sendMessage = sendMessage,
         reportMessage = reportMessage
     )
 
-    fun createReputationViewModel() = ReputationViewModel(
-        getStudentReputation = getStudentReputation,
-        submitReview = submitReview
-    )
-
-    fun createRecommendationsViewModel() = RecommendationsViewModel(
-        getPersonalizedFeed = getPersonalizedFeed,
-        updateUserPreferences = updateUserPreferences
+    fun createProfileViewModel() = ProfileViewModel(
+        authenticateUser = authenticateUser,
+        verifyStudentEmail = verifyStudentEmail,
+        manageProfile = manageProfile,
+        submitStudentReview = submitStudentReview
     )
 }
