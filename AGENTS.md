@@ -29,7 +29,7 @@ Do not edit or commit generated or machine-local content such as `build/`, `.gra
 
 ## Domain-driven design rules (mandatory)
 
-The current bounded contexts are `identity`, `marketplace`, `messaging`, `reputation`, and `recommendations`. Do not add a new context or move a concept between contexts without documenting its responsibility, language, ownership, and integrations.
+The current bounded contexts are `home`, `marketplace`, `listings`, `messages`, and `profile`. Do not add a new context or move a concept between contexts without documenting its responsibility, language, ownership, and integrations.
 
 Business code is organized by bounded context under `shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/`. Each context has four layers:
 

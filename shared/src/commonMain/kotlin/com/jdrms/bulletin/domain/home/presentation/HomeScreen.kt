@@ -1,4 +1,4 @@
-package com.jdrms.bulletin.domain.marketplace.presentation
+package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,12 +14,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.SectionHeader
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
+import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
+import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 
 @Composable
-fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
+fun HomeScreen(viewModel: HomeViewModel) {
     val state by viewModel.uiState.collectAsState()
+
+    val displayedItems = if (state.selectedCategory == null) {
+        state.feed
+    } else {
+        state.feed.filter { it.category == state.selectedCategory }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -27,18 +33,8 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
     ) {
         item {
             SectionHeader(
-                title = "Campus Marketplace",
-                subtitle = "Browse, search, & discover student items on campus"
-            )
-        }
-
-        item {
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = { viewModel.onSearchQueryChanged(it) },
-                label = { Text("Search listings...") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                title = "Campus Discovery",
+                subtitle = "Personalized feed & recommendations for CSU Long Beach"
             )
         }
 
@@ -47,14 +43,14 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                 item {
                     FilterChip(
                         selected = state.selectedCategory == null,
-                        onClick = { viewModel.onCategorySelected(null) },
-                        label = { Text("All") }
+                        onClick = { viewModel.onCategoryFilterSelected(null) },
+                        label = { Text("All For You") }
                     )
                 }
-                items(MarketplaceCategory.entries.toTypedArray()) { category ->
+                items(HomeFeedCategory.entries.toTypedArray()) { category ->
                     FilterChip(
                         selected = state.selectedCategory == category,
-                        onClick = { viewModel.onCategorySelected(category) },
+                        onClick = { viewModel.onCategoryFilterSelected(category) },
                         label = { Text(category.name) }
                     )
                 }
@@ -72,35 +68,14 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
             }
         }
 
-        if (state.items.isEmpty() && !state.isLoading) {
-            item {
-                BulletinCard {
-                    Text(
-                        text = "No marketplace listings found for your search.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        items(state.items) { item ->
-            val isSaved = state.savedItemIds.contains(item.id)
-            MarketplaceItemCard(
-                item = item,
-                isSaved = isSaved,
-                onToggleSaved = { viewModel.toggleSaved(item.id) }
-            )
+        items(displayedItems) { item ->
+            HomeItemCard(item = item)
         }
     }
 }
 
 @Composable
-private fun MarketplaceItemCard(
-    item: MarketplaceItem,
-    isSaved: Boolean,
-    onToggleSaved: () -> Unit
-) {
+private fun HomeItemCard(item: HomeFeedItem) {
     BulletinCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -122,30 +97,26 @@ private fun MarketplaceItemCard(
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Seller: ${item.sellerName} • Category: ${item.category.name}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = item.reason,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Text(
+                text = "Score: ${item.score.toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = item.description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            OutlinedButton(
-                onClick = onToggleSaved,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text(if (isSaved) "★ Saved" else "☆ Save")
-            }
-        }
     }
 }

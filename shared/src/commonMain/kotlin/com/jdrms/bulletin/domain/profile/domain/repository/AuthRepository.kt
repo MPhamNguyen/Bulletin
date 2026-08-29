@@ -1,19 +1,16 @@
 package com.jdrms.bulletin.domain.profile.domain.repository
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.profile.domain.model.Profile
-import com.jdrms.bulletin.domain.profile.domain.model.Session
-import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 interface AuthRepository {
-    suspend fun getCurrentSession(): Session?
-    suspend fun login(email: String, password: String): Result<Session>
-    suspend fun verifyEmail(email: String, code: String): Result<Boolean>
-    suspend fun logout(): Result<Unit>
-}
-
-interface ProfileRepository {
-    suspend fun getProfile(id: UserId): Profile?
-    suspend fun updateProfile(profile: Profile): Result<Profile>
-    suspend fun searchProfiles(query: String): List<Profile>
+    suspend fun login(email: StudentEmail, password: String): Result<StudentProfile>
+    suspend fun register(
+        email: StudentEmail,
+        password: String,
+        fullName: String,
+        university: String = "CSU Long Beach"
+    ): Result<StudentProfile>
+    suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean>
 }

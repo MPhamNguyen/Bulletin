@@ -13,101 +13,155 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Brand colors
-private val BulletinBlue = Color(0xFF365F78)
-private val BulletinBlueDark = Color(0xFF23465B)
-private val BulletinBlueLight = Color(0xFFD3E7F3)
+// ---------------------------------------------------------------------------
+// Core brand palette (as given):
+//   F5F5F5 — off-white, app background / light surfaces
+//   3E5C76 — mid navy-blue, primary actions (buttons, active states)
+//   0D1321 — near-black navy, primary text / dark-mode surface
+//   748CAB — muted slate-blue, secondary accents, borders, containers
+// ---------------------------------------------------------------------------
+private val PaletteOffWhite = Color(0xFFF5F5F5)
+private val PaletteMidBlue = Color(0xFF3E5C76)
+private val PaletteInk = Color(0xFF0D1321)
+private val PaletteSlateBlue = Color(0xFF748CAB)
 
-private val BulletinTeal = Color(0xFF0F766E)
-private val BulletinTealLight = Color(0xFFCCFBF1)
+// Derived tints/shades (not in the original 4, but needed to fill out a full
+// M3 scheme — each is a lightened/darkened step off one of the four core hues)
+private val MidBlueDark = Color(0xFF2C4457) // pressed/dark-mode primary
+private val MidBlueContainer = Color(0xFFDCE4EB) // light tint of 3E5C76
+private val SlateBlueContainer = Color(0xFFE7ECF2) // light tint of 748CAB
+private val SlateBlueDark = Color(0xFF56698A) // deepened 748CAB for dark mode
 
-private val BulletinGold = Color(0xFFF5B700)
-private val BulletinRed = Color(0xFFBA1A1A)
-
-// Neutral colors
-private val Ink = Color(0xFF17212B)
-private val Slate = Color(0xFF52606D)
-private val Border = Color(0xFFB8C5CE)
-private val AppBackground = Color(0xFFF7F9FB)
 private val CardBackground = Color(0xFFFFFFFF)
+private val BorderSubtle = Color(0xFFDDE2E8)
+
+// Gold and green aren't part of the 4-color palette but are still needed for
+// star ratings and success states (e.g. "Profile Updated") — kept muted/close
+// in value to 748CAB so they read as accents rather than a clashing 5th color.
+private val AccentGold = Color(0xFFFFD700)
+private val AccentGoldContainer = Color(0xFFF3E4BF)
+private val AccentSuccess = Color(0xFF4ADE80)
+private val AccentSuccessContainer = Color(0xFFDCEDE3)
+private val AccentError = Color(0xFFB3261E)
 
 private val LightColors = lightColorScheme(
-    primary = BulletinBlue,
-    onPrimary = Color.White,
-    primaryContainer = BulletinBlueLight,
-    onPrimaryContainer = BulletinBlueDark,
+    primary = PaletteMidBlue,
+    onPrimary = PaletteOffWhite,
+    primaryContainer = MidBlueContainer,
+    onPrimaryContainer = PaletteInk,
 
-    secondary = BulletinTeal,
+    secondary = PaletteSlateBlue,
     onSecondary = Color.White,
-    secondaryContainer = BulletinTealLight,
-    onSecondaryContainer = Color(0xFF00201D),
+    secondaryContainer = SlateBlueContainer,
+    onSecondaryContainer = PaletteInk,
 
-    tertiary = BulletinGold,
+    tertiary = AccentGold,
     onTertiary = Color(0xFF3D2F00),
-    tertiaryContainer = Color(0xFFFFE08A),
-    onTertiaryContainer = Color(0xFF251A00),
+    tertiaryContainer = AccentGoldContainer,
+    onTertiaryContainer = Color(0xFF3D2F00),
 
-    background = AppBackground,
-    onBackground = Ink,
+    background = PaletteOffWhite,
+    onBackground = PaletteInk,
 
     surface = CardBackground,
-    onSurface = Ink,
-    surfaceVariant = Color(0xFFE8EEF2),
-    onSurfaceVariant = Slate,
+    onSurface = PaletteInk,
+    surfaceVariant = Color(0xFFEFF1F4),
+    onSurfaceVariant = Color(0xFF4C5A6B),
 
-    outline = Border,
-    outlineVariant = Color(0xFFD8E0E5),
+    outline = BorderSubtle,
+    outlineVariant = Color(0xFFEAEDF1),
 
-    error = BulletinRed,
+    error = AccentError,
     onError = Color.White,
-    errorContainer = Color(0xFFFFDAD6),
-    onErrorContainer = Color(0xFF410002),
+    errorContainer = Color(0xFFF9DEDC),
+    onErrorContainer = Color(0xFF410E0B),
 
-    inverseSurface = Color(0xFF26323A),
-    inverseOnSurface = Color(0xFFEDF1F4),
-    inversePrimary = Color(0xFFA2CDE5),
+    inverseSurface = PaletteInk,
+    inverseOnSurface = PaletteOffWhite,
+    inversePrimary = PaletteSlateBlue,
 
     scrim = Color.Black
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFA2CDE5),
-    onPrimary = Color(0xFF003548),
-    primaryContainer = BulletinBlueDark,
-    onPrimaryContainer = Color(0xFFD3E7F3),
+    primary = PaletteSlateBlue,
+    onPrimary = PaletteInk,
+    primaryContainer = MidBlueDark,
+    onPrimaryContainer = SlateBlueContainer,
 
-    secondary = Color(0xFF7ED7CC),
-    onSecondary = Color(0xFF003733),
-    secondaryContainer = Color(0xFF00504A),
-    onSecondaryContainer = BulletinTealLight,
+    secondary = SlateBlueDark,
+    onSecondary = PaletteOffWhite,
+    secondaryContainer = Color(0xFF2C3A4E),
+    onSecondaryContainer = SlateBlueContainer,
 
-    tertiary = Color(0xFFFFD15C),
+    tertiary = Color(0xFFE0B85C),
     onTertiary = Color(0xFF402D00),
     tertiaryContainer = Color(0xFF5C4300),
-    onTertiaryContainer = Color(0xFFFFE08A),
+    onTertiaryContainer = AccentGoldContainer,
 
-    background = Color(0xFF101417),
-    onBackground = Color(0xFFE1E7EB),
+    background = PaletteInk,
+    onBackground = PaletteOffWhite,
 
-    surface = Color(0xFF171C20),
-    onSurface = Color(0xFFE1E7EB),
-    surfaceVariant = Color(0xFF3E484E),
-    onSurfaceVariant = Color(0xFFBEC8CE),
+    surface = Color(0xFF16202E),
+    onSurface = PaletteOffWhite,
+    surfaceVariant = Color(0xFF2C3A4E),
+    onSurfaceVariant = Color(0xFFBCC6D4),
 
-    outline = Color(0xFF899299),
-    outlineVariant = Color(0xFF3E484E),
+    outline = Color(0xFF5C6B80),
+    outlineVariant = Color(0xFF2C3A4E),
 
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF690005),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6)
+    error = Color(0xFFF2B8B5),
+    onError = Color(0xFF601410),
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Color(0xFFF9DEDC),
+
+    inverseSurface = PaletteOffWhite,
+    inverseOnSurface = PaletteInk,
+    inversePrimary = PaletteMidBlue,
+
+    scrim = Color.Black
 )
+
+// ---------------------------------------------------------------------------
+// Semantic "success" color — M3's ColorScheme has no success slot, so it's
+// provided as a small side-channel. Used for confirmation states like the
+// "Profile Updated" pill.
+// ---------------------------------------------------------------------------
+data class BulletinExtendedColors(
+    val success: Color,
+    val onSuccess: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color
+)
+
+private val LightExtendedColors = BulletinExtendedColors(
+    success = AccentSuccess,
+    onSuccess = Color.White,
+    successContainer = AccentSuccessContainer,
+    onSuccessContainer = Color(0xFF0F3D28)
+)
+
+private val DarkExtendedColors = BulletinExtendedColors(
+    success = Color(0xFF8FCBAE),
+    onSuccess = Color(0xFF0F3D28),
+    successContainer = Color(0xFF2A5B41),
+    onSuccessContainer = AccentSuccessContainer
+)
+
+val LocalBulletinExtendedColors = staticCompositionLocalOf { LightExtendedColors }
+
+object BulletinExtras {
+    val colors: BulletinExtendedColors
+        @Composable get() = LocalBulletinExtendedColors.current
+}
 
 private val BulletinTypography = Typography(
     displaySmall = TextStyle(
@@ -178,18 +232,26 @@ private val BulletinShapes = Shapes(
 object BulletinTextFieldDefaults {
     @Composable
     fun colors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = MaterialTheme.colorScheme.surface,
-        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         focusedBorderColor = MaterialTheme.colorScheme.primary,
         unfocusedBorderColor = MaterialTheme.colorScheme.outline
     )
 }
 
 object BulletinButtonDefaults {
+    // Primary CTAs (Sign in, Verify Email, Post Listing, Message Seller,
+    // Create Account, Update) use `primary` (3E5C76), not tertiary/gold.
     @Composable
     fun buttonColors(): ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = MaterialTheme.colorScheme.tertiary,
-        contentColor = MaterialTheme.colorScheme.onTertiary
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
+    )
+
+    @Composable
+    fun outlinedButtonColors(): ButtonColors = ButtonDefaults.outlinedButtonColors(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.primary
     )
 }
 
@@ -199,11 +261,16 @@ fun BulletinTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColors else LightColors
+    val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = BulletinTypography,
-        shapes = BulletinShapes,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalBulletinExtendedColors provides extendedColors
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = BulletinTypography,
+            shapes = BulletinShapes,
+            content = content
+        )
+    }
 }

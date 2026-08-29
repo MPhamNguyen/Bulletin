@@ -2,15 +2,10 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.generateUuid
-import com.jdrms.bulletin.domain.marketplace.application.CreateListing
-import com.jdrms.bulletin.domain.marketplace.application.ManageListing
-import com.jdrms.bulletin.domain.marketplace.application.SearchListings
-import com.jdrms.bulletin.domain.marketplace.application.ToggleFavorite
-import com.jdrms.bulletin.domain.marketplace.domain.model.*
-import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
+import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,111 +13,51 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MarketplaceViewModel(
-    private val searchListings: SearchListings,
-    private val createListing: CreateListing,
-    private val manageListing: ManageListing,
-    private val toggleFavorite: ToggleFavorite,
-    private val currentUserId: UserId = UserId("user_101")
+    private val searchMarketplace: SearchMarketplace,
+    private val toggleSaveItem: ToggleSaveMarketplaceItem
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
 
     init {
-        loadListings()
-        loadFavorites()
+        loadCatalog()
     }
 
-    fun loadListings() {
+    fun loadCatalog(userId: String = "student_user") {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val results = searchListings.search(_uiState.value.searchQuery, _uiState.value.selectedCategory)
-            _uiState.update { it.copy(listings = results, isLoading = false) }
-        }
-    }
-
-    fun loadFavorites() {
-        viewModelScope.launch {
-            val favs = toggleFavorite.getFavorites(currentUserId)
-            _uiState.update { it.copy(favoriteIds = favs.toSet()) }
+            val items = searchMarketplace.getCatalog()
+            val savedIds = toggleSaveItem.getSavedIds(userId)
+            _uiState.update { it.copy(items = items, savedItemIds = savedIds, isLoading = false) }
         }
     }
 
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-        loadListings()
+        applySearch()
     }
 
-    fun onCategorySelected(category: Category?) {
+    fun onCategorySelected(category: MarketplaceCategory?) {
         _uiState.update { it.copy(selectedCategory = category) }
-        loadListings()
+        applySearch()
     }
 
-    fun onListingSelected(listing: Listing?) {
-        _uiState.update { it.copy(selectedListing = listing) }
-    }
-
-    fun deleteListing(listingId: ListingId) {
+    private fun applySearch() {
         viewModelScope.launch {
-            when (val res = manageListing.deleteListing(listingId)) {
-                is Result.Success -> loadListings()
-                is Result.Error -> _uiState.update { it.copy(errorMessage = res.message) }
-            }
+            val query = _uiState.value.searchQuery
+            val category = _uiState.value.selectedCategory
+            val results = searchMarketplace.search(query, category)
+            _uiState.update { it.copy(items = results) }
         }
     }
 
-    fun onToggleFavorite(listingId: ListingId) {
+    fun toggleSaved(itemId: MarketplaceItemId, userId: String = "student_user") {
         viewModelScope.launch {
-            when (val res = toggleFavorite(currentUserId, listingId)) {
-                is Result.Success -> loadFavorites()
-                is Result.Error -> _uiState.update { it.copy(errorMessage = res.message) }
-            }
-        }
-    }
-
-    fun showCreateModal(show: Boolean) {
-        _uiState.update { it.copy(showCreateDialog = show) }
-    }
-
-    fun onNewTitleChanged(title: String) { _uiState.update { it.copy(newTitle = title) } }
-    fun onNewDescriptionChanged(desc: String) { _uiState.update { it.copy(newDescription = desc) } }
-    fun onNewPriceChanged(price: String) { _uiState.update { it.copy(newPrice = price) } }
-    fun onNewCategoryChanged(cat: Category) { _uiState.update { it.copy(newCategory = cat) } }
-
-    fun createNewListing() {
-        val title = _uiState.value.newTitle
-        val desc = _uiState.value.newDescription
-        val priceVal = _uiState.value.newPrice.toDoubleOrNull() ?: 0.0
-
-        val newListing = Listing(
-            id = ListingId("item_" + generateUuid()),
-            sellerId = SellerId(currentUserId.value),
-            sellerName = "Dominic Alfonso",
-            title = title,
-            description = desc,
-            price = Price(priceVal),
-            category = _uiState.value.newCategory,
-            createdAtMillis = currentTimeMillis()
-        )
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            when (val res = createListing(newListing)) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            showCreateDialog = false,
-                            newTitle = "",
-                            newDescription = "",
-                            newPrice = "",
-                            isLoading = false
-                        )
-                    }
-                    loadListings()
-                }
-                is Result.Error -> {
-                    _uiState.update { it.copy(errorMessage = res.message, isLoading = false) }
-                }
+            val result = toggleSaveItem(userId, itemId)
+            if (result.isSuccess()) {
+                val savedIds = toggleSaveItem.getSavedIds(userId)
+                _uiState.update { it.copy(savedItemIds = savedIds) }
             }
         }
     }

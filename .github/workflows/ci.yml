@@ -53,16 +53,16 @@ jobs:
               - 'shared/src/androidMain/**'
               - 'shared/src/androidHostTest/**'
               - 'shared/src/commonTest/kotlin/com/jdrms/bulletin/GreetingTest.kt'
-            identity:
-              - 'shared/src/**/domain/identity/**'
+            home:
+              - 'shared/src/**/domain/home/**'
             marketplace:
               - 'shared/src/**/domain/marketplace/**'
-            messaging:
-              - 'shared/src/**/domain/messaging/**'
-            recommendations:
-              - 'shared/src/**/domain/recommendations/**'
-            reputation:
-              - 'shared/src/**/domain/reputation/**'
+            listings:
+              - 'shared/src/**/domain/listings/**'
+            messages:
+              - 'shared/src/**/domain/messages/**'
+            profile:
+              - 'shared/src/**/domain/profile/**'
             androidApp:
               - 'androidApp/**'
 
@@ -75,9 +75,9 @@ jobs:
             GRADLE_TASKS=()
             TEST_FILTERS=()
 
-            if [ "${{ steps.filter.outputs.identity }}" = "true" ]; then
-              echo "Changes detected in Identity domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.identity.*")
+            if [ "${{ steps.filter.outputs.home }}" = "true" ]; then
+              echo "Changes detected in Home domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.home.*")
             fi
 
             if [ "${{ steps.filter.outputs.marketplace }}" = "true" ]; then
@@ -85,19 +85,19 @@ jobs:
               TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.marketplace.*")
             fi
 
-            if [ "${{ steps.filter.outputs.messaging }}" = "true" ]; then
-              echo "Changes detected in Messaging domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.messaging.*")
+            if [ "${{ steps.filter.outputs.listings }}" = "true" ]; then
+              echo "Changes detected in Listings domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.listings.*")
             fi
 
-            if [ "${{ steps.filter.outputs.recommendations }}" = "true" ]; then
-              echo "Changes detected in Recommendations domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.recommendations.*")
+            if [ "${{ steps.filter.outputs.messages }}" = "true" ]; then
+              echo "Changes detected in Messages domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.messages.*")
             fi
 
-            if [ "${{ steps.filter.outputs.reputation }}" = "true" ]; then
-              echo "Changes detected in Reputation domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.reputation.*")
+            if [ "${{ steps.filter.outputs.profile }}" = "true" ]; then
+              echo "Changes detected in Profile domain"
+              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.profile.*")
             fi
 
             if [ ${#TEST_FILTERS[@]} -gt 0 ]; then
