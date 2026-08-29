@@ -8,6 +8,10 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -32,7 +36,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Detect Changed Paths
-        if: github.event_name == 'push'
         uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -67,8 +70,8 @@ jobs:
 
       - name: Run Build and Tests
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ steps.filter.outputs.global }}" = "true" ]; then
-            echo "Running full build and check (pull request, manual trigger, or global/core changes)..."
+          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ steps.filter.outputs.global }}" = "true" ]; then
+            echo "Running full build and check (main branch merge/push, manual trigger, or global/core changes)..."
             ./gradlew check --no-daemon
           else
             GRADLE_TASKS=()
@@ -112,6 +115,6 @@ jobs:
               echo "Running targeted build tasks: ${GRADLE_TASKS[*]}"
               ./gradlew "${GRADLE_TASKS[@]}" --no-daemon
             else
-              echo "No application code changes detected on push. Skipping build."
+              echo "No application code changes detected. Skipping build."
             fi
           fi
