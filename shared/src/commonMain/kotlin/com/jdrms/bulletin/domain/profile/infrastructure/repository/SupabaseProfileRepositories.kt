@@ -124,7 +124,7 @@ class SupabaseAuthRepository(
             newProfile
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(it) }
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
         )
     }
 
@@ -160,7 +160,7 @@ class SupabaseAuthRepository(
             profile
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(it) }
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
         )
     }
 
@@ -174,7 +174,47 @@ class SupabaseAuthRepository(
             true
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(it) }
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
         )
+    }
+
+    companion object {
+        private val AUTH_ERROR_RULES = listOf(
+            listOf("user_already_exists", "user already registered") to
+                "An account with this email address already exists. Please log in instead.",
+            listOf("over_email_send_rate_limit", "email rate limit exceeded") to
+                "Too many signup attempts. Please wait a few minutes before trying again.",
+            listOf("invalid_credentials", "invalid login credentials") to
+                "Invalid email or password. Please try again.",
+            listOf("email_address_invalid", "invalid email") to
+                "Invalid email address. Please use a valid university or personal email domain.",
+            listOf("signup_disabled", "signups not allowed") to
+                "Account registration is currently disabled.",
+            listOf("email_not_confirmed") to
+                "Please verify your email address before logging in.",
+            listOf("unable to resolve host", "failed to connect", "timeout") to
+                "Unable to connect to server. Please check your internet connection."
+        )
+
+        fun mapAuthErrorMessage(throwable: Throwable): String {
+            val message = throwable.message ?: return "An unexpected authentication error occurred."
+            val lower = message.lowercase()
+
+            for ((patterns, mappedMessage) in AUTH_ERROR_RULES) {
+                if (patterns.any { lower.contains(it) }) {
+                    return mappedMessage
+                }
+            }
+
+            val firstLine = message.lines().firstOrNull()?.trim() ?: "Authentication failed."
+            val isTechnicalDump = firstLine.contains("http", ignoreCase = true) ||
+                firstLine.contains("header", ignoreCase = true)
+
+            return if (isTechnicalDump) {
+                "Authentication failed. Please check your details and try again."
+            } else {
+                firstLine
+            }
+        }
     }
 }

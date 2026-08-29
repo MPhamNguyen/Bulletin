@@ -15,6 +15,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -328,5 +329,42 @@ class ProfileDomainTest {
         } finally {
             Dispatchers.resetMain()
         }
+    }
+
+    @Test
+    fun testSupabaseAuthRepositoryErrorMapping() {
+        val userExistsError = Exception(
+            "user_already_exists (User already registered: user_already_exists)\n" +
+                "URL: https://example.supabase.co/auth/v1/signup\n" +
+                "Headers: [Authorization=[Bearer token123], apikey=[key123]]"
+        )
+        assertEquals(
+            "An account with this email address already exists. Please log in instead.",
+            SupabaseAuthRepository.mapAuthErrorMessage(userExistsError)
+        )
+
+        val rateLimitError = Exception("over_email_send_rate_limit (email rate limit exceeded)")
+        assertEquals(
+            "Too many signup attempts. Please wait a few minutes before trying again.",
+            SupabaseAuthRepository.mapAuthErrorMessage(rateLimitError)
+        )
+
+        val invalidCredentialsError = Exception("invalid_credentials (Invalid login credentials)")
+        assertEquals(
+            "Invalid email or password. Please try again.",
+            SupabaseAuthRepository.mapAuthErrorMessage(invalidCredentialsError)
+        )
+
+        val invalidEmailError = Exception("email_address_invalid (Email address is invalid)")
+        assertEquals(
+            "Invalid email address. Please use a valid university or personal email domain.",
+            SupabaseAuthRepository.mapAuthErrorMessage(invalidEmailError)
+        )
+
+        val connectionError = Exception("Failed to connect to host (timeout)")
+        assertEquals(
+            "Unable to connect to server. Please check your internet connection.",
+            SupabaseAuthRepository.mapAuthErrorMessage(connectionError)
+        )
     }
 }
