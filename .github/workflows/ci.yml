@@ -3,9 +3,6 @@ name: Build & Test
 on:
   push:
 
-  pull_request:
-    branches: ["main", "ci"]
-
   workflow_dispatch:
 
 concurrency:

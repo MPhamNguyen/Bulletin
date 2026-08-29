@@ -3,9 +3,6 @@ name: Scan with Detekt
 on:
   push:
 
-  pull_request:
-    branches: ["main", "ci"]
-
   schedule:
     - cron: "19 2 * * 6"
 
