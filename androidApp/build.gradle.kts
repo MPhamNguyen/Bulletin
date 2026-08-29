@@ -19,20 +19,36 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
 
-fun readEnvProperty(key: String, defaultValue: String = ""): String {
+fun parseEnvLine(line: String): Pair<String, String>? {
+    val trimmed = line.trim()
+    if (trimmed.isEmpty() || trimmed.startsWith("#") || !trimmed.contains("=")) {
+        return null
+    }
+    val parts = trimmed.split("=", limit = 2)
+    val key = parts[0].trim()
+    val value = parts[1].trim().removeSurrounding("\"").removeSurrounding("'")
+    return key to value
+}
+
+fun readPropertyFromEnvFile(key: String): String? {
     val envFile = rootProject.file(".env")
-    if (envFile.exists()) {
-        envFile.readLines().forEach { line ->
-            val trimmed = line.trim()
-            if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
-                val parts = trimmed.split("=", limit = 2)
-                if (parts[0].trim() == key) {
-                    return parts[1].trim().removeSurrounding("\"").removeSurrounding("'")
-                }
-            }
+    if (!envFile.exists()) {
+        return null
+    }
+    for (line in envFile.readLines()) {
+        val entry = parseEnvLine(line) ?: continue
+        if (entry.first == key) {
+            return entry.second
         }
     }
-    return System.getenv(key) ?: (project.findProperty(key) as? String) ?: defaultValue
+    return null
+}
+
+fun readEnvProperty(key: String, defaultValue: String = ""): String {
+    return readPropertyFromEnvFile(key)
+        ?: System.getenv(key)
+        ?: (project.findProperty(key) as? String)
+        ?: defaultValue
 }
 
 android {
