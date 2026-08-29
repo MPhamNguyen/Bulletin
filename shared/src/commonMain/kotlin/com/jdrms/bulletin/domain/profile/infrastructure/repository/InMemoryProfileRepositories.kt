@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
@@ -107,14 +108,6 @@ class InMemoryAuthRepository(
             }
         }
 
-        // Backward compatibility fallback for seed profile
-        if (normalizedEmail == "dominic.alfonso@student.csulb.edu") {
-            val defaultProfile = profileRepository.getProfile(UserId("current_student"))
-            if (defaultProfile != null) {
-                return Result.Success(defaultProfile)
-            }
-        }
-
         return Result.Error(IllegalArgumentException("Invalid credentials"))
     }
 
@@ -125,11 +118,11 @@ class InMemoryAuthRepository(
         university: String
     ): Result<StudentProfile> {
         val normalizedEmail = email.value.lowercase()
-        if (credentials.containsKey(normalizedEmail) && profilesByEmail.containsKey(normalizedEmail)) {
+        if (credentials.containsKey(normalizedEmail)) {
             return Result.Error(IllegalArgumentException("An account with this email already exists."))
         }
 
-        val generatedId = "user_${email.value.hashCode().toUInt() and 0x7FFFFFFFu}"
+        val generatedId = "user_${generateUuid().take(8)}"
         val newProfile = StudentProfile(
             id = UserId(generatedId),
             email = email,

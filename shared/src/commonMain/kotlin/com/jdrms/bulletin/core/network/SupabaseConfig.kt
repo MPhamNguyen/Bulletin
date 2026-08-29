@@ -6,19 +6,19 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 
 data class SupabaseConfig(
-    val url: String = "https://example.supabase.co",
-    val apiKey: String = "public-anon-key",
+    val url: String? = null,
+    val apiKey: String? = null,
     val isConnected: Boolean = false
 ) {
     val isConfigured: Boolean
-        get() = (isConnected || (!url.contains("example.supabase.co") && apiKey != "public-anon-key")) &&
-            url.isNotBlank() &&
-            apiKey.isNotBlank()
+        get() = isConnected && !url.isNullOrBlank() && !apiKey.isNullOrBlank()
 
     fun createClient(): SupabaseClient {
+        val resolvedUrl = checkNotNull(url) { "Supabase URL cannot be null when creating client." }
+        val resolvedKey = checkNotNull(apiKey) { "Supabase API key cannot be null when creating client." }
         return createSupabaseClient(
-            supabaseUrl = url,
-            supabaseKey = apiKey
+            supabaseUrl = resolvedUrl,
+            supabaseKey = resolvedKey
         ) {
             install(Auth)
             install(Postgrest)

@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
             SupabaseConfig(
                 url = BuildConfig.SUPABASE_URL,
                 apiKey = BuildConfig.SUPABASE_API_KEY,
-                isConnected = BuildConfig.SUPABASE_IS_CONNECTED || BuildConfig.SUPABASE_URL.isNotBlank()
+                isConnected = BuildConfig.SUPABASE_IS_CONNECTED
             )
         } else {
             SupabaseConfig()

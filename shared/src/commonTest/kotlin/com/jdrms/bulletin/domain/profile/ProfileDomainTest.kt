@@ -102,10 +102,31 @@ class ProfileDomainTest {
     fun testValidateRegistrationFailsForShortPassword() {
         val result = policy.validateRegistration(
             emailStr = "student@gmail.com",
-            password = "12345",
+            password = "1234567",
             fullName = "Jane Student"
         )
         assertTrue(result.isError())
+    }
+
+    @Test
+    fun testStudentEmailTrimsWhitespaceAndPreservesEquality() {
+        val email1 = StudentEmail("  dominic@csulb.edu  ")
+        val email2 = StudentEmail("dominic@csulb.edu")
+        assertEquals("dominic@csulb.edu", email1.value)
+        assertEquals(email1, email2)
+        assertEquals(email1.hashCode(), email2.hashCode())
+    }
+
+    @Test
+    fun testSeedAccountWrongPasswordFails() = runTest {
+        val profileRepo = InMemoryProfileRepository()
+        val authRepo = InMemoryAuthRepository(profileRepo)
+        val email = StudentEmail("dominic.alfonso@student.csulb.edu")
+        val loginResult = authRepo.login(email, "wrongPassword")
+        assertTrue(loginResult.isError())
+
+        val loginCorrect = authRepo.login(email, "password123")
+        assertTrue(loginCorrect.isSuccess())
     }
 
     @Test
@@ -274,17 +295,20 @@ class ProfileDomainTest {
             )
             advanceUntilIdle()
 
-            // Blank name check
+            // Blank name check (from policy)
             viewModel.createAccount("", "", "test@example.com", "password123")
-            assertEquals("First name and last name are required.", viewModel.uiState.value.errorMessage)
+            advanceUntilIdle()
+            assertEquals("Full name cannot be blank.", viewModel.uiState.value.errorMessage)
 
             // Invalid email check
             viewModel.createAccount("John", "Doe", "notanemail", "password123")
+            advanceUntilIdle()
             assertEquals("Invalid email address format.", viewModel.uiState.value.errorMessage)
 
-            // Short password check
+            // Short password check (from policy)
             viewModel.createAccount("John", "Doe", "test@example.com", "123")
-            assertEquals("Password must be at least 6 characters.", viewModel.uiState.value.errorMessage)
+            advanceUntilIdle()
+            assertEquals("Password must be at least 8 characters.", viewModel.uiState.value.errorMessage)
 
             // Successful account creation
             viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")

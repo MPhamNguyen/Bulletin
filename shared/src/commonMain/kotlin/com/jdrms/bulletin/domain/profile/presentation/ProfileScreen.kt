@@ -51,7 +51,10 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel) {
+fun ProfileScreen(
+    viewModel: ProfileViewModel,
+    onBack: () -> Unit = {}
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(
@@ -61,7 +64,10 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     ) {
         ProfileTopBar(
             title = if (uiState.isAccountCreated) "Profile" else "Sign Up",
-            onBackClick = { viewModel.clearMessages() }
+            onBackClick = {
+                viewModel.clearMessages()
+                onBack()
+            }
         )
 
         Column(
@@ -78,6 +84,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
             if (uiState.isAccountCreated && createdProfile != null) {
                 SignUpSuccessContent(
                     profile = createdProfile,
+                    successMessage = uiState.successMessage,
                     onRegisterAnother = { viewModel.resetRegistration() }
                 )
             } else {
@@ -153,6 +160,7 @@ private fun ProfileLogoHeader() {
 @Composable
 private fun SignUpSuccessContent(
     profile: StudentProfile,
+    successMessage: String?,
     onRegisterAnother: () -> Unit
 ) {
     Box(
@@ -166,7 +174,7 @@ private fun SignUpSuccessContent(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Account created successfully!",
+            text = successMessage ?: "Account created successfully!",
             style = MaterialTheme.typography.titleMedium,
             color = BulletinExtras.colors.onSuccessContainer,
             fontWeight = FontWeight.SemiBold
@@ -332,11 +340,7 @@ private fun SignUpFormContent(
     Spacer(modifier = Modifier.height(12.dp))
 
     OutlinedButton(
-        onClick = {
-            if (email.isNotBlank() && password.isNotBlank()) {
-                onLogin(email, password)
-            }
-        },
+        onClick = { onLogin(email, password) },
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),

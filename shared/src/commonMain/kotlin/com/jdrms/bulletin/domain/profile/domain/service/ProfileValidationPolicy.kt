@@ -61,6 +61,6 @@ class ProfileValidationPolicy {
     }
 
     companion object {
-        const val MIN_PASSWORD_LENGTH = 6
+        const val MIN_PASSWORD_LENGTH = 8
     }
 }

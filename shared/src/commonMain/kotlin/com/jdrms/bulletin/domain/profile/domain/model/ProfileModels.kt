@@ -8,9 +8,9 @@ value class UserId(val value: String)
 @JvmInline
 value class ReviewId(val value: String)
 
-data class StudentEmail(val value: String) {
+class StudentEmail private constructor(val value: String) {
     init {
-        require(EMAIL_REGEX.matches(value.trim())) {
+        require(EMAIL_REGEX.matches(value)) {
             "Invalid student email format: $value"
         }
     }
@@ -18,8 +18,13 @@ data class StudentEmail(val value: String) {
     val isUniversityEmail: Boolean
         get() = value.lowercase().endsWith(".edu")
 
+    override fun equals(other: Any?): Boolean = other is StudentEmail && value == other.value
+    override fun hashCode(): Int = value.hashCode()
+    override fun toString(): String = value
+
     companion object {
         val EMAIL_REGEX = Regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
+        operator fun invoke(email: String): StudentEmail = StudentEmail(email.trim())
         fun isValid(email: String): Boolean = EMAIL_REGEX.matches(email.trim())
     }
 }

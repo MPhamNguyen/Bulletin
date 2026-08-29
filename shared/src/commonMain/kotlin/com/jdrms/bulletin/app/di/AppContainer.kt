@@ -39,7 +39,7 @@ class AppContainer(
 ) {
     val supabaseClient: SupabaseClient? by lazy {
         if (!isInspectionMode && supabaseConfig.isConfigured) {
-            supabaseConfig.createClient()
+            runCatching { supabaseConfig.createClient() }.getOrNull()
         } else {
             null
         }

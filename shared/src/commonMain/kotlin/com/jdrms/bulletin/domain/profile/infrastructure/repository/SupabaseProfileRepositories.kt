@@ -104,10 +104,8 @@ class SupabaseAuthRepository(
             }
 
             val currentUser = supabase.auth.currentUserOrNull()
-            val resolvedUserId = authUser?.id
-                ?: currentUser?.id
-                ?: "user_${email.value.hashCode().toUInt() and 0x7FFFFFFFu}"
-            val userId = UserId(resolvedUserId)
+            val resolvedUserId = authUser?.id ?: currentUser?.id
+            val userId = UserId(resolvedUserId ?: "pending_confirmation")
 
             val newProfile = StudentProfile(
                 id = userId,
@@ -117,8 +115,10 @@ class SupabaseAuthRepository(
                 isVerified = false
             )
 
-            runCatching {
-                profileRepository.updateProfile(newProfile)
+            if (resolvedUserId != null) {
+                runCatching {
+                    profileRepository.updateProfile(newProfile)
+                }
             }
 
             newProfile
@@ -142,14 +142,20 @@ class SupabaseAuthRepository(
             val metadataName = (currentUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content
             val metadataUniversity = (currentUser.userMetadata?.get("university") as? JsonPrimitive)?.content
 
-            val profile = profileRepository.getProfile(userId)
-                ?: StudentProfile(
+            val existingProfile = profileRepository.getProfile(userId)
+            val profile = if (existingProfile != null) {
+                existingProfile
+            } else {
+                val newProfile = StudentProfile(
                     id = userId,
                     email = email,
                     fullName = metadataName ?: "Student",
                     university = metadataUniversity ?: "CSU Long Beach",
                     isVerified = currentUser.emailConfirmedAt != null
                 )
+                runCatching { profileRepository.updateProfile(newProfile) }
+                newProfile
+            }
 
             profile
         }.fold(

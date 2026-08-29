@@ -59,26 +59,15 @@ class ProfileViewModel(
     ) {
         val trimmedFirstName = firstName.trim()
         val trimmedLastName = lastName.trim()
-        val trimmedEmail = emailStr.trim()
         val fullName = if (trimmedFirstName.isNotEmpty() && trimmedLastName.isNotEmpty()) {
             "$trimmedFirstName $trimmedLastName"
         } else {
             trimmedFirstName.ifEmpty { trimmedLastName }
         }
 
-        if (trimmedFirstName.isEmpty() || trimmedLastName.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "First name and last name are required.") }
-            return
-        }
-
-        val studentEmail = runCatching { StudentEmail(trimmedEmail) }.getOrNull()
+        val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()
         if (studentEmail == null) {
             _uiState.update { it.copy(errorMessage = "Invalid email address format.") }
-            return
-        }
-
-        if (passwordStr.isBlank() || passwordStr.length < 6) {
-            _uiState.update { it.copy(errorMessage = "Password must be at least 6 characters.") }
             return
         }
 
@@ -129,19 +118,24 @@ class ProfileViewModel(
     }
 
     fun login(emailStr: String, pass: String) {
+        if (emailStr.isBlank() || pass.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Email and password are required.") }
+            return
+        }
         viewModelScope.launch {
             val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()
             if (studentEmail == null) {
                 _uiState.update { it.copy(errorMessage = "Invalid email format") }
                 return@launch
             }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authenticateUser.login(studentEmail, pass)
             when (result) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(profile = result.data) }
+                    _uiState.update { it.copy(isLoading = false, profile = result.data, errorMessage = null) }
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(errorMessage = result.exception.message) }
+                    _uiState.update { it.copy(isLoading = false, errorMessage = result.exception.message) }
                 }
             }
         }
