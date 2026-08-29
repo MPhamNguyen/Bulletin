@@ -1,10 +1,10 @@
 package com.jdrms.bulletin.app.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.ui.graphics.vector.ImageVector
 
