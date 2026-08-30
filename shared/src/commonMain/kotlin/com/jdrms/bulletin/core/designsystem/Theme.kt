@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.core.designsystem
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -235,7 +236,9 @@ object BulletinTextFieldDefaults {
         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         focusedBorderColor = MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
     )
 }
 
@@ -250,7 +253,18 @@ object BulletinButtonDefaults {
 
     @Composable
     fun outlinedButtonColors(): ButtonColors = ButtonDefaults.outlinedButtonColors(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary
+    )
+
+    @Composable
+    fun outlinedButtonBorder(): BorderStroke = BorderStroke(
+        width = 1.5.dp,
+        color = MaterialTheme.colorScheme.primary
+    )
+
+    @Composable
+    fun textButtonColors(): ButtonColors = ButtonDefaults.textButtonColors(
         contentColor = MaterialTheme.colorScheme.primary
     )
 }

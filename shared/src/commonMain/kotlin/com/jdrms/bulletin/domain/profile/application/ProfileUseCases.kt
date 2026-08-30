@@ -11,7 +11,8 @@ import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 
 class AuthenticateUser(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val policy: ProfileValidationPolicy = ProfileValidationPolicy()
 ) {
     suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
         return authRepository.login(email, password)
@@ -23,6 +24,14 @@ class AuthenticateUser(
         fullName: String,
         university: String = "CSU Long Beach"
     ): Result<StudentProfile> {
+        val validation = policy.validateRegistration(
+            emailStr = email.value,
+            password = password,
+            fullName = fullName
+        )
+        if (validation.isError()) {
+            return Result.Error((validation as Result.Error).exception)
+        }
         return authRepository.register(email, password, fullName, university)
     }
 }
@@ -38,7 +47,7 @@ class VerifyStudentEmail(
 class ManageProfile(
     private val profileRepository: ProfileRepository
 ) {
-    suspend fun getProfile(userId: UserId): StudentProfile? {
+    suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
         return profileRepository.getProfile(userId)
     }
 
