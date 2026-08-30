@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
@@ -24,10 +25,10 @@ class InMemoryProfileRepository(
         entry.value.map { ProfileMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
 
-    override suspend fun getProfile(userId: UserId): StudentProfile? {
-        val baseProfile = profiles[userId.value] ?: return null
+    override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+        val baseProfile = profiles[userId.value] ?: return Result.Success(null)
         val rep = getReputation(userId)
-        return baseProfile.copy(reputation = rep)
+        return Result.Success(baseProfile.copy(reputation = rep))
     }
 
     override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
@@ -84,16 +85,29 @@ class InMemoryProfileRepository(
 }
 
 class InMemoryAuthRepository(
-    private val profileRepository: ProfileRepository = InMemoryProfileRepository()
+    private val profileRepository: ProfileRepository = InMemoryProfileRepository(),
+    initialCredentials: Map<String, String> = emptyMap()
 ) : AuthRepository {
 
+    private val credentials = initialCredentials.toMutableMap()
+    private val profilesByEmail = mutableMapOf<String, StudentProfile>()
+
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
-        val defaultProfile = profileRepository.getProfile(UserId("current_student"))
-        return if (defaultProfile != null) {
-            Result.Success(defaultProfile)
-        } else {
-            Result.Error(IllegalArgumentException("Invalid credentials"))
+        val normalizedEmail = email.value
+        val storedPassword = credentials[normalizedEmail]
+
+        if (storedPassword != null && storedPassword == password) {
+            val userProfile = profilesByEmail[normalizedEmail]
+                ?: when (val res = profileRepository.getProfile(UserId("current_student"))) {
+                    is Result.Success -> res.data
+                    is Result.Error -> null
+                }
+            if (userProfile != null) {
+                return Result.Success(userProfile)
+            }
         }
+
+        return Result.Error(IllegalArgumentException("Invalid email or password. Please try again."))
     }
 
     override suspend fun register(
@@ -102,14 +116,24 @@ class InMemoryAuthRepository(
         fullName: String,
         university: String
     ): Result<StudentProfile> {
+        val normalizedEmail = email.value.lowercase()
+        if (credentials.containsKey(normalizedEmail)) {
+            return Result.Error(IllegalArgumentException("An account with this email already exists."))
+        }
+
+        val generatedId = "user_${generateUuid().take(8)}"
         val newProfile = StudentProfile(
-            id = UserId("user_${email.value.hashCode()}"),
+            id = UserId(generatedId),
             email = email,
             fullName = fullName,
             university = university,
-            isVerified = true
+            isVerified = false
         )
-        return profileRepository.updateProfile(newProfile)
+
+        credentials[normalizedEmail] = password
+        profilesByEmail[normalizedEmail] = newProfile
+        profileRepository.updateProfile(newProfile)
+        return Result.Success(newProfile)
     }
 
     override suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean> {

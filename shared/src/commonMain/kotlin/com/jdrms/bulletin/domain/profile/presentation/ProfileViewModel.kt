@@ -12,8 +12,10 @@ import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +27,7 @@ class ProfileViewModel(
     private val verifyStudentEmail: VerifyStudentEmail,
     private val manageProfile: ManageProfile,
     private val submitStudentReview: SubmitStudentReview,
+    private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student")
 ) : ViewModel() {
 
@@ -38,32 +41,127 @@ class ProfileViewModel(
     fun loadProfile(userId: UserId = defaultUserId) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val studentProfile = manageProfile.getProfile(userId)
-            val rep = manageProfile.getReputation(userId)
-            _uiState.update {
-                it.copy(
-                    profile = studentProfile,
-                    reputation = rep,
-                    isLoading = false
-                )
+            val profileResult = manageProfile.getProfile(userId)
+            when (profileResult) {
+                is Result.Success -> {
+                    val studentProfile = profileResult.data
+                    val rep = manageProfile.getReputation(userId)
+                    _uiState.update {
+                        it.copy(
+                            profile = studentProfile,
+                            reputation = rep,
+                            isLoading = false
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = profileResult.exception.message ?: "Failed to load profile"
+                        )
+                    }
+                }
             }
         }
     }
 
-    fun login(emailStr: String, pass: String) {
+    fun createAccount(
+        firstName: String,
+        lastName: String,
+        emailStr: String,
+        passwordStr: String,
+        university: String = "CSU Long Beach"
+    ) {
+        val trimmedFirst = firstName.trim()
+        val trimmedLast = lastName.trim()
+        val trimmedEmail = emailStr.trim()
+
+        val validationResult = policy.validateRegistration(
+            firstName = trimmedFirst,
+            lastName = trimmedLast,
+            emailStr = trimmedEmail,
+            password = passwordStr
+        )
+        if (validationResult is Result.Error) {
+            _uiState.update { it.copy(errorMessage = validationResult.exception.message) }
+            return
+        }
+
+        val studentEmail = StudentEmail(trimmedEmail)
+        val fullName = "$trimmedFirst $trimmedLast"
+
         viewModelScope.launch {
-            val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()
-            if (studentEmail == null) {
-                _uiState.update { it.copy(errorMessage = "Invalid email format") }
-                return@launch
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+            val result = authenticateUser.register(
+                email = studentEmail,
+                password = passwordStr,
+                fullName = fullName,
+                university = university
+            )
+            handleRegistrationResult(result)
+        }
+    }
+
+    private fun handleRegistrationResult(result: Result<StudentProfile>) {
+        when (result) {
+            is Result.Success -> {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        profile = result.data,
+                        isAccountCreated = true,
+                        successMessage = "Account created successfully!",
+                        errorMessage = null
+                    )
+                }
             }
+            is Result.Error -> {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = result.exception.message ?: "Failed to create account"
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearMessages() {
+        _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    }
+
+    fun resetRegistration() {
+        _uiState.update {
+            it.copy(
+                isAccountCreated = false,
+                successMessage = null,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun login(emailStr: String, pass: String) {
+        val trimmedEmail = emailStr.trim()
+        val validationResult = policy.validateLogin(
+            emailStr = trimmedEmail,
+            password = pass
+        )
+        if (validationResult is Result.Error) {
+            _uiState.update { it.copy(errorMessage = validationResult.exception.message) }
+            return
+        }
+
+        viewModelScope.launch {
+            val studentEmail = StudentEmail(trimmedEmail)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = authenticateUser.login(studentEmail, pass)
             when (result) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(profile = result.data) }
+                    _uiState.update { it.copy(isLoading = false, profile = result.data, errorMessage = null) }
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(errorMessage = result.exception.message) }
+                    _uiState.update { it.copy(isLoading = false, errorMessage = result.exception.message) }
                 }
             }
         }

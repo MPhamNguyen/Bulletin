@@ -24,21 +24,63 @@ import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
+import io.github.jan.supabase.SupabaseClient
 
 class AppContainer(
-    // Injection seam for future Supabase repositories
-    val supabaseConfig: SupabaseConfig = SupabaseConfig()
+    val supabaseConfig: SupabaseConfig = SupabaseConfig(),
+    private val isInspectionMode: Boolean = false,
+    private val allowInMemoryFallback: Boolean = true
 ) {
+    val supabaseClient: SupabaseClient? by lazy {
+        if (!isInspectionMode && supabaseConfig.isConfigured) {
+            runCatching {
+                supabaseConfig.createClient()
+            }.fold(
+                onSuccess = { it },
+                onFailure = { error ->
+                    println("Failed to initialize SupabaseClient: ${error.message}")
+                    null
+                }
+            )
+        } else {
+            null
+        }
+    }
+
     // Repositories
     val homeRepository by lazy { InMemoryHomeRepository() }
     val marketplaceRepository by lazy { InMemoryMarketplaceRepository() }
     val listingsRepository by lazy { InMemoryListingsRepository() }
     val messagesRepository by lazy { InMemoryMessagesRepository() }
-    val profileRepository by lazy { InMemoryProfileRepository() }
-    val authRepository by lazy { InMemoryAuthRepository(profileRepository) }
+    val profileRepository: ProfileRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseProfileRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryProfileRepository()
+        }
+    }
+    val authRepository: AuthRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseAuthRepository(client, profileRepository)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryAuthRepository(profileRepository)
+        }
+    }
 
     // Use Cases - Home
     val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }

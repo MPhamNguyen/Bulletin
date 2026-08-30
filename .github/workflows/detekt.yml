@@ -2,15 +2,15 @@ name: Scan with Detekt
 
 on:
   push:
-    branches: ["main", "ci"]
-
-  pull_request:
-    branches: ["main", "ci"]
 
   schedule:
     - cron: "19 2 * * 6"
 
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

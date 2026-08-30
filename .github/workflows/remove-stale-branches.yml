@@ -20,7 +20,6 @@ jobs:
         uses: fpicalausa/remove-stale-branches@v2.6.1
         with:
           dry-run: false
-
           days-before-branch-stale: 7
           days-before-branch-delete: 7
 

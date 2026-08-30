@@ -8,15 +8,32 @@ value class UserId(val value: String)
 @JvmInline
 value class ReviewId(val value: String)
 
-data class StudentEmail(val value: String) {
+class StudentEmail(raw: String) {
+    val value: String = raw.trim().lowercase()
+
     init {
-        require(value.isNotBlank() && value.contains("@") && value.contains(".")) {
-            "Invalid student email format: $value"
+        require(EMAIL_REGEX.matches(value)) {
+            "Invalid student email format: $raw"
         }
     }
 
     val isUniversityEmail: Boolean
-        get() = value.lowercase().endsWith(".edu")
+        get() = value.endsWith(".edu")
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is StudentEmail) return false
+        return value == other.value
+    }
+
+    override fun hashCode(): Int = value.hashCode()
+
+    override fun toString(): String = "StudentEmail(value=$value)"
+
+    companion object {
+        val EMAIL_REGEX = Regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
+        fun isValid(email: String): Boolean = EMAIL_REGEX.matches(email.trim())
+    }
 }
 
 data class Rating(val score: Int) {
