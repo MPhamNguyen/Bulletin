@@ -45,9 +45,17 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
+import com.jdrms.bulletin.domain.profile.presentation.SignInScreen
 
 @Composable
-fun App(appContainer: AppContainer? = null) {
+fun App(@Suppress("UNUSED_PARAMETER") appContainer: AppContainer? = null) {
+    BulletinTheme {
+        SignInScreen()
+    }
+}
+
+@Composable
+fun MainAppScaffold(appContainer: AppContainer? = null) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
 
