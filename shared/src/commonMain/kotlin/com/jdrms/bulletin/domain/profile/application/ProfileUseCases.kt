@@ -60,6 +60,23 @@ class ManageProfile(
     }
 }
 
+class UpdateStudentProfile(
+    private val profileRepository: ProfileRepository
+) {
+    suspend operator fun invoke(
+        profile: StudentProfile,
+        fullName: String,
+        major: String,
+        university: String,
+        bio: String
+    ): Result<StudentProfile> {
+        return when (val updatedProfile = profile.updateDetails(fullName, major, university, bio)) {
+            is Result.Success -> profileRepository.updateProfile(updatedProfile.data)
+            is Result.Error -> updatedProfile
+        }
+    }
+}
+
 class SubmitStudentReview(
     private val profileRepository: ProfileRepository,
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy()

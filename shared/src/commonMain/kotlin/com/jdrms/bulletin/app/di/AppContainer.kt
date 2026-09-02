@@ -23,6 +23,7 @@ import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
+import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
@@ -105,6 +106,7 @@ class AppContainer(
     val authenticateUser by lazy { AuthenticateUser(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
     val manageProfile by lazy { ManageProfile(profileRepository) }
+    val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
 
     // ViewModels
@@ -135,6 +137,7 @@ class AppContainer(
         authenticateUser = authenticateUser,
         verifyStudentEmail = verifyStudentEmail,
         manageProfile = manageProfile,
+        updateStudentProfile = updateStudentProfile,
         submitStudentReview = submitStudentReview
     )
 }

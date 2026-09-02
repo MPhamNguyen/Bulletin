@@ -4,10 +4,12 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
+import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
@@ -21,8 +23,10 @@ import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
@@ -258,6 +262,118 @@ class ProfileDomainTest {
     }
 
     @Test
+    fun testStudentProfileUpdatesEditableDetails() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "Original Name"
+        )
+
+        val result = profile.updateDetails(
+            fullName = "  John Doe  ",
+            major = "  Computer Science  ",
+            university = "  California State University - Long Beach  ",
+            bio = "  Campus seller and student.  "
+        )
+
+        assertTrue(result is Result.Success)
+        assertEquals("John Doe", result.data.fullName)
+        assertEquals("Computer Science", result.data.major)
+        assertEquals("California State University - Long Beach", result.data.university)
+        assertEquals("Campus seller and student.", result.data.bio)
+        assertEquals("Original Name", profile.fullName)
+    }
+
+    @Test
+    fun testStudentProfileRejectsInvalidEditableDetails() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "Original Name"
+        )
+
+        val blankName = profile.updateDetails(" ", "Computer Science", "CSULB", "Bio")
+        assertTrue(blankName is Result.Error)
+        assertEquals("Full name is required.", blankName.exception.message)
+
+        val blankSchool = profile.updateDetails("John Doe", "Computer Science", " ", "Bio")
+        assertTrue(blankSchool is Result.Error)
+        assertEquals("School is required.", blankSchool.exception.message)
+
+        val longBio = profile.updateDetails(
+            "John Doe",
+            "Computer Science",
+            "CSULB",
+            "x".repeat(StudentProfile.MAX_BIO_LENGTH + 1)
+        )
+        assertTrue(longBio is Result.Error)
+        assertEquals("Bio must be 500 characters or fewer.", longBio.exception.message)
+    }
+
+    @Test
+    fun testUpdateStudentProfilePersistsValidDetails() = runTest {
+        val repository = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "Original Name"
+        )
+        repository.updateProfile(profile)
+
+        val result = UpdateStudentProfile(repository)(
+            profile = profile,
+            fullName = "John Doe",
+            major = "Computer Science",
+            university = "CSULB",
+            bio = "Student bio"
+        )
+
+        assertTrue(result is Result.Success)
+        assertEquals("Computer Science", result.data.major)
+        val persisted = repository.getProfile(profile.id)
+        assertTrue(persisted is Result.Success)
+        assertEquals(result.data, persisted.data?.copy(reputation = null))
+    }
+
+    @Test
+    fun testUpdateStudentProfileDoesNotPersistInvalidDetails() = runTest {
+        val repository = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "Original Name"
+        )
+        repository.updateProfile(profile)
+
+        val result = UpdateStudentProfile(repository)(
+            profile = profile,
+            fullName = " ",
+            major = "Computer Science",
+            university = "CSULB",
+            bio = "Student bio"
+        )
+
+        assertTrue(result is Result.Error)
+        val persisted = repository.getProfile(profile.id)
+        assertTrue(persisted is Result.Success)
+        assertEquals("Original Name", persisted.data?.fullName)
+    }
+
+    @Test
+    fun testProfileMapperPreservesMajor() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "John Doe",
+            major = "Computer Science"
+        )
+
+        val dto = ProfileMapper.toDto(profile)
+        assertEquals("Computer Science", dto.major)
+        assertEquals(profile, ProfileMapper.toDomain(dto))
+    }
+
+    @Test
     fun testInMemoryAuthRepositoryRegisterAndLogin() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
         val authRepo = InMemoryAuthRepository(profileRepo)
@@ -327,12 +443,14 @@ class ProfileDomainTest {
             val authenticateUser = AuthenticateUser(authRepo, policy)
             val verifyStudentEmail = VerifyStudentEmail(authRepo)
             val manageProfile = ManageProfile(profileRepo)
+            val updateStudentProfile = UpdateStudentProfile(profileRepo)
             val submitStudentReview = SubmitStudentReview(profileRepo, policy)
 
             val viewModel = ProfileViewModel(
                 authenticateUser = authenticateUser,
                 verifyStudentEmail = verifyStudentEmail,
                 manageProfile = manageProfile,
+                updateStudentProfile = updateStudentProfile,
                 submitStudentReview = submitStudentReview
             )
             advanceUntilIdle()
@@ -369,7 +487,7 @@ class ProfileDomainTest {
 
             // Successful account creation
             viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")
-            advanceUntilIdle()
+            runCurrent()
 
             val state = viewModel.uiState.value
             assertTrue(state.isAccountCreated)
@@ -377,11 +495,76 @@ class ProfileDomainTest {
             assertNull(state.errorMessage)
             assertNotNull(state.profile)
             assertEquals("John Doe", state.profile.fullName)
+            assertEquals("John Doe", state.profileDraft.fullName)
 
-            // Clear messages
-            viewModel.clearMessages()
+            advanceTimeBy(ProfileViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
+            runCurrent()
             assertNull(viewModel.uiState.value.errorMessage)
             assertNull(viewModel.uiState.value.successMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelUpdatesAndResetsProfileDraft() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = ProfileViewModel(
+                authenticateUser = AuthenticateUser(authRepo, policy),
+                verifyStudentEmail = VerifyStudentEmail(authRepo),
+                manageProfile = ManageProfile(profileRepo),
+                updateStudentProfile = UpdateStudentProfile(profileRepo),
+                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+            )
+            advanceUntilIdle()
+            viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isProfileModified)
+
+            viewModel.onProfileDraftChanged(
+                viewModel.uiState.value.profileDraft.copy(
+                    fullName = "Jane Doe",
+                    major = "Computer Science",
+                    university = "California State University - Long Beach",
+                    bio = "Campus student"
+                )
+            )
+            assertTrue(viewModel.uiState.value.isProfileModified)
+
+            viewModel.updateProfileDetails()
+            runCurrent()
+
+            val updatedState = viewModel.uiState.value
+            assertFalse(updatedState.isProfileModified)
+            assertEquals("Jane Doe", updatedState.profile?.fullName)
+            assertEquals("Computer Science", updatedState.profile?.major)
+            assertEquals("Profile updated", updatedState.successMessage)
+
+            advanceTimeBy(ProfileViewModel.FLASH_NOTIFICATION_DURATION_MILLIS - 1)
+            runCurrent()
+            assertEquals("Profile updated", viewModel.uiState.value.successMessage)
+            advanceTimeBy(1)
+            runCurrent()
+            assertNull(viewModel.uiState.value.successMessage)
+
+            viewModel.onProfileDraftChanged(updatedState.profileDraft.copy(fullName = "Unsaved Name"))
+            assertTrue(viewModel.uiState.value.isProfileModified)
+
+            viewModel.resetProfileDraft()
+            assertFalse(viewModel.uiState.value.isProfileModified)
+            assertEquals("Jane Doe", viewModel.uiState.value.profileDraft.fullName)
+
+            viewModel.onProfileDraftChanged(viewModel.uiState.value.profileDraft.copy(fullName = " "))
+            assertTrue(viewModel.uiState.value.isProfileModified)
+            viewModel.updateProfileDetails()
+            advanceUntilIdle()
+            assertEquals("Full name is required.", viewModel.uiState.value.errorMessage)
+            assertEquals("Jane Doe", viewModel.uiState.value.profile?.fullName)
         } finally {
             Dispatchers.resetMain()
         }
@@ -398,12 +581,14 @@ class ProfileDomainTest {
             val authenticateUser = AuthenticateUser(authRepo, policy)
             val verifyStudentEmail = VerifyStudentEmail(authRepo)
             val manageProfile = ManageProfile(profileRepo)
+            val updateStudentProfile = UpdateStudentProfile(profileRepo)
             val submitStudentReview = SubmitStudentReview(profileRepo, policy)
 
             val viewModel = ProfileViewModel(
                 authenticateUser = authenticateUser,
                 verifyStudentEmail = verifyStudentEmail,
                 manageProfile = manageProfile,
+                updateStudentProfile = updateStudentProfile,
                 submitStudentReview = submitStudentReview
             )
             advanceUntilIdle()

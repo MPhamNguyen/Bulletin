@@ -53,6 +53,7 @@ class InMemoryProfileRepository(
                 id = "current_student",
                 email = "dominic.alfonso@student.csulb.edu",
                 fullName = "Dominic Alfonso",
+                major = "Computer Science",
                 university = "CSU Long Beach",
                 bio = "Senior Computer Science student @ CSULB. Buying and selling tech & textbooks.",
                 isVerified = true

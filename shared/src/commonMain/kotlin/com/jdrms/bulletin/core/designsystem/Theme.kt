@@ -50,7 +50,7 @@ private val BorderSubtle = Color(0xFFDDE2E8)
 private val AccentGold = Color(0xFFFFD700)
 private val AccentGoldContainer = Color(0xFFF3E4BF)
 private val AccentSuccess = Color(0xFF4ADE80)
-private val AccentSuccessContainer = Color(0xFFDCEDE3)
+private val ModalDarkBackground = Color(0xFF1E293B)
 private val AccentError = Color(0xFFB3261E)
 
 private val LightColors = lightColorScheme(
@@ -146,15 +146,15 @@ data class BulletinExtendedColors(
 private val LightExtendedColors = BulletinExtendedColors(
     success = AccentSuccess,
     onSuccess = Color.White,
-    successContainer = AccentSuccessContainer,
-    onSuccessContainer = Color(0xFF0F3D28)
+    successContainer = ModalDarkBackground,
+    onSuccessContainer = PaletteOffWhite
 )
 
 private val DarkExtendedColors = BulletinExtendedColors(
     success = Color(0xFF8FCBAE),
     onSuccess = Color(0xFF0F3D28),
-    successContainer = Color(0xFF2A5B41),
-    onSuccessContainer = AccentSuccessContainer
+    successContainer = ModalDarkBackground,
+    onSuccessContainer = PaletteOffWhite
 )
 
 val LocalBulletinExtendedColors = staticCompositionLocalOf { LightExtendedColors }
@@ -242,6 +242,16 @@ object BulletinTextFieldDefaults {
     )
 }
 
+object BulletinInactiveButtonDefaults {
+    @Composable
+    fun colors(): ButtonColors = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        contentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
+        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+    )
+}
+
 object BulletinButtonDefaults {
     // Primary CTAs (Sign in, Verify Email, Post Listing, Message Seller,
     // Create Account, Update) use `primary` (3E5C76), not tertiary/gold.
@@ -250,6 +260,9 @@ object BulletinButtonDefaults {
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary
     )
+
+    @Composable
+    fun inactiveButtonColors(): ButtonColors = BulletinInactiveButtonDefaults.colors()
 
     @Composable
     fun outlinedButtonColors(): ButtonColors = ButtonDefaults.outlinedButtonColors(

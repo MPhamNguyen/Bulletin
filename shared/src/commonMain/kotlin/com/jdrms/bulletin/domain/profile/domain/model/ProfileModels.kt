@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.profile.domain.model
 
+import com.jdrms.bulletin.core.common.Result
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -67,8 +68,43 @@ data class StudentProfile(
     val id: UserId,
     val email: StudentEmail,
     val fullName: String,
+    val major: String = "",
     val university: String = "CSU Long Beach",
     val bio: String = "",
     val isVerified: Boolean = false,
     val reputation: StudentReputation? = null
-)
+) {
+    fun updateDetails(
+        fullName: String,
+        major: String,
+        university: String,
+        bio: String
+    ): Result<StudentProfile> {
+        val normalizedName = fullName.trim()
+        val normalizedUniversity = university.trim()
+        val normalizedBio = bio.trim()
+
+        if (normalizedName.isBlank()) {
+            return Result.Error(IllegalArgumentException("Full name is required."))
+        }
+        if (normalizedUniversity.isBlank()) {
+            return Result.Error(IllegalArgumentException("School is required."))
+        }
+        if (normalizedBio.length > MAX_BIO_LENGTH) {
+            return Result.Error(IllegalArgumentException("Bio must be $MAX_BIO_LENGTH characters or fewer."))
+        }
+
+        return Result.Success(
+            copy(
+                fullName = normalizedName,
+                major = major.trim(),
+                university = normalizedUniversity,
+                bio = normalizedBio
+            )
+        )
+    }
+
+    companion object {
+        const val MAX_BIO_LENGTH = 500
+    }
+}

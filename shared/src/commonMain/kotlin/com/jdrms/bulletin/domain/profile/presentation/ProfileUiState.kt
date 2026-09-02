@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
 data class ProfileUiState(
     val profile: StudentProfile? = null,
+    val profileDraft: ProfileDraft = ProfileDraft(),
     val reputation: StudentReputation? = null,
     val showReviewDialog: Boolean = false,
     val newScore: Int = 5,
@@ -13,4 +14,25 @@ data class ProfileUiState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false
-)
+) {
+    val isProfileModified: Boolean
+        get() = profile != null && ProfileDraft.from(profile) != profileDraft
+}
+
+data class ProfileDraft(
+    val fullName: String = "",
+    val major: String = "",
+    val university: String = "",
+    val bio: String = ""
+) {
+    companion object {
+        fun from(profile: StudentProfile): ProfileDraft {
+            return ProfileDraft(
+                fullName = profile.fullName,
+                major = profile.major,
+                university = profile.university,
+                bio = profile.bio
+            )
+        }
+    }
+}

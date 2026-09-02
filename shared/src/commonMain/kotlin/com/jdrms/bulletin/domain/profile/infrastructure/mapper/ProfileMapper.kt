@@ -16,6 +16,7 @@ object ProfileMapper {
             id = UserId(dto.id),
             email = StudentEmail(dto.email),
             fullName = dto.fullName,
+            major = dto.major,
             university = dto.university,
             bio = dto.bio,
             isVerified = dto.isVerified,
@@ -28,6 +29,7 @@ object ProfileMapper {
             id = domain.id.value,
             email = domain.email.value,
             fullName = domain.fullName,
+            major = domain.major,
             university = domain.university,
             bio = domain.bio,
             isVerified = domain.isVerified

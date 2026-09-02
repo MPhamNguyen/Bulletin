@@ -8,6 +8,7 @@ data class ProfileDto(
     @SerialName("id") val id: String,
     @SerialName("email") val email: String,
     @SerialName("full_name") val fullName: String,
+    @SerialName("major") val major: String = "",
     @SerialName("university") val university: String,
     @SerialName("bio") val bio: String = "",
     @SerialName("is_verified") val isVerified: Boolean = false
