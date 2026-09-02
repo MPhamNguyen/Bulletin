@@ -24,6 +24,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -37,14 +41,21 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun SignInScreen(
-    email: String = "",
-    password: String = "",
-    onEmailChange: (String) -> Unit = {},
-    onPasswordChange: (String) -> Unit = {},
+    email: String? = null,
+    password: String? = null,
+    onEmailChange: ((String) -> Unit)? = null,
+    onPasswordChange: ((String) -> Unit)? = null,
     onSignIn: () -> Unit = {},
     onForgotPassword: () -> Unit = {},
     onCreateAccount: () -> Unit = {}
 ) {
+    var localEmail by remember { mutableStateOf("") }
+    var localPassword by remember { mutableStateOf("") }
+
+    val currentEmail = email ?: localEmail
+    val currentPassword = password ?: localPassword
+    val handleEmailChange = onEmailChange ?: { localEmail = it }
+    val handlePasswordChange = onPasswordChange ?: { localPassword = it }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -87,8 +98,8 @@ fun SignInScreen(
             SignInFieldLabel(text = "Email")
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
-                value = email,
-                onValueChange = onEmailChange,
+                value = currentEmail,
+                onValueChange = handleEmailChange,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("you@university.edu") },
                 singleLine = true,
@@ -101,8 +112,8 @@ fun SignInScreen(
             SignInFieldLabel(text = "Password")
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
-                value = password,
-                onValueChange = onPasswordChange,
+                value = currentPassword,
+                onValueChange = handlePasswordChange,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Enter your password") },
                 singleLine = true,

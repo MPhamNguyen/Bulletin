@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
+import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
@@ -48,9 +49,41 @@ import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 import com.jdrms.bulletin.domain.profile.presentation.SignInScreen
 
 @Composable
-fun App(@Suppress("UNUSED_PARAMETER") appContainer: AppContainer? = null) {
+fun App(appContainer: AppContainer? = null) {
+    val isInspectionMode = LocalInspectionMode.current
+    val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
+
     BulletinTheme {
-        SignInScreen()
+        var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
+        val profileViewModel = remember { container.createProfileViewModel() }
+
+        when (currentRootScreen) {
+            AppRootScreen.SIGN_IN -> {
+                SignInScreen(
+                    onSignIn = {
+                        currentRootScreen = AppRootScreen.MAIN
+                    },
+                    onCreateAccount = {
+                        profileViewModel.resetRegistration()
+                        currentRootScreen = AppRootScreen.CREATE_PROFILE
+                    }
+                )
+            }
+            AppRootScreen.CREATE_PROFILE -> {
+                ProfileScreen(
+                    viewModel = profileViewModel,
+                    onBack = {
+                        currentRootScreen = AppRootScreen.SIGN_IN
+                    },
+                    onNavigateToSignIn = {
+                        currentRootScreen = AppRootScreen.SIGN_IN
+                    }
+                )
+            }
+            AppRootScreen.MAIN -> {
+                MainAppScaffold(appContainer = container)
+            }
+        }
     }
 }
 

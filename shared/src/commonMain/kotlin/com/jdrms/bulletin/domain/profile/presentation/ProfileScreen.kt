@@ -53,7 +53,8 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onNavigateToSignIn: () -> Unit = onBack
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -64,6 +65,7 @@ fun ProfileScreen(
     ) {
         ProfileTopBar(
             title = if (uiState.isAccountCreated) "Profile" else "Sign Up",
+            showBackButton = uiState.isAccountCreated,
             onBackClick = {
                 viewModel.clearMessages()
                 onBack()
@@ -94,8 +96,9 @@ fun ProfileScreen(
                     onCreateAccount = { first, last, mail, pass ->
                         viewModel.createAccount(first, last, mail, pass)
                     },
-                    onLogin = { mail, pass ->
-                        viewModel.login(mail, pass)
+                    onNavigateToSignIn = {
+                        viewModel.clearMessages()
+                        onNavigateToSignIn()
                     }
                 )
             }
@@ -106,29 +109,32 @@ fun ProfileScreen(
 @Composable
 private fun ProfileTopBar(
     title: String,
-    onBackClick: () -> Unit
+    showBackButton: Boolean = false,
+    onBackClick: () -> Unit = {}
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        contentAlignment = Alignment.Center
     ) {
-        IconButton(onClick = onBackClick) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_arrow_back),
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
+        if (showBackButton) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_arrow_back),
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 48.dp)
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -231,7 +237,7 @@ private fun SignUpFormContent(
     uiState: ProfileUiState,
     onClearMessages: () -> Unit,
     onCreateAccount: (String, String, String, String) -> Unit,
-    onLogin: (String, String) -> Unit
+    onNavigateToSignIn: () -> Unit
 ) {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
@@ -340,7 +346,7 @@ private fun SignUpFormContent(
     Spacer(modifier = Modifier.height(12.dp))
 
     OutlinedButton(
-        onClick = { onLogin(email, password) },
+        onClick = onNavigateToSignIn,
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),
@@ -349,7 +355,7 @@ private fun SignUpFormContent(
         colors = BulletinButtonDefaults.outlinedButtonColors()
     ) {
         Text(
-            text = "I already have an account",
+            text = "Log In",
             style = MaterialTheme.typography.titleMedium
         )
     }
