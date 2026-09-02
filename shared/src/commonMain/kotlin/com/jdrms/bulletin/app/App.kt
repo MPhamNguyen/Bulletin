@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,12 +57,22 @@ fun App(appContainer: AppContainer? = null) {
     BulletinTheme {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
         val profileViewModel = remember { container.createProfileViewModel() }
+        val profileUiState by profileViewModel.uiState.collectAsState()
 
         when (currentRootScreen) {
             AppRootScreen.SIGN_IN -> {
                 SignInScreen(
-                    onSignIn = {
-                        currentRootScreen = AppRootScreen.MAIN
+                    errorMessage = profileUiState.errorMessage,
+                    isLoading = profileUiState.isLoading,
+                    onClearMessages = { profileViewModel.clearMessages() },
+                    onSignIn = { email, password ->
+                        profileViewModel.login(
+                            emailStr = email,
+                            pass = password,
+                            onSuccess = {
+                                currentRootScreen = AppRootScreen.MAIN
+                            }
+                        )
                     },
                     onCreateAccount = {
                         profileViewModel.resetRegistration()
@@ -73,9 +84,11 @@ fun App(appContainer: AppContainer? = null) {
                 ProfileScreen(
                     viewModel = profileViewModel,
                     onBack = {
+                        profileViewModel.clearMessages()
                         currentRootScreen = AppRootScreen.SIGN_IN
                     },
                     onNavigateToSignIn = {
+                        profileViewModel.clearMessages()
                         currentRootScreen = AppRootScreen.SIGN_IN
                     }
                 )

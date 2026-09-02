@@ -141,7 +141,7 @@ class ProfileViewModel(
         }
     }
 
-    fun login(emailStr: String, pass: String) {
+    fun login(emailStr: String, pass: String, onSuccess: () -> Unit = {}) {
         val trimmedEmail = emailStr.trim()
         val validationResult = policy.validateLogin(
             emailStr = trimmedEmail,
@@ -158,10 +158,23 @@ class ProfileViewModel(
             val result = authenticateUser.login(studentEmail, pass)
             when (result) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(isLoading = false, profile = result.data, errorMessage = null) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            profile = result.data,
+                            errorMessage = null,
+                            isAccountCreated = true
+                        )
+                    }
+                    onSuccess()
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = result.exception.message) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = result.exception.message ?: "Failed to log in"
+                        )
+                    }
                 }
             }
         }

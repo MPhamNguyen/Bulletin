@@ -18,7 +18,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,10 +33,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_graduation_cap
+import bulletin.shared.generated.resources.ic_visibility
+import bulletin.shared.generated.resources.ic_visibility_off
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import org.jetbrains.compose.resources.painterResource
@@ -43,14 +48,18 @@ import org.jetbrains.compose.resources.painterResource
 fun SignInScreen(
     email: String? = null,
     password: String? = null,
+    errorMessage: String? = null,
+    isLoading: Boolean = false,
     onEmailChange: ((String) -> Unit)? = null,
     onPasswordChange: ((String) -> Unit)? = null,
-    onSignIn: () -> Unit = {},
+    onClearMessages: () -> Unit = {},
+    onSignIn: (String, String) -> Unit = { _, _ -> },
     onForgotPassword: () -> Unit = {},
     onCreateAccount: () -> Unit = {}
 ) {
     var localEmail by remember { mutableStateOf("") }
     var localPassword by remember { mutableStateOf("") }
+    var isPasswordVisible by remember { mutableStateOf(false) }
 
     val currentEmail = email ?: localEmail
     val currentPassword = password ?: localPassword
@@ -93,13 +102,35 @@ fun SignInScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            errorMessage?.let { error ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             SignInFieldLabel(text = "Email")
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = currentEmail,
-                onValueChange = handleEmailChange,
+                onValueChange = {
+                    handleEmailChange(it)
+                    if (errorMessage != null) onClearMessages()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("you@university.edu") },
                 singleLine = true,
@@ -113,11 +144,32 @@ fun SignInScreen(
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = currentPassword,
-                onValueChange = handlePasswordChange,
+                onValueChange = {
+                    handlePasswordChange(it)
+                    if (errorMessage != null) onClearMessages()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Enter your password") },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (isPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                trailingIcon = {
+                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        val icon = if (isPasswordVisible) {
+                            Res.drawable.ic_visibility_off
+                        } else {
+                            Res.drawable.ic_visibility
+                        }
+                        Icon(
+                            painter = painterResource(icon),
+                            contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 shape = MaterialTheme.shapes.medium,
                 colors = BulletinTextFieldDefaults.colors()
             )
@@ -133,17 +185,26 @@ fun SignInScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = onSignIn,
+                onClick = { onSignIn(currentEmail, currentPassword) },
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = MaterialTheme.shapes.extraLarge,
                 colors = BulletinButtonDefaults.buttonColors()
             ) {
-                Text(
-                    text = "Sign in",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Sign in",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))

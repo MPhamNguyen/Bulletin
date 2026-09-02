@@ -154,8 +154,20 @@ class ProfileDomainTest {
             initialCredentials = mapOf("dominic.alfonso@student.csulb.edu" to "password123")
         )
         val email = StudentEmail("dominic.alfonso@student.csulb.edu")
-        val loginResult = authRepo.login(email, "wrongPassword")
-        assertTrue(loginResult.isError())
+        val loginWrongPassword = authRepo.login(email, "wrongPassword")
+        assertTrue(loginWrongPassword.isError())
+        assertEquals(
+            "Incorrect password. Please try again.",
+            (loginWrongPassword as Result.Error).exception.message
+        )
+
+        val unknownEmail = StudentEmail("unknown@csulb.edu")
+        val loginUnknownEmail = authRepo.login(unknownEmail, "password123")
+        assertTrue(loginUnknownEmail.isError())
+        assertEquals(
+            "Account not found. Please check your email or create an account.",
+            (loginUnknownEmail as Result.Error).exception.message
+        )
 
         val loginCorrect = authRepo.login(email, "password123")
         assertTrue(loginCorrect.isSuccess())
@@ -164,10 +176,17 @@ class ProfileDomainTest {
     @Test
     fun testAuthRepositoryWithoutCredentialsFailsByDefault() = runTest {
         val profileRepo = InMemoryProfileRepository()
-        val authRepo = InMemoryAuthRepository(profileRepo) // empty credentials by default
+        val authRepo = InMemoryAuthRepository(
+            profileRepository = profileRepo,
+            initialCredentials = emptyMap()
+        )
         val email = StudentEmail("dominic.alfonso@student.csulb.edu")
         val loginResult = authRepo.login(email, "password123")
         assertTrue(loginResult.isError())
+        assertEquals(
+            "Account not found. Please check your email or create an account.",
+            (loginResult as Result.Error).exception.message
+        )
     }
 
     @Test
@@ -421,6 +440,35 @@ class ProfileDomainTest {
             viewModel.login("john@example.com", "")
             advanceUntilIdle()
             assertEquals("Password is required.", viewModel.uiState.value.errorMessage)
+
+            // Account not found check
+            viewModel.login("notfound@csulb.edu", "password123")
+            advanceUntilIdle()
+            assertEquals(
+                "Account not found. Please check your email or create an account.",
+                viewModel.uiState.value.errorMessage
+            )
+
+            // Register an account and test wrong password vs correct password
+            viewModel.createAccount("Dominic", "Alfonso", "dominic@csulb.edu", "correctPassword123")
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.isAccountCreated)
+
+            // Incorrect password check
+            viewModel.login("dominic@csulb.edu", "wrongPassword123")
+            advanceUntilIdle()
+            assertEquals("Incorrect password. Please try again.", viewModel.uiState.value.errorMessage)
+
+            // Successful login check with onSuccess callback
+            var loginSuccessCalled = false
+            viewModel.login("dominic@csulb.edu", "correctPassword123") {
+                loginSuccessCalled = true
+            }
+            advanceUntilIdle()
+            assertTrue(loginSuccessCalled)
+            assertNull(viewModel.uiState.value.errorMessage)
+            assertTrue(viewModel.uiState.value.isAccountCreated)
+            assertEquals("Dominic Alfonso", viewModel.uiState.value.profile?.fullName)
         } finally {
             Dispatchers.resetMain()
         }
