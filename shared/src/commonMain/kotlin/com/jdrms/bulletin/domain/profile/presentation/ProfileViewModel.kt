@@ -8,6 +8,7 @@ import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
+import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
@@ -16,6 +17,8 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +29,7 @@ class ProfileViewModel(
     private val authenticateUser: AuthenticateUser,
     private val verifyStudentEmail: VerifyStudentEmail,
     private val manageProfile: ManageProfile,
+    private val updateStudentProfile: UpdateStudentProfile,
     private val submitStudentReview: SubmitStudentReview,
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student")
@@ -33,6 +37,7 @@ class ProfileViewModel(
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+    private var flashNotificationJob: Job? = null
 
     init {
         loadProfile(defaultUserId)
@@ -49,6 +54,7 @@ class ProfileViewModel(
                     _uiState.update {
                         it.copy(
                             profile = studentProfile,
+                            profileDraft = studentProfile?.let(ProfileDraft::from) ?: ProfileDraft(),
                             reputation = rep,
                             isLoading = false
                         )
@@ -110,11 +116,12 @@ class ProfileViewModel(
                     it.copy(
                         isLoading = false,
                         profile = result.data,
+                        profileDraft = ProfileDraft.from(result.data),
                         isAccountCreated = true,
-                        successMessage = "Account created successfully!",
                         errorMessage = null
                     )
                 }
+                showFlashNotification("Account created successfully!")
             }
             is Result.Error -> {
                 _uiState.update {
@@ -128,10 +135,72 @@ class ProfileViewModel(
     }
 
     fun clearMessages() {
+        flashNotificationJob?.cancel()
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 
+    fun onProfileDraftChanged(profileDraft: ProfileDraft) {
+        flashNotificationJob?.cancel()
+        _uiState.update { it.copy(profileDraft = profileDraft, errorMessage = null, successMessage = null) }
+    }
+
+    fun resetProfileDraft() {
+        val profile = _uiState.value.profile ?: return
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                profileDraft = ProfileDraft.from(profile),
+                errorMessage = null,
+                successMessage = null
+            )
+        }
+    }
+
+    fun updateProfileDetails() {
+        val state = _uiState.value
+        val profile = state.profile
+        if (profile == null) {
+            _uiState.update { it.copy(errorMessage = "Profile is unavailable.") }
+            return
+        }
+        val draft = state.profileDraft
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+            when (
+                val result = updateStudentProfile(
+                    profile,
+                    draft.fullName,
+                    draft.major,
+                    draft.university,
+                    draft.bio
+                )
+            ) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            profile = result.data,
+                            profileDraft = ProfileDraft.from(result.data),
+                            isLoading = false,
+                            errorMessage = null
+                        )
+                    }
+                    showFlashNotification("Profile updated")
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = result.exception.message ?: "Failed to update profile"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun resetRegistration() {
+        flashNotificationJob?.cancel()
         _uiState.update {
             it.copy(
                 isAccountCreated = false,
@@ -158,11 +227,30 @@ class ProfileViewModel(
             val result = authenticateUser.login(studentEmail, pass)
             when (result) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(isLoading = false, profile = result.data, errorMessage = null) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            profile = result.data,
+                            profileDraft = ProfileDraft.from(result.data),
+                            isAccountCreated = true,
+                            errorMessage = null
+                        )
+                    }
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoading = false, errorMessage = result.exception.message) }
                 }
+            }
+        }
+    }
+
+    private fun showFlashNotification(message: String) {
+        flashNotificationJob?.cancel()
+        _uiState.update { it.copy(successMessage = message) }
+        flashNotificationJob = viewModelScope.launch {
+            delay(FLASH_NOTIFICATION_DURATION_MILLIS)
+            _uiState.update { state ->
+                if (state.successMessage == message) state.copy(successMessage = null) else state
             }
         }
     }
@@ -221,5 +309,9 @@ class ProfileViewModel(
                 _uiState.update { it.copy(errorMessage = "Failed to submit review") }
             }
         }
+    }
+
+    companion object {
+        const val FLASH_NOTIFICATION_DURATION_MILLIS = 3_000L
     }
 }
