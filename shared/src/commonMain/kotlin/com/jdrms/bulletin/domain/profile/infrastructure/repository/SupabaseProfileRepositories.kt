@@ -55,8 +55,12 @@ class SupabaseProfileRepository(
             } else {
                 profile
             }
-            val dto = ProfileMapper.toDto(profileToSave)
-            supabase.from(PROFILES_TABLE).upsert(dto)
+            val updateDto = ProfileMapper.toUpdateDto(profileToSave)
+            supabase.from(PROFILES_TABLE).update(updateDto) {
+                filter {
+                    eq("id", resolvedId)
+                }
+            }
             profileToSave
         }.fold(
             onSuccess = { Result.Success(it) },
@@ -105,7 +109,7 @@ class SupabaseProfileRepository(
             dtos.map { ProfileMapper.toDomain(it) }
         }.getOrDefault(emptyList())
 
-        return policy.calculateReputation(userId, reviews)
+        return policy.calculateReputation(UserId(resolvedId), reviews)
     }
 
     private fun resolveUserId(userId: UserId): String? {
@@ -169,6 +173,22 @@ class SupabaseAuthRepository(
     private val profileRepository: ProfileRepository
 ) : AuthRepository {
 
+    override suspend fun getCurrentUser(): Result<StudentProfile?> {
+        return runCatching {
+            supabase.auth.awaitInitialization()
+            val currentUser = supabase.auth.currentUserOrNull() ?: return@runCatching null
+            val userId = UserId(currentUser.id)
+
+            when (val profileResult = profileRepository.getProfile(userId)) {
+                is Result.Success -> profileResult.data ?: createProfileFromAuthUser(currentUser)
+                is Result.Error -> throw profileResult.exception
+            }
+        }.fold(
+            onSuccess = { Result.Success(it) },
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+        )
+    }
+
     override suspend fun register(
         email: StudentEmail,
         password: String,
@@ -223,12 +243,6 @@ class SupabaseAuthRepository(
                 ?: error("Failed to retrieve authenticated user session.")
 
             val userId = UserId(currentUser.id)
-            val metadataName = (currentUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
-                it.isNotBlank()
-            }
-            val metadataUniversity = (currentUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
-                it.isNotBlank()
-            }
 
             val profileResult = profileRepository.getProfile(userId)
             val profile = when (profileResult) {
@@ -236,19 +250,7 @@ class SupabaseAuthRepository(
                     if (profileResult.data != null) {
                         profileResult.data
                     } else {
-                        // Profile row does not exist in DB yet, create it with user metadata
-                        val newProfile = StudentProfile(
-                            id = userId,
-                            email = email,
-                            fullName = metadataName ?: "Student",
-                            university = metadataUniversity ?: "CSU Long Beach",
-                            isVerified = currentUser.emailConfirmedAt != null
-                        )
-                        val saveResult = profileRepository.updateProfile(newProfile)
-                        if (saveResult is Result.Error) {
-                            throw saveResult.exception
-                        }
-                        newProfile
+                        createProfileFromAuthUser(currentUser, email)
                     }
                 }
                 is Result.Error -> {
@@ -278,8 +280,42 @@ class SupabaseAuthRepository(
         )
     }
 
+    override suspend fun signOut(): Result<Unit> {
+        return runCatching {
+            supabase.auth.signOut()
+        }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+        )
+    }
+
+    private suspend fun createProfileFromAuthUser(
+        authUser: io.github.jan.supabase.auth.user.UserInfo,
+        fallbackEmail: StudentEmail? = null
+    ): StudentProfile {
+        val email = authUser.email?.let(::StudentEmail) ?: fallbackEmail
+            ?: error("Authenticated user does not have an email address.")
+        val metadataName = (authUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
+            it.isNotBlank()
+        }
+        val metadataUniversity = (authUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
+            it.isNotBlank()
+        }
+        val profile = StudentProfile(
+            id = UserId(authUser.id),
+            email = email,
+            fullName = metadataName ?: "Student",
+            university = metadataUniversity ?: "CSU Long Beach",
+            isVerified = authUser.emailConfirmedAt != null
+        )
+        when (val saveResult = profileRepository.updateProfile(profile)) {
+            is Result.Success -> return saveResult.data
+            is Result.Error -> throw saveResult.exception
+        }
+    }
+
     companion object {
-        private val AUTH_ERROR_RULES = listOf(
+        private val COMMON_ERROR_RULES = listOf(
             listOf("user_already_exists", "user already registered") to
                 "An account with this email address already exists. Please log in instead.",
             listOf("over_email_send_rate_limit", "email rate limit exceeded") to
@@ -292,29 +328,55 @@ class SupabaseAuthRepository(
                 "Account registration is currently disabled.",
             listOf("email_not_confirmed") to
                 "Please verify your email address before logging in.",
-            listOf("unable to resolve host", "failed to connect", "timeout") to
+            listOf("invalid input syntax for type uuid", "invalid input syntax", "22p02") to
+                "The requested user account was not found.",
+            listOf("jwt expired", "invalid jwt", "pgrst301", "auth_token_expired") to
+                "Your session has expired. Please log in again.",
+            listOf("row-level security", "permission denied", "42501") to
+                "You do not have permission to perform this action.",
+            listOf("unable to resolve host", "failed to connect", "timeout", "connectexception", "sockettimeout") to
                 "Unable to connect to server. Please check your internet connection."
         )
 
-        fun mapAuthErrorMessage(throwable: Throwable): String {
-            val message = throwable.message ?: return "An unexpected authentication error occurred."
+        private val TECHNICAL_PATTERNS = listOf(
+            "http",
+            "header",
+            "url:",
+            "rest/v1",
+            "supabase.co",
+            "select=",
+            "apikey",
+            "syntax"
+        )
+
+        fun mapErrorMessage(
+            throwable: Throwable,
+            defaultMessage: String = "An unexpected error occurred."
+        ): String {
+            val message = throwable.message ?: return defaultMessage
             val lower = message.lowercase()
 
-            for ((patterns, mappedMessage) in AUTH_ERROR_RULES) {
+            for ((patterns, mappedMessage) in COMMON_ERROR_RULES) {
                 if (patterns.any { lower.contains(it) }) {
                     return mappedMessage
                 }
             }
 
-            val firstLine = message.lines().firstOrNull()?.trim() ?: "Authentication failed."
-            val isTechnicalDump = firstLine.contains("http", ignoreCase = true) ||
-                firstLine.contains("header", ignoreCase = true)
+            val firstLine = message.lines().firstOrNull()?.trim() ?: defaultMessage
+            val isTechnicalDump = TECHNICAL_PATTERNS.any { lower.contains(it) }
 
             return if (isTechnicalDump) {
-                "Authentication failed. Please check your details and try again."
+                defaultMessage
             } else {
                 firstLine
             }
+        }
+
+        fun mapAuthErrorMessage(throwable: Throwable): String {
+            return mapErrorMessage(
+                throwable = throwable,
+                defaultMessage = "Authentication failed. Please check your details and try again."
+            )
         }
     }
 }

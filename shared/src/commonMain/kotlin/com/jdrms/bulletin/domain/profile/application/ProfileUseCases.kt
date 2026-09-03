@@ -36,6 +36,22 @@ class AuthenticateUser(
     }
 }
 
+class RestoreAuthenticatedProfile(
+    private val authRepository: AuthRepository
+) {
+    suspend operator fun invoke(): Result<StudentProfile?> {
+        return authRepository.getCurrentUser()
+    }
+}
+
+class SignOutUser(
+    private val authRepository: AuthRepository
+) {
+    suspend operator fun invoke(): Result<Unit> {
+        return authRepository.signOut()
+    }
+}
+
 class VerifyStudentEmail(
     private val authRepository: AuthRepository
 ) {

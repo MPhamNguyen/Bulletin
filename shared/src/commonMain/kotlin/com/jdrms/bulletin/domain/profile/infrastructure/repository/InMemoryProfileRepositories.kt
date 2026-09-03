@@ -87,28 +87,41 @@ class InMemoryProfileRepository(
 
 class InMemoryAuthRepository(
     private val profileRepository: ProfileRepository = InMemoryProfileRepository(),
-    initialCredentials: Map<String, String> = emptyMap()
+    initialCredentials: Map<String, String> = defaultSeedCredentials
 ) : AuthRepository {
 
-    private val credentials = initialCredentials.toMutableMap()
+    // Development/test adapter only. Production authentication must never retain raw passwords in application memory.
+    private val credentials = initialCredentials.mapKeys { it.key.lowercase() }.toMutableMap()
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
+    private var currentUser: StudentProfile? = null
+
+    override suspend fun getCurrentUser(): Result<StudentProfile?> = Result.Success(currentUser)
 
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
-        val normalizedEmail = email.value
+        val normalizedEmail = email.value.lowercase()
         val storedPassword = credentials[normalizedEmail]
 
-        if (storedPassword != null && storedPassword == password) {
-            val userProfile = profilesByEmail[normalizedEmail]
-                ?: when (val res = profileRepository.getProfile(UserId("current_student"))) {
-                    is Result.Success -> res.data
-                    is Result.Error -> null
-                }
-            if (userProfile != null) {
-                return Result.Success(userProfile)
-            }
+        if (storedPassword == null) {
+            val error = IllegalArgumentException("Account not found. Please check your email or create an account.")
+            return Result.Error(error)
         }
 
-        return Result.Error(IllegalArgumentException("Invalid email or password. Please try again."))
+        if (storedPassword != password) {
+            return Result.Error(IllegalArgumentException("Incorrect password. Please try again."))
+        }
+
+        val userProfile = profilesByEmail[normalizedEmail]
+            ?: when (val res = profileRepository.getProfile(UserId("current_student"))) {
+                is Result.Success -> res.data
+                is Result.Error -> null
+            }
+        if (userProfile != null) {
+            currentUser = userProfile
+            return Result.Success(userProfile)
+        }
+
+        val error = IllegalArgumentException("Account not found. Please check your email or create an account.")
+        return Result.Error(error)
     }
 
     override suspend fun register(
@@ -134,10 +147,22 @@ class InMemoryAuthRepository(
         credentials[normalizedEmail] = password
         profilesByEmail[normalizedEmail] = newProfile
         profileRepository.updateProfile(newProfile)
+        currentUser = newProfile
         return Result.Success(newProfile)
     }
 
     override suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean> {
         return Result.Success(code.trim().isNotEmpty())
+    }
+
+    override suspend fun signOut(): Result<Unit> {
+        currentUser = null
+        return Result.Success(Unit)
+    }
+
+    companion object {
+        val defaultSeedCredentials = mapOf(
+            "dominic.alfonso@student.csulb.edu" to "password123"
+        )
     }
 }
