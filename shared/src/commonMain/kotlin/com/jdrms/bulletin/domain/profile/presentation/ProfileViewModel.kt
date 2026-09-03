@@ -306,7 +306,6 @@ class ProfileViewModel(
             }
         }
     }
-
     private fun showFlashNotification(message: String) {
         flashNotificationJob?.cancel()
         _uiState.update { it.copy(successMessage = message) }

@@ -16,9 +16,18 @@ data class ProfileDto(
 
 @Serializable
 data class ReviewDto(
-    @SerialName("id") val id: String,
+    @SerialName("id") val id: String = "",
     @SerialName("reviewer_id") val reviewerId: String,
-    @SerialName("reviewer_name") val reviewerName: String,
+    @SerialName("reviewer_name") val reviewerName: String = "Student",
+    @SerialName("reviewee_id") val revieweeId: String,
+    @SerialName("score") val score: Int,
+    @SerialName("comment") val comment: String,
+    @SerialName("created_at_millis") val createdAtMillis: Long = 0L
+)
+
+@Serializable
+data class ReviewInsertDto(
+    @SerialName("reviewer_id") val reviewerId: String,
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
     @SerialName("comment") val comment: String,

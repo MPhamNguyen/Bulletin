@@ -50,7 +50,7 @@ private val BorderSubtle = Color(0xFFDDE2E8)
 private val AccentGold = Color(0xFFFFD700)
 private val AccentGoldContainer = Color(0xFFF3E4BF)
 private val AccentSuccess = Color(0xFF4ADE80)
-private val AccentSuccessContainer = Color(0xFFDCEDE3)
+private val ModalDarkBackground = Color(0xFF1E293B)
 private val AccentError = Color(0xFFB3261E)
 
 private val LightColors = lightColorScheme(
@@ -146,15 +146,15 @@ data class BulletinExtendedColors(
 private val LightExtendedColors = BulletinExtendedColors(
     success = AccentSuccess,
     onSuccess = Color.White,
-    successContainer = AccentSuccessContainer,
-    onSuccessContainer = Color(0xFF0F3D28)
+    successContainer = ModalDarkBackground,
+    onSuccessContainer = PaletteOffWhite
 )
 
 private val DarkExtendedColors = BulletinExtendedColors(
     success = Color(0xFF8FCBAE),
     onSuccess = Color(0xFF0F3D28),
-    successContainer = Color(0xFF2A5B41),
-    onSuccessContainer = AccentSuccessContainer
+    successContainer = ModalDarkBackground,
+    onSuccessContainer = PaletteOffWhite
 )
 
 val LocalBulletinExtendedColors = staticCompositionLocalOf { LightExtendedColors }
