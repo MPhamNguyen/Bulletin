@@ -47,7 +47,9 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
+import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignInScreen
+import com.jdrms.bulletin.domain.profile.presentation.SignUpScreen
 
 @Composable
 fun App(appContainer: AppContainer? = null) {
@@ -81,7 +83,7 @@ fun App(appContainer: AppContainer? = null) {
                 )
             }
             AppRootScreen.CREATE_PROFILE -> {
-                ProfileScreen(
+                SignUpScreen(
                     viewModel = profileViewModel,
                     onBack = {
                         profileViewModel.clearMessages()
@@ -90,18 +92,33 @@ fun App(appContainer: AppContainer? = null) {
                     onNavigateToSignIn = {
                         profileViewModel.clearMessages()
                         currentRootScreen = AppRootScreen.SIGN_IN
+                    },
+                    onContinueToApp = {
+                        profileViewModel.clearMessages()
+                        currentRootScreen = AppRootScreen.MAIN
                     }
                 )
             }
             AppRootScreen.MAIN -> {
-                MainAppScaffold(appContainer = container)
+                MainAppScaffold(
+                    appContainer = container,
+                    profileViewModel = profileViewModel,
+                    onSignOut = {
+                        profileViewModel.resetRegistration()
+                        currentRootScreen = AppRootScreen.SIGN_IN
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun MainAppScaffold(appContainer: AppContainer? = null) {
+fun MainAppScaffold(
+    appContainer: AppContainer? = null,
+    profileViewModel: ProfileViewModel? = null,
+    onSignOut: () -> Unit = {}
+) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
 
@@ -112,7 +129,7 @@ fun MainAppScaffold(appContainer: AppContainer? = null) {
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
         val listingsViewModel = remember { container.createListingsViewModel() }
         val messagesViewModel = remember { container.createMessagesViewModel() }
-        val profileViewModel = remember { container.createProfileViewModel() }
+        val resolvedProfileViewModel = profileViewModel ?: remember { container.createProfileViewModel() }
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -130,7 +147,10 @@ fun MainAppScaffold(appContainer: AppContainer? = null) {
                     AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
-                    AppDestination.PROFILE -> ProfileScreen(profileViewModel)
+                    AppDestination.PROFILE -> ProfileScreen(
+                        viewModel = resolvedProfileViewModel,
+                        onSignOut = onSignOut
+                    )
                 }
             }
         }
