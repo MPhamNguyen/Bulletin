@@ -2,6 +2,8 @@ package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
@@ -12,6 +14,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ProfileApplicationTest {
@@ -88,5 +91,27 @@ class ProfileApplicationTest {
             fullName = "Short Pass"
         )
         assertTrue(shortPasswordResult.isError())
+    }
+
+    @Test
+    fun testAuthenticatedSessionCanBeRestoredAndSignedOut() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authenticateUser = AuthenticateUser(authRepo, policy)
+        val restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo)
+        val signOutUser = SignOutUser(authRepo)
+
+        assertNull((restoreAuthenticatedProfile() as Result.Success).data)
+
+        val registered = authenticateUser.register(
+            email = StudentEmail("student@example.com"),
+            password = "validPassword123",
+            fullName = "Student Name"
+        )
+        assertTrue(registered is Result.Success)
+        assertEquals(registered.data, (restoreAuthenticatedProfile() as Result.Success).data)
+
+        assertTrue(signOutUser() is Result.Success)
+        assertNull((restoreAuthenticatedProfile() as Result.Success).data)
     }
 }

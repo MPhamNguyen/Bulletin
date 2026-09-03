@@ -7,6 +7,8 @@ import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
@@ -27,6 +29,8 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val authenticateUser: AuthenticateUser,
+    private val restoreAuthenticatedProfile: RestoreAuthenticatedProfile,
+    private val signOutUser: SignOutUser,
     private val verifyStudentEmail: VerifyStudentEmail,
     private val manageProfile: ManageProfile,
     private val updateStudentProfile: UpdateStudentProfile,
@@ -40,7 +44,36 @@ class ProfileViewModel(
     private var flashNotificationJob: Job? = null
 
     init {
-        loadProfile(defaultUserId)
+        restoreSession()
+    }
+
+    private fun restoreSession() {
+        viewModelScope.launch {
+            when (val result = restoreAuthenticatedProfile()) {
+                is Result.Success -> {
+                    val profile = result.data
+                    _uiState.update {
+                        it.copy(
+                            profile = profile,
+                            profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
+                            authSessionState = if (profile == null) {
+                                AuthSessionState.UNAUTHENTICATED
+                            } else {
+                                AuthSessionState.AUTHENTICATED
+                            }
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            authSessionState = AuthSessionState.UNAUTHENTICATED,
+                            errorMessage = result.exception.message ?: "Failed to restore session"
+                        )
+                    }
+                }
+            }
+        }
     }
 
     fun loadProfile(userId: UserId = defaultUserId) {
@@ -233,7 +266,8 @@ class ProfileViewModel(
                             profile = result.data,
                             profileDraft = ProfileDraft.from(result.data),
                             errorMessage = null,
-                            isAccountCreated = true
+                            isAccountCreated = true,
+                            authSessionState = AuthSessionState.AUTHENTICATED
                         )
                     }
                     onSuccess()
@@ -243,6 +277,29 @@ class ProfileViewModel(
                         it.copy(
                             isLoading = false,
                             errorMessage = result.exception.message ?: "Failed to log in"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun signOut(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+            when (val result = signOutUser()) {
+                is Result.Success -> {
+                    flashNotificationJob?.cancel()
+                    _uiState.update {
+                        ProfileUiState(authSessionState = AuthSessionState.UNAUTHENTICATED)
+                    }
+                    onSuccess()
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = result.exception.message ?: "Failed to sign out"
                         )
                     }
                 }

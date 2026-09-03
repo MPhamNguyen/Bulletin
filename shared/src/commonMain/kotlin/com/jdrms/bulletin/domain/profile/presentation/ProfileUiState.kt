@@ -3,6 +3,12 @@ package com.jdrms.bulletin.domain.profile.presentation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
+enum class AuthSessionState {
+    CHECKING,
+    AUTHENTICATED,
+    UNAUTHENTICATED
+}
+
 data class ProfileUiState(
     val profile: StudentProfile? = null,
     val profileDraft: ProfileDraft = ProfileDraft(),
@@ -13,7 +19,8 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    val isAccountCreated: Boolean = false
+    val isAccountCreated: Boolean = false,
+    val authSessionState: AuthSessionState = AuthSessionState.CHECKING
 ) {
     val isProfileModified: Boolean
         get() = profile != null && ProfileDraft.from(profile) != profileDraft

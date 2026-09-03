@@ -1,10 +1,16 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -30,6 +36,114 @@ class ProfileViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun testProfileViewModelRestoresAndClearsAuthenticatedSession() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val registered = authRepo.register(
+                email = StudentEmail("student@example.com"),
+                password = "validPassword123",
+                fullName = "Student Name"
+            )
+            assertTrue(registered is Result.Success)
+
+            val viewModel = ProfileViewModel(
+                authenticateUser = AuthenticateUser(authRepo, policy),
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
+                signOutUser = SignOutUser(authRepo),
+                verifyStudentEmail = VerifyStudentEmail(authRepo),
+                manageProfile = ManageProfile(profileRepo),
+                updateStudentProfile = UpdateStudentProfile(profileRepo),
+                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+            )
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertEquals("Student Name", viewModel.uiState.value.profile?.fullName)
+
+            var signedOut = false
+            viewModel.signOut { signedOut = true }
+            advanceUntilIdle()
+
+            assertTrue(signedOut)
+            assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertNull(viewModel.uiState.value.profile)
+            assertFalse(viewModel.uiState.value.isLoading)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelReportsSessionRestoreFailure() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = SessionFailureAuthRepository(
+                delegate = InMemoryAuthRepository(profileRepo),
+                restoreError = IllegalStateException("Session storage unavailable")
+            )
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertEquals("Session storage unavailable", viewModel.uiState.value.errorMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelKeepsSessionWhenSignOutFails() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val delegate = InMemoryAuthRepository(profileRepo)
+            delegate.register(StudentEmail("student@example.com"), "validPassword123", "Student Name")
+            val authRepo = SessionFailureAuthRepository(
+                delegate = delegate,
+                signOutError = IllegalStateException("Unable to clear session")
+            )
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            var signedOut = false
+            viewModel.signOut { signedOut = true }
+            advanceUntilIdle()
+
+            assertFalse(signedOut)
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertEquals("Unable to clear session", viewModel.uiState.value.errorMessage)
+            assertFalse(viewModel.uiState.value.isLoading)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    private fun createProfileViewModel(
+        authRepository: AuthRepository,
+        profileRepository: InMemoryProfileRepository
+    ): ProfileViewModel {
+        return ProfileViewModel(
+            authenticateUser = AuthenticateUser(authRepository, policy),
+            restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepository),
+            signOutUser = SignOutUser(authRepository),
+            verifyStudentEmail = VerifyStudentEmail(authRepository),
+            manageProfile = ManageProfile(profileRepository),
+            updateStudentProfile = UpdateStudentProfile(profileRepository),
+            submitStudentReview = SubmitStudentReview(profileRepository, policy)
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun testProfileViewModelCreateAccountAndValidation() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(testDispatcher)
@@ -44,6 +158,8 @@ class ProfileViewModelTest {
 
             val viewModel = ProfileViewModel(
                 authenticateUser = authenticateUser,
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
+                signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = verifyStudentEmail,
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
@@ -112,6 +228,8 @@ class ProfileViewModelTest {
             val authRepo = InMemoryAuthRepository(profileRepo)
             val viewModel = ProfileViewModel(
                 authenticateUser = AuthenticateUser(authRepo, policy),
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
+                signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = VerifyStudentEmail(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
@@ -182,6 +300,8 @@ class ProfileViewModelTest {
 
             val viewModel = ProfileViewModel(
                 authenticateUser = authenticateUser,
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
+                signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = verifyStudentEmail,
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
@@ -233,5 +353,20 @@ class ProfileViewModelTest {
         } finally {
             Dispatchers.resetMain()
         }
+    }
+}
+
+private class SessionFailureAuthRepository(
+    private val delegate: AuthRepository,
+    private val restoreError: Throwable? = null,
+    private val signOutError: Throwable? = null
+) : AuthRepository by delegate {
+
+    override suspend fun getCurrentUser(): Result<StudentProfile?> {
+        return restoreError?.let { Result.Error(it) } ?: delegate.getCurrentUser()
+    }
+
+    override suspend fun signOut(): Result<Unit> {
+        return signOutError?.let { Result.Error(it) } ?: delegate.signOut()
     }
 }

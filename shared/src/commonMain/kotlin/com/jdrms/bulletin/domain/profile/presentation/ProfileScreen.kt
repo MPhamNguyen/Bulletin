@@ -242,8 +242,8 @@ private fun ProfileContent(
             .fillMaxWidth()
             .height(52.dp),
         shape = MaterialTheme.shapes.medium,
-        border = BulletinButtonDefaults.outlinedButtonBorder(),
-        colors = BulletinButtonDefaults.outlinedButtonColors()
+        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
+        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
     ) {
         Text(
             text = "Sign Out",

@@ -153,6 +153,7 @@ class ProfileInfrastructureTest {
         val createdProfile = registerResult.data
         assertEquals("New User", createdProfile.fullName)
         assertEquals(email, createdProfile.email)
+        assertEquals(createdProfile, (authRepo.getCurrentUser() as Result.Success).data)
 
         // Login with correct password
         val loginSuccess = authRepo.login(email, "mypassword123")
@@ -170,6 +171,9 @@ class ProfileInfrastructureTest {
             fullName = "Duplicate User"
         )
         assertTrue(duplicateRegister.isError())
+
+        assertTrue(authRepo.signOut().isSuccess())
+        assertNull((authRepo.getCurrentUser() as Result.Success).data)
     }
 
     @Test

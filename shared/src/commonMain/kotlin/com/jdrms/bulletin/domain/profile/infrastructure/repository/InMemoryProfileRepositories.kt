@@ -92,6 +92,9 @@ class InMemoryAuthRepository(
 
     private val credentials = initialCredentials.mapKeys { it.key.lowercase() }.toMutableMap()
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
+    private var currentUser: StudentProfile? = null
+
+    override suspend fun getCurrentUser(): Result<StudentProfile?> = Result.Success(currentUser)
 
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
         val normalizedEmail = email.value.lowercase()
@@ -112,6 +115,7 @@ class InMemoryAuthRepository(
                 is Result.Error -> null
             }
         if (userProfile != null) {
+            currentUser = userProfile
             return Result.Success(userProfile)
         }
 
@@ -142,11 +146,17 @@ class InMemoryAuthRepository(
         credentials[normalizedEmail] = password
         profilesByEmail[normalizedEmail] = newProfile
         profileRepository.updateProfile(newProfile)
+        currentUser = newProfile
         return Result.Success(newProfile)
     }
 
     override suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean> {
         return Result.Success(code.trim().isNotEmpty())
+    }
+
+    override suspend fun signOut(): Result<Unit> {
+        currentUser = null
+        return Result.Success(Unit)
     }
 
     companion object {

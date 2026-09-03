@@ -120,6 +120,22 @@ class SupabaseAuthRepository(
     private val profileRepository: ProfileRepository
 ) : AuthRepository {
 
+    override suspend fun getCurrentUser(): Result<StudentProfile?> {
+        return runCatching {
+            supabase.auth.awaitInitialization()
+            val currentUser = supabase.auth.currentUserOrNull() ?: return@runCatching null
+            val userId = UserId(currentUser.id)
+
+            when (val profileResult = profileRepository.getProfile(userId)) {
+                is Result.Success -> profileResult.data ?: createProfileFromAuthUser(currentUser)
+                is Result.Error -> throw profileResult.exception
+            }
+        }.fold(
+            onSuccess = { Result.Success(it) },
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+        )
+    }
+
     override suspend fun register(
         email: StudentEmail,
         password: String,
@@ -174,12 +190,6 @@ class SupabaseAuthRepository(
                 ?: error("Failed to retrieve authenticated user session.")
 
             val userId = UserId(currentUser.id)
-            val metadataName = (currentUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
-                it.isNotBlank()
-            }
-            val metadataUniversity = (currentUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
-                it.isNotBlank()
-            }
 
             val profileResult = profileRepository.getProfile(userId)
             val profile = when (profileResult) {
@@ -187,19 +197,7 @@ class SupabaseAuthRepository(
                     if (profileResult.data != null) {
                         profileResult.data
                     } else {
-                        // Profile row does not exist in DB yet, create it with user metadata
-                        val newProfile = StudentProfile(
-                            id = userId,
-                            email = email,
-                            fullName = metadataName ?: "Student",
-                            university = metadataUniversity ?: "CSU Long Beach",
-                            isVerified = currentUser.emailConfirmedAt != null
-                        )
-                        val saveResult = profileRepository.updateProfile(newProfile)
-                        if (saveResult is Result.Error) {
-                            throw saveResult.exception
-                        }
-                        newProfile
+                        createProfileFromAuthUser(currentUser, email)
                     }
                 }
                 is Result.Error -> {
@@ -227,6 +225,40 @@ class SupabaseAuthRepository(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
         )
+    }
+
+    override suspend fun signOut(): Result<Unit> {
+        return runCatching {
+            supabase.auth.signOut()
+        }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+        )
+    }
+
+    private suspend fun createProfileFromAuthUser(
+        authUser: io.github.jan.supabase.auth.user.UserInfo,
+        fallbackEmail: StudentEmail? = null
+    ): StudentProfile {
+        val email = authUser.email?.let(::StudentEmail) ?: fallbackEmail
+            ?: error("Authenticated user does not have an email address.")
+        val metadataName = (authUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
+            it.isNotBlank()
+        }
+        val metadataUniversity = (authUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
+            it.isNotBlank()
+        }
+        val profile = StudentProfile(
+            id = UserId(authUser.id),
+            email = email,
+            fullName = metadataName ?: "Student",
+            university = metadataUniversity ?: "CSU Long Beach",
+            isVerified = authUser.emailConfirmedAt != null
+        )
+        when (val saveResult = profileRepository.updateProfile(profile)) {
+            is Result.Success -> return saveResult.data
+            is Result.Error -> throw saveResult.exception
+        }
     }
 
     companion object {
