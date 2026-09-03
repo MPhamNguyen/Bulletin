@@ -163,7 +163,9 @@ fun MainAppScaffold(
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
         val listingsViewModel = remember { container.createListingsViewModel() }
         val messagesViewModel = remember { container.createMessagesViewModel() }
-        val resolvedProfileViewModel = profileViewModel ?: remember { container.createProfileViewModel() }
+        val resolvedProfileViewModel = remember(profileViewModel, container) {
+            resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
+        }
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -190,6 +192,8 @@ fun MainAppScaffold(
         }
     }
 }
+
+internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()
 
 @Composable
 fun BulletinBottomNavigationBar(

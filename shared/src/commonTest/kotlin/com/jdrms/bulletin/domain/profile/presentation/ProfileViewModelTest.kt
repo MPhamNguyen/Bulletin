@@ -78,7 +78,7 @@ class ProfileViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun testProfileViewModelReportsSessionRestoreFailure() = runTest {
+    fun testProfileViewModelSilentlyFallsBackWhenSessionRestoreFails() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(testDispatcher)
         try {
@@ -92,7 +92,7 @@ class ProfileViewModelTest {
             advanceUntilIdle()
 
             assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
-            assertEquals("Session storage unavailable", viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessage)
         } finally {
             Dispatchers.resetMain()
         }
@@ -203,6 +203,7 @@ class ProfileViewModelTest {
 
             val state = viewModel.uiState.value
             assertTrue(state.isAccountCreated)
+            assertEquals(AuthSessionState.AUTHENTICATED, state.authSessionState)
             assertEquals("Account created successfully!", state.successMessage)
             assertNull(state.errorMessage)
             assertNotNull(state.profile)
@@ -350,6 +351,8 @@ class ProfileViewModelTest {
             advanceUntilIdle()
             assertTrue(loginSuccessCalled)
             assertNull(viewModel.uiState.value.errorMessage)
+            assertFalse(viewModel.uiState.value.isAccountCreated)
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
         } finally {
             Dispatchers.resetMain()
         }

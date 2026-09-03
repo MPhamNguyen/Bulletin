@@ -339,7 +339,14 @@ class SupabaseAuthRepository(
         )
 
         private val TECHNICAL_PATTERNS = listOf(
-            "http", "header", "url:", "rest/v1", "supabase.co", "select=", "apikey", "syntax", "headers:"
+            "http",
+            "header",
+            "url:",
+            "rest/v1",
+            "supabase.co",
+            "select=",
+            "apikey",
+            "syntax"
         )
 
         fun mapErrorMessage(

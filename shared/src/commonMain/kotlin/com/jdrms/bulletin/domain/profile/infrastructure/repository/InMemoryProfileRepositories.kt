@@ -90,6 +90,7 @@ class InMemoryAuthRepository(
     initialCredentials: Map<String, String> = defaultSeedCredentials
 ) : AuthRepository {
 
+    // Development/test adapter only. Production authentication must never retain raw passwords in application memory.
     private val credentials = initialCredentials.mapKeys { it.key.lowercase() }.toMutableMap()
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
     private var currentUser: StudentProfile? = null

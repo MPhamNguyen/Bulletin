@@ -68,7 +68,7 @@ class ProfileViewModel(
                     _uiState.update {
                         it.copy(
                             authSessionState = AuthSessionState.UNAUTHENTICATED,
-                            errorMessage = result.exception.message ?: "Failed to restore session"
+                            errorMessage = null
                         )
                     }
                 }
@@ -151,6 +151,7 @@ class ProfileViewModel(
                         profile = result.data,
                         profileDraft = ProfileDraft.from(result.data),
                         isAccountCreated = true,
+                        authSessionState = AuthSessionState.AUTHENTICATED,
                         errorMessage = null
                     )
                 }
@@ -266,7 +267,7 @@ class ProfileViewModel(
                             profile = result.data,
                             profileDraft = ProfileDraft.from(result.data),
                             errorMessage = null,
-                            isAccountCreated = true,
+                            isAccountCreated = false,
                             authSessionState = AuthSessionState.AUTHENTICATED
                         )
                     }
