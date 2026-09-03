@@ -242,6 +242,16 @@ object BulletinTextFieldDefaults {
     )
 }
 
+object BulletinInactiveButtonDefaults {
+    @Composable
+    fun colors(): ButtonColors = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        contentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
+        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+    )
+}
+
 object BulletinButtonDefaults {
     // Primary CTAs (Sign in, Verify Email, Post Listing, Message Seller,
     // Create Account, Update) use `primary` (3E5C76), not tertiary/gold.
@@ -250,6 +260,9 @@ object BulletinButtonDefaults {
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary
     )
+
+    @Composable
+    fun inactiveButtonColors(): ButtonColors = BulletinInactiveButtonDefaults.colors()
 
     @Composable
     fun outlinedButtonColors(): ButtonColors = ButtonDefaults.outlinedButtonColors(
