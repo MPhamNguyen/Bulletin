@@ -55,8 +55,12 @@ class SupabaseProfileRepository(
             } else {
                 profile
             }
-            val dto = ProfileMapper.toDto(profileToSave)
-            supabase.from(PROFILES_TABLE).upsert(dto)
+            val updateDto = ProfileMapper.toUpdateDto(profileToSave)
+            supabase.from(PROFILES_TABLE).update(updateDto) {
+                filter {
+                    eq("id", resolvedId)
+                }
+            }
             profileToSave
         }.fold(
             onSuccess = { Result.Success(it) },

@@ -64,6 +64,7 @@ fun App(appContainer: AppContainer? = null) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
         val profileViewModel = remember { container.createProfileViewModel() }
         val profileUiState by profileViewModel.uiState.collectAsState()
+        val effectiveRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
 
         LaunchedEffect(profileUiState.authSessionState) {
             currentRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
@@ -79,7 +80,7 @@ fun App(appContainer: AppContainer? = null) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
-            when (currentRootScreen) {
+            when (effectiveRootScreen) {
                 AppRootScreen.SIGN_IN -> {
                     SignInScreen(
                         errorMessage = profileUiState.errorMessage,

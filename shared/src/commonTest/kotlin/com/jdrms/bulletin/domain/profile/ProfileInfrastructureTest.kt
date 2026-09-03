@@ -51,6 +51,22 @@ class ProfileInfrastructureTest {
     }
 
     @Test
+    fun testProfileMapperToUpdateDtoOnlyIncludesEditableFields() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "John Doe",
+            university = "CSULB",
+            bio = "Campus student"
+        )
+
+        val updateDto = ProfileMapper.toUpdateDto(profile)
+        assertEquals("John Doe", updateDto.fullName)
+        assertEquals("CSULB", updateDto.university)
+        assertEquals("Campus student", updateDto.bio)
+    }
+
+    @Test
     fun testProfileRepositorySubmitAndGetReputation() = runTest {
         val repo = InMemoryProfileRepository(
             initialProfiles = emptyMap(),
