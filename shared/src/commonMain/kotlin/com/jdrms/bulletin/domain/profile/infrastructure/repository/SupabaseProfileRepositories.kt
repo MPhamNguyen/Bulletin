@@ -28,19 +28,36 @@ class SupabaseProfileRepository(
 
     override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
         return runCatching {
+            val resolvedUserId = if (userId.value == "current_student") {
+                supabase.auth.currentUserOrNull()?.id
+            } else {
+                userId.value
+            }
+
+            if (resolvedUserId == null) {
+                return@runCatching null
+            }
+
             val dto = supabase.from(PROFILES_TABLE).select {
                 filter {
-                    eq("id", userId.value)
+                    eq("id", resolvedUserId)
                 }
             }.decodeSingleOrNull<ProfileDto>()
 
             dto?.let {
-                val reputation = getReputation(userId)
+                val reputation = getReputation(UserId(resolvedUserId))
                 ProfileMapper.toDomain(it, reputation)
             }
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(it) }
+            onFailure = { error ->
+                val msg = error.message?.lowercase().orEmpty()
+                if (msg.contains("invalid input syntax for type uuid") || msg.contains("22p02")) {
+                    Result.Success(null)
+                } else {
+                    Result.Error(Exception(mapProfileErrorMessage(error), error))
+                }
+            }
         )
     }
 
@@ -51,7 +68,7 @@ class SupabaseProfileRepository(
             profile
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(it) }
+            onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
         )
     }
 
@@ -62,26 +79,39 @@ class SupabaseProfileRepository(
             Unit
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(it) }
+            onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
         )
     }
 
     override suspend fun getReputation(userId: UserId): StudentReputation {
+        val resolvedUserId = if (userId.value == "current_student") {
+            supabase.auth.currentUserOrNull()?.id ?: userId.value
+        } else {
+            userId.value
+        }
+
         val reviews = runCatching {
             val dtos = supabase.from(REVIEWS_TABLE).select {
                 filter {
-                    eq("reviewee_id", userId.value)
+                    eq("reviewee_id", resolvedUserId)
                 }
             }.decodeList<ReviewDto>()
             dtos.map { ProfileMapper.toDomain(it) }
         }.getOrDefault(emptyList())
 
-        return policy.calculateReputation(userId, reviews)
+        return policy.calculateReputation(UserId(resolvedUserId), reviews)
     }
 
     companion object {
         const val PROFILES_TABLE = "profiles"
         const val REVIEWS_TABLE = "reviews"
+
+        fun mapProfileErrorMessage(throwable: Throwable): String {
+            return SupabaseAuthRepository.mapErrorMessage(
+                throwable = throwable,
+                defaultMessage = "Unable to complete profile operation. Please try again."
+            )
+        }
     }
 }
 
@@ -200,7 +230,7 @@ class SupabaseAuthRepository(
     }
 
     companion object {
-        private val AUTH_ERROR_RULES = listOf(
+        private val COMMON_ERROR_RULES = listOf(
             listOf("user_already_exists", "user already registered") to
                 "An account with this email address already exists. Please log in instead.",
             listOf("over_email_send_rate_limit", "email rate limit exceeded") to
@@ -213,29 +243,48 @@ class SupabaseAuthRepository(
                 "Account registration is currently disabled.",
             listOf("email_not_confirmed") to
                 "Please verify your email address before logging in.",
-            listOf("unable to resolve host", "failed to connect", "timeout") to
+            listOf("invalid input syntax for type uuid", "invalid input syntax", "22p02") to
+                "The requested user account was not found.",
+            listOf("jwt expired", "invalid jwt", "pgrst301", "auth_token_expired") to
+                "Your session has expired. Please log in again.",
+            listOf("row-level security", "permission denied", "42501") to
+                "You do not have permission to perform this action.",
+            listOf("unable to resolve host", "failed to connect", "timeout", "connectexception", "sockettimeout") to
                 "Unable to connect to server. Please check your internet connection."
         )
 
-        fun mapAuthErrorMessage(throwable: Throwable): String {
-            val message = throwable.message ?: return "An unexpected authentication error occurred."
+        private val TECHNICAL_PATTERNS = listOf(
+            "http", "header", "url:", "rest/v1", "supabase.co", "select=", "apikey", "syntax", "headers:"
+        )
+
+        fun mapErrorMessage(
+            throwable: Throwable,
+            defaultMessage: String = "An unexpected error occurred."
+        ): String {
+            val message = throwable.message ?: return defaultMessage
             val lower = message.lowercase()
 
-            for ((patterns, mappedMessage) in AUTH_ERROR_RULES) {
+            for ((patterns, mappedMessage) in COMMON_ERROR_RULES) {
                 if (patterns.any { lower.contains(it) }) {
                     return mappedMessage
                 }
             }
 
-            val firstLine = message.lines().firstOrNull()?.trim() ?: "Authentication failed."
-            val isTechnicalDump = firstLine.contains("http", ignoreCase = true) ||
-                firstLine.contains("header", ignoreCase = true)
+            val firstLine = message.lines().firstOrNull()?.trim() ?: defaultMessage
+            val isTechnicalDump = TECHNICAL_PATTERNS.any { lower.contains(it) }
 
             return if (isTechnicalDump) {
-                "Authentication failed. Please check your details and try again."
+                defaultMessage
             } else {
                 firstLine
             }
+        }
+
+        fun mapAuthErrorMessage(throwable: Throwable): String {
+            return mapErrorMessage(
+                throwable = throwable,
+                defaultMessage = "Authentication failed. Please check your details and try again."
+            )
         }
     }
 }
