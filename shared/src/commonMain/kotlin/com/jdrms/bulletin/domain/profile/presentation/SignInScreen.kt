@@ -159,9 +159,9 @@ fun SignInScreen(
                 trailingIcon = {
                     IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                         val icon = if (isPasswordVisible) {
-                            Res.drawable.ic_visibility_off
-                        } else {
                             Res.drawable.ic_visibility
+                        } else {
+                            Res.drawable.ic_visibility_off
                         }
                         Icon(
                             painter = painterResource(icon),
