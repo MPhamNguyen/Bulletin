@@ -15,6 +15,13 @@ data class ProfileDto(
 )
 
 @Serializable
+data class ProfileUpdateDto(
+    @SerialName("full_name") val fullName: String,
+    @SerialName("university") val university: String,
+    @SerialName("bio") val bio: String = ""
+)
+
+@Serializable
 data class ReviewDto(
     @SerialName("id") val id: String = "",
     @SerialName("reviewer_id") val reviewerId: String,

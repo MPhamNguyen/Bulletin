@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileUpdateDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 
 object ProfileMapper {
@@ -33,6 +34,14 @@ object ProfileMapper {
             university = domain.university,
             bio = domain.bio,
             isVerified = domain.isVerified
+        )
+    }
+
+    fun toUpdateDto(domain: StudentProfile): ProfileUpdateDto {
+        return ProfileUpdateDto(
+            fullName = domain.fullName,
+            university = domain.university,
+            bio = domain.bio
         )
     }
 

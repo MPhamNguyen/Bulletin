@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 interface AuthRepository {
+    suspend fun getCurrentUser(): Result<StudentProfile?>
     suspend fun login(email: StudentEmail, password: String): Result<StudentProfile>
     suspend fun register(
         email: StudentEmail,
@@ -13,4 +14,5 @@ interface AuthRepository {
         university: String = "CSU Long Beach"
     ): Result<StudentProfile>
     suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean>
+    suspend fun signOut(): Result<Unit>
 }

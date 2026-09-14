@@ -15,3 +15,9 @@ enum class AppDestination(val label: String, val icon: ImageVector) {
     MESSAGES("Inbox", Icons.Outlined.Mail),
     PROFILE("Profile", Icons.Outlined.AccountCircle)
 }
+
+enum class AppRootScreen {
+    SIGN_IN,
+    CREATE_PROFILE,
+    MAIN
+}

@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,15 +43,116 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
+import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
+import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
+import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
+import com.jdrms.bulletin.domain.profile.presentation.SignInScreen
+import com.jdrms.bulletin.domain.profile.presentation.SignUpScreen
 
 @Composable
 fun App(appContainer: AppContainer? = null) {
+    val isInspectionMode = LocalInspectionMode.current
+    val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
+
+    BulletinTheme {
+        var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
+        val profileViewModel = remember { container.createProfileViewModel() }
+        val profileUiState by profileViewModel.uiState.collectAsState()
+        val effectiveRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
+
+        LaunchedEffect(profileUiState.authSessionState) {
+            currentRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
+        }
+
+        if (profileUiState.authSessionState == AuthSessionState.CHECKING) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            when (effectiveRootScreen) {
+                AppRootScreen.SIGN_IN -> {
+                    SignInScreen(
+                        errorMessage = profileUiState.errorMessage,
+                        isLoading = profileUiState.isLoading,
+                        onClearMessages = { profileViewModel.clearMessages() },
+                        onSignIn = { email, password ->
+                            profileViewModel.login(
+                                emailStr = email,
+                                pass = password,
+                                onSuccess = {
+                                    currentRootScreen = AppRootScreen.MAIN
+                                }
+                            )
+                        },
+                        onCreateAccount = {
+                            profileViewModel.resetRegistration()
+                            currentRootScreen = AppRootScreen.CREATE_PROFILE
+                        }
+                    )
+                }
+                AppRootScreen.CREATE_PROFILE -> {
+                    SignUpScreen(
+                        viewModel = profileViewModel,
+                        onBack = {
+                            profileViewModel.clearMessages()
+                            currentRootScreen = AppRootScreen.SIGN_IN
+                        },
+                        onNavigateToSignIn = {
+                            profileViewModel.clearMessages()
+                            currentRootScreen = AppRootScreen.SIGN_IN
+                        },
+                        onContinueToApp = {
+                            profileViewModel.clearMessages()
+                            currentRootScreen = AppRootScreen.MAIN
+                        }
+                    )
+                }
+                AppRootScreen.MAIN -> {
+                    MainAppScaffold(
+                        appContainer = container,
+                        profileViewModel = profileViewModel,
+                        onSignOut = {
+                            profileViewModel.signOut {
+                                currentRootScreen = AppRootScreen.SIGN_IN
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+internal fun resolveRootScreen(
+    currentRootScreen: AppRootScreen,
+    authSessionState: AuthSessionState
+): AppRootScreen {
+    return when (authSessionState) {
+        AuthSessionState.CHECKING -> currentRootScreen
+        AuthSessionState.AUTHENTICATED -> AppRootScreen.MAIN
+        AuthSessionState.UNAUTHENTICATED -> {
+            if (currentRootScreen == AppRootScreen.MAIN) AppRootScreen.SIGN_IN else currentRootScreen
+        }
+    }
+}
+
+@Composable
+fun MainAppScaffold(
+    appContainer: AppContainer? = null,
+    profileViewModel: ProfileViewModel? = null,
+    onSignOut: () -> Unit = {}
+) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
 
@@ -58,7 +163,9 @@ fun App(appContainer: AppContainer? = null) {
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
         val listingsViewModel = remember { container.createListingsViewModel() }
         val messagesViewModel = remember { container.createMessagesViewModel() }
-        val profileViewModel = remember { container.createProfileViewModel() }
+        val resolvedProfileViewModel = remember(profileViewModel, container) {
+            resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
+        }
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -76,12 +183,17 @@ fun App(appContainer: AppContainer? = null) {
                     AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
-                    AppDestination.PROFILE -> ProfileScreen(profileViewModel)
+                    AppDestination.PROFILE -> ProfileScreen(
+                        viewModel = resolvedProfileViewModel,
+                        onSignOut = onSignOut
+                    )
                 }
             }
         }
     }
 }
+
+internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()
 
 @Composable
 fun BulletinBottomNavigationBar(

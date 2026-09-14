@@ -22,6 +22,8 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMess
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
@@ -104,6 +106,8 @@ class AppContainer(
 
     // Use Cases - Profile
     val authenticateUser by lazy { AuthenticateUser(authRepository) }
+    val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
+    val signOutUser by lazy { SignOutUser(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
@@ -135,6 +139,8 @@ class AppContainer(
 
     fun createProfileViewModel() = ProfileViewModel(
         authenticateUser = authenticateUser,
+        restoreAuthenticatedProfile = restoreAuthenticatedProfile,
+        signOutUser = signOutUser,
         verifyStudentEmail = verifyStudentEmail,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,

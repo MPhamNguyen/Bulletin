@@ -277,6 +277,18 @@ object BulletinButtonDefaults {
     )
 
     @Composable
+    fun destructiveOutlinedButtonColors(): ButtonColors = ButtonDefaults.outlinedButtonColors(
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.error
+    )
+
+    @Composable
+    fun destructiveOutlinedButtonBorder(): BorderStroke = BorderStroke(
+        width = 1.5.dp,
+        color = MaterialTheme.colorScheme.error
+    )
+
+    @Composable
     fun textButtonColors(): ButtonColors = ButtonDefaults.textButtonColors(
         contentColor = MaterialTheme.colorScheme.primary
     )
