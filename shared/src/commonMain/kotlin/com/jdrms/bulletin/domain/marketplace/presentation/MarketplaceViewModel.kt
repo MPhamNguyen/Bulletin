@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,15 +20,18 @@ class MarketplaceViewModel(
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
+    private var searchJob: Job? = null
 
     init {
-        loadCatalog()
+        refreshListings()
     }
 
-    fun loadCatalog(userId: String = "student_user") {
-        viewModelScope.launch {
+    fun refreshListings(userId: String = "student_user") {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val items = searchMarketplace.getCatalog()
+            val state = _uiState.value
+            val items = searchMarketplace.search(state.searchQuery, state.selectedCategory)
             val savedIds = toggleSaveItem.getSavedIds(userId)
             _uiState.update { it.copy(items = items, savedItemIds = savedIds, isLoading = false) }
         }
@@ -44,11 +48,18 @@ class MarketplaceViewModel(
     }
 
     private fun applySearch() {
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             val query = _uiState.value.searchQuery
             val category = _uiState.value.selectedCategory
             val results = searchMarketplace.search(query, category)
-            _uiState.update { it.copy(items = results) }
+            _uiState.update { state ->
+                if (state.searchQuery == query && state.selectedCategory == category) {
+                    state.copy(items = results, isLoading = false)
+                } else {
+                    state
+                }
+            }
         }
     }
 

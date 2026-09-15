@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
@@ -61,6 +62,7 @@ class AppContainer(
     val homeRepository by lazy { InMemoryHomeRepository() }
     val marketplaceRepository by lazy { InMemoryMarketplaceRepository() }
     val listingsRepository by lazy { InMemoryListingsRepository() }
+    val marketplaceListingSource by lazy { ListingsMarketplaceListingSource(listingsRepository) }
     val messagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
@@ -90,7 +92,7 @@ class AppContainer(
     val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
 
     // Use Cases - Marketplace
-    val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository) }
+    val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
 
     // Use Cases - Listings
