@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileUpdateDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
+import kotlin.time.Instant
 
 object ProfileMapper {
     fun toDomain(dto: ProfileDto, reputation: StudentReputation? = null): StudentProfile {
@@ -54,7 +55,7 @@ object ProfileMapper {
             revieweeId = UserId(dto.revieweeId),
             rating = Rating(clampedScore),
             comment = dto.comment,
-            createdAtMillis = dto.createdAtMillis
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
         )
     }
 
@@ -66,7 +67,11 @@ object ProfileMapper {
             revieweeId = domain.revieweeId.value,
             score = domain.rating.score,
             comment = domain.comment,
-            createdAtMillis = domain.createdAtMillis
+            createdAt = Instant.fromEpochMilliseconds(domain.createdAtMillis).toString()
         )
+    }
+
+    private fun String.toEpochMillisecondsOrZero(): Long {
+        return if (isBlank()) 0L else Instant.parse(this).toEpochMilliseconds()
     }
 }

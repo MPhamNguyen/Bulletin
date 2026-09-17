@@ -69,7 +69,7 @@ class InMemoryProfileRepository(
                     revieweeId = "current_student",
                     score = 5,
                     comment = "Super fast meetup at the campus library, textbook was in pristine shape!",
-                    createdAtMillis = 1000L
+                    createdAt = "1970-01-01T00:00:01Z"
                 ),
                 ReviewDto(
                     id = "rev_2",
@@ -78,7 +78,7 @@ class InMemoryProfileRepository(
                     revieweeId = "current_student",
                     score = 5,
                     comment = "Great buyer, communicative and punctual. Highly recommend.",
-                    createdAtMillis = 2000L
+                    createdAt = "1970-01-01T00:00:02Z"
                 )
             )
         )
