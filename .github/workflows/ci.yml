@@ -3,6 +3,8 @@ name: Build & Test
 on:
   push:
 
+  pull_request:
+
   workflow_dispatch:
 
 concurrency:
@@ -67,8 +69,8 @@ jobs:
 
       - name: Run Build and Tests
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ steps.filter.outputs.global }}" = "true" ]; then
-            echo "Running full build and check (main branch merge/push, manual trigger, or global/core changes)..."
+          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ steps.filter.outputs.global }}" = "true" ]; then
+            echo "Running full build and check (pull request, main branch push, manual trigger, or global/core changes)..."
             ./gradlew check --no-daemon
           else
             GRADLE_TASKS=()
