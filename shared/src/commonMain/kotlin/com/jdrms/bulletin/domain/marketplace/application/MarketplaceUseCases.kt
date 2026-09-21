@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -31,5 +32,21 @@ class ToggleSaveMarketplaceItem(
 
     suspend fun getSavedIds(userId: String): Set<MarketplaceItemId> {
         return repository.getSavedItemIds(userId)
+    }
+}
+
+class ViewMarketplaceListing(
+    private val repository: MarketplaceRepository
+) {
+    suspend fun viewListing(listingID: String): Listing {
+        val result = repository.viewListing(listingID)
+        return when (result) {
+            is Result.Success -> result.data
+            is Result.Error -> throw result.exception
+        }
+    }
+
+    suspend operator fun invoke(listingID: String): Result<Listing> {
+        return repository.viewListing(listingID)
     }
 }
