@@ -76,6 +76,26 @@ class MarketplaceDomainTest {
         val categoryResults = searchPolicy.filterItems(items, "", MarketplaceCategory.ELECTRONICS)
         assertEquals(1, categoryResults.size)
         assertEquals("m2", categoryResults.first().id.value)
+
+        val categoryKeywordResults = searchPolicy.filterItems(items, "electronics", null)
+        assertEquals(listOf(item2), categoryKeywordResults)
+
+        val titleAndCategoryKeywordResults = searchPolicy.filterItems(items, "hub electronics", null)
+        assertEquals(listOf(item2), titleAndCategoryKeywordResults)
+
+        assertEquals(emptyList(), searchPolicy.filterItems(items, "mechanics", null))
+        assertEquals(emptyList(), searchPolicy.filterItems(items, "sean", null))
+
+        val titleAndCategoryResults = searchPolicy.filterItems(
+            items = items,
+            query = "PHYSICS",
+            category = MarketplaceCategory.TEXTBOOKS
+        )
+        assertEquals(listOf(item1), titleAndCategoryResults)
+        assertEquals(
+            emptyList(),
+            searchPolicy.filterItems(items, "physics", MarketplaceCategory.ELECTRONICS)
+        )
     }
 
     @Test

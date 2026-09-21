@@ -4,22 +4,52 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 
 class SearchMarketplace(
-    private val repository: MarketplaceRepository
+    private val repository: MarketplaceRepository,
+    private val listingSource: MarketplaceListingSource = EmptyMarketplaceListingSource,
+    private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy()
 ) {
     suspend fun getCatalog(): List<MarketplaceItem> {
-        return repository.getCatalog()
+        return currentCatalog()
     }
 
     suspend fun search(query: String, category: MarketplaceCategory?): List<MarketplaceItem> {
-        return repository.search(query, category)
+        return filterCatalog(currentCatalog(), query, category)
+    }
+
+    fun filterCatalog(
+        catalog: List<MarketplaceItem>,
+        query: String,
+        category: MarketplaceCategory?
+    ): List<MarketplaceItem> {
+        return searchPolicy.filterItems(catalog, query, category)
     }
 
     suspend fun getById(id: MarketplaceItemId): MarketplaceItem? {
-        return repository.getItem(id)
+        return currentCatalog().find { it.id == id }
     }
+
+    private suspend fun currentCatalog(): List<MarketplaceItem> {
+        val publishedListings = listingSource.getAvailableListings().map { it.toMarketplaceItem() }
+        return (publishedListings + repository.getCatalog()).distinctBy { it.id }
+    }
+}
+
+private fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
+    return MarketplaceItem(
+        id = MarketplaceItemId(id),
+        sellerId = sellerId,
+        sellerName = sellerName,
+        title = title,
+        description = description,
+        price = MarketplacePrice(priceAmount, priceCurrency),
+        category = category,
+        createdAtMillis = createdAtMillis
+    )
 }
 
 class ToggleSaveMarketplaceItem(
