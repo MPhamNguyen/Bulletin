@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -14,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
@@ -22,27 +24,31 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
     val state by viewModel.uiState.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                SectionHeader(
-                    title = "Campus Marketplace",
-                    subtitle = "Browse, search, & discover student items on campus"
-                )
-            }
+    LaunchedEffect(viewModel) {
+        viewModel.refreshListings()
+    }
 
-            item {
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = { viewModel.onSearchQueryChanged(it) },
-                    label = { Text("Search listings...") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            SectionHeader(
+                title = "Campus Marketplace",
+                subtitle = "Browse, search, & discover student items on campus"
+            )
+        }
+
+        item {
+            OutlinedTextField(
+                value = state.searchQuery,
+                onValueChange = { viewModel.onSearchQueryChanged(it) },
+                label = { Text("Search by title or category") },
+                singleLine = true,
+                colors = BulletinTextFieldDefaults.colors(),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

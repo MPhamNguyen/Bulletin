@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
@@ -10,12 +12,14 @@ import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
@@ -74,6 +78,15 @@ class AppContainer(
         }
     }
     val listingsRepository by lazy { InMemoryListingsRepository() }
+    val marketplaceListingSource: MarketplaceListingSource by lazy {
+        val localSource = ListingsMarketplaceListingSource(listingsRepository)
+        supabaseClient?.let { client ->
+            CompositeMarketplaceListingSource(
+                localSource,
+                SupabaseMarketplaceListingSource(client)
+            )
+        } ?: localSource
+    }
     val messagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
@@ -103,7 +116,7 @@ class AppContainer(
     val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
 
     // Use Cases - Marketplace
-    val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository) }
+    val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
     val viewMarketplaceListing by lazy { ViewMarketplaceListing(marketplaceRepository) }
 

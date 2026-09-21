@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
@@ -14,6 +15,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfi
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -48,6 +50,31 @@ class ProfileInfrastructureTest {
         val dto = ProfileMapper.toDto(profile)
         assertEquals("Computer Science", dto.major)
         assertEquals(profile, ProfileMapper.toDomain(dto))
+    }
+
+    @Test
+    fun testProfileMapperAcceptsNullOptionalSupabaseFields() {
+        val dto = Json.decodeFromString<ProfileDto>(
+            """
+            {
+                "id":"c3a81234-5678-4abc-9def-123456789abc",
+                "email":"student@csulb.edu",
+                "full_name":null,
+                "major":null,
+                "university":null,
+                "bio":null,
+                "is_verified":null
+            }
+            """.trimIndent()
+        )
+
+        val profile = ProfileMapper.toDomain(dto)
+
+        assertEquals("Student", profile.fullName)
+        assertEquals("", profile.major)
+        assertEquals("CSU Long Beach", profile.university)
+        assertEquals("", profile.bio)
+        assertFalse(profile.isVerified)
     }
 
     @Test

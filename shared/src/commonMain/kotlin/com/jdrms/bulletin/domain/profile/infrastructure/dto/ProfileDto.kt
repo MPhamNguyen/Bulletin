@@ -7,11 +7,11 @@ import kotlinx.serialization.Serializable
 data class ProfileDto(
     @SerialName("id") val id: String,
     @SerialName("email") val email: String,
-    @SerialName("full_name") val fullName: String,
-    @SerialName("major") val major: String = "",
-    @SerialName("university") val university: String,
-    @SerialName("bio") val bio: String = "",
-    @SerialName("is_verified") val isVerified: Boolean = false
+    @SerialName("full_name") val fullName: String? = null,
+    @SerialName("major") val major: String? = null,
+    @SerialName("university") val university: String? = null,
+    @SerialName("bio") val bio: String? = null,
+    @SerialName("is_verified") val isVerified: Boolean? = null
 )
 
 @Serializable
@@ -29,7 +29,7 @@ data class ReviewDto(
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
     @SerialName("comment") val comment: String,
-    @SerialName("created_at_millis") val createdAtMillis: Long = 0L
+    @SerialName("created_at") val createdAt: String = ""
 )
 
 @Serializable
@@ -37,6 +37,5 @@ data class ReviewInsertDto(
     @SerialName("reviewer_id") val reviewerId: String,
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
-    @SerialName("comment") val comment: String,
-    @SerialName("created_at_millis") val createdAtMillis: Long = 0L
+    @SerialName("comment") val comment: String
 )
