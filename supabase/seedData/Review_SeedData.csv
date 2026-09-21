@@ -1,0 +1,6 @@
+﻿id,reviewer_id,reviewee_id,score,comment,created_at
+,test_1@gmail.com,test_2@gmail.com,5,W Mans,
+,test_2@gmail.com,test_3@gmail.com,4,Was negotiable ,
+,test_3@gmail.com,test_4@gmail.com,3,Was a little mean,
+,test_4@gmail.com,test_5@gmail.com,2,Bro was not chill,
+,test_5@gmail.com,test_6@gmail.com,1,He scammed me,

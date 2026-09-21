@@ -1,0 +1,101 @@
+﻿id,name,user_id,category,condition,price,description,created_at
+550e8400-e29b-41d4-a716-446655440001,CECS 491 Software Engineering Textbook,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,New,45,Hardcover Edition,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440002,TI-84 Calculator,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Like New,85.5,Working,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440003,Minifridge,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,95.3,Still Works,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440004,Champion Hoodie,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Fair,22.25,Size: XXL,2026-09-14T12:00:00Z
+55058400-e29b-41d4-a716-446655440005,Basketball,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Poor,5,Really worn out,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440006,2 bedroom apt,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Housing,New,,"Looking for roommate, in good condition. Will Discuss price over message",2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440007,CECS 323 Textbook,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Like New,35.5,Barely touched,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440008,Desk Lamp,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,55,LED Desk Lamp,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440009,Macbook air,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Fair,200,"Not in box, Few scratches.",2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440010,CECS 328 Algorithms Textbook,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Poor,15.5,Answers in Textbook filled out,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440011,Logitech K380 Keyboard,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,New,18,Compact keyboard with USB receiver,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440012,JBL Flip 6 Speaker,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,35,Clear sound with rechargeable battery,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440013,Anker 7-in-1 USB-C Hub,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,28,Multiport adapter with HDMI output,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440014,IKEA Markus Desk Chair,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,45,Comfortable rolling chair,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440015,IKEA Billy Bookshelf,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Fair,40,Five shelf bookcase,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440016,IKEA Lack Coffee Table,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Fair,70,Wood finish living room table,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440017,Columbia Puffer Jacket,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,30,Warm jacket for cold weather,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440018,Nike Air Zoom Pegasus Shoes,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,50,Athletic shoes with cushioned sole,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440019,JanSport Right Pack Backpack,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Fair,45,Durable backpack with laptop sleeve,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440020,Pearson Organic Chemistry Textbook,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Like New,28,College chemistry textbook,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440021,Harry Potter Paperback Set,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Like New,18,Set of paperback novels,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440022,Barron's GRE Study Guide,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Good,30,Exam preparation study guide,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440023,Muji Acrylic Desk Organizer,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,New,8,Desktop organizer with compartments,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440024,Manduka Begin Yoga Mat,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Good,16,Non-slip exercise mat,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440025,Giro Register Bicycle Helmet,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Good,45,Adjustable protective helmet,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440026,Panasonic Countertop Microwave,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,40,Countertop microwave oven,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440027,Dell 24-inch IPS Monitor,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,90,Full HD computer monitor,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440028,Honeywell TurboForce Floor Fan,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Like New,35,Quiet oscillating fan,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440029,IKEA RANARP Reading Lamp,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,New,12,Adjustable reading lamp,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440030,Zinus Green Tea Twin Mattress,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,90,Clean twin size mattress,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440031,Nike Athletic Tee Bundle,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Fair,35,Bundle of casual shirts,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440032,Levi's 511 Denim Jeans,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,18,Classic fit denim jeans,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440033,Champion Fleece Joggers,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,22,Soft fleece sweatpants,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440034,OpenStax University Physics,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Fair,60,Introductory physics textbook,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440035,Quizlet GRE Vocabulary Cards,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,New,6,Subject review flashcards,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440036,Prismacolor Colored Pencils,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Like New,22,Assorted drawing and painting supplies,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440037,Catan Board Game,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Fair,32,Complete strategy board game,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440038,Black Diamond Moji Lantern,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,New,15,LED lantern for camping,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440039,Vankyo Leisure 3 Mini Projector,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,75,Portable projector with remote,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440040,Twelve South Forté Phone Stand,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,16,Adjustable stand for desk use,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440041,Keychron K2 Mechanical Keyboard,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,New,18,Compact keyboard with USB receiver,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440042,Anker Soundcore 3 Speaker,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,35,Clear sound with rechargeable battery,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440043,Belkin Multimedia Hub,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,28,Multiport adapter with HDMI output,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440044,HON Ignition Office Chair,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,45,Comfortable rolling chair,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440045,Sauder 5-Shelf Bookcase,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Fair,40,Five shelf bookcase,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440046,Nathan James Asher Coffee Table,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Fair,70,Wood finish living room table,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440047,The North Face Fleece Jacket,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,30,Warm jacket for cold weather,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440048,Adidas Ultraboost Running Shoes,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,50,Athletic shoes with cushioned sole,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440049,Herschel Little America Backpack,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Fair,45,Durable backpack with laptop sleeve,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440050,McGraw Hill Chemistry Textbook,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Like New,28,College chemistry textbook,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440051,Octavia Butler Book Bundle,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Like New,18,Set of paperback novels,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440052,Princeton Review MCAT Guide,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Good,30,Exam preparation study guide,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440053,Amazon Basics Mesh Organizer,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,New,8,Desktop organizer with compartments,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440054,Gaiam Performance Yoga Mat,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Good,16,Non-slip exercise mat,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440055,Bell Local Bike Helmet,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Good,45,Adjustable protective helmet,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440056,Toshiba Countertop Microwave,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,40,Countertop microwave oven,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440057,Acer 24-inch Full HD Monitor,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,90,Full HD computer monitor,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440058,Vornado 460 Air Circulator,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Like New,35,Quiet oscillating fan,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440059,Philips Hue Table Lamp,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,New,12,Adjustable reading lamp,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440060,Linenspa 8-inch Twin Mattress,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,90,Clean twin size mattress,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440061,Uniqlo Basics T-Shirt Bundle,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Fair,35,Bundle of casual shirts,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440062,American Eagle Slim Jeans,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,18,Classic fit denim jeans,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440063,Adidas Essentials Sweatpants,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,22,Soft fleece sweatpants,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440064,Halliday Resnick Physics Textbook,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Fair,60,Introductory physics textbook,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440065,Barron's Biology Flashcards,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,New,6,Subject review flashcards,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440066,Winsor & Newton Watercolors,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Like New,22,Assorted drawing and painting supplies,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440067,Ticket to Ride Board Game,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Fair,32,Complete strategy board game,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440068,Goal Zero Lighthouse Lantern,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,New,15,LED lantern for camping,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440069,Kodak Luma 350 Projector,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,75,Portable projector with remote,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440070,Lamicall Adjustable Phone Stand,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,16,Adjustable stand for desk use,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440071,Microsoft Designer Compact Keyboard,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,New,18,Compact keyboard with USB receiver,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440072,Sony SRS-XB23 Speaker,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,35,Clear sound with rechargeable battery,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440073,Satechi Aluminum USB-C Hub,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,28,Multiport adapter with HDMI output,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440074,Staples Hyken Mesh Chair,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,45,Comfortable rolling chair,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440075,Target Threshold Bookcase,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Fair,40,Five shelf bookcase,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440076,Lift-Top Storage Coffee Table,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Fair,70,Wood finish living room table,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440077,Uniqlo Ultralight Down Jacket,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,30,Warm jacket for cold weather,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440078,Brooks Ghost Running Shoes,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,50,Athletic shoes with cushioned sole,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440079,SwissGear Laptop Backpack,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Fair,45,Durable backpack with laptop sleeve,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440080,Zumdahl Chemistry Textbook,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Like New,28,College chemistry textbook,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440081,Classic Mystery Novel Set,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Like New,18,Set of paperback novels,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440082,CliffNotes Calculus Study Guide,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Good,30,Exam preparation study guide,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440083,Bamboo Drawer Organizer,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,New,8,Desktop organizer with compartments,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440084,Lululemon Reversible Yoga Mat,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Good,16,Non-slip exercise mat,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440085,Schwinn Thrasher Helmet,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Good,45,Adjustable protective helmet,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440086,BLACK+DECKER Compact Microwave,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,40,Countertop microwave oven,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440087,LG UltraGear Gaming Monitor,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,90,Full HD computer monitor,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440088,Lasko Pedestal Fan,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Like New,35,Quiet oscillating fan,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440089,Simple Designs Bedside Lamp,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,New,12,Adjustable reading lamp,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440090,Lucid Memory Foam Twin Mattress,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Furniture,Good,90,Clean twin size mattress,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440091,Graphic T-Shirt Assortment,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Fair,35,Bundle of casual shirts,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440092,Wrangler Straight-Leg Jeans,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,18,Classic fit denim jeans,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440093,Hanes EcoSmart Sweatpants,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Clothing,Like New,22,Soft fleece sweatpants,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440094,Serway College Physics,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,Fair,60,Introductory physics textbook,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440095,Handmade Calculus Flashcards,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Textbooks,New,6,Subject review flashcards,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440096,Copic Sketch Marker Set,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Like New,22,Assorted drawing and painting supplies,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440097,Azul Strategy Board Game,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,Fair,32,Complete strategy board game,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440098,Coleman Classic LED Lantern,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Other,New,15,LED lantern for camping,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440099,AuKing Portable Projector,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,75,Portable projector with remote,2026-09-14T12:00:00Z
+550e8400-e29b-41d4-a716-446655440100,Spigen MagFit Phone Stand,27d12fec-ae08-45c4-a7eb-e3947e0c370e,Electronics,Good,16,Adjustable stand for desk use,2026-09-14T12:00:00Z
