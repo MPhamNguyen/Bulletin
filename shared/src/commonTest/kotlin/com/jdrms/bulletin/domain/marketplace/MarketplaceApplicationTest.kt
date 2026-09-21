@@ -57,7 +57,7 @@ class MarketplaceApplicationTest {
     fun searchReadsNewlyPublishedListingsFromCurrentSource() = runTest {
         val source = MutableMarketplaceListingSource()
         val searchMarketplace = SearchMarketplace(
-            repository = InMemoryMarketplaceRepository(initialItems = emptyList()),
+            repository = InMemoryMarketplaceRepository(initialListings = emptyList()),
             listingSource = source
         )
 
