@@ -134,4 +134,71 @@ class MarketplaceDomainTest {
         assertEquals(dto.id, backToDto.id)
         assertEquals(dto.price, backToDto.price)
     }
+
+    @Test
+    fun testListingValidCreation() {
+        val listing = com.jdrms.bulletin.domain.marketplace.domain.model.Listing(
+            id = MarketplaceItemId("mkt_valid"),
+            sellerId = "seller_1",
+            sellerName = "Dominic",
+            title = "Organic Chemistry Textbook",
+            description = "Hardcover in great condition",
+            price = MarketplacePrice(45.0),
+            category = MarketplaceCategory.TEXTBOOKS,
+            condition = "LIKE_NEW",
+            status = "AVAILABLE",
+            photos = listOf("https://example.com/photo1.jpg"),
+            sellerReputationScore = 4.7
+        )
+        assertEquals("Organic Chemistry Textbook", listing.title)
+        assertEquals(4.7, listing.sellerReputationScore)
+        assertEquals(1, listing.photos.size)
+    }
+
+    @Test
+    fun testListingShortTitleThrows() {
+        assertFailsWith<IllegalArgumentException> {
+            com.jdrms.bulletin.domain.marketplace.domain.model.Listing(
+                id = MarketplaceItemId("mkt_short"),
+                sellerId = "seller_1",
+                sellerName = "Dominic",
+                title = "AB",
+                description = "Some description",
+                price = MarketplacePrice(10.0),
+                category = MarketplaceCategory.OTHER
+            )
+        }
+    }
+
+    @Test
+    fun testListingInvalidReputationScoreThrows() {
+        assertFailsWith<IllegalArgumentException> {
+            com.jdrms.bulletin.domain.marketplace.domain.model.Listing(
+                id = MarketplaceItemId("mkt_rep"),
+                sellerId = "seller_1",
+                sellerName = "Dominic",
+                title = "Calculus Book",
+                description = "Some description",
+                price = MarketplacePrice(10.0),
+                category = MarketplaceCategory.TEXTBOOKS,
+                sellerReputationScore = 5.5
+            )
+        }
+    }
+
+    @Test
+    fun testListingBlankPhotoThrows() {
+        assertFailsWith<IllegalArgumentException> {
+            com.jdrms.bulletin.domain.marketplace.domain.model.Listing(
+                id = MarketplaceItemId("mkt_blank_photo"),
+                sellerId = "seller_1",
+                sellerName = "Dominic",
+                title = "Calculus Book",
+                description = "Some description",
+                price = MarketplacePrice(10.0),
+                category = MarketplaceCategory.TEXTBOOKS,
+                photos = listOf("  ")
+            )
+        }
+    }
 }
