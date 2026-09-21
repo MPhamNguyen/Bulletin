@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -21,75 +22,92 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
     val state by viewModel.uiState.collectAsState()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            SectionHeader(
-                title = "Campus Marketplace",
-                subtitle = "Browse, search, & discover student items on campus"
-            )
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                SectionHeader(
+                    title = "Campus Marketplace",
+                    subtitle = "Browse, search, & discover student items on campus"
+                )
+            }
 
-        item {
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = { viewModel.onSearchQueryChanged(it) },
-                label = { Text("Search listings...") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+            item {
+                OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChanged(it) },
+                    label = { Text("Search listings...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-        item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        FilterChip(
+                            selected = state.selectedCategory == null,
+                            onClick = { viewModel.onCategorySelected(null) },
+                            label = { Text("All") }
+                        )
+                    }
+                    items(MarketplaceCategory.entries.toTypedArray()) { category ->
+                        FilterChip(
+                            selected = state.selectedCategory == category,
+                            onClick = { viewModel.onCategorySelected(category) },
+                            label = { Text(category.name) }
+                        )
+                    }
+                }
+            }
+
+            if (state.isLoading) {
                 item {
-                    FilterChip(
-                        selected = state.selectedCategory == null,
-                        onClick = { viewModel.onCategorySelected(null) },
-                        label = { Text("All") }
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
                 }
-                items(MarketplaceCategory.entries.toTypedArray()) { category ->
-                    FilterChip(
-                        selected = state.selectedCategory == category,
-                        onClick = { viewModel.onCategorySelected(category) },
-                        label = { Text(category.name) }
-                    )
+            }
+
+            if (state.items.isEmpty() && !state.isLoading) {
+                item {
+                    BulletinCard {
+                        Text(
+                            text = "No marketplace listings found for your search.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+            }
+
+            items(state.items) { item ->
+                val isSaved = state.savedItemIds.contains(item.id)
+                MarketplaceItemCard(
+                    item = item,
+                    isSaved = isSaved,
+                    onCardClick = { viewModel.onListingClicked(item.id.value) },
+                    onToggleSaved = { viewModel.toggleSaved(item.id) }
+                )
             }
         }
 
-        if (state.isLoading) {
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        if (state.isDetailSheetOpen) {
+            MarketplaceDetailBottomSheet(
+                listing = state.selectedListing,
+                isLoading = state.isDetailLoading,
+                errorMessage = state.detailErrorMessage,
+                isSaved = state.selectedListing?.let { state.savedItemIds.contains(it.id) } ?: false,
+                onDismiss = { viewModel.dismissListingDetail() },
+                onRetry = { viewModel.retryLoadListingDetail() },
+                onToggleSave = {
+                    state.selectedListing?.let { viewModel.toggleSaved(it.id) }
                 }
-            }
-        }
-
-        if (state.items.isEmpty() && !state.isLoading) {
-            item {
-                BulletinCard {
-                    Text(
-                        text = "No marketplace listings found for your search.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        items(state.items) { item ->
-            val isSaved = state.savedItemIds.contains(item.id)
-            MarketplaceItemCard(
-                item = item,
-                isSaved = isSaved,
-                onToggleSaved = { viewModel.toggleSaved(item.id) }
             )
         }
     }
@@ -99,9 +117,12 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
 private fun MarketplaceItemCard(
     item: MarketplaceItem,
     isSaved: Boolean,
+    onCardClick: () -> Unit,
     onToggleSaved: () -> Unit
 ) {
-    BulletinCard {
+    BulletinCard(
+        modifier = Modifier.clickable { onCardClick() }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
