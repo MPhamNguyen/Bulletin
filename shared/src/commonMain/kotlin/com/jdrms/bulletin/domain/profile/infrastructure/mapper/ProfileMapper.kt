@@ -16,11 +16,11 @@ object ProfileMapper {
         return StudentProfile(
             id = UserId(dto.id),
             email = StudentEmail(dto.email),
-            fullName = dto.fullName,
-            major = dto.major,
-            university = dto.university,
-            bio = dto.bio,
-            isVerified = dto.isVerified,
+            fullName = dto.fullName?.takeIf(String::isNotBlank) ?: "Student",
+            major = dto.major.orEmpty(),
+            university = dto.university?.takeIf(String::isNotBlank) ?: "CSU Long Beach",
+            bio = dto.bio.orEmpty(),
+            isVerified = dto.isVerified ?: false,
             reputation = reputation
         )
     }

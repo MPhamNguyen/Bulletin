@@ -15,6 +15,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 
 class MarketplaceViewModelTest {
 
@@ -41,6 +43,27 @@ class MarketplaceViewModelTest {
             viewModel.onSearchQueryChanged("electronics")
             advanceUntilIdle()
             assertEquals(listOf("Graphing Calculator"), viewModel.uiState.value.items.map { it.title })
+            assertEquals(2, source.loadCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun loadFailureStopsLoadingAndExposesRetryableError() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository(initialItems = emptyList())
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository, FailingListingSource),
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository)
+            )
+
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertNotNull(viewModel.uiState.value.errorMessage)
         } finally {
             Dispatchers.resetMain()
         }
@@ -61,8 +84,18 @@ class MarketplaceViewModelTest {
     }
 }
 
+private object FailingListingSource : MarketplaceListingSource {
+    override suspend fun getAvailableListings(): List<MarketplaceListingSnapshot> {
+        error("Database unavailable")
+    }
+}
+
 private class MutableListingSource : MarketplaceListingSource {
     val listings = mutableListOf<MarketplaceListingSnapshot>()
+    var loadCount = 0
 
-    override suspend fun getAvailableListings(): List<MarketplaceListingSnapshot> = listings.toList()
+    override suspend fun getAvailableListings(): List<MarketplaceListingSnapshot> {
+        loadCount += 1
+        return listings.toList()
+    }
 }

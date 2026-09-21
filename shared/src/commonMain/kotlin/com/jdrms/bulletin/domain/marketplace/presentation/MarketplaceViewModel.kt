@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ class MarketplaceViewModel(
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
+    private var catalog: List<MarketplaceItem> = emptyList()
 
     init {
         refreshListings()
@@ -30,10 +32,34 @@ class MarketplaceViewModel(
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val state = _uiState.value
-            val items = searchMarketplace.search(state.searchQuery, state.selectedCategory)
-            val savedIds = toggleSaveItem.getSavedIds(userId)
-            _uiState.update { it.copy(items = items, savedItemIds = savedIds, isLoading = false) }
+            runCatching {
+                val loadedCatalog = searchMarketplace.getCatalog()
+                val savedIds = toggleSaveItem.getSavedIds(userId)
+                loadedCatalog to savedIds
+            }.fold(
+                onSuccess = { (loadedCatalog, savedIds) ->
+                    catalog = loadedCatalog
+                    _uiState.update { state ->
+                        state.copy(
+                            items = searchMarketplace.filterCatalog(
+                                catalog = loadedCatalog,
+                                query = state.searchQuery,
+                                category = state.selectedCategory
+                            ),
+                            savedItemIds = savedIds,
+                            isLoading = false
+                        )
+                    }
+                },
+                onFailure = {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Unable to load marketplace listings. Please try again."
+                        )
+                    }
+                }
+            )
         }
     }
 
@@ -48,17 +74,14 @@ class MarketplaceViewModel(
     }
 
     private fun applySearch() {
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            val query = _uiState.value.searchQuery
-            val category = _uiState.value.selectedCategory
-            val results = searchMarketplace.search(query, category)
-            _uiState.update { state ->
-                if (state.searchQuery == query && state.selectedCategory == category) {
-                    state.copy(items = results, isLoading = false)
-                } else {
-                    state
-                }
+        val query = _uiState.value.searchQuery
+        val category = _uiState.value.selectedCategory
+        val results = searchMarketplace.filterCatalog(catalog, query, category)
+        _uiState.update { state ->
+            if (state.searchQuery == query && state.selectedCategory == category) {
+                state.copy(items = results, isLoading = false)
+            } else {
+                state
             }
         }
     }

@@ -18,7 +18,15 @@ class SearchMarketplace(
     }
 
     suspend fun search(query: String, category: MarketplaceCategory?): List<MarketplaceItem> {
-        return searchPolicy.filterItems(currentCatalog(), query, category)
+        return filterCatalog(currentCatalog(), query, category)
+    }
+
+    fun filterCatalog(
+        catalog: List<MarketplaceItem>,
+        query: String,
+        category: MarketplaceCategory?
+    ): List<MarketplaceItem> {
+        return searchPolicy.filterItems(catalog, query, category)
     }
 
     suspend fun getById(id: MarketplaceItemId): MarketplaceItem? {
