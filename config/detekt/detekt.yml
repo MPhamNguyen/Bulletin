@@ -14,7 +14,7 @@ config:
 complexity:
   LongMethod:
     # @Composable screen functions are declaratively long by nature.
-    ignoreAnnotated: ['Composable']
+    ignoreAnnotated: ["Composable"]
   LongParameterList:
     # DI use-case constructors and ViewModels legitimately take several deps.
     functionThreshold: 8
@@ -40,7 +40,7 @@ style:
 naming:
   FunctionNaming:
     # @Composable functions are PascalCase by convention.
-    ignoreAnnotated: ['Composable']
+    ignoreAnnotated: ["Composable"]
   MatchingDeclarationName:
     # KMP expect/actual files (Platform.android.kt) and grouping files
     # (AppNavigation.kt holding AppDestination) intentionally break this.
