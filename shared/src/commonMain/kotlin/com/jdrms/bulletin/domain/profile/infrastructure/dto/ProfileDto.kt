@@ -37,6 +37,5 @@ data class ReviewInsertDto(
     @SerialName("reviewer_id") val reviewerId: String,
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
-    @SerialName("comment") val comment: String,
-    @SerialName("created_at") val createdAt: String = ""
+    @SerialName("comment") val comment: String
 )

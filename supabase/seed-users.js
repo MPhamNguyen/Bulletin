@@ -51,23 +51,16 @@ async function main() {
         is_verified: parseBoolean(profile.is_verified)
     }));
 
-    await supabaseRequest("/rest/v1/profiles?on_conflict=id", {
-        method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-        body: profileRows
-    });
-    console.log(`Upserted ${profileRows.length} profiles.`);
-
     const profileIdsByEmail = new Map(
         profiles.map((profile) => [profile.email.trim().toLowerCase(), profile.authUserId])
     );
 
-    const reviewRows = reviews.map((review, index) => ({
+    // Build and validate every dependent payload before writing any data.
+    const reviewRows = reviews.map((review) => ({
         reviewer_id: resolveProfileId(profileIdsByEmail, review.reviewer_id),
         reviewee_id: resolveProfileId(profileIdsByEmail, review.reviewee_id),
         score: parseInteger(review.score, "score"),
-        comment: review.comment.trim(),
-        created_at: parseCreatedAt(review, index)
+        comment: review.comment.trim()
     }));
 
     for (const review of reviewRows) {
@@ -76,22 +69,13 @@ async function main() {
         }
     }
 
-    if (reviewRows.length > 0) {
-        await supabaseRequest("/rest/v1/reviews", {
-            method: "POST",
-            body: reviewRows
-        });
-        console.log(`Inserted ${reviewRows.length} reviews.`);
-    }
-
     const listingRows = listings.map((listing, index) => ({
         name: listing.name.trim(),
         user_id: profileRows[index % profileRows.length].id,
         category: listing.category.trim(),
         condition: listing.condition.trim(),
         price: listing.price.trim() === "" ? null : Number(listing.price),
-        description: listing.description.trim(),
-        created_at: listing.created_at.trim() || new Date().toISOString()
+        description: listing.description.trim()
     }));
 
     for (const listing of listingRows) {
@@ -100,12 +84,45 @@ async function main() {
         }
     }
 
+    await supabaseRequest("/rest/v1/profiles?on_conflict=id", {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: profileRows
+    });
+    console.log(`Upserted ${profileRows.length} profiles.`);
+
+    if (reviewRows.length > 0) {
+        const existingReviews = await supabaseRequest(
+            "/rest/v1/reviews?select=reviewer_id,reviewee_id,score,comment"
+        );
+        const existingReviewKeys = new Set(existingReviews.map(reviewKey));
+        const newReviews = reviewRows.filter((review) => !existingReviewKeys.has(reviewKey(review)));
+
+        if (newReviews.length > 0) {
+            await supabaseRequest("/rest/v1/reviews", {
+                method: "POST",
+                body: newReviews
+            });
+        }
+        console.log(`Reviews: inserted ${newReviews.length}, skipped ${reviewRows.length - newReviews.length}.`);
+    }
+
     if (listingRows.length > 0) {
-        await supabaseRequest("/rest/v1/listings", {
-            method: "POST",
-            body: listingRows
-        });
-        console.log(`Inserted ${listingRows.length} listings across ${profileRows.length} profiles.`);
+        const existingListings = await supabaseRequest(
+            "/rest/v1/listings?select=name,user_id,category,condition,price,description"
+        );
+        const existingListingKeys = new Set(existingListings.map(listingKey));
+        const newListings = listingRows.filter((listing) => !existingListingKeys.has(listingKey(listing)));
+
+        if (newListings.length > 0) {
+            await supabaseRequest("/rest/v1/listings", {
+                method: "POST",
+                body: newListings
+            });
+        }
+        console.log(
+            `Listings: inserted ${newListings.length}, skipped ${listingRows.length - newListings.length}.`
+        );
     }
 
     console.log("Seed completed.");
@@ -156,21 +173,19 @@ function resolveProfileId(profileIdsByEmail, value) {
     return id;
 }
 
-function parseCreatedAt(row, index) {
-    if (row.created_at && row.created_at.trim()) {
-        const timestamp = Date.parse(row.created_at);
-        if (Number.isNaN(timestamp)) {
-            throw new Error(`created_at must be a valid timestamp: ${row.created_at}`);
-        }
-        return new Date(timestamp).toISOString();
-    }
+function reviewKey(review) {
+    return [review.reviewer_id, review.reviewee_id, review.score, review.comment.trim()].join("|");
+}
 
-    if (row.created_at_millis && row.created_at_millis.trim()) {
-        const timestamp = parseInteger(row.created_at_millis, "created_at_millis");
-        return new Date(timestamp).toISOString();
-    }
-
-    return new Date(Date.UTC(2026, 8, 14, 12, 0, index)).toISOString();
+function listingKey(listing) {
+    return [
+        listing.name.trim(),
+        listing.user_id,
+        listing.category.trim(),
+        listing.condition.trim(),
+        listing.price === null ? "" : Number(listing.price),
+        listing.description.trim()
+    ].join("|");
 }
 
 function parseInteger(value, fieldName) {

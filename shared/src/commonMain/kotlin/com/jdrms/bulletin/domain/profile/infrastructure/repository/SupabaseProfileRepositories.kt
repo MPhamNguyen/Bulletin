@@ -78,8 +78,7 @@ class SupabaseProfileRepository(
                 reviewerId = currentUserId,
                 revieweeId = resolvedTargetId,
                 score = review.rating.score,
-                comment = review.comment,
-                createdAt = ProfileMapper.toDto(review).createdAt
+                comment = review.comment
             )
             supabase.from(REVIEWS_TABLE).insert(insertDto)
             Unit
