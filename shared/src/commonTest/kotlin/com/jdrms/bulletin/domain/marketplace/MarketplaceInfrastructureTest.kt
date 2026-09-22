@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
@@ -28,7 +29,6 @@ class MarketplaceInfrastructureTest {
                 description = "Hardcover Edition",
                 createdAt = "2026-09-21T12:00:00Z"
             ),
-            isSaved = true,
             reputationScore = 4.5
         )
 
@@ -36,7 +36,7 @@ class MarketplaceInfrastructureTest {
         assertEquals("CECS 491 Software Engineering Textbook", listing?.title)
         assertEquals("seller-42", listing?.sellerId)
         assertEquals(45.0, listing?.price?.amount)
-        assertEquals(true, listing?.isSaved)
+        assertEquals(false, listing?.isSaved)
         assertEquals(4.5, listing?.sellerReputationScore)
     }
 
@@ -100,6 +100,17 @@ class MarketplaceInfrastructureTest {
         assertEquals("Dominic Alfonso", listing.sellerName)
         assertEquals(4.8, listing.sellerReputationScore)
         assertTrue(listing.photos.isNotEmpty())
+    }
+
+    @Test
+    fun viewingListingDoesNotInferSavedStateFromAnotherUser() = runTest {
+        val repo = InMemoryMarketplaceRepository()
+        repo.toggleSaved("another_user", MarketplaceItemId("mkt_1"))
+
+        val result = repo.viewListing("mkt_1")
+        val listing = (result as com.jdrms.bulletin.core.common.Result.Success).data
+
+        assertEquals(false, listing.isSaved)
     }
 
     @Test

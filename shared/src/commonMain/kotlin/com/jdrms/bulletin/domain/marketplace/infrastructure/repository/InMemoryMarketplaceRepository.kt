@@ -47,8 +47,7 @@ class InMemoryMarketplaceRepository(
     override suspend fun viewListing(listingID: String): Result<Listing> {
         val listing = listings.find { it.id.value == listingID }
         return if (listing != null) {
-            val isSaved = savedItemIdsByUser.values.any { it.contains(listing.id) }
-            Result.Success(listing.copy(isSaved = isSaved))
+            Result.Success(listing.copy(isSaved = false))
         } else {
             Result.Error(NoSuchElementException("Listing not found with ID: $listingID"))
         }

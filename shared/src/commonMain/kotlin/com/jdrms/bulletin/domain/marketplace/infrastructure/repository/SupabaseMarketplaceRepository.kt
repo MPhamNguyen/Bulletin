@@ -14,6 +14,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMa
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 
 class SupabaseMarketplaceRepository(
@@ -33,7 +34,8 @@ class SupabaseMarketplaceRepository(
                 } else {
                     dtos.map { MarketplaceMapper.toDomain(it) }
                 }
-            }.getOrElse {
+            }.getOrElse { error ->
+                error.rethrowIfCancellation()
                 fallbackRepository.getCatalog()
             }
         }
@@ -55,7 +57,10 @@ class SupabaseMarketplaceRepository(
                     }
                 }.decodeSingleOrNull<MarketplaceItemDto>()
                 dto?.let { MarketplaceMapper.toDomain(it) }
-            }.getOrNull()
+            }.getOrElse { error ->
+                error.rethrowIfCancellation()
+                null
+            }
         }
         return timedResult ?: fallbackRepository.getItem(id)
     }
@@ -82,16 +87,14 @@ class SupabaseMarketplaceRepository(
                             reviews.takeIf(List<ReviewScoreDto>::isNotEmpty)
                                 ?.map { it.score }
                                 ?.average()
-                        }.getOrNull()
+                        }.getOrElse { error ->
+                            error.rethrowIfCancellation()
+                            null
+                        }
                     }
 
-                    val isSaved = savedItemIdsByUser.values.any {
-                        it.contains(MarketplaceItemId(listingID)) ||
-                            it.contains(MarketplaceItemId(databaseListingId))
-                    }
                     SupabaseMarketplaceListingMapper.toListing(
                         dto = listingDto,
-                        isSaved = isSaved,
                         reputationScore = reputationScore
                     ) ?: error("Supabase listing is missing required fields.")
                 } else {
@@ -107,6 +110,7 @@ class SupabaseMarketplaceRepository(
                     }
                 },
                 onFailure = { error ->
+                    error.rethrowIfCancellation()
                     val fallbackResult = fallbackRepository.viewListing(databaseListingId)
                     if (fallbackResult.isSuccess()) {
                         fallbackResult
@@ -176,6 +180,12 @@ class SupabaseMarketplaceRepository(
                 firstLine.startsWith("http method:", ignoreCase = true)
 
             return if (isTechnicalDump) "Failed to load listing from server." else firstLine
+        }
+    }
+
+    private fun Throwable.rethrowIfCancellation() {
+        if (this is CancellationException) {
+            throw this
         }
     }
 }

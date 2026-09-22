@@ -11,7 +11,6 @@ import kotlin.time.Instant
 object SupabaseMarketplaceListingMapper {
     fun toListing(
         dto: SupabaseMarketplaceListingDto,
-        isSaved: Boolean,
         reputationScore: Double?
     ): Listing? {
         val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
@@ -33,7 +32,6 @@ object SupabaseMarketplaceListingMapper {
             condition = condition,
             status = "AVAILABLE",
             sellerReputationScore = reputationScore,
-            isSaved = isSaved,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
         )
     }
