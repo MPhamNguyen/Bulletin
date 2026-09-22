@@ -7,6 +7,32 @@ import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
 
+data class ListingSeller(
+    val id: SellerId,
+    val name: String
+)
+
+interface CurrentListingSellerProvider {
+    suspend fun getCurrentSeller(): Result<ListingSeller>
+}
+
+object CreateListingErrorMessages {
+    const val GENERIC_FAILURE = "An Error has Occured, Please Try Again Later"
+    const val AUTHENTICATION_REQUIRED = "Please sign in again before creating a listing."
+
+    fun toUserMessage(error: Throwable): String {
+        val message = error.message.orEmpty()
+        return when {
+            message == AUTHENTICATION_REQUIRED -> AUTHENTICATION_REQUIRED
+            message.startsWith("Listing title") -> message
+            message.startsWith("Listing description") -> message
+            message.startsWith("Listing price") -> message
+            message == GENERIC_FAILURE -> GENERIC_FAILURE
+            else -> GENERIC_FAILURE
+        }
+    }
+}
+
 class CreateListing(
     private val listingsRepository: ListingsRepository,
     private val policy: ListingValidationPolicy = ListingValidationPolicy()

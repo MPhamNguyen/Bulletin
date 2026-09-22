@@ -72,8 +72,8 @@ async function main() {
     const listingRows = listings.map((listing, index) => ({
         name: listing.name.trim(),
         user_id: profileRows[index % profileRows.length].id,
-        category: listing.category.trim(),
-        condition: listing.condition.trim(),
+        category: listing.category.trim().toUpperCase(),
+        condition: listing.condition.trim().toUpperCase(),
         price: listing.price.trim() === "" ? null : Number(listing.price),
         description: listing.description.trim()
     }));

@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
@@ -11,6 +12,8 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
+import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
+import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
@@ -64,7 +67,14 @@ class AppContainer(
     // Repositories
     val homeRepository by lazy { InMemoryHomeRepository() }
     val marketplaceRepository by lazy { InMemoryMarketplaceRepository() }
-    val listingsRepository by lazy { InMemoryListingsRepository() }
+    val listingsRepository: ListingsRepository by lazy {
+        supabaseClient?.let { SupabaseListingsRepository(it) } ?: run {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory listing fallback is disabled.")
+            }
+            InMemoryListingsRepository()
+        }
+    }
     val marketplaceListingSource: MarketplaceListingSource by lazy {
         val localSource = ListingsMarketplaceListingSource(listingsRepository)
         supabaseClient?.let { client ->
@@ -110,6 +120,7 @@ class AppContainer(
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
+    val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
 
     // Use Cases - Messages
     val getConversations by lazy { GetConversations(messagesRepository) }
@@ -140,7 +151,8 @@ class AppContainer(
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
-        getSellerListings = getSellerListings
+        getSellerListings = getSellerListings,
+        currentSellerProvider = currentListingSellerProvider
     )
 
     fun createMessagesViewModel() = MessagesViewModel(
