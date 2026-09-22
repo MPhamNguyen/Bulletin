@@ -1,10 +1,10 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.mapper
 
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
+import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
-import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import kotlin.time.Instant
 

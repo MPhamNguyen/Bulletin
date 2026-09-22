@@ -8,8 +8,8 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
-import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ReviewScoreDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import io.github.jan.supabase.SupabaseClient
