@@ -17,10 +17,10 @@ object ProfileMapper {
         return StudentProfile(
             id = UserId(dto.id),
             email = StudentEmail(dto.email),
-            fullName = dto.fullName?.takeIf(String::isNotBlank) ?: "Student",
-            major = dto.major.orEmpty(),
-            university = dto.university?.takeIf(String::isNotBlank) ?: "CSU Long Beach",
-            bio = dto.bio.orEmpty(),
+            fullName = dto.fullName?.trim()?.takeIf(String::isNotBlank) ?: "Student",
+            major = dto.major?.trim().orEmpty(),
+            university = dto.university?.trim()?.takeIf(String::isNotBlank) ?: "CSU Long Beach",
+            bio = dto.bio?.trim().orEmpty(),
             isVerified = dto.isVerified ?: false,
             reputation = reputation
         )
@@ -40,9 +40,10 @@ object ProfileMapper {
 
     fun toUpdateDto(domain: StudentProfile): ProfileUpdateDto {
         return ProfileUpdateDto(
-            fullName = domain.fullName,
-            university = domain.university,
-            bio = domain.bio
+            fullName = domain.fullName.trim(),
+            major = domain.major.trim(),
+            university = domain.university.trim(),
+            bio = domain.bio.trim()
         )
     }
 
@@ -51,7 +52,7 @@ object ProfileMapper {
         return StudentReview(
             id = ReviewId(dto.id),
             reviewerId = dto.reviewerId,
-            reviewerName = dto.reviewerName,
+            reviewerName = dto.reviewerName ?: "Student",
             revieweeId = UserId(dto.revieweeId),
             rating = Rating(clampedScore),
             comment = dto.comment,

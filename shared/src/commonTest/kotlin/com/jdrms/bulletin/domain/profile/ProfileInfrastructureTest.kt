@@ -78,17 +78,63 @@ class ProfileInfrastructureTest {
     }
 
     @Test
+    fun testProfileMapperHandlesNullAndBlankFields() {
+        val dto = ProfileDto(
+            id = "student_1",
+            email = "student@example.com",
+            fullName = "  John Doe  ",
+            major = "   ",
+            university = "  CSULB  ",
+            bio = null
+        )
+
+        val domain = ProfileMapper.toDomain(dto)
+        assertEquals("John Doe", domain.fullName)
+        assertEquals("", domain.major)
+        assertEquals("", domain.bio)
+        assertEquals("CSULB", domain.university)
+    }
+
+    @Test
+    fun testProfileDtoDeserializationWithNullMajorAndBio() {
+        val json = """
+            {
+                "id": "student_1",
+                "email": "student@example.com",
+                "full_name": "John Doe",
+                "major": null,
+                "university": "CSULB",
+                "bio": null,
+                "is_verified": true
+            }
+        """.trimIndent()
+
+        val jsonParser = Json { ignoreUnknownKeys = true }
+        val dto = jsonParser.decodeFromString<ProfileDto>(json)
+        assertNull(dto.major)
+        assertNull(dto.bio)
+        assertEquals("John Doe", dto.fullName)
+
+        val domain = ProfileMapper.toDomain(dto)
+        assertEquals("", domain.major)
+        assertEquals("", domain.bio)
+        assertTrue(domain.isVerified)
+    }
+
+    @Test
     fun testProfileMapperToUpdateDtoOnlyIncludesEditableFields() {
         val profile = StudentProfile(
             id = UserId("student_1"),
             email = StudentEmail("student@example.com"),
             fullName = "John Doe",
+            major = "Computer Science",
             university = "CSULB",
             bio = "Campus student"
         )
 
         val updateDto = ProfileMapper.toUpdateDto(profile)
         assertEquals("John Doe", updateDto.fullName)
+        assertEquals("Computer Science", updateDto.major)
         assertEquals("CSULB", updateDto.university)
         assertEquals("Campus student", updateDto.bio)
     }
