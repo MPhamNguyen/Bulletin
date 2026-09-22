@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.app.di
 
-import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
@@ -10,7 +9,9 @@ import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
+import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
@@ -18,7 +19,6 @@ import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceIt
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
-import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
@@ -77,15 +77,19 @@ class AppContainer(
             InMemoryMarketplaceRepository()
         }
     }
-    val listingsRepository by lazy { InMemoryListingsRepository() }
+    val listingsRepository: ListingsRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseListingsRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryListingsRepository()
+        }
+    }
     val marketplaceListingSource: MarketplaceListingSource by lazy {
-        val localSource = ListingsMarketplaceListingSource(listingsRepository)
-        supabaseClient?.let { client ->
-            CompositeMarketplaceListingSource(
-                localSource,
-                SupabaseMarketplaceListingSource(client)
-            )
-        } ?: localSource
+        ListingsMarketplaceListingSource(listingsRepository)
     }
     val messagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {

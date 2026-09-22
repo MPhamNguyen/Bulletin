@@ -2,15 +2,59 @@ package com.jdrms.bulletin.domain.marketplace
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
+import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MarketplaceInfrastructureTest {
+
+    @Test
+    fun mapsSupabaseListingsShapeToMarketplaceDetail() {
+        val listing = SupabaseMarketplaceListingMapper.toListing(
+            dto = SupabaseMarketplaceListingDto(
+                id = "c3a81234-5678-4abc-9def-123456789abc",
+                name = "CECS 491 Software Engineering Textbook",
+                userId = "seller-42",
+                category = "TEXTBOOKS",
+                condition = "GOOD",
+                price = 45.0,
+                description = "Hardcover Edition",
+                createdAt = "2026-09-21T12:00:00Z"
+            ),
+            isSaved = true,
+            reputationScore = 4.5
+        )
+
+        assertEquals("c3a81234-5678-4abc-9def-123456789abc", listing?.id?.value)
+        assertEquals("CECS 491 Software Engineering Textbook", listing?.title)
+        assertEquals("seller-42", listing?.sellerId)
+        assertEquals(45.0, listing?.price?.amount)
+        assertEquals(true, listing?.isSaved)
+        assertEquals(4.5, listing?.sellerReputationScore)
+    }
+
+    @Test
+    fun normalizesMarketplaceListingIdsBeforeDatabaseLookup() {
+        assertEquals(
+            "c3a81234-5678-4abc-9def-123456789abc",
+            SupabaseMarketplaceRepository.normalizeListingId(
+                "listing:c3a81234-5678-4abc-9def-123456789abc"
+            )
+        )
+        assertEquals("mkt_1", SupabaseMarketplaceRepository.normalizeListingId("mkt_1"))
+        assertFalse(
+            SupabaseMarketplaceRepository.normalizeListingId(
+                "listing:c3a81234-5678-4abc-9def-123456789abc"
+            ).startsWith("listing:")
+        )
+    }
 
     @Test
     fun testListingDtoMapperRoundTrip() {

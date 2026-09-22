@@ -8,9 +8,10 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
-import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ReviewScoreDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
+import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.withTimeoutOrNull
@@ -45,11 +46,12 @@ class SupabaseMarketplaceRepository(
     }
 
     override suspend fun getItem(id: MarketplaceItemId): MarketplaceItem? {
+        val databaseListingId = normalizeListingId(id.value)
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
                 val dto = supabase.from(LISTINGS_TABLE).select {
                     filter {
-                        eq("id", id.value)
+                        eq("id", databaseListingId)
                     }
                 }.decodeSingleOrNull<MarketplaceItemDto>()
                 dto?.let { MarketplaceMapper.toDomain(it) }
@@ -59,35 +61,39 @@ class SupabaseMarketplaceRepository(
     }
 
     override suspend fun viewListing(listingID: String): Result<Listing> {
+        val databaseListingId = normalizeListingId(listingID)
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
                 val listingDto = supabase.from(LISTINGS_TABLE).select {
                     filter {
-                        eq("id", listingID)
+                        eq("id", databaseListingId)
                     }
-                }.decodeSingleOrNull<MarketplaceListingDto>()
+                }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
 
                 if (listingDto != null) {
-                    val reputationScore = runCatching {
-                        val reviews = supabase.from(REVIEWS_TABLE).select {
-                            filter {
-                                eq("reviewee_id", listingDto.sellerId)
-                            }
-                        }.decodeList<ReviewScoreDto>()
+                    val reputationScore = listingDto.userId?.let { sellerId ->
+                        runCatching {
+                            val reviews = supabase.from(REVIEWS_TABLE).select {
+                                filter {
+                                    eq("reviewee_id", sellerId)
+                                }
+                            }.decodeList<ReviewScoreDto>()
 
-                        if (reviews.isNotEmpty()) {
-                            reviews.map { it.score }.average()
-                        } else {
-                            null
-                        }
-                    }.getOrNull()
+                            reviews.takeIf(List<ReviewScoreDto>::isNotEmpty)
+                                ?.map { it.score }
+                                ?.average()
+                        }.getOrNull()
+                    }
 
-                    val isSaved = savedItemIdsByUser.values.any { it.contains(MarketplaceItemId(listingID)) }
-                    MarketplaceMapper.toListingDomain(
+                    val isSaved = savedItemIdsByUser.values.any {
+                        it.contains(MarketplaceItemId(listingID)) ||
+                            it.contains(MarketplaceItemId(databaseListingId))
+                    }
+                    SupabaseMarketplaceListingMapper.toListing(
                         dto = listingDto,
                         isSaved = isSaved,
                         reputationScore = reputationScore
-                    )
+                    ) ?: error("Supabase listing is missing required fields.")
                 } else {
                     null
                 }
@@ -97,11 +103,11 @@ class SupabaseMarketplaceRepository(
                         Result.Success(listing)
                     } else {
                         // Check fallback repository if not found on server
-                        fallbackRepository.viewListing(listingID)
+                        fallbackRepository.viewListing(databaseListingId)
                     }
                 },
                 onFailure = { error ->
-                    val fallbackResult = fallbackRepository.viewListing(listingID)
+                    val fallbackResult = fallbackRepository.viewListing(databaseListingId)
                     if (fallbackResult.isSuccess()) {
                         fallbackResult
                     } else {
@@ -134,6 +140,11 @@ class SupabaseMarketplaceRepository(
         const val LISTINGS_TABLE = "listings"
         const val REVIEWS_TABLE = "reviews"
         const val TIMEOUT_MILLIS = 2000L
+        const val LISTING_ID_PREFIX = "listing:"
+
+        fun normalizeListingId(listingId: String): String {
+            return listingId.removePrefix(LISTING_ID_PREFIX)
+        }
 
         private val ERROR_RULES = listOf(
             listOf("could not find the table", "schema cache") to
