@@ -4,6 +4,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnaps
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
+import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.Dispatchers
@@ -25,11 +26,12 @@ class MarketplaceViewModelTest {
     fun refreshIncludesListingUploadedAfterViewModelWasCreated() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
-            val repository = InMemoryMarketplaceRepository(initialItems = emptyList())
+            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
             val source = MutableListingSource()
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository)
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             advanceUntilIdle()
             assertEquals(emptyList(), viewModel.uiState.value.items)
@@ -54,10 +56,11 @@ class MarketplaceViewModelTest {
     fun loadFailureStopsLoadingAndExposesRetryableError() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
-            val repository = InMemoryMarketplaceRepository(initialItems = emptyList())
+            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, FailingListingSource),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository)
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
 
             advanceUntilIdle()

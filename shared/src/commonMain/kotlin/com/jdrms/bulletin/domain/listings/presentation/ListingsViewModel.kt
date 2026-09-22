@@ -82,7 +82,7 @@ class ListingsViewModel(
         }
 
         val newListing = Listing(
-            id = ListingId("list_${generateUuid().take(8)}"),
+            id = ListingId(generateUuid()),
             sellerId = currentSellerId,
             sellerName = currentSellerName,
             title = state.newTitle.trim(),
