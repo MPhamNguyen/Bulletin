@@ -31,12 +31,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            SectionHeader(
-                title = "Campus Discovery",
-                subtitle = "Personalized feed & recommendations for CSU Long Beach"
-            )
-        }
 
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
