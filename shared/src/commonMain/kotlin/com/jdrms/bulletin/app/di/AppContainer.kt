@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
@@ -14,11 +15,13 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryList
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
@@ -89,7 +92,15 @@ class AppContainer(
         }
     }
     val marketplaceListingSource: MarketplaceListingSource by lazy {
-        ListingsMarketplaceListingSource(listingsRepository)
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseMarketplaceListingSource(client)
+        } else {
+            CompositeMarketplaceListingSource(
+                ListingsMarketplaceListingSource(listingsRepository),
+                MarketplaceRepositoryListingSource(marketplaceRepository)
+            )
+        }
     }
     val messagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {

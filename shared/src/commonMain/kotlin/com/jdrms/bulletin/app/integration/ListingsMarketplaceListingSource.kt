@@ -3,14 +3,17 @@ package com.jdrms.bulletin.app.integration
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
+import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 
 class ListingsMarketplaceListingSource(
     private val listingsRepository: ListingsRepository
 ) : MarketplaceListingSource {
-    override suspend fun getAvailableListings(): List<MarketplaceListingSnapshot> {
+    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
         return listingsRepository.getAllListings()
             .filter { it.status == ListingStatus.AVAILABLE }
             .map { listing ->
@@ -26,6 +29,7 @@ class ListingsMarketplaceListingSource(
                     createdAtMillis = listing.createdAtMillis
                 )
             }
+            .pageFor(request)
     }
 }
 

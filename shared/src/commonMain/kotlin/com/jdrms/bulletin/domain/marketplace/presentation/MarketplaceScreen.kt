@@ -24,10 +24,6 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
     val state by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(viewModel) {
-        viewModel.refreshListings()
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -81,7 +77,7 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                 }
             }
 
-            if (state.items.isEmpty() && !state.isLoading) {
+            if (state.items.isEmpty() && !state.isLoading && state.errorMessage == null) {
                 item {
                     BulletinCard {
                         Text(
@@ -93,7 +89,10 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                 }
             }
 
-            items(state.items) { item ->
+            items(
+                items = state.items,
+                key = { item -> item.id.value }
+            ) { item ->
                 val isSaved = state.savedItemIds.contains(item.id)
                 MarketplaceItemCard(
                     item = item,
@@ -101,6 +100,37 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                     onCardClick = { viewModel.onListingClicked(item.id.value) },
                     onToggleSaved = { viewModel.toggleSaved(item.id) }
                 )
+            }
+
+            if (state.nextCursor != null) {
+                item(key = "marketplace-pagination-trigger") {
+                    LaunchedEffect(state.nextCursor) {
+                        viewModel.loadNextPage()
+                    }
+                    if (state.isLoadingMore) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+
+            state.errorMessage?.let { message ->
+                item {
+                    BulletinCard {
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        TextButton(onClick = { viewModel.retryListings() }) {
+                            Text("Retry")
+                        }
+                    }
+                }
             }
         }
 

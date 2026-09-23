@@ -1,10 +1,13 @@
 package com.jdrms.bulletin.domain.marketplace
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.test.runTest
@@ -73,6 +76,37 @@ class MarketplaceApplicationTest {
         assertEquals(listOf("Adjustable Desk Lamp"), categoryResults.map { it.title })
     }
 
+    @Test
+    fun browseReturnsStablePagesWithoutLoadingTheWholeCatalog() = runTest {
+        val source = MutableMarketplaceListingSource().apply {
+            listings += (1L..5L).map { index ->
+                publishedListing(title = "Listing $index").copy(
+                    id = "listing:$index",
+                    createdAtMillis = index
+                )
+            }
+        }
+        val searchMarketplace = SearchMarketplace(
+            repository = InMemoryMarketplaceRepository(initialListings = emptyList()),
+            listingSource = source
+        )
+
+        val firstPage = searchMarketplace.getPage(MarketplacePageRequest(pageSize = 2))
+        val secondPage = searchMarketplace.getPage(
+            MarketplacePageRequest(pageSize = 2, cursor = firstPage.nextCursor)
+        )
+
+        assertEquals(listOf("listing:5", "listing:4"), firstPage.items.map { it.id.value })
+        assertEquals(listOf("listing:3", "listing:2"), secondPage.items.map { it.id.value })
+        assertNotNull(secondPage.nextCursor)
+    }
+
+    @Test
+    fun pageRequestRejectsSizesOutsideTheSupportedRange() {
+        assertFailsWith<IllegalArgumentException> { MarketplacePageRequest(pageSize = 0) }
+        assertFailsWith<IllegalArgumentException> { MarketplacePageRequest(pageSize = 51) }
+    }
+
     private fun publishedListing(title: String): MarketplaceListingSnapshot {
         return MarketplaceListingSnapshot(
             id = "listing:list_42",
@@ -91,5 +125,7 @@ class MarketplaceApplicationTest {
 private class MutableMarketplaceListingSource : MarketplaceListingSource {
     val listings = mutableListOf<MarketplaceListingSnapshot>()
 
-    override suspend fun getAvailableListings(): List<MarketplaceListingSnapshot> = listings.toList()
+    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
+        return listings.pageFor(request)
+    }
 }

@@ -11,15 +11,23 @@ import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPol
 
 class SearchMarketplace(
     private val repository: MarketplaceRepository,
-    private val listingSource: MarketplaceListingSource = EmptyMarketplaceListingSource,
+    private val listingSource: MarketplaceListingSource = MarketplaceRepositoryListingSource(repository),
     private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy()
 ) {
+    suspend fun getPage(request: MarketplacePageRequest): MarketplaceItemPage {
+        val page = listingSource.getAvailableListings(request)
+        return MarketplaceItemPage(
+            items = page.listings.map { it.toMarketplaceItem() },
+            nextCursor = page.nextCursor
+        )
+    }
+
     suspend fun getCatalog(): List<MarketplaceItem> {
-        return currentCatalog()
+        return collectPages(query = "", category = null)
     }
 
     suspend fun search(query: String, category: MarketplaceCategory?): List<MarketplaceItem> {
-        return filterCatalog(currentCatalog(), query, category)
+        return collectPages(query, category)
     }
 
     fun filterCatalog(
@@ -31,14 +39,35 @@ class SearchMarketplace(
     }
 
     suspend fun getById(id: MarketplaceItemId): MarketplaceItem? {
-        return currentCatalog().find { it.id == id }
+        return repository.getItem(id)
     }
 
-    private suspend fun currentCatalog(): List<MarketplaceItem> {
-        val publishedListings = listingSource.getAvailableListings().map { it.toMarketplaceItem() }
-        return (publishedListings + repository.getCatalog()).distinctBy { it.id }
+    private suspend fun collectPages(
+        query: String,
+        category: MarketplaceCategory?
+    ): List<MarketplaceItem> {
+        val items = mutableListOf<MarketplaceItem>()
+        var cursor: MarketplacePageCursor? = null
+        do {
+            val page = getPage(
+                MarketplacePageRequest(
+                    query = query,
+                    category = category,
+                    cursor = cursor,
+                    pageSize = MAX_MARKETPLACE_PAGE_SIZE
+                )
+            )
+            items += page.items
+            cursor = page.nextCursor
+        } while (cursor != null)
+        return items.distinctBy { it.id }
     }
 }
+
+data class MarketplaceItemPage(
+    val items: List<MarketplaceItem>,
+    val nextCursor: MarketplacePageCursor?
+)
 
 private fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
     return MarketplaceItem(
