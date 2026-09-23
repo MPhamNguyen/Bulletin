@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceIt
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,13 +75,18 @@ class MarketplaceViewModel(
                         }
                     }
                 },
-                onFailure = {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isLoadingMore = false,
-                            errorMessage = "Unable to load marketplace listings. Please try again."
-                        )
+                onFailure = { error ->
+                    error.rethrowIfCancellation()
+                    _uiState.update { state ->
+                        if (state.searchQuery == query && state.selectedCategory == category) {
+                            state.copy(
+                                isLoading = false,
+                                isLoadingMore = false,
+                                errorMessage = "Unable to load marketplace listings. Please try again."
+                            )
+                        } else {
+                            state
+                        }
                     }
                 }
             )
@@ -118,7 +124,11 @@ class MarketplaceViewModel(
             }.fold(
                 onSuccess = { page ->
                     _uiState.update { state ->
-                        if (state.searchQuery == query && state.selectedCategory == category) {
+                        if (
+                            state.searchQuery == query &&
+                            state.selectedCategory == category &&
+                            state.nextCursor == cursor
+                        ) {
                             state.copy(
                                 items = (state.items + page.items).distinctBy { it.id },
                                 isLoadingMore = false,
@@ -130,12 +140,21 @@ class MarketplaceViewModel(
                         }
                     }
                 },
-                onFailure = {
-                    _uiState.update {
-                        it.copy(
-                            isLoadingMore = false,
-                            errorMessage = "Unable to load more listings. Please try again."
-                        )
+                onFailure = { error ->
+                    error.rethrowIfCancellation()
+                    _uiState.update { state ->
+                        if (
+                            state.searchQuery == query &&
+                            state.selectedCategory == category &&
+                            state.nextCursor == cursor
+                        ) {
+                            state.copy(
+                                isLoadingMore = false,
+                                errorMessage = "Unable to load more listings. Please try again."
+                            )
+                        } else {
+                            state
+                        }
                     }
                 }
             )
@@ -229,5 +248,9 @@ class MarketplaceViewModel(
     private companion object {
         const val DEFAULT_USER_ID = "student_user"
         const val SEARCH_DEBOUNCE_MILLIS = 300L
+    }
+
+    private fun Throwable.rethrowIfCancellation() {
+        if (this is CancellationException) throw this
     }
 }

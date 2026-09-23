@@ -3,12 +3,13 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
-import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
+import io.github.jan.supabase.postgrest.query.filter.TextSearchType
 
 class SupabaseMarketplaceListingSource private constructor(
     private val listingTable: MarketplaceListingTable
@@ -17,16 +18,19 @@ class SupabaseMarketplaceListingSource private constructor(
 
     override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
         val rows = listingTable.getListings(request)
-        val consumedRows = rows.take(request.pageSize)
-        val mappedPage = consumedRows
-            .mapNotNull(SupabaseMarketplaceListingMapper::toSnapshot)
-            .pageFor(request)
-        val nextCursor = if (rows.size >= request.pageSize) {
-            consumedRows.lastOrNull()?.let(SupabaseMarketplaceListingMapper::toPageCursor)
-        } else {
-            null
+        val mappedRows = rows.mapNotNull { row ->
+            SupabaseMarketplaceListingMapper.toSnapshot(row)?.let { snapshot -> row to snapshot }
         }
-        return mappedPage.copy(nextCursor = nextCursor)
+        val pageRows = mappedRows.take(request.pageSize)
+        val cursorRow = when {
+            pageRows.size == request.pageSize -> pageRows.last().first
+            rows.size >= request.pageSize -> rows.last()
+            else -> null
+        }
+        return MarketplaceListingPage(
+            listings = pageRows.map { it.second },
+            nextCursor = cursorRow?.let(SupabaseMarketplaceListingMapper::toPageCursor)
+        )
     }
 
     internal constructor(getListings: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>) :
@@ -43,17 +47,7 @@ private class PostgrestMarketplaceListingTable(
     override suspend fun getListings(request: MarketplacePageRequest): List<SupabaseMarketplaceListingDto> {
         return supabase.from(LISTINGS_TABLE).select {
             filter {
-                request.category?.let { category ->
-                    ilike("category", category.name)
-                }
-                request.query.trim().lowercase().split(Regex("\\s+"))
-                    .filter(String::isNotEmpty)
-                    .forEach { keyword ->
-                        or {
-                            ilike("name", "%$keyword%")
-                            ilike("category", "%$keyword%")
-                        }
-                    }
+                applyMarketplaceSearch(request)
 
                 request.cursor?.let { cursor ->
                     val cursorTimestamp = cursor.createdAt.toString()
@@ -79,3 +73,21 @@ private class PostgrestMarketplaceListingTable(
         const val LISTING_ID_PREFIX = "listing:"
     }
 }
+
+internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplacePageRequest) {
+    request.category?.let { category ->
+        ilike("category", category.name)
+    }
+    request.query.toSafePrefixSearchQuery()?.let { query ->
+        textSearch("name", query, TextSearchType.NONE)
+    }
+}
+
+internal fun String.toSafePrefixSearchQuery(): String? {
+    return SEARCH_TERM_REGEX.findAll(lowercase())
+        .map { match -> "${match.value}:*" }
+        .joinToString(" & ")
+        .takeIf(String::isNotEmpty)
+}
+
+private val SEARCH_TERM_REGEX = Regex("[\\p{L}\\p{N}]+")

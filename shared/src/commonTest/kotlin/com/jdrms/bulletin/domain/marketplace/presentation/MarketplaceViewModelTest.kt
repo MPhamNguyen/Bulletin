@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -198,6 +199,136 @@ class MarketplaceViewModelTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun categoryAndKeywordsRemainAppliedAcrossEveryPage() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
+            val source = MutableListingSource().apply {
+                listings += (1L..25L).map { index ->
+                    uploadedListing().copy(
+                        id = "listing:textbook-$index",
+                        title = "Calculus Textbook $index",
+                        category = MarketplaceCategory.TEXTBOOKS,
+                        createdAtMillis = index
+                    )
+                }
+                listings += (26L..50L).map { index ->
+                    uploadedListing().copy(
+                        id = "listing:electronics-$index",
+                        title = "Calculus Calculator $index",
+                        category = MarketplaceCategory.ELECTRONICS,
+                        createdAtMillis = index
+                    )
+                }
+            }
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository, source),
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            advanceUntilIdle()
+
+            viewModel.onCategorySelected(MarketplaceCategory.TEXTBOOKS)
+            viewModel.onSearchQueryChanged("c")
+            advanceUntilIdle()
+
+            assertEquals(20, viewModel.uiState.value.items.size)
+            assertTrue(viewModel.uiState.value.items.all { it.category == MarketplaceCategory.TEXTBOOKS })
+            assertFalse(viewModel.uiState.value.endReached)
+
+            viewModel.loadNextPage()
+            advanceUntilIdle()
+
+            assertEquals(25, viewModel.uiState.value.items.size)
+            val allItemsMatch = viewModel.uiState.value.items.all { item ->
+                item.category == MarketplaceCategory.TEXTBOOKS &&
+                    item.title.contains("c", ignoreCase = true)
+            }
+            assertTrue(allItemsMatch)
+            assertTrue(viewModel.uiState.value.endReached)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun everyCategoryPaginatesWithTheSameAppendBehaviorAsAll() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
+            val source = MutableListingSource().apply {
+                MarketplaceCategory.entries.forEachIndexed { categoryIndex, category ->
+                    listings += (1L..21L).map { listingIndex ->
+                        val sequence = categoryIndex * 100L + listingIndex
+                        uploadedListing().copy(
+                            id = "listing:${category.name.lowercase()}-$listingIndex",
+                            title = "${category.name} Listing $listingIndex",
+                            category = category,
+                            createdAtMillis = sequence
+                        )
+                    }
+                }
+            }
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository, source),
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            advanceUntilIdle()
+
+            assertEquals(20, viewModel.uiState.value.items.size)
+            viewModel.loadNextPage()
+            advanceUntilIdle()
+            assertEquals(40, viewModel.uiState.value.items.size)
+
+            MarketplaceCategory.entries.forEach { category ->
+                viewModel.onCategorySelected(category)
+                advanceUntilIdle()
+
+                assertEquals(20, viewModel.uiState.value.items.size, category.name)
+                assertTrue(viewModel.uiState.value.items.all { it.category == category }, category.name)
+                assertFalse(viewModel.uiState.value.endReached, category.name)
+
+                viewModel.loadNextPage()
+                advanceUntilIdle()
+
+                assertEquals(21, viewModel.uiState.value.items.size, category.name)
+                assertTrue(viewModel.uiState.value.items.all { it.category == category }, category.name)
+                assertTrue(viewModel.uiState.value.endReached, category.name)
+            }
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun refreshingACancelledRequestDoesNotExposeItsFailure() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
+            val source = CancellableFirstRequestSource(uploadedListing())
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository, source),
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            testScheduler.runCurrent()
+
+            viewModel.refreshListings()
+            advanceUntilIdle()
+
+            assertEquals(listOf("Graphing Calculator"), viewModel.uiState.value.items.map { it.title })
+            assertEquals(null, viewModel.uiState.value.errorMessage)
+            assertFalse(viewModel.uiState.value.isLoading)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private fun uploadedListing(): MarketplaceListingSnapshot {
         return MarketplaceListingSnapshot(
             id = "listing:new",
@@ -263,5 +394,17 @@ private class EmptyIntermediatePageSource(
             secondCursor -> MarketplaceListingPage(listOf(finalListing), null)
             else -> error("Unexpected page cursor: ${request.cursor}")
         }
+    }
+}
+
+private class CancellableFirstRequestSource(
+    private val listing: MarketplaceListingSnapshot
+) : MarketplaceListingSource {
+    private var requestCount = 0
+
+    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
+        requestCount += 1
+        if (requestCount == 1) awaitCancellation()
+        return listOf(listing).pageFor(request)
     }
 }

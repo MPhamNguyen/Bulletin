@@ -3,10 +3,13 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
+import io.github.jan.supabase.postgrest.PropertyConversionMethod
+import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 
 class SupabaseMarketplaceListingSourceTest {
@@ -129,6 +132,49 @@ class SupabaseMarketplaceListingSourceTest {
         val page = source.getAvailableListings(MarketplacePageRequest(pageSize = 1))
 
         assertEquals(kotlin.time.Instant.parse(preciseTimestamp), page.nextCursor?.createdAt)
+    }
+
+    @Test
+    fun trustsDatabaseCursorOrderingWithoutFilteringMappedMillisecondsAgain() = runTest {
+        val cursorTimestamp = "2026-09-21T00:55:08.593977Z"
+        val source = SupabaseMarketplaceListingSource { _ ->
+            listOf(listingRow(id = "z-row", createdAt = "2026-09-21T00:55:08.593500Z"))
+        }
+        val request = MarketplacePageRequest(
+            cursor = com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor(
+                createdAt = kotlin.time.Instant.parse(cursorTimestamp),
+                itemId = "listing:a-row"
+            )
+        )
+
+        val page = source.getAvailableListings(request)
+
+        assertEquals(listOf("listing:z-row"), page.listings.map { it.id })
+    }
+
+    @Test
+    fun searchBuildsSanitizedPrefixTermsForUntrustedKeywords() {
+        val builder = PostgrestFilterBuilder(PropertyConversionMethod.NONE)
+        val query = "desk,lamp)\\\"%_\\\\"
+
+        builder.applyMarketplaceSearch(
+            MarketplacePageRequest(query = query, category = MarketplaceCategory.TEXTBOOKS)
+        )
+
+        assertEquals(listOf("ilike.TEXTBOOKS"), builder.params["category"])
+        assertEquals(listOf("fts.desk:* & lamp:*"), builder.params["name"])
+        assertFalse("or" in builder.params)
+    }
+
+    @Test
+    fun partialSearchTermUsesPrefixMatching() {
+        val builder = PostgrestFilterBuilder(PropertyConversionMethod.NONE)
+
+        builder.applyMarketplaceSearch(
+            MarketplacePageRequest(query = "c", category = MarketplaceCategory.TEXTBOOKS)
+        )
+
+        assertEquals(listOf("fts.c:*"), builder.params["name"])
     }
 
     private fun listingRow(
