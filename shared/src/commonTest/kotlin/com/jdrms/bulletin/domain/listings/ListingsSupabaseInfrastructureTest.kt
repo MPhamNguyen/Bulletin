@@ -95,6 +95,5 @@ class ListingsSupabaseInfrastructureTest {
         override suspend fun delete(id: String) = Unit
 
         override suspend fun getListings(sellerId: String?): List<SupabaseListingDto> = emptyList()
-
     }
 }

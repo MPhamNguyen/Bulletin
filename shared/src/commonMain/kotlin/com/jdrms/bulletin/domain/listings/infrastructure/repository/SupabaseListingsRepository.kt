@@ -108,5 +108,4 @@ private class PostgrestSupabaseListingsTable(
             """.trimIndent()
         )
     }
-
 }
