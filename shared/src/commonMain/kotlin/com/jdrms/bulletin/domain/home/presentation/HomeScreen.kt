@@ -67,9 +67,10 @@ val defaultLoremItems = listOf(
         id = "1",
         tag = "Campus Discovery • Featured", // TODO: Rename `tag` to `condition` when the listing schema is finalized.
         title = "Lorem Ipsum Dolor Sit Amet",
-        subtitle = "Consectetur adipiscing elit • Sed do eiusmod", // TODO: Replace subtitle into tags when we start to support tags.
+        // TODO: Replace subtitle into tags when we start to support tags.
+        subtitle = "Consectetur adipiscing elit • Sed do eiusmod",
         description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor " +
-                "incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
+            "incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
         price = "$49.99"
     ),
     LoremCardItem(
@@ -78,7 +79,7 @@ val defaultLoremItems = listOf(
         title = "Calculus: Early Transcendentals",
         subtitle = "8th Edition • James Stewart",
         description = "Barely used calculus textbook. Highlight-free with all companion access codes intact. " +
-                "Great condition for upcoming term coursework.",
+            "Great condition for upcoming term coursework.",
         price = "$35.00"
     ),
     LoremCardItem(
@@ -87,7 +88,7 @@ val defaultLoremItems = listOf(
         title = "Studio Apartment Near Campus",
         subtitle = "Available Summer Term • Utilities Included",
         description = "Bright and spacious studio within walking distance to the engineering quad and library. " +
-                "Fully furnished with high-speed internet.",
+            "Fully furnished with high-speed internet.",
         price = "$750 / mo"
     ),
     LoremCardItem(
@@ -96,7 +97,7 @@ val defaultLoremItems = listOf(
         title = "CS & Math Peer Tutoring",
         subtitle = "Algorithms, Data Structures & Linear Algebra",
         description = "Experienced upperclassman offering 1-on-1 tutoring sessions. Flexible schedule " +
-                "and tailored exam preparation guides.",
+            "and tailored exam preparation guides.",
         price = "$20 / hr"
     )
 )

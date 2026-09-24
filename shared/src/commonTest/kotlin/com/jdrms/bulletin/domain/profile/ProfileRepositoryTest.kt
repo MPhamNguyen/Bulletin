@@ -39,7 +39,10 @@ class ProfileRepositoryTest {
     @Test
     fun testAuthRepositoryWithoutCredentialsFailsByDefault() = runTest {
         val profileRepo = InMemoryProfileRepository()
-        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authRepo = InMemoryAuthRepository(
+            profileRepository = profileRepo,
+            initialCredentials = emptyMap()
+        )
         val email = StudentEmail("dominic.alfonso@student.csulb.edu")
         val loginResult = authRepo.login(email, "password123")
         assertTrue(loginResult.isError())
