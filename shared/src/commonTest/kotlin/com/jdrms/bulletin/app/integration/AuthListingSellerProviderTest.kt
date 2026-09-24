@@ -47,7 +47,7 @@ class AuthListingSellerProviderTest {
         assertTrue(result.isError())
         assertEquals(
             CreateListingErrorMessages.GENERIC_FAILURE,
-            (result as Result.Error).message
+            CreateListingErrorMessages.toUserMessage((result as Result.Error).exception)
         )
     }
 
