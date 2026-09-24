@@ -20,20 +20,14 @@ class SupabaseListingsRepository internal constructor(
 
     override suspend fun createListing(listing: Listing): Result<Listing> {
         return runCatching {
-            requireAuthenticatedUser(listing.sellerId.value)
+            val sellerId = requireAuthenticatedSeller(listing.sellerId.value)
             if (listingsTable.findById(listing.id.value) != null) {
                 return@runCatching Result.Error(IllegalStateException(CreateListingErrorMessages.GENERIC_FAILURE))
             }
-            listingsTable.insert(SupabaseListingMapper.toInsertDto(listing))
-            Result.Success(listing)
+            listingsTable.insert(SupabaseListingMapper.toInsertDto(listing, sellerId))
+            listing.copy(sellerId = SellerId(sellerId))
         }.getOrElse { error ->
-            if (error.message == CreateListingErrorMessages.AUTHENTICATION_REQUIRED) {
-                Result.Error(
-                    IllegalStateException(CreateListingErrorMessages.AUTHENTICATION_REQUIRED, error)
-                )
-            } else {
-                Result.Error(IllegalStateException(CreateListingErrorMessages.GENERIC_FAILURE, error))
-            }
+            Result.Error(Exception(mapListingsErrorMessage(error), error))
         }
     }
 
@@ -42,28 +36,53 @@ class SupabaseListingsRepository internal constructor(
     }
 
     override suspend fun deleteListing(id: ListingId): Result<Unit> {
-        return runCatching {
+        return try {
+            val existing = listingsTable.findById(id.value)
+                ?: return Result.Error(NoSuchElementException("Listing not found."))
+            requireAuthenticatedSeller(existing.userId.orEmpty())
             listingsTable.delete(id.value)
-            Unit
-        }.fold(
-            onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(it) }
-        )
+            Result.Success(Unit)
+        } catch (error: Throwable) {
+            Result.Error(Exception(mapListingsErrorMessage(error), error))
+        }
     }
 
     override suspend fun getSellerListings(sellerId: SellerId): List<Listing> {
-        return listingsTable.getListings(sellerId.value).map(SupabaseListingMapper::toDomain)
+        return listingsTable.getListings(sellerId.value).mapNotNull(SupabaseListingMapper::toDomain)
     }
 
     override suspend fun getAllListings(): List<Listing> {
-        return listingsTable.getListings(null).map(SupabaseListingMapper::toDomain)
+        return listingsTable.getListings(null).mapNotNull(SupabaseListingMapper::toDomain)
     }
 
-    private suspend fun requireAuthenticatedUser(sellerId: String) {
+    private suspend fun requireAuthenticatedSeller(sellerId: String): String {
         val authenticatedUserId = listingsTable.authenticatedUserId()
             ?: error(CreateListingErrorMessages.AUTHENTICATION_REQUIRED)
         require(authenticatedUserId == sellerId) {
             CreateListingErrorMessages.GENERIC_FAILURE
+        }
+        return authenticatedUserId
+    }
+
+    companion object {
+        const val LISTINGS_TABLE = "listings"
+
+        private val ERROR_RULES = listOf(
+            listOf("could not find the table", "schema cache") to
+                "Database table 'listings' not found. Please verify your Supabase schema setup.",
+            listOf("unable to resolve host", "failed to connect", "timeout", "request timeout") to
+                "Unable to connect to server. Please check your internet connection.",
+            listOf("jwt", "unauthorized", "invalid api key", "no api key") to
+                "Unauthorized database request. Please check your Supabase API credentials.",
+            listOf("row-level security", "rls") to
+                "Database permission denied. Please check your Supabase RLS policies."
+        )
+
+        fun mapListingsErrorMessage(throwable: Throwable): String {
+            val message = throwable.message ?: return "An unexpected listings error occurred."
+            val lower = message.lowercase()
+            ERROR_RULES.firstOrNull { (patterns, _) -> patterns.any(lower::contains) }?.let { return it.second }
+            return message.lines().firstOrNull { it.isNotBlank() }?.trim() ?: "Listings request failed."
         }
     }
 }
@@ -80,32 +99,26 @@ private class PostgrestSupabaseListingsTable(
     private val supabase: SupabaseClient
 ) : SupabaseListingsTable {
     override suspend fun findById(id: String): SupabaseListingDto? {
-        return supabase.from(LISTINGS_TABLE).select {
+        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select {
             filter { eq("id", id) }
         }.decodeSingleOrNull()
     }
 
-    override suspend fun insert(
-        listing: SupabaseListingInsertDto
-    ) {
-        supabase.from(LISTINGS_TABLE).insert(listing)
+    override suspend fun insert(listing: SupabaseListingInsertDto) {
+        supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).insert(listing)
     }
 
     override suspend fun delete(id: String) {
-        supabase.from(LISTINGS_TABLE).delete {
+        supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).delete {
             filter { eq("id", id) }
         }
     }
 
     override suspend fun getListings(sellerId: String?): List<SupabaseListingDto> {
-        return supabase.from(LISTINGS_TABLE).select {
+        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select {
             sellerId?.let { filter { eq("user_id", it) } }
         }.decodeList()
     }
 
     override suspend fun authenticatedUserId(): String? = supabase.auth.currentUserOrNull()?.id
-
-    private companion object {
-        const val LISTINGS_TABLE = "listings"
-    }
 }

@@ -84,7 +84,7 @@ class ListingsViewModel(
         val state = _uiState.value
         val parsedPrice = state.newPrice.toDoubleOrNull()
         if (parsedPrice == null || !parsedPrice.isFinite() || parsedPrice < 0.0) {
-            _uiState.update { it.copy(errorMessage = "Please enter a valid price ($ ≥ 0)") }
+            _uiState.update { it.copy(errorMessage = "Please enter a valid price ($ >= 0)") }
             return null
         }
 
@@ -100,13 +100,7 @@ class ListingsViewModel(
             return null
         }
 
-        return NewListingDraft(
-            title = title,
-            description = description,
-            price = parsedPrice,
-            category = state.newCategory,
-            condition = state.newCondition
-        )
+        return NewListingDraft(title, description, parsedPrice, state.newCategory, state.newCondition)
     }
 
     private suspend fun submitListing(draft: NewListingDraft) {
@@ -138,23 +132,19 @@ class ListingsViewModel(
                         }
                         loadMyListings()
                     }
-                    is Result.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isSubmitting = false,
-                                errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
-                            )
-                        }
+                    is Result.Error -> _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
+                        )
                     }
                 }
             }
-            is Result.Error -> {
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
-                    )
-                }
+            is Result.Error -> _uiState.update {
+                it.copy(
+                    isSubmitting = false,
+                    errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                )
             }
         }
     }
@@ -171,13 +161,10 @@ class ListingsViewModel(
         viewModelScope.launch {
             when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
                 is Result.Success -> {
-                    val result = manageListing.deleteListing(id)
-                    if (result.isSuccess()) loadMyListings()
+                    if (manageListing.deleteListing(id).isSuccess()) loadMyListings()
                 }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
-                    }
+                is Result.Error -> _uiState.update {
+                    it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
                 }
             }
         }

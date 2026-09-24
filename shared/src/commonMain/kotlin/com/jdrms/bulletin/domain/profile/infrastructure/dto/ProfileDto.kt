@@ -17,6 +17,7 @@ data class ProfileDto(
 @Serializable
 data class ProfileUpdateDto(
     @SerialName("full_name") val fullName: String,
+    @SerialName("major") val major: String = "",
     @SerialName("university") val university: String,
     @SerialName("bio") val bio: String = ""
 )
@@ -25,10 +26,10 @@ data class ProfileUpdateDto(
 data class ReviewDto(
     @SerialName("id") val id: String = "",
     @SerialName("reviewer_id") val reviewerId: String,
-    @SerialName("reviewer_name") val reviewerName: String = "Student",
+    @SerialName("reviewer_name") val reviewerName: String? = "Student",
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
-    @SerialName("comment") val comment: String,
+    @SerialName("comment") val comment: String = "",
     @SerialName("created_at") val createdAt: String = ""
 )
 

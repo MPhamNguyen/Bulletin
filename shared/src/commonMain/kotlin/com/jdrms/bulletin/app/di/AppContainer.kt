@@ -16,10 +16,14 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryList
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
+import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
@@ -66,23 +70,38 @@ class AppContainer(
 
     // Repositories
     val homeRepository by lazy { InMemoryHomeRepository() }
-    val marketplaceRepository by lazy { InMemoryMarketplaceRepository() }
-    val listingsRepository: ListingsRepository by lazy {
-        supabaseClient?.let { SupabaseListingsRepository(it) } ?: run {
+    val marketplaceRepository: MarketplaceRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseMarketplaceRepository(client)
+        } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory listing fallback is disabled.")
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryMarketplaceRepository()
+        }
+    }
+    val listingsRepository: ListingsRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseListingsRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
             }
             InMemoryListingsRepository()
         }
     }
     val marketplaceListingSource: MarketplaceListingSource by lazy {
-        val localSource = ListingsMarketplaceListingSource(listingsRepository)
-        supabaseClient?.let { client ->
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseMarketplaceListingSource(client)
+        } else {
             CompositeMarketplaceListingSource(
-                localSource,
-                SupabaseMarketplaceListingSource(client)
+                ListingsMarketplaceListingSource(listingsRepository),
+                MarketplaceRepositoryListingSource(marketplaceRepository)
             )
-        } ?: localSource
+        }
     }
     val messagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {
@@ -115,6 +134,7 @@ class AppContainer(
     // Use Cases - Marketplace
     val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
+    val viewMarketplaceListing by lazy { ViewMarketplaceListing(marketplaceRepository) }
 
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
@@ -145,7 +165,8 @@ class AppContainer(
 
     fun createMarketplaceViewModel() = MarketplaceViewModel(
         searchMarketplace = searchMarketplace,
-        toggleSaveItem = toggleSaveMarketplaceItem
+        toggleSaveItem = toggleSaveMarketplaceItem,
+        viewMarketplaceListing = viewMarketplaceListing
     )
 
     fun createListingsViewModel() = ListingsViewModel(
