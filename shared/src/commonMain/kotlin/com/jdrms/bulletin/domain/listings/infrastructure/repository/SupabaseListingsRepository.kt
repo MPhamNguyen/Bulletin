@@ -19,14 +19,14 @@ class SupabaseListingsRepository internal constructor(
     constructor(supabase: SupabaseClient) : this(PostgrestSupabaseListingsTable(supabase))
 
     override suspend fun createListing(listing: Listing): Result<Listing> {
-        return runCatching {
+        return try {
             val sellerId = requireAuthenticatedSeller(listing.sellerId.value)
             if (listingsTable.findById(listing.id.value) != null) {
-                return@runCatching Result.Error(IllegalStateException(CreateListingErrorMessages.GENERIC_FAILURE))
+                return Result.Error(IllegalStateException(CreateListingErrorMessages.GENERIC_FAILURE))
             }
             listingsTable.insert(SupabaseListingMapper.toInsertDto(listing, sellerId))
-            listing.copy(sellerId = SellerId(sellerId))
-        }.getOrElse { error ->
+            Result.Success(listing.copy(sellerId = SellerId(sellerId)))
+        } catch (error: Throwable) {
             Result.Error(Exception(mapListingsErrorMessage(error), error))
         }
     }
