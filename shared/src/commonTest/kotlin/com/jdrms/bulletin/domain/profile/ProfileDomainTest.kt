@@ -8,6 +8,8 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
+import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -176,6 +178,20 @@ class ProfileDomainTest {
     }
 
     @Test
+    fun testMapperScoreClamping() {
+        val dto = ReviewDto(
+            id = "dto_r1",
+            reviewerId = "u1",
+            reviewerName = "Sean",
+            revieweeId = "u2",
+            score = 10,
+            comment = "Great"
+        )
+        val domain = ProfileMapper.toDomain(dto)
+        assertEquals(5, domain.rating.score)
+    }
+
+    @Test
     fun testStudentProfileUpdatesEditableDetails() {
         val profile = StudentProfile(
             id = UserId("student_1"),
@@ -214,9 +230,28 @@ class ProfileDomainTest {
         assertTrue(blankSchool is Result.Error)
         assertEquals("School is required.", blankSchool.exception.message)
 
-        val tooLongBio = profile.updateDetails("John Doe", "Computer Science", "CSULB", "a".repeat(501))
-        assertTrue(tooLongBio is Result.Error)
-        assertEquals("Bio must be 500 characters or fewer.", tooLongBio.exception.message)
+        val longBio = profile.updateDetails(
+            "John Doe",
+            "Computer Science",
+            "CSULB",
+            "x".repeat(StudentProfile.MAX_BIO_LENGTH + 1)
+        )
+        assertTrue(longBio is Result.Error)
+        assertEquals("Bio must be 500 characters or fewer.", longBio.exception.message)
+    }
+
+    @Test
+    fun testProfileMapperPreservesMajor() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "John Doe",
+            major = "Computer Science"
+        )
+
+        val dto = ProfileMapper.toDto(profile)
+        assertEquals("Computer Science", dto.major)
+        assertEquals(profile, ProfileMapper.toDomain(dto))
     }
 
     @Test

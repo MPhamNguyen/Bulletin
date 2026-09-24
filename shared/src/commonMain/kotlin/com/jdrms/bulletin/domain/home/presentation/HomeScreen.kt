@@ -254,9 +254,7 @@ private fun EmptyFeedState(
 @Composable
 private fun FeedCardBackground(
     modifier: Modifier = Modifier,
-    cardIndex: Int = 0,
-    showLabel: Boolean = true,
-    labelShadow: Shadow? = null
+    cardIndex: Int = 0
 ) {
     val gradientColors = when (cardIndex % 4) {
         0 -> listOf(
@@ -330,20 +328,6 @@ private fun FeedCardBackground(
                 center = Offset(size.width * 0.75f, size.height * 0.85f)
             )
         }
-
-        if (showLabel) {
-            Text(
-                text = "Listing ${cardIndex + 1}",
-                style = MaterialTheme.typography.titleMedium.let {
-                    if (labelShadow != null) it.copy(shadow = labelShadow) else it
-                },
-                color = Color.White.copy(alpha = 0.85f),
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 32.dp)
-            )
-        }
     }
 }
 
@@ -369,9 +353,7 @@ fun HomeFeedCard(
         // 1. Full-device sharp background
         FeedCardBackground(
             modifier = Modifier.fillMaxSize(),
-            cardIndex = cardIndex,
-            showLabel = true,
-            labelShadow = textShadow
+            cardIndex = cardIndex
         )
 
         // 2. Blur panel: wraps the text with smooth alpha feathering
@@ -415,8 +397,7 @@ fun HomeFeedCard(
                     modifier = Modifier
                         .fillMaxSize()
                         .blur(radius = 18.dp, edgeTreatment = BlurredEdgeTreatment.Rectangle),
-                    cardIndex = cardIndex,
-                    showLabel = false
+                    cardIndex = cardIndex
                 )
             }
 
