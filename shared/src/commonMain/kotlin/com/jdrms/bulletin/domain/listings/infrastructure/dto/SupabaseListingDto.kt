@@ -13,5 +13,13 @@ data class SupabaseListingDto(
     @SerialName("price") val price: Double? = null,
     @SerialName("description") val description: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("status") val status: String? = null
+    @SerialName("status") val status: String? = null,
+    @SerialName("profiles") val profile: SupabaseListingProfileDto? = null
 )
+
+@Serializable
+data class SupabaseListingProfileDto(
+    @SerialName("full_name") val fullName: String? = null
+)
+
+typealias SupabaseListingInsertDto = SupabaseListingWriteDto

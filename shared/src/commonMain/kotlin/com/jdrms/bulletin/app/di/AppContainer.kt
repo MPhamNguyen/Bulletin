@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.core.network.SupabaseConfig
@@ -139,6 +140,7 @@ class AppContainer(
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
+    val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
 
     // Use Cases - Messages
     val getConversations by lazy { GetConversations(messagesRepository) }
@@ -170,7 +172,8 @@ class AppContainer(
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
-        getSellerListings = getSellerListings
+        getSellerListings = getSellerListings,
+        currentSellerProvider = currentListingSellerProvider
     )
 
     fun createMessagesViewModel() = MessagesViewModel(

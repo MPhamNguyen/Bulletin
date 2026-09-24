@@ -2,10 +2,14 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.listings.application.CreateListing
+import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
+import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
+import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -13,7 +17,6 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
-import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +27,7 @@ class ListingsViewModel(
     private val createListing: CreateListing,
     private val manageListing: ManageListing,
     private val getSellerListings: GetSellerListings,
-    private val currentSellerId: SellerId = SellerId("current_student"),
-    private val currentSellerName: String = "Dominic Alfonso"
+    private val currentSellerProvider: CurrentListingSellerProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ListingsUiState())
@@ -35,10 +37,19 @@ class ListingsViewModel(
         loadMyListings()
     }
 
-    fun loadMyListings() {
+    fun loadMyListings(seller: ListingSeller? = null) {
         viewModelScope.launch {
-            val listings = getSellerListings(currentSellerId)
-            _uiState.update { it.copy(myListings = listings) }
+            when (val sellerResult = seller?.let { Result.Success(it) } ?: currentSellerProvider.getCurrentSeller()) {
+                is Result.Success -> {
+                    val listings = getSellerListings(sellerResult.data.id)
+                    _uiState.update { it.copy(myListings = listings) }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
+                    }
+                }
+            }
         }
     }
 
@@ -63,67 +74,101 @@ class ListingsViewModel(
     }
 
     fun submitNewListing() {
+        val draft = buildListingDraft() ?: return
+        while (true) {
+            val state = _uiState.value
+            if (state.isSubmitting) return
+            if (_uiState.compareAndSet(state, state.copy(isSubmitting = true, errorMessage = null))) break
+        }
+        viewModelScope.launch { submitListing(draft) }
+    }
+
+    private fun buildListingDraft(): NewListingDraft? {
         val state = _uiState.value
         val parsedPrice = state.newPrice.toDoubleOrNull()
-
-        if (parsedPrice == null || parsedPrice < 0.0) {
-            _uiState.update { it.copy(errorMessage = "Please enter a valid price ($ ≥ 0)") }
-            return
+        if (parsedPrice == null || !parsedPrice.isFinite() || parsedPrice < 0.0) {
+            _uiState.update { it.copy(errorMessage = "Please enter a valid price ($ >= 0)") }
+            return null
         }
 
-        if (state.newTitle.isBlank() || state.newTitle.length < 3) {
+        val title = state.newTitle.trim()
+        if (title.length < 3) {
             _uiState.update { it.copy(errorMessage = "Title must be at least 3 characters") }
-            return
+            return null
         }
 
-        if (state.newDescription.isBlank()) {
+        val description = state.newDescription.trim()
+        if (description.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Description cannot be empty") }
-            return
+            return null
         }
 
-        val newListing = Listing(
-            id = ListingId(generateUuid()),
-            sellerId = currentSellerId,
-            sellerName = currentSellerName,
-            title = state.newTitle.trim(),
-            description = state.newDescription.trim(),
-            price = ListingPrice(parsedPrice),
-            category = state.newCategory,
-            condition = state.newCondition,
-            status = ListingStatus.AVAILABLE,
-            createdAtMillis = currentTimeMillis()
-        )
+        return NewListingDraft(title, description, parsedPrice, state.newCategory, state.newCondition)
+    }
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
-            val result = createListing(newListing)
-            if (result.isSuccess()) {
-                _uiState.update {
-                    it.copy(
-                        newTitle = "",
-                        newDescription = "",
-                        newPrice = "",
-                        isSubmitting = false,
-                        successMessage = "Listing posted successfully!"
-                    )
+    private suspend fun submitListing(draft: NewListingDraft) {
+        when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
+            is Result.Success -> {
+                val seller = sellerResult.data
+                val listing = Listing(
+                    id = ListingId(generateUuid()),
+                    sellerId = seller.id,
+                    sellerName = seller.name,
+                    title = draft.title,
+                    description = draft.description,
+                    price = ListingPrice(draft.price),
+                    category = draft.category,
+                    condition = draft.condition,
+                    status = ListingStatus.AVAILABLE,
+                    createdAtMillis = currentTimeMillis()
+                )
+                when (val result = createListing(listing)) {
+                    is Result.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                newTitle = "",
+                                newDescription = "",
+                                newPrice = "",
+                                isSubmitting = false,
+                                successMessage = "Listing posted successfully!"
+                            )
+                        }
+                        loadMyListings(seller)
+                    }
+                    is Result.Error -> _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
+                        )
+                    }
                 }
-                loadMyListings()
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        errorMessage = "Failed to create listing"
-                    )
-                }
+            }
+            is Result.Error -> _uiState.update {
+                it.copy(
+                    isSubmitting = false,
+                    errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                )
             }
         }
     }
 
+    private data class NewListingDraft(
+        val title: String,
+        val description: String,
+        val price: Double,
+        val category: ListingCategory,
+        val condition: ListingCondition
+    )
+
     fun deleteListing(id: ListingId) {
         viewModelScope.launch {
-            val result = manageListing.deleteListing(id)
-            if (result.isSuccess()) {
-                loadMyListings()
+            when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
+                is Result.Success -> {
+                    if (manageListing.deleteListing(id).isSuccess()) loadMyListings()
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
+                }
             }
         }
     }

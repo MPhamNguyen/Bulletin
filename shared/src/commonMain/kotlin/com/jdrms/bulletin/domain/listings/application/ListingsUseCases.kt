@@ -5,7 +5,40 @@ import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
+import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationException
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
+
+data class ListingSeller(
+    val id: SellerId,
+    val name: String
+)
+
+class AuthenticationRequiredException(cause: Throwable? = null) : Exception(
+    "Please sign in again before creating a listing.",
+    cause
+)
+
+class ListingSellerLookupException(cause: Throwable) : Exception(
+    "Unable to load the current seller.",
+    cause
+)
+
+interface CurrentListingSellerProvider {
+    suspend fun getCurrentSeller(): Result<ListingSeller>
+}
+
+object CreateListingErrorMessages {
+    const val GENERIC_FAILURE = "An Error has Occured, Please Try Again Later"
+    const val AUTHENTICATION_REQUIRED = "Please sign in again before creating a listing."
+
+    fun toUserMessage(error: Throwable): String {
+        return when {
+            error is AuthenticationRequiredException -> AUTHENTICATION_REQUIRED
+            error is ListingValidationException -> error.message.orEmpty()
+            else -> GENERIC_FAILURE
+        }
+    }
+}
 
 class CreateListing(
     private val listingsRepository: ListingsRepository,

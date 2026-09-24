@@ -17,23 +17,19 @@ object SupabaseListingMapper {
         val title = dto.name?.takeIf(String::isNotBlank) ?: return null
         val price = dto.price ?: return null
 
-        val category = runCatching { ListingCategory.valueOf(dto.category.orEmpty().uppercase()) }
-            .getOrDefault(ListingCategory.OTHER)
-        val condition = runCatching { ListingCondition.valueOf(dto.condition.orEmpty().uppercase()) }
-            .getOrDefault(ListingCondition.GOOD)
-        val status = runCatching { ListingStatus.valueOf(dto.status.orEmpty().uppercase()) }
-            .getOrDefault(ListingStatus.AVAILABLE)
-
         return Listing(
             id = ListingId(dto.id),
             sellerId = SellerId(sellerId),
-            sellerName = DEFAULT_SELLER_NAME,
+            sellerName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
             title = title,
             description = dto.description?.takeIf(String::isNotBlank) ?: DEFAULT_DESCRIPTION,
             price = ListingPrice(price.coerceAtLeast(0.0)),
-            category = category,
-            condition = condition,
-            status = status,
+            category = runCatching { ListingCategory.valueOf(dto.category.orEmpty().uppercase()) }
+                .getOrDefault(ListingCategory.OTHER),
+            condition = runCatching { ListingCondition.valueOf(dto.condition.orEmpty().uppercase()) }
+                .getOrDefault(ListingCondition.GOOD),
+            status = runCatching { ListingStatus.valueOf(dto.status.orEmpty().uppercase()) }
+                .getOrDefault(ListingStatus.AVAILABLE),
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
         )
     }
@@ -49,6 +45,9 @@ object SupabaseListingMapper {
             description = listing.description
         )
     }
+
+    fun toInsertDto(listing: Listing): SupabaseListingWriteDto =
+        toInsertDto(listing, listing.sellerId.value)
 
     private fun String?.toEpochMillisecondsOrZero(): Long {
         return this?.let { timestamp ->
