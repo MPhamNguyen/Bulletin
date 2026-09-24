@@ -2,6 +2,8 @@ package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
@@ -45,6 +47,8 @@ class ProfileViewModelTest {
 
             val viewModel = ProfileViewModel(
                 authenticateUser = authenticateUser,
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
+                signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = verifyStudentEmail,
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
@@ -113,6 +117,8 @@ class ProfileViewModelTest {
             val authRepo = InMemoryAuthRepository(profileRepo)
             val viewModel = ProfileViewModel(
                 authenticateUser = AuthenticateUser(authRepo, policy),
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
+                signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = VerifyStudentEmail(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
@@ -183,6 +189,8 @@ class ProfileViewModelTest {
 
             val viewModel = ProfileViewModel(
                 authenticateUser = authenticateUser,
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
+                signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = verifyStudentEmail,
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
