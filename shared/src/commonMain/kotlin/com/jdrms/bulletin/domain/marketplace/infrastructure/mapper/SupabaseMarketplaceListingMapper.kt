@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.mapper
 
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
+import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -9,6 +10,13 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketpl
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
+    fun toPageCursor(dto: SupabaseMarketplaceListingDto): MarketplacePageCursor {
+        return MarketplacePageCursor(
+            createdAt = dto.createdAt.toInstantOrEpoch(),
+            itemId = "listing:${dto.id}"
+        )
+    }
+
     fun toListing(
         dto: SupabaseMarketplaceListingDto,
         reputationScore: Double?
@@ -56,9 +64,12 @@ object SupabaseMarketplaceListingMapper {
     }
 
     private fun String?.toEpochMillisecondsOrZero(): Long {
-        return this?.let { timestamp ->
-            runCatching { Instant.parse(timestamp).toEpochMilliseconds() }.getOrNull()
-        } ?: 0L
+        return toInstantOrEpoch().toEpochMilliseconds()
+    }
+
+    private fun String?.toInstantOrEpoch(): Instant {
+        return this?.let { timestamp -> runCatching { Instant.parse(timestamp) }.getOrNull() }
+            ?: Instant.fromEpochMilliseconds(0L)
     }
 
     private const val DEFAULT_SELLER_NAME = "Student"

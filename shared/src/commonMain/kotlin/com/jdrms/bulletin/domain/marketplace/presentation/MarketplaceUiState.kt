@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
@@ -11,6 +12,9 @@ data class MarketplaceUiState(
     val searchQuery: String = "",
     val selectedCategory: MarketplaceCategory? = null,
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val nextCursor: MarketplacePageCursor? = null,
+    val endReached: Boolean = false,
     val errorMessage: String? = null,
     val selectedListingId: String? = null,
     val selectedListing: Listing? = null,
