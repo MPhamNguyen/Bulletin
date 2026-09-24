@@ -29,7 +29,9 @@ class SupabaseListingsRepository internal constructor(
             }
         }.fold(
             onSuccess = { it },
-            onFailure = { error -> Result.Error(Exception(mapListingsErrorMessage(error), error)) }
+            onFailure = { error ->
+                Result.Error(Exception(CreateListingErrorMessages.GENERIC_FAILURE, error))
+            }
         )
     }
 
@@ -49,7 +51,9 @@ class SupabaseListingsRepository internal constructor(
             }
         }.fold(
             onSuccess = { it },
-            onFailure = { error -> Result.Error(Exception(mapListingsErrorMessage(error), error)) }
+            onFailure = { error ->
+                Result.Error(Exception(CreateListingErrorMessages.GENERIC_FAILURE, error))
+            }
         )
     }
 
@@ -72,24 +76,6 @@ class SupabaseListingsRepository internal constructor(
 
     companion object {
         const val LISTINGS_TABLE = "listings"
-
-        private val ERROR_RULES = listOf(
-            listOf("could not find the table", "schema cache") to
-                "Database table 'listings' not found. Please verify your Supabase schema setup.",
-            listOf("unable to resolve host", "failed to connect", "timeout", "request timeout") to
-                "Unable to connect to server. Please check your internet connection.",
-            listOf("jwt", "unauthorized", "invalid api key", "no api key") to
-                "Unauthorized database request. Please check your Supabase API credentials.",
-            listOf("row-level security", "rls") to
-                "Database permission denied. Please check your Supabase RLS policies."
-        )
-
-        fun mapListingsErrorMessage(throwable: Throwable): String {
-            val message = throwable.message ?: return "An unexpected listings error occurred."
-            val lower = message.lowercase()
-            ERROR_RULES.firstOrNull { (patterns, _) -> patterns.any(lower::contains) }?.let { return it.second }
-            return message.lines().firstOrNull { it.isNotBlank() }?.trim() ?: "Listings request failed."
-        }
     }
 }
 
