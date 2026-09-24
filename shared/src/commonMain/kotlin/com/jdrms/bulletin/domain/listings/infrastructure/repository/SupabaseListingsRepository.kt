@@ -10,8 +10,8 @@ import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingInsertDto
 import com.jdrms.bulletin.domain.listings.infrastructure.mapper.SupabaseListingMapper
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 
 class SupabaseListingsRepository internal constructor(
     private val listingsTable: SupabaseListingsTable
@@ -20,12 +20,11 @@ class SupabaseListingsRepository internal constructor(
 
     override suspend fun createListing(listing: Listing): Result<Listing> {
         return runCatching {
-            val sellerId = requireAuthenticatedSeller(listing.sellerId.value)
             if (listingsTable.findById(listing.id.value) != null) {
                 Result.Error(IllegalStateException(CreateListingErrorMessages.GENERIC_FAILURE))
             } else {
-                listingsTable.insert(SupabaseListingMapper.toInsertDto(listing, sellerId))
-                Result.Success(listing.copy(sellerId = SellerId(sellerId)))
+                listingsTable.insert(SupabaseListingMapper.toInsertDto(listing))
+                Result.Success(listing)
             }
         }.fold(
             onSuccess = { it },
@@ -45,7 +44,6 @@ class SupabaseListingsRepository internal constructor(
             if (existing == null) {
                 Result.Error(NoSuchElementException("Listing not found."))
             } else {
-                requireAuthenticatedSeller(existing.userId.orEmpty())
                 listingsTable.delete(id.value)
                 Result.Success(Unit)
             }
@@ -65,15 +63,6 @@ class SupabaseListingsRepository internal constructor(
         return listingsTable.getListings(null).mapNotNull(SupabaseListingMapper::toDomain)
     }
 
-    private suspend fun requireAuthenticatedSeller(sellerId: String): String {
-        val authenticatedUserId = listingsTable.authenticatedUserId()
-            ?: error(CreateListingErrorMessages.AUTHENTICATION_REQUIRED)
-        require(authenticatedUserId == sellerId) {
-            CreateListingErrorMessages.GENERIC_FAILURE
-        }
-        return authenticatedUserId
-    }
-
     companion object {
         const val LISTINGS_TABLE = "listings"
     }
@@ -84,14 +73,13 @@ internal interface SupabaseListingsTable {
     suspend fun insert(listing: SupabaseListingInsertDto)
     suspend fun delete(id: String)
     suspend fun getListings(sellerId: String?): List<SupabaseListingDto>
-    suspend fun authenticatedUserId(): String?
 }
 
 private class PostgrestSupabaseListingsTable(
     private val supabase: SupabaseClient
 ) : SupabaseListingsTable {
     override suspend fun findById(id: String): SupabaseListingDto? {
-        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select {
+        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
             filter { eq("id", id) }
         }.decodeSingleOrNull()
     }
@@ -107,10 +95,18 @@ private class PostgrestSupabaseListingsTable(
     }
 
     override suspend fun getListings(sellerId: String?): List<SupabaseListingDto> {
-        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select {
+        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
             sellerId?.let { filter { eq("user_id", it) } }
         }.decodeList()
     }
 
-    override suspend fun authenticatedUserId(): String? = supabase.auth.currentUserOrNull()?.id
+    private companion object {
+        val LISTING_COLUMNS = Columns.raw(
+            """
+            *,
+            profiles ( full_name )
+            """.trimIndent()
+        )
+    }
+
 }

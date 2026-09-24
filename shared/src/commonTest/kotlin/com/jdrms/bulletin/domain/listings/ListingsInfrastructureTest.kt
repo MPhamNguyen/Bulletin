@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
+import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingProfileDto
 import com.jdrms.bulletin.domain.listings.infrastructure.mapper.SupabaseListingMapper
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,12 +27,14 @@ class ListingsInfrastructureTest {
                 condition = "like_new",
                 price = 18.5,
                 description = "Adjustable lamp",
-                createdAt = "2026-09-21T12:00:00Z"
+                createdAt = "2026-09-21T12:00:00Z",
+                profile = SupabaseListingProfileDto("Jane Student")
             )
         )
 
         assertEquals("listing-42", listing?.id?.value)
         assertEquals(SellerId("seller-42"), listing?.sellerId)
+        assertEquals("Jane Student", listing?.sellerName)
         assertEquals(ListingCategory.ELECTRONICS, listing?.category)
         assertEquals(ListingCondition.LIKE_NEW, listing?.condition)
         assertEquals(18.5, listing?.price?.amount)

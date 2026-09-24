@@ -20,7 +20,7 @@ object SupabaseListingMapper {
         return Listing(
             id = ListingId(dto.id),
             sellerId = SellerId(sellerId),
-            sellerName = DEFAULT_SELLER_NAME,
+            sellerName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
             title = title,
             description = dto.description?.takeIf(String::isNotBlank) ?: DEFAULT_DESCRIPTION,
             price = ListingPrice(price.coerceAtLeast(0.0)),

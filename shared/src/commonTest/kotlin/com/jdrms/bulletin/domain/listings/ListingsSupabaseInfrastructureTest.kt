@@ -96,6 +96,5 @@ class ListingsSupabaseInfrastructureTest {
 
         override suspend fun getListings(sellerId: String?): List<SupabaseListingDto> = emptyList()
 
-        override suspend fun authenticatedUserId(): String = "seller-uuid"
     }
 }

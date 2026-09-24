@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
+import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -36,9 +37,9 @@ class ListingsViewModel(
         loadMyListings()
     }
 
-    fun loadMyListings() {
+    fun loadMyListings(seller: ListingSeller? = null) {
         viewModelScope.launch {
-            when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
+            when (val sellerResult = seller?.let { Result.Success(it) } ?: currentSellerProvider.getCurrentSeller()) {
                 is Result.Success -> {
                     val listings = getSellerListings(sellerResult.data.id)
                     _uiState.update { it.copy(myListings = listings) }
@@ -74,10 +75,12 @@ class ListingsViewModel(
 
     fun submitNewListing() {
         val draft = buildListingDraft() ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
-            submitListing(draft)
+        while (true) {
+            val state = _uiState.value
+            if (state.isSubmitting) return
+            if (_uiState.compareAndSet(state, state.copy(isSubmitting = true, errorMessage = null))) break
         }
+        viewModelScope.launch { submitListing(draft) }
     }
 
     private fun buildListingDraft(): NewListingDraft? {
@@ -130,7 +133,7 @@ class ListingsViewModel(
                                 successMessage = "Listing posted successfully!"
                             )
                         }
-                        loadMyListings()
+                        loadMyListings(seller)
                     }
                     is Result.Error -> _uiState.update {
                         it.copy(

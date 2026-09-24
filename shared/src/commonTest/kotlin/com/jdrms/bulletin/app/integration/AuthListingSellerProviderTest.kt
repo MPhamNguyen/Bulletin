@@ -37,7 +37,7 @@ class AuthListingSellerProviderTest {
     }
 
     @Test
-    fun authenticationFailureDoesNotExposeTechnicalError() = kotlinx.coroutines.test.runTest {
+    fun providerFailureDoesNotExposeTechnicalError() = kotlinx.coroutines.test.runTest {
         val provider = AuthListingSellerProvider(
             FakeAuthRepository(Result.Error(IllegalStateException("JWT expired: token details")))
         )
@@ -46,7 +46,7 @@ class AuthListingSellerProviderTest {
 
         assertTrue(result.isError())
         assertEquals(
-            CreateListingErrorMessages.AUTHENTICATION_REQUIRED,
+            CreateListingErrorMessages.GENERIC_FAILURE,
             (result as Result.Error).message
         )
     }
