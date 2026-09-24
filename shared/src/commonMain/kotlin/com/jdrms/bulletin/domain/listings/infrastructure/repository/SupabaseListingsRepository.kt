@@ -19,16 +19,18 @@ class SupabaseListingsRepository internal constructor(
     constructor(supabase: SupabaseClient) : this(PostgrestSupabaseListingsTable(supabase))
 
     override suspend fun createListing(listing: Listing): Result<Listing> {
-        return try {
+        return runCatching {
             val sellerId = requireAuthenticatedSeller(listing.sellerId.value)
             if (listingsTable.findById(listing.id.value) != null) {
-                return Result.Error(IllegalStateException(CreateListingErrorMessages.GENERIC_FAILURE))
+                Result.Error(IllegalStateException(CreateListingErrorMessages.GENERIC_FAILURE))
+            } else {
+                listingsTable.insert(SupabaseListingMapper.toInsertDto(listing, sellerId))
+                Result.Success(listing.copy(sellerId = SellerId(sellerId)))
             }
-            listingsTable.insert(SupabaseListingMapper.toInsertDto(listing, sellerId))
-            Result.Success(listing.copy(sellerId = SellerId(sellerId)))
-        } catch (error: Throwable) {
-            Result.Error(Exception(mapListingsErrorMessage(error), error))
-        }
+        }.fold(
+            onSuccess = { it },
+            onFailure = { error -> Result.Error(Exception(mapListingsErrorMessage(error), error)) }
+        )
     }
 
     override suspend fun updateListing(listing: Listing): Result<Listing> {
@@ -36,15 +38,19 @@ class SupabaseListingsRepository internal constructor(
     }
 
     override suspend fun deleteListing(id: ListingId): Result<Unit> {
-        return try {
+        return runCatching {
             val existing = listingsTable.findById(id.value)
-                ?: return Result.Error(NoSuchElementException("Listing not found."))
-            requireAuthenticatedSeller(existing.userId.orEmpty())
-            listingsTable.delete(id.value)
-            Result.Success(Unit)
-        } catch (error: Throwable) {
-            Result.Error(Exception(mapListingsErrorMessage(error), error))
-        }
+            if (existing == null) {
+                Result.Error(NoSuchElementException("Listing not found."))
+            } else {
+                requireAuthenticatedSeller(existing.userId.orEmpty())
+                listingsTable.delete(id.value)
+                Result.Success(Unit)
+            }
+        }.fold(
+            onSuccess = { it },
+            onFailure = { error -> Result.Error(Exception(mapListingsErrorMessage(error), error)) }
+        )
     }
 
     override suspend fun getSellerListings(sellerId: SellerId): List<Listing> {
