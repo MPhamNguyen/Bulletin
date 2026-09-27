@@ -357,6 +357,68 @@ class ProfileViewModelTest {
             Dispatchers.resetMain()
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelEditingFlow() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.createAccount("Alex", "Student", "alex@csulb.edu", "password123")
+            advanceUntilIdle()
+
+            // Initial state: Landing profile (isEditingProfile == false)
+            assertFalse(viewModel.uiState.value.isEditingProfile)
+
+            // Start editing profile
+            viewModel.startEditingProfile()
+            assertTrue(viewModel.uiState.value.isEditingProfile)
+            assertEquals("Alex Student", viewModel.uiState.value.profileDraft.fullName)
+
+            // Change draft and cancel
+            viewModel.onProfileDraftChanged(
+                viewModel.uiState.value.profileDraft.copy(fullName = "Unsaved Name")
+            )
+            assertTrue(viewModel.uiState.value.isProfileModified)
+            viewModel.cancelEditingProfile()
+            assertFalse(viewModel.uiState.value.isEditingProfile)
+            assertFalse(viewModel.uiState.value.isProfileModified)
+            assertEquals("Alex Student", viewModel.uiState.value.profileDraft.fullName)
+
+            // Start editing again, trigger invalid update
+            viewModel.startEditingProfile()
+            assertTrue(viewModel.uiState.value.isEditingProfile)
+            viewModel.onProfileDraftChanged(viewModel.uiState.value.profileDraft.copy(fullName = "   "))
+            viewModel.updateProfileDetails()
+            advanceUntilIdle()
+            // Editing state preserved on validation failure
+            assertTrue(viewModel.uiState.value.isEditingProfile)
+            assertEquals("Full name is required.", viewModel.uiState.value.errorMessage)
+
+            // Valid update: updates profile, returns to landing (isEditingProfile = false)
+            viewModel.onProfileDraftChanged(
+                viewModel.uiState.value.profileDraft.copy(
+                    fullName = "Alex Updated",
+                    major = "Computer Science"
+                )
+            )
+            viewModel.updateProfileDetails()
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isEditingProfile)
+            assertEquals("Alex Updated", viewModel.uiState.value.profile?.fullName)
+            assertEquals("Computer Science", viewModel.uiState.value.profile?.major)
+            assertEquals("Profile updated", viewModel.uiState.value.successMessage)
+            advanceUntilIdle()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 }
 
 private class SessionFailureAuthRepository(

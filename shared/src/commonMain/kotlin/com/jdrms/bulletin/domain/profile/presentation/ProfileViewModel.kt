@@ -52,9 +52,11 @@ class ProfileViewModel(
             when (val result = restoreAuthenticatedProfile()) {
                 is Result.Success -> {
                     val profile = result.data
+                    val rep = profile?.let { manageProfile.getReputation(it.id) }
                     _uiState.update {
                         it.copy(
                             profile = profile,
+                            reputation = rep ?: it.reputation,
                             profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
                             authSessionState = if (profile == null) {
                                 AuthSessionState.UNAUTHENTICATED
@@ -142,15 +144,18 @@ class ProfileViewModel(
         }
     }
 
-    private fun handleRegistrationResult(result: Result<StudentProfile>) {
+    private suspend fun handleRegistrationResult(result: Result<StudentProfile>) {
         when (result) {
             is Result.Success -> {
+                val rep = manageProfile.getReputation(result.data.id)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         profile = result.data,
+                        reputation = rep,
                         profileDraft = ProfileDraft.from(result.data),
                         isAccountCreated = true,
+                        isEditingProfile = false,
                         authSessionState = AuthSessionState.AUTHENTICATED,
                         errorMessage = null
                     )
@@ -171,6 +176,31 @@ class ProfileViewModel(
     fun clearMessages() {
         flashNotificationJob?.cancel()
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    }
+
+    fun startEditingProfile() {
+        val profile = _uiState.value.profile
+        _uiState.update {
+            it.copy(
+                profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
+                isEditingProfile = true,
+                errorMessage = null,
+                successMessage = null
+            )
+        }
+    }
+
+    fun cancelEditingProfile() {
+        val profile = _uiState.value.profile
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
+                isEditingProfile = false,
+                errorMessage = null,
+                successMessage = null
+            )
+        }
     }
 
     fun onProfileDraftChanged(profileDraft: ProfileDraft) {
@@ -215,6 +245,7 @@ class ProfileViewModel(
                         it.copy(
                             profile = result.data,
                             profileDraft = ProfileDraft.from(result.data),
+                            isEditingProfile = false,
                             isLoading = false,
                             errorMessage = null
                         )
@@ -238,6 +269,7 @@ class ProfileViewModel(
         _uiState.update {
             it.copy(
                 isAccountCreated = false,
+                isEditingProfile = false,
                 successMessage = null,
                 errorMessage = null
             )
@@ -261,13 +293,16 @@ class ProfileViewModel(
             val result = authenticateUser.login(studentEmail, pass)
             when (result) {
                 is Result.Success -> {
+                    val rep = manageProfile.getReputation(result.data.id)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             profile = result.data,
+                            reputation = rep,
                             profileDraft = ProfileDraft.from(result.data),
                             errorMessage = null,
                             isAccountCreated = false,
+                            isEditingProfile = false,
                             authSessionState = AuthSessionState.AUTHENTICATED
                         )
                     }
@@ -307,6 +342,7 @@ class ProfileViewModel(
             }
         }
     }
+
     private fun showFlashNotification(message: String) {
         flashNotificationJob?.cancel()
         _uiState.update { it.copy(successMessage = message) }

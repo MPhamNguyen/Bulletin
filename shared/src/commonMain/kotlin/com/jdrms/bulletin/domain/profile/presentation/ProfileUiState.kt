@@ -17,6 +17,7 @@ data class ProfileUiState(
     val newScore: Int = 5,
     val newComment: String = "",
     val isLoading: Boolean = false,
+    val isEditingProfile: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false,
