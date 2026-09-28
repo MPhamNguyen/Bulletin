@@ -195,12 +195,16 @@ fun MainAppScaffold(
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
                     AppDestination.PROFILE -> {
-                        if (profileDestination == ProfileDestination.MY_LISTINGS) {
+                        if (profileDestination != ProfileDestination.PROFILE) {
                             MyListingsScreen(
                                 viewModel = listingsViewModel,
                                 onBack = {
                                     listingsViewModel.clearMessages()
+                                    listingsViewModel.cancelEditing()
                                     profileDestination = backFromProfile(profileDestination)
+                                },
+                                onEditListing = {
+                                    profileDestination = ProfileDestination.EDIT_LISTING
                                 }
                             )
                         } else {

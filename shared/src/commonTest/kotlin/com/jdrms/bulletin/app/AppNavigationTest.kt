@@ -3,6 +3,8 @@ package com.jdrms.bulletin.app
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
+import com.jdrms.bulletin.app.navigation.explicitProfileBack
+import com.jdrms.bulletin.app.navigation.systemProfileBack
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,5 +53,20 @@ class AppNavigationTest {
     @Test
     fun backFromMyListingsReturnsToProfile() {
         assertEquals(ProfileDestination.PROFILE, backFromProfile(ProfileDestination.MY_LISTINGS))
+    }
+
+    @Test
+    fun backFromEditListingReturnsToMyListings() {
+        assertEquals(ProfileDestination.MY_LISTINGS, backFromProfile(ProfileDestination.EDIT_LISTING))
+    }
+
+    @Test
+    fun explicitBackCancelsEditRouteWithoutDiscardingParentRoute() {
+        assertEquals(ProfileDestination.MY_LISTINGS, explicitProfileBack(ProfileDestination.EDIT_LISTING))
+    }
+
+    @Test
+    fun systemBackCancelsEditRouteWithoutDiscardingParentRoute() {
+        assertEquals(ProfileDestination.MY_LISTINGS, systemProfileBack(ProfileDestination.EDIT_LISTING))
     }
 }

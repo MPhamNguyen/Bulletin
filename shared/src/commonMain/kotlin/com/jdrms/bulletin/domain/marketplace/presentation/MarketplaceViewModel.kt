@@ -32,7 +32,10 @@ class MarketplaceViewModel(
     init {
         refreshListings()
         viewModelScope.launch {
-            listingChangedSignal?.events?.collect { refreshListings() }
+            listingChangedSignal?.events?.collect {
+                refreshListings()
+                _uiState.value.selectedListingId?.let(::loadListingDetail)
+            }
         }
     }
 

@@ -69,12 +69,14 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun MyListingsScreen(
     viewModel: ListingsViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditListing: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     BackHandler {
-        if (uiState.editingListing != null) viewModel.cancelEditing() else onBack()
+        if (uiState.editingListing != null) viewModel.cancelEditing()
+        onBack()
     }
 
     DisposableEffect(Unit) {
@@ -92,13 +94,18 @@ fun MyListingsScreen(
         if (uiState.editingListing != null) {
             EditListingView(
                 uiState = uiState,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onBack = {
+                    viewModel.cancelEditing()
+                    onBack()
+                }
             )
         } else {
             MyListingsListView(
                 uiState = uiState,
                 viewModel = viewModel,
-                onBack = onBack
+                onBack = onBack,
+                onEditListing = onEditListing
             )
         }
 
@@ -123,7 +130,8 @@ fun MyListingsScreen(
 private fun MyListingsListView(
     uiState: ListingsUiState,
     viewModel: ListingsViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditListing: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -181,7 +189,7 @@ private fun MyListingsListView(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
-        } else if (uiState.loadState != ListingsLoadState.LOADED || uiState.myListings.isEmpty()) {
+        } else if (uiState.loadState == ListingsLoadState.LOADED && uiState.myListings.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -216,6 +224,17 @@ private fun MyListingsListView(
                     }
                 }
             }
+        } else if (uiState.myListings.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Unable to load listings. Please try again.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
             LazyColumn(
                 modifier = Modifier
@@ -226,7 +245,10 @@ private fun MyListingsListView(
                 items(uiState.myListings, key = { it.id.value }) { listing ->
                     MyListingItemCard(
                         listing = listing,
-                        onEdit = { viewModel.startEditing(listing) },
+                        onEdit = {
+                            viewModel.startEditing(listing)
+                            onEditListing()
+                        },
                         onDelete = { viewModel.deleteListing(listing.id) }
                     )
                 }
@@ -377,7 +399,8 @@ private fun MyListingItemCard(
 @Composable
 private fun EditListingView(
     uiState: ListingsUiState,
-    viewModel: ListingsViewModel
+    viewModel: ListingsViewModel,
+    onBack: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -388,7 +411,7 @@ private fun EditListingView(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = viewModel::cancelEditing) {
+                IconButton(onClick = onBack) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_arrow_back),
                         contentDescription = "Cancel",
@@ -404,7 +427,7 @@ private fun EditListingView(
                 )
             }
 
-            TextButton(onClick = viewModel::cancelEditing) {
+            TextButton(onClick = onBack) {
                 Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -537,7 +560,7 @@ private fun EditListingView(
             }
 
             OutlinedButton(
-                onClick = viewModel::cancelEditing,
+                onClick = onBack,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),

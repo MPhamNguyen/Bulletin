@@ -152,12 +152,13 @@ class ListingsDomainTest {
             sellerId = SellerId("attacker"),
             title = "Stolen Listing"
         )
-        val result = manageListing.updateListing(forgedPayload, SellerId("owner_1"))
+        val result = manageListing.updateListing(forgedPayload, SellerId("attacker"))
 
-        assertTrue(result.isSuccess())
+        assertTrue(result.isError())
+        assertTrue((result as Result.Error).exception is ListingValidationException.Unauthorized)
         val stored = repo.getListing(persisted.id)
         assertEquals(SellerId("owner_1"), stored?.sellerId)
-        assertEquals("Stolen Listing", stored?.title)
+        assertEquals(persisted.title, stored?.title)
     }
 
     @Test

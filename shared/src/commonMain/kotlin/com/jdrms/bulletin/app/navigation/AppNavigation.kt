@@ -24,12 +24,18 @@ enum class AppRootScreen {
 
 enum class ProfileDestination {
     PROFILE,
-    MY_LISTINGS
+    MY_LISTINGS,
+    EDIT_LISTING
 }
 
 fun backFromProfile(destination: ProfileDestination): ProfileDestination {
     return when (destination) {
-        ProfileDestination.PROFILE,
+        ProfileDestination.PROFILE -> ProfileDestination.PROFILE
         ProfileDestination.MY_LISTINGS -> ProfileDestination.PROFILE
+        ProfileDestination.EDIT_LISTING -> ProfileDestination.MY_LISTINGS
     }
 }
+
+fun explicitProfileBack(destination: ProfileDestination): ProfileDestination = backFromProfile(destination)
+
+fun systemProfileBack(destination: ProfileDestination): ProfileDestination = backFromProfile(destination)
