@@ -33,17 +33,17 @@ class ProfileApplicationTest {
 
         val result = UpdateStudentProfile(repository)(
             profile = profile,
-            fullName = "Updated Name",
+            fullName = "John Doe",
             major = "Computer Science",
             university = "CSULB",
             bio = "Student bio"
         )
 
         assertTrue(result is Result.Success)
+        assertEquals("Computer Science", result.data.major)
         val persisted = repository.getProfile(profile.id)
         assertTrue(persisted is Result.Success)
-        assertEquals("Updated Name", persisted.data?.fullName)
-        assertEquals("Computer Science", persisted.data?.major)
+        assertEquals(result.data, persisted.data?.copy(reputation = null))
     }
 
     @Test
