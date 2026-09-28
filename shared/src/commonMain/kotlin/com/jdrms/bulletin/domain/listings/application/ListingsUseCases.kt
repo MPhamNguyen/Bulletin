@@ -54,10 +54,32 @@ class CreateListing(
 }
 
 class ManageListing(
-    private val listingsRepository: ListingsRepository
+    private val listingsRepository: ListingsRepository,
+    private val policy: ListingValidationPolicy = ListingValidationPolicy()
 ) {
-    suspend fun updateListing(listing: Listing): Result<Listing> {
-        return listingsRepository.updateListing(listing)
+    suspend fun updateListing(listing: Listing, editorSellerId: SellerId? = null): Result<Listing> {
+        var canonicalListing = listing
+        if (editorSellerId != null) {
+            val persistedListing = listingsRepository.getListing(listing.id)
+                ?: return Result.Error(NoSuchElementException("Listing not found with ID: ${listing.id.value}"))
+            val ownershipValidation = policy.validateOwnership(persistedListing, editorSellerId)
+            if (ownershipValidation.isError()) {
+                return Result.Error((ownershipValidation as Result.Error).exception)
+            }
+            // Identity and server-owned fields always come from storage, never from the request payload.
+            canonicalListing = persistedListing.copy(
+                title = listing.title,
+                description = listing.description,
+                price = listing.price,
+                category = listing.category,
+                condition = listing.condition
+            )
+        }
+        val listingValidation = policy.validateListing(canonicalListing)
+        if (listingValidation.isError()) {
+            return Result.Error((listingValidation as Result.Error).exception)
+        }
+        return listingsRepository.updateListing(canonicalListing)
     }
 
     suspend fun deleteListing(id: ListingId): Result<Unit> {

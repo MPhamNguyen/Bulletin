@@ -10,5 +10,6 @@ data class ListingDto(
     val category: String,
     val condition: String = "GOOD",
     val status: String = "AVAILABLE",
+    val images: List<String> = emptyList(),
     val createdAtMillis: Long = 0L
 )

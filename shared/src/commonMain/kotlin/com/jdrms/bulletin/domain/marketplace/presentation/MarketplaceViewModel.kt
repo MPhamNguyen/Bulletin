@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
@@ -20,7 +21,8 @@ import kotlinx.coroutines.launch
 class MarketplaceViewModel(
     private val searchMarketplace: SearchMarketplace,
     private val toggleSaveItem: ToggleSaveMarketplaceItem,
-    private val viewMarketplaceListing: ViewMarketplaceListing
+    private val viewMarketplaceListing: ViewMarketplaceListing,
+    private val listingChangedSignal: RefreshSignal? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
@@ -29,6 +31,12 @@ class MarketplaceViewModel(
 
     init {
         refreshListings()
+        viewModelScope.launch {
+            listingChangedSignal?.events?.collect {
+                refreshListings()
+                _uiState.value.selectedListingId?.let(::loadListingDetail)
+            }
+        }
     }
 
     fun refreshListings(userId: String = "student_user") {

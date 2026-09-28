@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingInsertDto
+import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingWriteDto
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsTable
 import kotlinx.coroutines.test.runTest
@@ -58,6 +59,50 @@ class ListingsSupabaseInfrastructureTest {
         assertEquals(CreateListingErrorMessages.GENERIC_FAILURE, (result as Result.Error).message)
     }
 
+    @Test
+    fun updateListingUpdatesDomainFieldsWhenListingExists() = runTest {
+        val table = FakeSupabaseListingsTable(existingId = "listing-uuid")
+        val repository = SupabaseListingsRepository(table)
+        val listing = testListing().copy(
+            title = "Updated Title",
+            description = "Updated Description",
+            price = ListingPrice(45.0)
+        )
+
+        val result = repository.updateListing(listing)
+
+        assertTrue(result.isSuccess())
+        assertEquals(listing, (result as Result.Success).data)
+        assertEquals("Updated Title", table.updated?.name)
+        assertEquals("Updated Description", table.updated?.description)
+        assertEquals(45.0, table.updated?.price)
+    }
+
+    @Test
+    fun updateListingReturnsErrorWhenListingNotFound() = runTest {
+        val table = FakeSupabaseListingsTable(existingId = null)
+        val repository = SupabaseListingsRepository(table)
+
+        val result = repository.updateListing(testListing())
+
+        assertTrue(result.isError())
+        assertEquals("Listing not found with ID: listing-uuid", (result as Result.Error).message)
+    }
+
+    @Test
+    fun updateListingHidesUnexpectedRepositoryErrors() = runTest {
+        val table = FakeSupabaseListingsTable(
+            existingId = "listing-uuid",
+            updateError = IllegalStateException("database timeout")
+        )
+        val repository = SupabaseListingsRepository(table)
+
+        val result = repository.updateListing(testListing())
+
+        assertTrue(result.isError())
+        assertEquals(CreateListingErrorMessages.GENERIC_FAILURE, (result as Result.Error).message)
+    }
+
     private fun testListing(): Listing {
         return Listing(
             id = ListingId("listing-uuid"),
@@ -75,9 +120,11 @@ class ListingsSupabaseInfrastructureTest {
 
     private class FakeSupabaseListingsTable(
         private val existingId: String? = null,
-        private val insertError: Throwable? = null
+        private val insertError: Throwable? = null,
+        private val updateError: Throwable? = null
     ) : SupabaseListingsTable {
         var inserted: SupabaseListingInsertDto? = null
+        var updated: SupabaseListingWriteDto? = null
 
         override suspend fun findById(id: String): SupabaseListingDto? {
             return if (id == existingId) {
@@ -90,6 +137,11 @@ class ListingsSupabaseInfrastructureTest {
         override suspend fun insert(listing: SupabaseListingInsertDto) {
             insertError?.let { throw it }
             inserted = listing
+        }
+
+        override suspend fun update(listing: SupabaseListingWriteDto) {
+            updateError?.let { throw it }
+            updated = listing
         }
 
         override suspend fun delete(id: String) = Unit

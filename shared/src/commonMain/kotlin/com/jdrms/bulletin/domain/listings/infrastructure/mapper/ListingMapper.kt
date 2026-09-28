@@ -28,6 +28,7 @@ object ListingMapper {
             category = category,
             condition = condition,
             status = status,
+            images = dto.images,
             createdAtMillis = dto.createdAtMillis
         )
     }
@@ -43,6 +44,7 @@ object ListingMapper {
             category = domain.category.name,
             condition = domain.condition.name,
             status = domain.status.name,
+            images = domain.images,
             createdAtMillis = domain.createdAtMillis
         )
     }

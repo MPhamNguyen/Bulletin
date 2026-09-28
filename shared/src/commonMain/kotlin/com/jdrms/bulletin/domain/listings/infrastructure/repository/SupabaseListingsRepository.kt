@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingInsertDto
+import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingWriteDto
 import com.jdrms.bulletin.domain.listings.infrastructure.mapper.SupabaseListingMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
@@ -35,7 +36,24 @@ class SupabaseListingsRepository internal constructor(
     }
 
     override suspend fun updateListing(listing: Listing): Result<Listing> {
-        return Result.Error(UnsupportedOperationException("Listing updates are not implemented for Supabase."))
+        return runCatching {
+            val existing = listingsTable.findById(listing.id.value)
+            if (existing == null) {
+                Result.Error(NoSuchElementException("Listing not found with ID: ${listing.id.value}"))
+            } else {
+                listingsTable.update(SupabaseListingMapper.toInsertDto(listing))
+                Result.Success(listing)
+            }
+        }.fold(
+            onSuccess = { it },
+            onFailure = { error ->
+                Result.Error(Exception(CreateListingErrorMessages.GENERIC_FAILURE, error))
+            }
+        )
+    }
+
+    override suspend fun getListing(id: ListingId): Listing? {
+        return listingsTable.findById(id.value)?.let(SupabaseListingMapper::toDomain)
     }
 
     override suspend fun deleteListing(id: ListingId): Result<Unit> {
@@ -71,6 +89,7 @@ class SupabaseListingsRepository internal constructor(
 internal interface SupabaseListingsTable {
     suspend fun findById(id: String): SupabaseListingDto?
     suspend fun insert(listing: SupabaseListingInsertDto)
+    suspend fun update(listing: SupabaseListingWriteDto)
     suspend fun delete(id: String)
     suspend fun getListings(sellerId: String?): List<SupabaseListingDto>
 }
@@ -86,6 +105,12 @@ private class PostgrestSupabaseListingsTable(
 
     override suspend fun insert(listing: SupabaseListingInsertDto) {
         supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).insert(listing)
+    }
+
+    override suspend fun update(listing: SupabaseListingWriteDto) {
+        supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).update(listing) {
+            filter { eq("id", listing.id) }
+        }
     }
 
     override suspend fun delete(id: String) {
