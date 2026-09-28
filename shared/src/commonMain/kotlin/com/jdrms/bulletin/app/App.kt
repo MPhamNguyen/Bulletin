@@ -47,6 +47,7 @@ import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
+import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
@@ -158,6 +159,7 @@ fun MainAppScaffold(
 
     BulletinTheme {
         var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
+        var isViewingMyListings by remember { mutableStateOf(false) }
 
         val homeViewModel = remember { container.createHomeViewModel() }
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
@@ -173,7 +175,13 @@ fun MainAppScaffold(
             bottomBar = {
                 BulletinBottomNavigationBar(
                     currentDestination = currentDestination,
-                    onDestinationSelected = { currentDestination = it }
+                    onDestinationSelected = {
+                        if (it != AppDestination.PROFILE) {
+                            isViewingMyListings = false
+                            listingsViewModel.clearMessages()
+                        }
+                        currentDestination = it
+                    }
                 )
             }
         ) { paddingValues ->
@@ -183,10 +191,26 @@ fun MainAppScaffold(
                     AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
-                    AppDestination.PROFILE -> ProfileScreen(
-                        viewModel = resolvedProfileViewModel,
-                        onSignOut = onSignOut
-                    )
+                    AppDestination.PROFILE -> {
+                        if (isViewingMyListings) {
+                            MyListingsScreen(
+                                viewModel = listingsViewModel,
+                                onBack = {
+                                    listingsViewModel.clearMessages()
+                                    isViewingMyListings = false
+                                }
+                            )
+                        } else {
+                            ProfileScreen(
+                                viewModel = resolvedProfileViewModel,
+                                onSignOut = onSignOut,
+                                onMyListingsClick = {
+                                    listingsViewModel.clearMessages()
+                                    isViewingMyListings = true
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }

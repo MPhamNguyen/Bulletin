@@ -69,7 +69,8 @@ import org.jetbrains.compose.resources.painterResource
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     onBack: () -> Unit = {},
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    onMyListingsClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -94,6 +95,7 @@ fun ProfileScreen(
             ProfileLandingView(
                 uiState = uiState,
                 onEditProfileClick = viewModel::startEditingProfile,
+                onMyListingsClick = onMyListingsClick,
                 onSignOut = onSignOut
             )
         }
@@ -119,6 +121,7 @@ fun ProfileScreen(
 private fun ProfileLandingView(
     uiState: ProfileUiState,
     onEditProfileClick: () -> Unit,
+    onMyListingsClick: () -> Unit,
     onSignOut: () -> Unit
 ) {
     val profile = uiState.profile
@@ -266,6 +269,22 @@ private fun ProfileLandingView(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = onMyListingsClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = BulletinButtonDefaults.buttonColors()
+            ) {
+                Text(
+                    text = "My Listings",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedButton(
                 onClick = onSignOut,
