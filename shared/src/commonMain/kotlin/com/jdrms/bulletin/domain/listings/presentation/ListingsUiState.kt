@@ -4,8 +4,16 @@ import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 
+enum class ListingsLoadState {
+    INITIAL,
+    LOADING,
+    LOADED,
+    FAILED
+}
+
 data class ListingsUiState(
     val myListings: List<Listing> = emptyList(),
+    val loadState: ListingsLoadState = ListingsLoadState.INITIAL,
     val newTitle: String = "",
     val newDescription: String = "",
     val newPrice: String = "",
@@ -20,6 +28,5 @@ data class ListingsUiState(
     val editPrice: String = "",
     val editCategory: ListingCategory = ListingCategory.TEXTBOOKS,
     val editCondition: ListingCondition = ListingCondition.GOOD,
-    val editImages: List<String> = emptyList(),
     val isUpdating: Boolean = false
 )

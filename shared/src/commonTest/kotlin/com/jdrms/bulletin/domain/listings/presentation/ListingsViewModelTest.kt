@@ -13,10 +13,12 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
+import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -79,8 +81,51 @@ class ListingsViewModelTest {
         assertEquals("40", state.editPrice)
         assertEquals(listing.category, state.editCategory)
         assertEquals(listing.condition, state.editCondition)
-        assertEquals(listing.images, state.editImages)
         assertNull(state.errorMessage)
+    }
+
+    @Test
+    fun testInitialLoadingAndRefreshFailureRetainPriorContent() = runTest {
+        advanceUntilIdle()
+        assertEquals(ListingsLoadState.LOADED, viewModel.uiState.value.loadState)
+        assertTrue(viewModel.uiState.value.myListings.isEmpty())
+
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        viewModel.loadMyListings(ListingSeller(sellerId, sellerName))
+        advanceUntilIdle()
+        assertEquals(listOf(listing), viewModel.uiState.value.myListings)
+
+        sellerProvider.currentSeller = Result.Error(IllegalStateException("session expired"))
+        viewModel.loadMyListings()
+        advanceUntilIdle()
+
+        assertEquals(ListingsLoadState.FAILED, viewModel.uiState.value.loadState)
+        assertEquals(listOf(listing), viewModel.uiState.value.myListings)
+    }
+
+    @Test
+    fun testImmediateDuplicateSavesInvokeRepositoryOnce() = runTest {
+        val baseRepository = InMemoryListingsRepository(initialListings = emptyList())
+        val countingRepository = CountingListingsRepository(baseRepository)
+        val listing = testListing(sellerId)
+        baseRepository.createListing(listing)
+        val duplicateSaveViewModel = ListingsViewModel(
+            createListing = CreateListing(countingRepository),
+            manageListing = ManageListing(countingRepository),
+            getSellerListings = GetSellerListings(countingRepository),
+            currentSellerProvider = sellerProvider
+        )
+        advanceUntilIdle()
+        duplicateSaveViewModel.startEditing(listing)
+        advanceUntilIdle()
+        duplicateSaveViewModel.onEditTitleChanged("Updated once")
+
+        duplicateSaveViewModel.saveListingChanges()
+        duplicateSaveViewModel.saveListingChanges()
+        advanceUntilIdle()
+
+        assertEquals(1, countingRepository.updateCount)
     }
 
     @Test
@@ -114,7 +159,6 @@ class ListingsViewModelTest {
         assertEquals("", state.editTitle)
         assertEquals("", state.editDescription)
         assertEquals("", state.editPrice)
-        assertTrue(state.editImages.isEmpty())
     }
 
     @Test
@@ -124,7 +168,6 @@ class ListingsViewModelTest {
         viewModel.onEditPriceChanged("55.50")
         viewModel.onEditCategorySelected(ListingCategory.CLOTHING)
         viewModel.onEditConditionSelected(ListingCondition.NEW)
-        viewModel.onAddEditImage("https://example.com/photo.png")
 
         val state = viewModel.uiState.value
         assertEquals("Updated Title", state.editTitle)
@@ -132,17 +175,6 @@ class ListingsViewModelTest {
         assertEquals("55.50", state.editPrice)
         assertEquals(ListingCategory.CLOTHING, state.editCategory)
         assertEquals(ListingCondition.NEW, state.editCondition)
-        assertEquals(listOf("https://example.com/photo.png"), state.editImages)
-
-        viewModel.onRemoveEditImage(0)
-        assertTrue(viewModel.uiState.value.editImages.isEmpty())
-
-        viewModel.onAddEditImage("https://example.com/photo1.png")
-        viewModel.onAddEditImage("https://example.com/photo2.png")
-        assertEquals(2, viewModel.uiState.value.editImages.size)
-
-        viewModel.onClearEditImages()
-        assertTrue(viewModel.uiState.value.editImages.isEmpty())
     }
 
     @Test
@@ -186,8 +218,6 @@ class ListingsViewModelTest {
         viewModel.onEditDescriptionChanged("Brand new LED desk lamp with USB charging")
         viewModel.onEditPriceChanged("35")
         viewModel.onEditCategorySelected(ListingCategory.ELECTRONICS)
-        viewModel.onAddEditImage("https://example.com/lamp1.jpg")
-        viewModel.onAddEditImage("https://example.com/lamp2.jpg")
 
         viewModel.saveListingChanges()
         runCurrent()
@@ -203,8 +233,6 @@ class ListingsViewModelTest {
         assertEquals("Brand new LED desk lamp with USB charging", updatedListing.description)
         assertEquals(35.0, updatedListing.price.amount)
         assertEquals(ListingCategory.ELECTRONICS, updatedListing.category)
-        assertEquals(2, updatedListing.images.size)
-        assertEquals("https://example.com/lamp1.jpg", updatedListing.images[0])
 
         advanceTimeBy(ListingsViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
         runCurrent()
@@ -293,4 +321,26 @@ class ListingsViewModelTest {
     ) : CurrentListingSellerProvider {
         override suspend fun getCurrentSeller(): Result<ListingSeller> = currentSeller
     }
+}
+
+private class CountingListingsRepository(
+    private val delegate: ListingsRepository
+) : ListingsRepository {
+    var updateCount = 0
+
+    override suspend fun createListing(listing: Listing): Result<Listing> = delegate.createListing(listing)
+
+    override suspend fun updateListing(listing: Listing): Result<Listing> {
+        updateCount += 1
+        delay(10)
+        return delegate.updateListing(listing)
+    }
+
+    override suspend fun getListing(id: ListingId): Listing? = delegate.getListing(id)
+
+    override suspend fun deleteListing(id: ListingId): Result<Unit> = delegate.deleteListing(id)
+
+    override suspend fun getSellerListings(sellerId: SellerId): List<Listing> = delegate.getSellerListings(sellerId)
+
+    override suspend fun getAllListings(): List<Listing> = delegate.getAllListings()
 }

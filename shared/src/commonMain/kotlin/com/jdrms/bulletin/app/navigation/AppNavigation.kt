@@ -21,3 +21,15 @@ enum class AppRootScreen {
     CREATE_PROFILE,
     MAIN
 }
+
+enum class ProfileDestination {
+    PROFILE,
+    MY_LISTINGS
+}
+
+fun backFromProfile(destination: ProfileDestination): ProfileDestination {
+    return when (destination) {
+        ProfileDestination.PROFILE,
+        ProfileDestination.MY_LISTINGS -> ProfileDestination.PROFILE
+    }
+}

@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app.di
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
@@ -52,6 +53,7 @@ class AppContainer(
     private val isInspectionMode: Boolean = false,
     private val allowInMemoryFallback: Boolean = true
 ) {
+    val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     val supabaseClient: SupabaseClient? by lazy {
         if (!isInspectionMode && supabaseConfig.isConfigured) {
             runCatching {
@@ -166,14 +168,16 @@ class AppContainer(
     fun createMarketplaceViewModel() = MarketplaceViewModel(
         searchMarketplace = searchMarketplace,
         toggleSaveItem = toggleSaveMarketplaceItem,
-        viewMarketplaceListing = viewMarketplaceListing
+        viewMarketplaceListing = viewMarketplaceListing,
+        listingChangedSignal = listingChangedSignal
     )
 
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
         getSellerListings = getSellerListings,
-        currentSellerProvider = currentListingSellerProvider
+        currentSellerProvider = currentListingSellerProvider,
+        listingChangedSignal = listingChangedSignal
     )
 
     fun createMessagesViewModel() = MessagesViewModel(

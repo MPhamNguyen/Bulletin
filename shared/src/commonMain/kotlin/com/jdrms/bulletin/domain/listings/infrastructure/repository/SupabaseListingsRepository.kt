@@ -52,6 +52,10 @@ class SupabaseListingsRepository internal constructor(
         )
     }
 
+    override suspend fun getListing(id: ListingId): Listing? {
+        return listingsTable.findById(id.value)?.let(SupabaseListingMapper::toDomain)
+    }
+
     override suspend fun deleteListing(id: ListingId): Result<Unit> {
         return runCatching {
             val existing = listingsTable.findById(id.value)

@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.navigation.AppRootScreen
+import com.jdrms.bulletin.app.navigation.ProfileDestination
+import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,5 +46,10 @@ class AppNavigationTest {
 
         assertSame(provided, resolved)
         assertEquals(0, fallbackCreationCount)
+    }
+
+    @Test
+    fun backFromMyListingsReturnsToProfile() {
+        assertEquals(ProfileDestination.PROFILE, backFromProfile(ProfileDestination.MY_LISTINGS))
     }
 }

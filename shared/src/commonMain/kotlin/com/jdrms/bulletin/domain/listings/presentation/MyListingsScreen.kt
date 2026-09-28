@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -7,7 +8,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,14 +23,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ModeEdit
@@ -50,15 +46,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,15 +73,15 @@ fun MyListingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    BackHandler {
+        if (uiState.editingListing != null) viewModel.cancelEditing() else onBack()
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             viewModel.clearMessages()
+            viewModel.cancelEditing()
         }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.clearMessages()
-        viewModel.loadMyListings()
     }
 
     Box(
@@ -186,7 +177,11 @@ private fun MyListingsListView(
             }
         }
 
-        if (uiState.myListings.isEmpty()) {
+        if (uiState.loadState == ListingsLoadState.LOADING && uiState.myListings.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (uiState.loadState != ListingsLoadState.LOADED || uiState.myListings.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -384,8 +379,6 @@ private fun EditListingView(
     uiState: ListingsUiState,
     viewModel: ListingsViewModel
 ) {
-    var newImageUrl by remember { mutableStateOf("") }
-
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -510,92 +503,6 @@ private fun EditListingView(
                 )
             }
 
-            BulletinCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Listing Images",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    if (uiState.editImages.isNotEmpty()) {
-                        TextButton(onClick = viewModel::onClearEditImages) {
-                            Text(
-                                text = "Clear All",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-
-                Text(
-                    text = "Replace or add images for your listing",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = newImageUrl,
-                        onValueChange = { newImageUrl = it },
-                        placeholder = { Text("Paste image URL (https://...)") },
-                        singleLine = true,
-                        colors = BulletinTextFieldDefaults.colors(),
-                        shape = MaterialTheme.shapes.small,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            if (newImageUrl.isNotBlank()) {
-                                viewModel.onAddEditImage(newImageUrl)
-                                newImageUrl = ""
-                            }
-                        },
-                        shape = MaterialTheme.shapes.small,
-                        colors = BulletinButtonDefaults.buttonColors()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add image",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (uiState.editImages.isEmpty()) {
-                    Text(
-                        text = "No images attached to this listing.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        itemsIndexed(uiState.editImages) { index, imageUrl ->
-                            EditImageThumbnail(
-                                url = imageUrl,
-                                onRemove = { viewModel.onRemoveEditImage(index) }
-                            )
-                        }
-                    }
-                }
-            }
-
             uiState.errorMessage?.let { error ->
                 Text(
                     text = error,
@@ -644,61 +551,6 @@ private fun EditListingView(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun EditImageThumbnail(
-    url: String,
-    onRemove: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(width = 140.dp, height = 100.dp)
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = MaterialTheme.shapes.medium
-            )
-            .padding(6.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Image,
-                contentDescription = "Listing photo preview",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = url.substringAfterLast("/").take(15).ifBlank { "Image" },
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        IconButton(
-            onClick = onRemove,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(24.dp)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Close,
-                contentDescription = "Remove photo",
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(16.dp)
-            )
         }
     }
 }

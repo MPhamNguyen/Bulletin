@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
+import com.jdrms.bulletin.app.navigation.ProfileDestination
+import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
@@ -159,7 +161,7 @@ fun MainAppScaffold(
 
     BulletinTheme {
         var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
-        var isViewingMyListings by remember { mutableStateOf(false) }
+        var profileDestination by remember { mutableStateOf(ProfileDestination.PROFILE) }
 
         val homeViewModel = remember { container.createHomeViewModel() }
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
@@ -177,7 +179,8 @@ fun MainAppScaffold(
                     currentDestination = currentDestination,
                     onDestinationSelected = {
                         if (it != AppDestination.PROFILE) {
-                            isViewingMyListings = false
+                            profileDestination = ProfileDestination.PROFILE
+                            listingsViewModel.cancelEditing()
                             listingsViewModel.clearMessages()
                         }
                         currentDestination = it
@@ -192,12 +195,12 @@ fun MainAppScaffold(
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
                     AppDestination.PROFILE -> {
-                        if (isViewingMyListings) {
+                        if (profileDestination == ProfileDestination.MY_LISTINGS) {
                             MyListingsScreen(
                                 viewModel = listingsViewModel,
                                 onBack = {
                                     listingsViewModel.clearMessages()
-                                    isViewingMyListings = false
+                                    profileDestination = backFromProfile(profileDestination)
                                 }
                             )
                         } else {
@@ -206,7 +209,7 @@ fun MainAppScaffold(
                                 onSignOut = onSignOut,
                                 onMyListingsClick = {
                                     listingsViewModel.clearMessages()
-                                    isViewingMyListings = true
+                                    profileDestination = ProfileDestination.MY_LISTINGS
                                 }
                             )
                         }

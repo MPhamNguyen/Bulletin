@@ -28,6 +28,8 @@ class InMemoryListingsRepository(
         return Result.Error(NoSuchElementException("Listing not found with ID: ${listing.id.value}"))
     }
 
+    override suspend fun getListing(id: ListingId): Listing? = listings.firstOrNull { it.id == id }
+
     override suspend fun deleteListing(id: ListingId): Result<Unit> {
         val removed = listings.removeAll { it.id == id }
         return if (removed) {

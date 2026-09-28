@@ -142,6 +142,25 @@ class ListingsDomainTest {
     }
 
     @Test
+    fun testManageListingRejectsForgedSellerPayload() = runTest {
+        val repo = InMemoryListingsRepository(initialListings = emptyList())
+        val manageListing = ManageListing(repo, policy)
+        val persisted = testListing(SellerId("owner_1"))
+        repo.createListing(persisted)
+
+        val forgedPayload = persisted.copy(
+            sellerId = SellerId("attacker"),
+            title = "Stolen Listing"
+        )
+        val result = manageListing.updateListing(forgedPayload, SellerId("owner_1"))
+
+        assertTrue(result.isSuccess())
+        val stored = repo.getListing(persisted.id)
+        assertEquals(SellerId("owner_1"), stored?.sellerId)
+        assertEquals("Stolen Listing", stored?.title)
+    }
+
+    @Test
     fun testCreateAndManageListingInRepository() = runTest {
         val repo = InMemoryListingsRepository(initialListings = emptyList())
         val newListing = Listing(

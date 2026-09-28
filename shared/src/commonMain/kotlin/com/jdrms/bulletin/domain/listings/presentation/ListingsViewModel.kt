@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
@@ -29,7 +30,8 @@ class ListingsViewModel(
     private val createListing: CreateListing,
     private val manageListing: ManageListing,
     private val getSellerListings: GetSellerListings,
-    private val currentSellerProvider: CurrentListingSellerProvider
+    private val currentSellerProvider: CurrentListingSellerProvider,
+    private val listingChangedSignal: RefreshSignal? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ListingsUiState())
@@ -42,14 +44,18 @@ class ListingsViewModel(
 
     fun loadMyListings(seller: ListingSeller? = null) {
         viewModelScope.launch {
+            _uiState.update { it.copy(loadState = ListingsLoadState.LOADING) }
             when (val sellerResult = seller?.let { Result.Success(it) } ?: currentSellerProvider.getCurrentSeller()) {
                 is Result.Success -> {
                     val listings = getSellerListings(sellerResult.data.id)
-                    _uiState.update { it.copy(myListings = listings) }
+                    _uiState.update { it.copy(myListings = listings, loadState = ListingsLoadState.LOADED) }
                 }
                 is Result.Error -> {
                     _uiState.update {
-                        it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
+                        it.copy(
+                            loadState = ListingsLoadState.FAILED,
+                            errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                        )
                     }
                 }
             }
@@ -193,7 +199,6 @@ class ListingsViewModel(
                             editPrice = formattedPrice,
                             editCategory = listing.category,
                             editCondition = listing.condition,
-                            editImages = listing.images,
                             errorMessage = null,
                             successMessage = null
                         )
@@ -216,7 +221,6 @@ class ListingsViewModel(
                 editTitle = "",
                 editDescription = "",
                 editPrice = "",
-                editImages = emptyList(),
                 isUpdating = false,
                 errorMessage = null,
                 successMessage = null
@@ -244,32 +248,13 @@ class ListingsViewModel(
         _uiState.update { it.copy(editCondition = condition) }
     }
 
-    fun onAddEditImage(imageUrl: String) {
-        val trimmed = imageUrl.trim()
-        if (trimmed.isNotBlank()) {
-            _uiState.update { it.copy(editImages = it.editImages + trimmed) }
-        }
-    }
-
-    fun onRemoveEditImage(index: Int) {
-        _uiState.update {
-            if (index in it.editImages.indices) {
-                val updated = it.editImages.toMutableList()
-                updated.removeAt(index)
-                it.copy(editImages = updated)
-            } else {
-                it
-            }
-        }
-    }
-
-    fun onClearEditImages() {
-        _uiState.update { it.copy(editImages = emptyList()) }
-    }
-
     fun saveListingChanges() {
         val draft = validateEditDraft() ?: return
-        _uiState.update { it.copy(isUpdating = true, errorMessage = null) }
+        while (true) {
+            val state = _uiState.value
+            if (state.isUpdating) return
+            if (_uiState.compareAndSet(state, state.copy(isUpdating = true, errorMessage = null))) break
+        }
         viewModelScope.launch { applyListingUpdate(draft) }
     }
 
@@ -298,8 +283,7 @@ class ListingsViewModel(
                 description = state.editDescription.trim(),
                 price = checkNotNull(parsedPrice),
                 category = state.editCategory,
-                condition = state.editCondition,
-                images = state.editImages
+                condition = state.editCondition
             )
         }
     }
@@ -335,8 +319,7 @@ class ListingsViewModel(
                 description = draft.description,
                 price = ListingPrice(draft.price),
                 category = draft.category,
-                condition = draft.condition,
-                images = draft.images
+                condition = draft.condition
             )
         }
         if (updatedDetails.isFailure) {
@@ -359,6 +342,7 @@ class ListingsViewModel(
                 }
                 showFlashNotification("Listing updated successfully!")
                 loadMyListings(seller)
+                listingChangedSignal?.emit()
             }
             is Result.Error -> {
                 _uiState.update {
@@ -406,6 +390,5 @@ class ListingsViewModel(
         val price: Double,
         val category: ListingCategory,
         val condition: ListingCondition,
-        val images: List<String>
     )
 }
