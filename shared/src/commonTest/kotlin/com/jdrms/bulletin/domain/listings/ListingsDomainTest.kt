@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.listings
 
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -7,6 +9,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
+import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationException
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.ListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.mapper.ListingMapper
@@ -15,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ListingsDomainTest {
@@ -65,6 +69,79 @@ class ListingsDomainTest {
     }
 
     @Test
+    fun testListingOwnershipCheck() {
+        val listing = testListing(SellerId("owner_1"))
+        assertTrue(listing.isOwnedBy(SellerId("owner_1")))
+        assertFalse(listing.isOwnedBy(SellerId("other_user")))
+    }
+
+    @Test
+    fun testOwnerCanUpdateListingDetailsAndImages() {
+        val listing = testListing(SellerId("owner_1"))
+        val updated = listing.updateDetails(
+            editorSellerId = SellerId("owner_1"),
+            title = "Updated Keyboard Title",
+            description = "Updated mechanical switches description",
+            price = ListingPrice(45.0),
+            category = ListingCategory.ELECTRONICS,
+            condition = ListingCondition.GOOD,
+            images = listOf("https://example.com/keyboard.jpg")
+        )
+
+        assertEquals("Updated Keyboard Title", updated.title)
+        assertEquals("Updated mechanical switches description", updated.description)
+        assertEquals(45.0, updated.price.amount)
+        assertEquals(listOf("https://example.com/keyboard.jpg"), updated.images)
+    }
+
+    @Test
+    fun testNonOwnerCannotUpdateListingDetailsThrows() {
+        val listing = testListing(SellerId("owner_1"))
+        val exception = assertFailsWith<IllegalArgumentException> {
+            listing.updateDetails(
+                editorSellerId = SellerId("stranger"),
+                title = "Hacked Title"
+            )
+        }
+        assertEquals("Only the owner can edit this listing.", exception.message)
+    }
+
+    @Test
+    fun testListingValidationPolicyOwnership() {
+        val listing = testListing(SellerId("owner_1"))
+        val success = policy.validateOwnership(listing, SellerId("owner_1"))
+        assertTrue(success.isSuccess())
+
+        val failure = policy.validateOwnership(listing, SellerId("non_owner"))
+        assertTrue(failure.isError())
+        assertTrue((failure as Result.Error).exception is ListingValidationException.Unauthorized)
+    }
+
+    @Test
+    fun testManageListingUpdateWithOwnershipEnforcement() = runTest {
+        val repo = InMemoryListingsRepository(initialListings = emptyList())
+        val manageListing = ManageListing(repo, policy)
+        val listing = testListing(SellerId("owner_1"))
+        repo.createListing(listing)
+
+        val nonOwnerResult = manageListing.updateListing(
+            listing = listing.copy(title = "Changed by stranger"),
+            editorSellerId = SellerId("stranger")
+        )
+        assertTrue(nonOwnerResult.isError())
+        assertTrue((nonOwnerResult as Result.Error).exception is ListingValidationException.Unauthorized)
+
+        val ownerResult = manageListing.updateListing(
+            listing = listing.copy(title = "Changed by owner", price = ListingPrice(50.0)),
+            editorSellerId = SellerId("owner_1")
+        )
+        assertTrue(ownerResult.isSuccess())
+        val updated = repo.getSellerListings(SellerId("owner_1")).first()
+        assertEquals("Changed by owner", updated.title)
+        assertEquals(50.0, updated.price.amount)
+    }
+
+    @Test
     fun testCreateAndManageListingInRepository() = runTest {
         val repo = InMemoryListingsRepository(initialListings = emptyList())
         val newListing = Listing(
@@ -101,15 +178,32 @@ class ListingsDomainTest {
             price = 45.0,
             category = "FURNITURE",
             condition = "LIKE_NEW",
-            status = "AVAILABLE"
+            status = "AVAILABLE",
+            images = listOf("https://example.com/chair1.jpg", "https://example.com/chair2.jpg")
         )
         val domain = ListingMapper.toDomain(dto)
         assertEquals(ListingCategory.FURNITURE, domain.category)
         assertEquals(ListingCondition.LIKE_NEW, domain.condition)
         assertEquals(ListingStatus.AVAILABLE, domain.status)
+        assertEquals(listOf("https://example.com/chair1.jpg", "https://example.com/chair2.jpg"), domain.images)
 
         val backToDto = ListingMapper.toDto(domain)
         assertEquals(dto.id, backToDto.id)
         assertEquals(dto.condition, backToDto.condition)
+        assertEquals(dto.images, backToDto.images)
+    }
+
+    private fun testListing(sellerId: SellerId): Listing {
+        return Listing(
+            id = ListingId("list_123"),
+            sellerId = sellerId,
+            sellerName = "Student Seller",
+            title = "Mechanical Keyboard",
+            description = "Quiet tactile switches",
+            price = ListingPrice(40.0),
+            category = ListingCategory.ELECTRONICS,
+            condition = ListingCondition.GOOD,
+            status = ListingStatus.AVAILABLE
+        )
     }
 }

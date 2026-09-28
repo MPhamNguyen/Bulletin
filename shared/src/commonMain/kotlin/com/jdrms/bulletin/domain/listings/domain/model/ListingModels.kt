@@ -54,6 +54,7 @@ data class Listing(
     val category: ListingCategory,
     val condition: ListingCondition = ListingCondition.GOOD,
     val status: ListingStatus = ListingStatus.AVAILABLE,
+    val images: List<String> = emptyList(),
     val createdAtMillis: Long = 0L
 ) {
     init {
@@ -61,5 +62,27 @@ data class Listing(
         require(title.length >= 3) { "Listing title must be at least 3 characters." }
         require(description.isNotBlank()) { "Listing description cannot be blank." }
         require(sellerName.isNotBlank()) { "Seller name cannot be blank." }
+    }
+
+    fun isOwnedBy(sellerId: SellerId): Boolean = this.sellerId == sellerId
+
+    fun updateDetails(
+        editorSellerId: SellerId,
+        title: String = this.title,
+        description: String = this.description,
+        price: ListingPrice = this.price,
+        category: ListingCategory = this.category,
+        condition: ListingCondition = this.condition,
+        images: List<String> = this.images
+    ): Listing {
+        require(isOwnedBy(editorSellerId)) { "Only the owner can edit this listing." }
+        return copy(
+            title = title,
+            description = description,
+            price = price,
+            category = category,
+            condition = condition,
+            images = images
+        )
     }
 }

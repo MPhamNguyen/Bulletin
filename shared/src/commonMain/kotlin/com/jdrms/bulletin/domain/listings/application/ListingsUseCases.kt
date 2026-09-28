@@ -54,9 +54,20 @@ class CreateListing(
 }
 
 class ManageListing(
-    private val listingsRepository: ListingsRepository
+    private val listingsRepository: ListingsRepository,
+    private val policy: ListingValidationPolicy = ListingValidationPolicy()
 ) {
-    suspend fun updateListing(listing: Listing): Result<Listing> {
+    suspend fun updateListing(listing: Listing, editorSellerId: SellerId? = null): Result<Listing> {
+        if (editorSellerId != null) {
+            val ownershipValidation = policy.validateOwnership(listing, editorSellerId)
+            if (ownershipValidation.isError()) {
+                return Result.Error((ownershipValidation as Result.Error).exception)
+            }
+        }
+        val listingValidation = policy.validateListing(listing)
+        if (listingValidation.isError()) {
+            return Result.Error((listingValidation as Result.Error).exception)
+        }
         return listingsRepository.updateListing(listing)
     }
 
