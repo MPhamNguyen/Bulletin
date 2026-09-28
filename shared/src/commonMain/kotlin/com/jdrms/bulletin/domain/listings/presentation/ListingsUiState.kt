@@ -13,5 +13,13 @@ data class ListingsUiState(
     val newCondition: ListingCondition = ListingCondition.GOOD,
     val isSubmitting: Boolean = false,
     val successMessage: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val editingListing: Listing? = null,
+    val editTitle: String = "",
+    val editDescription: String = "",
+    val editPrice: String = "",
+    val editCategory: ListingCategory = ListingCategory.TEXTBOOKS,
+    val editCondition: ListingCondition = ListingCondition.GOOD,
+    val editImages: List<String> = emptyList(),
+    val isUpdating: Boolean = false
 )
