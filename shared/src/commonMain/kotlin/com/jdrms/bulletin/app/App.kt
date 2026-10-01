@@ -35,7 +35,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +47,7 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
+import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
@@ -65,7 +65,13 @@ fun App(appContainer: AppContainer? = null) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     val systemDarkTheme = isSystemInDarkTheme()
-    var isDarkTheme by rememberSaveable { mutableStateOf(systemDarkTheme) }
+    val themeViewModel = remember { container.createThemeViewModel() }
+    val themePreference by themeViewModel.themePreference.collectAsState()
+    val isDarkTheme = when (themePreference) {
+        ThemePreference.SYSTEM -> systemDarkTheme
+        ThemePreference.LIGHT -> false
+        ThemePreference.DARK -> true
+    }
 
     BulletinTheme(darkTheme = isDarkTheme) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
@@ -130,7 +136,11 @@ fun App(appContainer: AppContainer? = null) {
                         appContainer = container,
                         profileViewModel = profileViewModel,
                         darkTheme = isDarkTheme,
-                        onThemeChanged = { isDarkTheme = it },
+                        onThemeChanged = { isDark ->
+                            themeViewModel.setThemePreference(
+                                if (isDark) ThemePreference.DARK else ThemePreference.LIGHT
+                            )
+                        },
                         onSignOut = {
                             profileViewModel.signOut {
                                 currentRootScreen = AppRootScreen.SIGN_IN

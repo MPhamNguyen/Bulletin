@@ -3,6 +3,8 @@ package com.jdrms.bulletin.app.di
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
+import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
@@ -53,6 +55,7 @@ class AppContainer(
     private val isInspectionMode: Boolean = false,
     private val allowInMemoryFallback: Boolean = true
 ) {
+    val themePreferenceStore by lazy { InMemoryThemePreferenceStore() }
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     val supabaseClient: SupabaseClient? by lazy {
         if (!isInspectionMode && supabaseConfig.isConfigured) {
@@ -196,4 +199,6 @@ class AppContainer(
         updateStudentProfile = updateStudentProfile,
         submitStudentReview = submitStudentReview
     )
+
+    fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }

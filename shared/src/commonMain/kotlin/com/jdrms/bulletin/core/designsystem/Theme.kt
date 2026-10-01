@@ -40,14 +40,19 @@ private val SlateBlueContainer = Color(0xFFE7ECF2)
 private val CardBackground = Color(0xFFFFFFFF)
 private val BorderSubtle = Color(0xFFDDE2E8)
 
-// Derived tints/shades (dark) — a stepped surface ladder so cards, listings,
-// the nav bar and modals each read as a distinct layer over the page.
-private val DarkSurface = Color(0xFF182234) // cards
-private val DarkSurfaceLowest = Color(0xFF0A0F1B)
-private val DarkSurfaceLow = Color(0xFF131B2B) // bottom nav
-private val DarkSurfaceHigh = Color(0xFF1F2B40) // modals, menus
-private val DarkSurfaceHighest = Color(0xFF27354D)
-private val DarkSurfaceVariant = Color(0xFF263349) // inputs, chips, Edit button
+// ---------------------------------------------------------------------------
+// Dark theme — calibrated collegiate dark mode with clear tactile depth between
+// the canvas background, card surfaces and interactive controls.
+// ---------------------------------------------------------------------------
+private val DarkCanvasBackground = Color(0xFF0B0F19)
+private val DarkSurfaceLowest = Color(0xFF070B13)
+private val DarkSurfaceLow = Color(0xFF101726)
+private val DarkSurface = Color(0xFF141D2E)
+private val DarkSurfaceContainer = Color(0xFF18233C)
+private val DarkSurfaceHigh = Color(0xFF1F2D4A)
+private val DarkSurfaceHighest = Color(0xFF263758)
+private val DarkSurfaceVariant = Color(0xFF202C44)
+private val DarkSurfaceBright = Color(0xFF344566)
 
 // Gold is reserved for star ratings ONLY. Never use it for containers,
 // buttons, avatars or highlights.
@@ -103,45 +108,49 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF9DB6D6),
-    onPrimary = PaletteInk,
-    primaryContainer = Color(0xFF2F4660),
-    onPrimaryContainer = Color(0xFFE8EEF5),
+    primary = Color(0xFFA8C5E8),
+    onPrimary = Color(0xFF0D1C2E),
+    primaryContainer = Color(0xFF2A3F5B),
+    onPrimaryContainer = Color(0xFFD6E4F7),
 
-    secondary = Color(0xFF8CA0BD),
-    onSecondary = PaletteInk,
-    secondaryContainer = Color(0xFF243246),
-    onSecondaryContainer = Color(0xFFE7ECF2),
+    secondary = Color(0xFF8FA8C8),
+    onSecondary = Color(0xFF0F1A28),
+    secondaryContainer = Color(0xFF243348),
+    onSecondaryContainer = Color(0xFFD3E0F0),
 
-    tertiary = Color(0xFF7FC4C9),
-    onTertiary = Color(0xFF0A2A2D),
-    tertiaryContainer = Color(0xFF1F4A4F),
-    onTertiaryContainer = Color(0xFFD2EEF0),
+    tertiary = Color(0xFF8FCBAE),
+    onTertiary = Color(0xFF0A2B1D),
+    tertiaryContainer = Color(0xFF1E3F30),
+    onTertiaryContainer = Color(0xFFC7F2DE),
 
-    background = PaletteInk,
-    onBackground = PaletteOffWhite,
+    background = DarkCanvasBackground,
+    onBackground = Color(0xFFF0F4F8),
 
     surface = DarkSurface,
-    onSurface = PaletteOffWhite,
+    onSurface = Color(0xFFF0F4F8),
     surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = Color(0xFFA9B8D0),
+    onSurfaceVariant = Color(0xFF94A7C1),
+    surfaceDim = DarkCanvasBackground,
+    surfaceBright = DarkSurfaceBright,
     surfaceContainerLowest = DarkSurfaceLowest,
     surfaceContainerLow = DarkSurfaceLow,
-    surfaceContainer = DarkSurface,
+    surfaceContainer = DarkSurfaceContainer,
     surfaceContainerHigh = DarkSurfaceHigh,
     surfaceContainerHighest = DarkSurfaceHighest,
 
-    outline = Color(0xFF6B7F9C),
-    outlineVariant = Color(0xFF34445E),
+    outline = Color(0xFF5E7292),
+    outlineVariant = Color(0xFF2D3E59),
 
-    error = Color(0xFFF2B8B5),
-    onError = Color(0xFF601410),
-    errorContainer = Color(0xFF8C1D18),
-    onErrorContainer = Color(0xFFF9DEDC),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
 
-    inverseSurface = PaletteOffWhite,
-    inverseOnSurface = PaletteInk,
+    inverseSurface = Color(0xFFF0F4F8),
+    inverseOnSurface = Color(0xFF121824),
     inversePrimary = PaletteMidBlue,
+
+    surfaceTint = Color(0xFFA8C5E8),
 
     scrim = Color.Black
 )
@@ -150,6 +159,7 @@ private val DarkColors = darkColorScheme(
 // Extended colors — M3's ColorScheme has no success or star slot, so they are
 // provided as a small side-channel.
 //   success*: confirmation states ("Profile Updated", Verified badge)
+//             dark values = design's tertiary-fixed-dim / -fixed tokens
 //   star:     the ONLY place gold is used in the app (rating stars)
 // ---------------------------------------------------------------------------
 data class BulletinExtendedColors(
@@ -170,9 +180,9 @@ private val LightExtendedColors = BulletinExtendedColors(
 
 private val DarkExtendedColors = BulletinExtendedColors(
     success = Color(0xFF8FCBAE),
-    onSuccess = Color(0xFF0F3D28),
-    successContainer = Color(0xFF1C3A2E),
-    onSuccessContainer = Color(0xFFD5F0E2),
+    onSuccess = Color(0xFF0A2B1D),
+    successContainer = Color(0xFF1B382B),
+    onSuccessContainer = Color(0xFFC7F2DE),
     star = StarDark
 )
 
@@ -243,7 +253,7 @@ private val BulletinTypography = Typography(
 private val BulletinShapes = Shapes(
     extraSmall = RoundedCornerShape(6.dp),
     small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(12.dp),
     large = RoundedCornerShape(20.dp),
     extraLarge = CircleShape
 )
@@ -254,9 +264,9 @@ object BulletinTextFieldDefaults {
         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         focusedBorderColor = MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
     )
 }
 
@@ -290,8 +300,8 @@ object BulletinButtonDefaults {
 
     @Composable
     fun outlinedButtonBorder(): BorderStroke = BorderStroke(
-        width = 1.5.dp,
-        color = MaterialTheme.colorScheme.primary
+        width = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant
     )
 
     @Composable
@@ -302,7 +312,7 @@ object BulletinButtonDefaults {
 
     @Composable
     fun destructiveOutlinedButtonBorder(): BorderStroke = BorderStroke(
-        width = 1.5.dp,
+        width = 1.dp,
         color = MaterialTheme.colorScheme.error
     )
 
