@@ -44,6 +44,14 @@ class RestoreAuthenticatedProfile(
     }
 }
 
+class GetAuthenticatedUserId(
+    private val authRepository: AuthRepository
+) {
+    suspend operator fun invoke(): Result<UserId?> {
+        return authRepository.getCurrentUserId()
+    }
+}
+
 class SignOutUser(
     private val authRepository: AuthRepository
 ) {

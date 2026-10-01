@@ -36,6 +36,7 @@ import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
@@ -157,6 +158,7 @@ class AppContainer(
 
     // Use Cases - Profile
     val authenticateUser by lazy { AuthenticateUser(authRepository) }
+    val getAuthenticatedUserId by lazy { GetAuthenticatedUserId(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
     val signOutUser by lazy { SignOutUser(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }

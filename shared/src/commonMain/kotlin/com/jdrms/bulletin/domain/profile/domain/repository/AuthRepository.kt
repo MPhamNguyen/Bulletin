@@ -3,8 +3,11 @@ package com.jdrms.bulletin.domain.profile.domain.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 interface AuthRepository {
+    suspend fun getCurrentUserId(): Result<UserId?>
+
     suspend fun getCurrentUser(): Result<StudentProfile?>
     suspend fun login(email: StudentEmail, password: String): Result<StudentProfile>
     suspend fun register(

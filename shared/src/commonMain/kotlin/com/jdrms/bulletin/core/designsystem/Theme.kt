@@ -327,6 +327,7 @@ fun BulletinTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    PlatformSystemBarAppearance(isDarkTheme = darkTheme)
     val colorScheme = if (darkTheme) DarkColors else LightColors
     val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
 

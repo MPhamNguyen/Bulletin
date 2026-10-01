@@ -6,6 +6,15 @@ import kotlin.test.assertEquals
 
 class ThemeViewModelTest {
     @Test
+    fun startsWithLastAppliedPreferenceBeforeAccountIsRestored() {
+        val viewModel = ThemeViewModel(
+            InMemoryThemePreferenceStore(initialLastAppliedPreference = ThemePreference.DARK)
+        )
+
+        assertEquals(ThemePreference.DARK, viewModel.themePreference.value)
+    }
+
+    @Test
     fun defaultsToSystemPreference() {
         val viewModel = ThemeViewModel(InMemoryThemePreferenceStore())
 
@@ -50,6 +59,17 @@ class ThemeViewModelTest {
 
         viewModel.setThemePreference(ThemePreference.LIGHT)
         viewModel.setAccount(UserId("user-1"))
+
+        assertEquals(ThemePreference.DARK, viewModel.themePreference.value)
+    }
+
+    @Test
+    fun clearingAccountRetainsLastAppliedPreference() {
+        val viewModel = ThemeViewModel(InMemoryThemePreferenceStore())
+
+        viewModel.setAccount(UserId("user-1"))
+        viewModel.setThemePreference(ThemePreference.DARK)
+        viewModel.setAccount(null)
 
         assertEquals(ThemePreference.DARK, viewModel.themePreference.value)
     }

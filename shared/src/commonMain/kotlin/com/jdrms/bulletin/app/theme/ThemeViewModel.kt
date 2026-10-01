@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class ThemeViewModel(
     private val themePreferenceStore: ThemePreferenceStore
 ) : ViewModel() {
-    private val _themePreference = MutableStateFlow(ThemePreference.SYSTEM)
+    private val _themePreference = MutableStateFlow(themePreferenceStore.lastAppliedPreference())
     val themePreference: StateFlow<ThemePreference> = _themePreference.asStateFlow()
     private var currentUserId: UserId? = null
 
@@ -17,7 +17,10 @@ class ThemeViewModel(
         if (currentUserId == userId) return
 
         currentUserId = userId
-        _themePreference.value = userId?.let(themePreferenceStore::preferenceFor) ?: ThemePreference.SYSTEM
+        val resolvedPreference = userId?.let(themePreferenceStore::preferenceFor)
+            ?: themePreferenceStore.lastAppliedPreference()
+        themePreferenceStore.setLastAppliedPreference(resolvedPreference)
+        _themePreference.value = resolvedPreference
     }
 
     fun setThemePreference(preference: ThemePreference) {

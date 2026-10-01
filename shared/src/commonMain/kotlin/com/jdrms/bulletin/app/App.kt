@@ -49,6 +49,7 @@ import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
@@ -68,11 +69,7 @@ fun App(appContainer: AppContainer? = null) {
     val systemDarkTheme = isSystemInDarkTheme()
     val themeViewModel = remember { container.createThemeViewModel() }
     val themePreference by themeViewModel.themePreference.collectAsState()
-    val isDarkTheme = when (themePreference) {
-        ThemePreference.SYSTEM -> systemDarkTheme
-        ThemePreference.LIGHT -> false
-        ThemePreference.DARK -> true
-    }
+    val isDarkTheme = resolveIsDarkTheme(themePreference, systemDarkTheme)
 
     BulletinTheme(darkTheme = isDarkTheme) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
@@ -80,14 +77,17 @@ fun App(appContainer: AppContainer? = null) {
         val profileUiState by profileViewModel.uiState.collectAsState()
         val effectiveRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
 
-        LaunchedEffect(profileUiState.authSessionState, profileUiState.profile?.id) {
-            themeViewModel.setAccount(
-                if (profileUiState.authSessionState == AuthSessionState.AUTHENTICATED) {
-                    profileUiState.profile?.id
-                } else {
-                    null
+        LaunchedEffect(profileUiState.authSessionState) {
+            when (profileUiState.authSessionState) {
+                AuthSessionState.CHECKING,
+                AuthSessionState.AUTHENTICATED -> {
+                    when (val result = container.getAuthenticatedUserId()) {
+                        is Result.Success -> result.data?.let(themeViewModel::setAccount)
+                        is Result.Error -> Unit
+                    }
                 }
-            )
+                AuthSessionState.UNAUTHENTICATED -> themeViewModel.setAccount(null)
+            }
         }
 
         LaunchedEffect(profileUiState.authSessionState) {
@@ -171,6 +171,15 @@ internal fun resolveRootScreen(
             if (currentRootScreen == AppRootScreen.MAIN) AppRootScreen.SIGN_IN else currentRootScreen
         }
     }
+}
+
+internal fun resolveIsDarkTheme(
+    themePreference: ThemePreference,
+    systemDarkTheme: Boolean
+): Boolean = when (themePreference) {
+    ThemePreference.SYSTEM -> systemDarkTheme
+    ThemePreference.LIGHT -> false
+    ThemePreference.DARK -> true
 }
 
 @Composable
