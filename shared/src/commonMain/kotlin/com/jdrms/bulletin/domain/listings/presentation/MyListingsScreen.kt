@@ -123,6 +123,15 @@ fun MyListingsScreen(
         ) { message ->
             if (message != null) ListingFlashMessage(message)
         }
+
+        uiState.pendingDeletion?.let { listing ->
+            ListingDeleteConfirmationDialog(
+                listing = listing,
+                isDeleting = uiState.isDeleting,
+                onDismiss = viewModel::cancelDeleteListing,
+                onConfirm = viewModel::confirmDeleteListing
+            )
+        }
     }
 }
 
@@ -249,7 +258,7 @@ private fun MyListingsListView(
                             viewModel.startEditing(listing)
                             onEditListing()
                         },
-                        onDelete = { viewModel.deleteListing(listing.id) }
+                        onDelete = { viewModel.requestDeleteListing(listing) }
                     )
                 }
                 item {

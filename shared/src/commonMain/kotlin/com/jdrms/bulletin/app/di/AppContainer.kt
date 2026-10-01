@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemoryHomeRepository
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.application.CreateListing
+import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
@@ -141,6 +142,7 @@ class AppContainer(
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
+    val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
 
@@ -175,6 +177,7 @@ class AppContainer(
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
+        deleteListing = deleteListing,
         getSellerListings = getSellerListings,
         currentSellerProvider = currentListingSellerProvider,
         listingChangedSignal = listingChangedSignal
