@@ -78,6 +78,36 @@ class ProfileViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun testARecreatedProfileViewModelRestoresThePersistedSessionAndProfileDraft() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val registered = authRepo.register(
+                email = StudentEmail("restore@example.com"),
+                password = "validPassword123",
+                fullName = "Restored Student"
+            )
+            assertTrue(registered is Result.Success)
+
+            val firstViewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+            assertEquals(AuthSessionState.AUTHENTICATED, firstViewModel.uiState.value.authSessionState)
+
+            val recreatedViewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.AUTHENTICATED, recreatedViewModel.uiState.value.authSessionState)
+            assertEquals("Restored Student", recreatedViewModel.uiState.value.profile?.fullName)
+            assertEquals("Restored Student", recreatedViewModel.uiState.value.profileDraft.fullName)
+            assertFalse(recreatedViewModel.uiState.value.isProfileModified)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun testProfileViewModelSilentlyFallsBackWhenSessionRestoreFails() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(testDispatcher)

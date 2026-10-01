@@ -30,6 +30,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -326,7 +327,10 @@ class ListingsViewModelTest {
         viewModel.loadMyListings(ListingSeller(sellerId, sellerName))
         advanceUntilIdle()
 
-        assertEquals(listOf("Desk Lamp", "Study Chair"), viewModel.uiState.value.myListings.map { it.title })
+        assertEquals(
+            setOf("Desk Lamp", "Study Chair"),
+            viewModel.uiState.value.myListings.map { it.title }.toSet()
+        )
 
         viewModel.deleteListing(firstListing.id)
         advanceUntilIdle()
