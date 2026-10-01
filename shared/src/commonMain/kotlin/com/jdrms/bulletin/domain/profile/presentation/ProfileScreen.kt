@@ -12,7 +12,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +65,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -289,7 +289,6 @@ private fun ProfileLandingView(
             ProfileActionRow(
                 icon = Icons.Outlined.GridView,
                 title = "My Listings",
-                subtitle = "Manage active and completed posts",
                 onClick = onMyListingsClick
             )
 
@@ -301,19 +300,9 @@ private fun ProfileLandingView(
                 )
             }
 
-            TextButton(
-                onClick = onSignOut,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Logout,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(text = "Sign Out", style = MaterialTheme.typography.labelMedium)
-            }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            SignOutButton(onClick = onSignOut)
         }
     }
 }
@@ -352,21 +341,7 @@ private fun AppearanceCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = "Customize your theme",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-            Text(
-                text = themePreferenceLabel(themePreference),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -610,13 +585,15 @@ private fun ProfileAvatarHeader(
 
 @Composable
 private fun ProfileActionRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
-    subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -634,11 +611,13 @@ private fun ProfileActionRow(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Icon(
                 imageVector = Icons.Outlined.ChevronRight,
@@ -652,10 +631,9 @@ private fun ProfileActionRow(
 
 @Composable
 private fun ProfileActionIcon(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    useAccent: Boolean = false
+    icon: ImageVector
 ) {
-    val color = if (useAccent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+    val color = MaterialTheme.colorScheme.primary
     Box(
         modifier = Modifier
             .size(32.dp)
@@ -839,23 +817,9 @@ private fun ProfileContent(
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(24.dp))
 
-    OutlinedButton(
-        onClick = onSignOut,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
-        shape = MaterialTheme.shapes.medium,
-        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
-        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
-    ) {
-        Text(
-            text = "Sign Out",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.error
-        )
-    }
+    SignOutButton(onClick = onSignOut)
 
     Spacer(modifier = Modifier.height(16.dp))
 }
@@ -980,4 +944,39 @@ private fun ProfileEditField(
             .fillMaxWidth()
             .focusRequester(focusRequester)
     )
+}
+
+@Composable
+private fun SignOutButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = MaterialTheme.shapes.large,
+        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
+        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Logout,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Sign Out",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+    }
 }
