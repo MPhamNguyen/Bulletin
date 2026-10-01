@@ -4,6 +4,7 @@ import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
+import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
@@ -53,9 +54,10 @@ import io.github.jan.supabase.SupabaseClient
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
-    private val allowInMemoryFallback: Boolean = true
+    private val allowInMemoryFallback: Boolean = true,
+    themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore()
 ) {
-    val themePreferenceStore by lazy { InMemoryThemePreferenceStore() }
+    private val themePreferenceStore = themePreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     val supabaseClient: SupabaseClient? by lazy {
         if (!isInspectionMode && supabaseConfig.isConfigured) {

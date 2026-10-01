@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.jdrms.bulletin.app.App
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.theme.AndroidThemePreferenceStore
 import com.jdrms.bulletin.core.network.SupabaseConfig
 
 class MainActivity : ComponentActivity() {
@@ -27,7 +28,8 @@ class MainActivity : ComponentActivity() {
 
         val appContainer = AppContainer(
             supabaseConfig = supabaseConfig,
-            allowInMemoryFallback = BuildConfig.DEBUG
+            allowInMemoryFallback = BuildConfig.DEBUG,
+            themePreferenceStore = AndroidThemePreferenceStore(applicationContext)
         )
 
         setContent {

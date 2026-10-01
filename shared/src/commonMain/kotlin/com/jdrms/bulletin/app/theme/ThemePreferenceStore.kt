@@ -1,22 +1,23 @@
 package com.jdrms.bulletin.app.theme
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 interface ThemePreferenceStore {
-    val themePreference: StateFlow<ThemePreference>
+    fun preferenceFor(userId: UserId): ThemePreference
 
-    fun setThemePreference(preference: ThemePreference)
+    fun setPreference(userId: UserId, preference: ThemePreference)
 }
 
 class InMemoryThemePreferenceStore(
-    initialPreference: ThemePreference = ThemePreference.SYSTEM
+    initialPreferences: Map<UserId, ThemePreference> = emptyMap()
 ) : ThemePreferenceStore {
-    private val _themePreference = MutableStateFlow(initialPreference)
-    override val themePreference: StateFlow<ThemePreference> = _themePreference.asStateFlow()
+    private val preferences = initialPreferences.toMutableMap()
 
-    override fun setThemePreference(preference: ThemePreference) {
-        _themePreference.value = preference
+    override fun preferenceFor(userId: UserId): ThemePreference {
+        return preferences[userId] ?: ThemePreference.SYSTEM
+    }
+
+    override fun setPreference(userId: UserId, preference: ThemePreference) {
+        preferences[userId] = preference
     }
 }

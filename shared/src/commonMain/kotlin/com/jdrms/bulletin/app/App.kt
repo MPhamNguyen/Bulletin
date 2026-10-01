@@ -79,6 +79,16 @@ fun App(appContainer: AppContainer? = null) {
         val profileUiState by profileViewModel.uiState.collectAsState()
         val effectiveRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
 
+        LaunchedEffect(profileUiState.authSessionState, profileUiState.profile?.id) {
+            themeViewModel.setAccount(
+                if (profileUiState.authSessionState == AuthSessionState.AUTHENTICATED) {
+                    profileUiState.profile?.id
+                } else {
+                    null
+                }
+            )
+        }
+
         LaunchedEffect(profileUiState.authSessionState) {
             currentRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
         }
