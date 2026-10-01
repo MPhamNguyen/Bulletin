@@ -118,6 +118,30 @@ class MarketplaceViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun missingListingPreviewStopsLoadingAndExposesTheDetailFailure() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository),
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            advanceUntilIdle()
+
+            viewModel.onListingClicked("missing-listing")
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.isDetailSheetOpen)
+            assertFalse(viewModel.uiState.value.isDetailLoading)
+            assertEquals("Listing not found with ID: missing-listing", viewModel.uiState.value.detailErrorMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun loadNextPageAppendsListingsAndStopsAtTheEnd() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
