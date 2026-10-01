@@ -37,6 +37,18 @@ class AppNavigationTest {
     }
 
     @Test
+    fun testCheckingSessionPreservesTheCurrentRootUntilAuthenticationRestorationCompletes() {
+        assertEquals(
+            AppRootScreen.CREATE_PROFILE,
+            resolveRootScreen(AppRootScreen.CREATE_PROFILE, AuthSessionState.CHECKING)
+        )
+        assertEquals(
+            AppRootScreen.MAIN,
+            resolveRootScreen(AppRootScreen.MAIN, AuthSessionState.CHECKING)
+        )
+    }
+
+    @Test
     fun testProvidedDependencyDoesNotCreateFallback() {
         val provided = Any()
         var fallbackCreationCount = 0
