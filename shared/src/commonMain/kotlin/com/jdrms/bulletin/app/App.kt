@@ -146,11 +146,8 @@ fun App(appContainer: AppContainer? = null) {
                         appContainer = container,
                         profileViewModel = profileViewModel,
                         darkTheme = isDarkTheme,
-                        onThemeChanged = { isDark ->
-                            themeViewModel.setThemePreference(
-                                if (isDark) ThemePreference.DARK else ThemePreference.LIGHT
-                            )
-                        },
+                        themePreference = themePreference,
+                        onThemePreferenceChanged = themeViewModel::setThemePreference,
                         onSignOut = {
                             profileViewModel.signOut {
                                 currentRootScreen = AppRootScreen.SIGN_IN
@@ -181,7 +178,8 @@ fun MainAppScaffold(
     appContainer: AppContainer? = null,
     profileViewModel: ProfileViewModel? = null,
     darkTheme: Boolean = isSystemInDarkTheme(),
-    onThemeChanged: (Boolean) -> Unit = {},
+    themePreference: ThemePreference = ThemePreference.SYSTEM,
+    onThemePreferenceChanged: (ThemePreference) -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val isInspectionMode = LocalInspectionMode.current
@@ -239,7 +237,8 @@ fun MainAppScaffold(
                             ProfileScreen(
                                 viewModel = resolvedProfileViewModel,
                                 isDarkTheme = darkTheme,
-                                onThemeChanged = onThemeChanged,
+                                themePreference = themePreference,
+                                onThemePreferenceChanged = onThemePreferenceChanged,
                                 onSignOut = onSignOut,
                                 onMyListingsClick = {
                                     listingsViewModel.clearMessages()

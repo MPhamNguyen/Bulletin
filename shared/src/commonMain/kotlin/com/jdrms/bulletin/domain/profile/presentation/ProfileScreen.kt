@@ -30,6 +30,8 @@ import androidx.compose.material.icons.outlined.ModeEdit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -37,7 +39,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +60,7 @@ import androidx.compose.ui.zIndex
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
 import bulletin.shared.generated.resources.ic_graduation_cap
+import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
@@ -73,7 +75,8 @@ fun ProfileScreen(
     onSignOut: () -> Unit = {},
     onMyListingsClick: () -> Unit = {},
     isDarkTheme: Boolean = false,
-    onThemeChanged: (Boolean) -> Unit = {}
+    themePreference: ThemePreference = ThemePreference.SYSTEM,
+    onThemePreferenceChanged: (ThemePreference) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -100,7 +103,8 @@ fun ProfileScreen(
                 onEditProfileClick = viewModel::startEditingProfile,
                 onMyListingsClick = onMyListingsClick,
                 isDarkTheme = isDarkTheme,
-                onThemeChanged = onThemeChanged,
+                themePreference = themePreference,
+                onThemePreferenceChanged = onThemePreferenceChanged,
                 onSignOut = onSignOut
             )
         }
@@ -128,7 +132,8 @@ private fun ProfileLandingView(
     onEditProfileClick: () -> Unit,
     onMyListingsClick: () -> Unit,
     isDarkTheme: Boolean,
-    onThemeChanged: (Boolean) -> Unit,
+    themePreference: ThemePreference,
+    onThemePreferenceChanged: (ThemePreference) -> Unit,
     onSignOut: () -> Unit
 ) {
     val profile = uiState.profile
@@ -285,22 +290,65 @@ private fun ProfileLandingView(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Dark mode",
+                            text = "Theme",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (isDarkTheme) "Using the dark theme" else "Using the light theme",
+                            text = when (themePreference) {
+                                ThemePreference.SYSTEM -> {
+                                    "Following system theme (${if (isDarkTheme) "dark" else "light"})"
+                                }
+                                ThemePreference.LIGHT -> "Using the light theme"
+                                ThemePreference.DARK -> "Using the dark theme"
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Switch(
-                        checked = isDarkTheme,
-                        onCheckedChange = onThemeChanged
-                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                var isThemeMenuExpanded by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { isThemeMenuExpanded = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.small,
+                        border = BulletinButtonDefaults.outlinedButtonBorder(),
+                        colors = BulletinButtonDefaults.outlinedButtonColors()
+                    ) {
+                        Text(
+                            text = themePreferenceLabel(themePreference),
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Start,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = isThemeMenuExpanded,
+                        onDismissRequest = { isThemeMenuExpanded = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        ThemePreference.entries.forEach { preference ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = themePreferenceLabel(preference),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                onClick = {
+                                    isThemeMenuExpanded = false
+                                    onThemePreferenceChanged(preference)
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -340,6 +388,14 @@ private fun ProfileLandingView(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+private fun themePreferenceLabel(preference: ThemePreference): String {
+    return when (preference) {
+        ThemePreference.SYSTEM -> "System"
+        ThemePreference.LIGHT -> "Light"
+        ThemePreference.DARK -> "Dark"
     }
 }
 
