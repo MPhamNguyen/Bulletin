@@ -46,18 +46,18 @@ private val BorderSubtle = Color(0xFFDDE2E8)
 // ---------------------------------------------------------------------------
 private val DarkCanvasBackground = Color(0xFF0B0F19)
 private val DarkSurfaceLowest = Color(0xFF070B13)
-private val DarkSurfaceLow = Color(0xFF101726)
-private val DarkSurface = Color(0xFF141D2E)
-private val DarkSurfaceContainer = Color(0xFF18233C)
-private val DarkSurfaceHigh = Color(0xFF1F2D4A)
-private val DarkSurfaceHighest = Color(0xFF263758)
-private val DarkSurfaceVariant = Color(0xFF202C44)
-private val DarkSurfaceBright = Color(0xFF344566)
+private val DarkSurfaceLow = Color(0xFF111726)
+private val DarkSurface = Color(0xFF161F33)
+private val DarkSurfaceContainer = Color(0xFF161F33)
+private val DarkSurfaceHigh = Color(0xFF1B263E)
+private val DarkSurfaceHighest = Color(0xFF1D2A45)
+private val DarkSurfaceVariant = Color(0xFF1E293B)
+private val DarkSurfaceBright = Color(0xFF263758)
 
 // Gold is reserved for star ratings ONLY. Never use it for containers,
 // buttons, avatars or highlights.
 private val StarLight = Color(0xFFF5B301)
-private val StarDark = Color(0xFFFFD54A)
+private val StarDark = Color(0xFFFBBF24)
 
 private val AccentError = Color(0xFFB3261E)
 
@@ -108,20 +108,20 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFA8C5E8),
-    onPrimary = Color(0xFF0D1C2E),
-    primaryContainer = Color(0xFF2A3F5B),
-    onPrimaryContainer = Color(0xFFD6E4F7),
+    primary = Color(0xFF5B8DEF),
+    onPrimary = DarkCanvasBackground,
+    primaryContainer = Color(0xFF17243D),
+    onPrimaryContainer = Color(0xFFAFC8FF),
 
     secondary = Color(0xFF8FA8C8),
     onSecondary = Color(0xFF0F1A28),
     secondaryContainer = Color(0xFF243348),
     onSecondaryContainer = Color(0xFFD3E0F0),
 
-    tertiary = Color(0xFF8FCBAE),
-    onTertiary = Color(0xFF0A2B1D),
-    tertiaryContainer = Color(0xFF1E3F30),
-    onTertiaryContainer = Color(0xFFC7F2DE),
+    tertiary = Color(0xFF38BDF8),
+    onTertiary = DarkCanvasBackground,
+    tertiaryContainer = Color(0xFF102B3A),
+    onTertiaryContainer = Color(0xFFBAE6FD),
 
     background = DarkCanvasBackground,
     onBackground = Color(0xFFF0F4F8),
@@ -129,7 +129,7 @@ private val DarkColors = darkColorScheme(
     surface = DarkSurface,
     onSurface = Color(0xFFF0F4F8),
     surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = Color(0xFF94A7C1),
+    onSurfaceVariant = Color(0xFF8F9FB5),
     surfaceDim = DarkCanvasBackground,
     surfaceBright = DarkSurfaceBright,
     surfaceContainerLowest = DarkSurfaceLowest,
@@ -139,9 +139,9 @@ private val DarkColors = darkColorScheme(
     surfaceContainerHighest = DarkSurfaceHighest,
 
     outline = Color(0xFF5E7292),
-    outlineVariant = Color(0xFF2D3E59),
+    outlineVariant = Color(0xFF1E293B),
 
-    error = Color(0xFFFFB4AB),
+    error = Color(0xFFFB7185),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
@@ -150,7 +150,7 @@ private val DarkColors = darkColorScheme(
     inverseOnSurface = Color(0xFF121824),
     inversePrimary = PaletteMidBlue,
 
-    surfaceTint = Color(0xFFA8C5E8),
+    surfaceTint = Color(0xFF5B8DEF),
 
     scrim = Color.Black
 )
@@ -179,10 +179,10 @@ private val LightExtendedColors = BulletinExtendedColors(
 )
 
 private val DarkExtendedColors = BulletinExtendedColors(
-    success = Color(0xFF8FCBAE),
+    success = Color(0xFF34D399),
     onSuccess = Color(0xFF0A2B1D),
-    successContainer = Color(0xFF1B382B),
-    onSuccessContainer = Color(0xFFC7F2DE),
+    successContainer = Color(0xFF123629),
+    onSuccessContainer = Color(0xFF6EE7B7),
     star = StarDark
 )
 
@@ -254,7 +254,7 @@ private val BulletinShapes = Shapes(
     extraSmall = RoundedCornerShape(6.dp),
     small = RoundedCornerShape(10.dp),
     medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(16.dp),
     extraLarge = CircleShape
 )
 

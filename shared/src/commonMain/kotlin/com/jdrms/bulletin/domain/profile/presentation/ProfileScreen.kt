@@ -1,16 +1,21 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,25 +25,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.ModeEdit
+import androidx.compose.material.icons.outlined.PhoneIphone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,14 +65,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
 import bulletin.shared.generated.resources.ic_graduation_cap
 import com.jdrms.bulletin.app.theme.ThemePreference
+import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
@@ -71,12 +91,10 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
+    themeViewModel: ThemeViewModel? = null,
     onBack: () -> Unit = {},
     onSignOut: () -> Unit = {},
-    onMyListingsClick: () -> Unit = {},
-    isDarkTheme: Boolean = false,
-    themePreference: ThemePreference = ThemePreference.SYSTEM,
-    onThemePreferenceChanged: (ThemePreference) -> Unit = {}
+    onMyListingsClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -102,9 +120,8 @@ fun ProfileScreen(
                 uiState = uiState,
                 onEditProfileClick = viewModel::startEditingProfile,
                 onMyListingsClick = onMyListingsClick,
-                isDarkTheme = isDarkTheme,
-                themePreference = themePreference,
-                onThemePreferenceChanged = onThemePreferenceChanged,
+                themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
+                onThemePreferenceChanged = themeViewModel?.let { vm -> vm::setThemePreference },
                 onSignOut = onSignOut
             )
         }
@@ -131,9 +148,8 @@ private fun ProfileLandingView(
     uiState: ProfileUiState,
     onEditProfileClick: () -> Unit,
     onMyListingsClick: () -> Unit,
-    isDarkTheme: Boolean,
-    themePreference: ThemePreference,
-    onThemePreferenceChanged: (ThemePreference) -> Unit,
+    themePreference: ThemePreference?,
+    onThemePreferenceChanged: ((ThemePreference) -> Unit)?,
     onSignOut: () -> Unit
 ) {
     val profile = uiState.profile
@@ -146,25 +162,19 @@ private fun ProfileLandingView(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 8.dp),
+                .padding(start = 20.dp, top = 2.dp, end = 20.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ProfileAvatarHeader(
                 fullName = profile?.fullName ?: "Student Profile",
                 university = profile?.university ?: "CSU Long Beach",
-                major = profile?.major.orEmpty(),
                 isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             BulletinCard {
-                Text(
-                    text = "About",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                ProfileSectionLabel("ABOUT")
                 Spacer(modifier = Modifier.height(8.dp))
                 val bioText = profile?.bio?.ifBlank { null }
                     ?: "No bio added yet. Tap Edit to tell fellow students about yourself!"
@@ -172,38 +182,34 @@ private fun ProfileLandingView(
                     text = bioText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (profile?.bio.isNullOrBlank()) {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                    },
+                    lineHeight = 20.sp
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             BulletinCard {
-                Text(
-                    text = "Academic Information",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                ProfileSectionLabel("ACADEMIC INFORMATION")
                 Spacer(modifier = Modifier.height(12.dp))
                 ProfileInfoRow(
                     label = "School",
                     value = profile?.university?.ifBlank { null } ?: "CSU Long Beach"
                 )
                 HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
                 )
                 ProfileInfoRow(
                     label = "Major",
                     value = profile?.major?.ifBlank { null } ?: "Undeclared"
                 )
                 HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
                 )
                 ProfileInfoRow(
                     label = "Email",
@@ -214,19 +220,22 @@ private fun ProfileLandingView(
             Spacer(modifier = Modifier.height(16.dp))
 
             BulletinCard {
-                Text(
-                    text = "Campus Reputation & Activity",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                ProfileSectionLabel("CAMPUS REPUTATION")
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.medium)
+                            .border(
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
+                                MaterialTheme.shapes.medium
+                            )
+                            .padding(12.dp)
+                    ) {
                         Text(
                             text = "Average Rating",
                             style = MaterialTheme.typography.labelSmall,
@@ -249,9 +258,18 @@ private fun ProfileLandingView(
                             )
                         }
                     }
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.medium)
+                            .border(
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
+                                MaterialTheme.shapes.medium
+                            )
+                            .padding(12.dp)
+                    ) {
                         Text(
-                            text = "Reviews",
+                            text = "Feedback",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -263,140 +281,213 @@ private fun ProfileLandingView(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    Column {
-                        Text(
-                            text = "Standing",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (profile?.isVerified == true) "Verified" else "Active Peer",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            BulletinCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Theme",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = when (themePreference) {
-                                ThemePreference.SYSTEM -> {
-                                    "Following system theme (${if (isDarkTheme) "dark" else "light"})"
-                                }
-                                ThemePreference.LIGHT -> "Using the light theme"
-                                ThemePreference.DARK -> "Using the dark theme"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                var isThemeMenuExpanded by remember { mutableStateOf(false) }
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { isThemeMenuExpanded = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small,
-                        border = BulletinButtonDefaults.outlinedButtonBorder(),
-                        colors = BulletinButtonDefaults.outlinedButtonColors()
-                    ) {
-                        Text(
-                            text = themePreferenceLabel(themePreference),
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Start,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = isThemeMenuExpanded,
-                        onDismissRequest = { isThemeMenuExpanded = false },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        ThemePreference.entries.forEach { preference ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = themePreferenceLabel(preference),
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                onClick = {
-                                    isThemeMenuExpanded = false
-                                    onThemePreferenceChanged(preference)
-                                }
-                            )
-                        }
-                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = onMyListingsClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.medium,
-                colors = BulletinButtonDefaults.buttonColors()
-            ) {
-                Text(
-                    text = "My Listings",
-                    style = MaterialTheme.typography.titleMedium
+            ProfileActionRow(
+                icon = Icons.Outlined.GridView,
+                title = "My Listings",
+                subtitle = "Manage active and completed posts",
+                onClick = onMyListingsClick
+            )
+
+            if (themePreference != null && onThemePreferenceChanged != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                AppearanceCard(
+                    themePreference = themePreference,
+                    onThemePreferenceChanged = onThemePreferenceChanged
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
+            TextButton(
                 onClick = onSignOut,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.medium,
-                border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
-                colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text(
-                    text = "Sign Out",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.error
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Logout,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
                 )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = "Sign Out", style = MaterialTheme.typography.labelMedium)
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
-private fun themePreferenceLabel(preference: ThemePreference): String {
-    return when (preference) {
-        ThemePreference.SYSTEM -> "System"
-        ThemePreference.LIGHT -> "Light"
-        ThemePreference.DARK -> "Dark"
+@Composable
+private fun AppearanceCard(
+    themePreference: ThemePreference,
+    onThemePreferenceChanged: (ThemePreference) -> Unit
+) {
+    BulletinCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.shapes.medium
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Brush,
+                    contentDescription = "Appearance",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Appearance",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Customize your theme",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = themePreferenceLabel(themePreference),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ThemePreference.entries.forEach { preference ->
+                AppearanceOption(
+                    preference = preference,
+                    selected = preference == themePreference,
+                    onClick = { onThemePreferenceChanged(preference) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun AppearanceOption(
+    preference: ThemePreference,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
+        animationSpec = tween(durationMillis = 180),
+        label = "Appearance option background"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        animationSpec = tween(durationMillis = 180),
+        label = "Appearance option border"
+    )
+    val lift by animateDpAsState(
+        targetValue = if (selected) (-2).dp else 0.dp,
+        animationSpec = tween(durationMillis = 180),
+        label = "Appearance option lift"
+    )
+    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+
+    Column(
+        modifier = modifier
+            .height(76.dp)
+            .graphicsLayer { translationY = lift.toPx() }
+            .background(backgroundColor, MaterialTheme.shapes.medium)
+            .border(BorderStroke(1.dp, borderColor), MaterialTheme.shapes.medium)
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                role = Role.RadioButton
+            )
+            .semantics {
+                contentDescription = themePreferenceDescription(preference)
+                stateDescription = if (selected) "Selected" else "Not selected"
+            }
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = themePreferenceIcon(preference),
+            contentDescription = themePreferenceLabel(preference),
+            tint = contentColor,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = themePreferenceLabel(preference),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = contentColor,
+            maxLines = 1
+        )
+    }
+}
+
+private fun themePreferenceLabel(preference: ThemePreference): String = when (preference) {
+    ThemePreference.SYSTEM -> "System"
+    ThemePreference.LIGHT -> "Light"
+    ThemePreference.DARK -> "Dark"
+}
+
+private fun themePreferenceDescription(preference: ThemePreference): String = when (preference) {
+    ThemePreference.SYSTEM -> "System theme, follows your device setting"
+    ThemePreference.LIGHT -> "Light theme, bright and clean for daylight"
+    ThemePreference.DARK -> "Dark theme, deep navy for low light"
+}
+
+private fun themePreferenceIcon(preference: ThemePreference) = when (preference) {
+    ThemePreference.SYSTEM -> Icons.Outlined.PhoneIphone
+    ThemePreference.LIGHT -> Icons.Outlined.LightMode
+    ThemePreference.DARK -> Icons.Outlined.DarkMode
+}
+
+internal fun profileInitials(fullName: String): String {
+    val nameParts = fullName.trim().split(Regex("\\s+")).filter(String::isNotBlank)
+    if (nameParts.isEmpty()) return "ST"
+    val firstInitial = nameParts.first().first().uppercaseChar()
+    val lastInitial = nameParts.takeIf { it.size > 1 }?.last()?.first()?.uppercaseChar()
+    return if (lastInitial == null) firstInitial.toString() else "$firstInitial$lastInitial"
+}
+
+@Composable
+private fun ProfileSectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
@@ -415,21 +506,10 @@ private fun ProfileLandingTopBar(onEditProfileClick: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        FilledTonalButton(
+        TextButton(
             onClick = onEditProfileClick,
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary)
         ) {
-            Icon(
-                imageVector = Icons.Outlined.ModeEdit,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = "Edit",
                 style = MaterialTheme.typography.labelLarge
@@ -442,38 +522,58 @@ private fun ProfileLandingTopBar(onEditProfileClick: () -> Unit) {
 private fun ProfileAvatarHeader(
     fullName: String,
     university: String,
-    major: String,
     isVerified: Boolean
 ) {
-    Box(
-        modifier = Modifier
-            .size(96.dp)
-            .background(MaterialTheme.colorScheme.tertiaryContainer, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            painter = painterResource(Res.drawable.ic_graduation_cap),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(56.dp)
-        )
+    Box {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = profileInitials(fullName),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
+        if (isVerified) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .background(MaterialTheme.colorScheme.background, CircleShape)
+                    .padding(3.dp)
+                    .size(22.dp)
+                    .background(BulletinExtras.colors.successContainer, CircleShape)
+                    .border(1.dp, BulletinExtras.colors.success.copy(alpha = 0.5f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircle,
+                    contentDescription = "Verified student",
+                    tint = BulletinExtras.colors.success,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
     }
 
     Spacer(modifier = Modifier.height(12.dp))
 
     Text(
         text = fullName,
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center
     )
 
     Spacer(modifier = Modifier.height(4.dp))
 
-    val academicSubtitle = if (major.isNotBlank()) "$major • $university" else university
     Text(
-        text = academicSubtitle,
+        text = university,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center
@@ -484,9 +584,10 @@ private fun ProfileAvatarHeader(
         Row(
             modifier = Modifier
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    color = BulletinExtras.colors.successContainer,
                     shape = CircleShape
                 )
+                .border(1.dp, BulletinExtras.colors.success.copy(alpha = 0.2f), CircleShape)
                 .padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -501,9 +602,67 @@ private fun ProfileAvatarHeader(
                 text = "Verified Student",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                color = BulletinExtras.colors.success
             )
         }
+    }
+}
+
+@Composable
+private fun ProfileActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ProfileActionIcon(icon)
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileActionIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    useAccent: Boolean = false
+) {
+    val color = if (useAccent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .background(color.copy(alpha = 0.1f), MaterialTheme.shapes.small),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
     }
 }
 
