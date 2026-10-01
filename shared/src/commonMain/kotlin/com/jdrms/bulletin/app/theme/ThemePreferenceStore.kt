@@ -3,13 +3,13 @@ package com.jdrms.bulletin.app.theme
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 interface ThemePreferenceStore {
-    fun lastAppliedPreference(): ThemePreference
+    suspend fun lastAppliedPreference(): ThemePreference
 
-    fun setLastAppliedPreference(preference: ThemePreference)
+    suspend fun setLastAppliedPreference(preference: ThemePreference)
 
-    fun preferenceFor(userId: UserId): ThemePreference
+    suspend fun preferenceFor(userId: UserId): ThemePreference
 
-    fun setPreference(userId: UserId, preference: ThemePreference)
+    suspend fun setPreference(userId: UserId, preference: ThemePreference)
 }
 
 class InMemoryThemePreferenceStore(
@@ -19,17 +19,17 @@ class InMemoryThemePreferenceStore(
     private val preferences = initialPreferences.toMutableMap()
     private var lastAppliedPreference = initialLastAppliedPreference
 
-    override fun lastAppliedPreference(): ThemePreference = lastAppliedPreference
+    override suspend fun lastAppliedPreference(): ThemePreference = lastAppliedPreference
 
-    override fun setLastAppliedPreference(preference: ThemePreference) {
+    override suspend fun setLastAppliedPreference(preference: ThemePreference) {
         lastAppliedPreference = preference
     }
 
-    override fun preferenceFor(userId: UserId): ThemePreference {
+    override suspend fun preferenceFor(userId: UserId): ThemePreference {
         return preferences[userId] ?: ThemePreference.SYSTEM
     }
 
-    override fun setPreference(userId: UserId, preference: ThemePreference) {
+    override suspend fun setPreference(userId: UserId, preference: ThemePreference) {
         preferences[userId] = preference
         setLastAppliedPreference(preference)
     }
