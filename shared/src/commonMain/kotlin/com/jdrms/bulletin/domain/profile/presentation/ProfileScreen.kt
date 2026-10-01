@@ -37,6 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,7 +71,9 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onBack: () -> Unit = {},
     onSignOut: () -> Unit = {},
-    onMyListingsClick: () -> Unit = {}
+    onMyListingsClick: () -> Unit = {},
+    isDarkTheme: Boolean = false,
+    onThemeChanged: (Boolean) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -96,6 +99,8 @@ fun ProfileScreen(
                 uiState = uiState,
                 onEditProfileClick = viewModel::startEditingProfile,
                 onMyListingsClick = onMyListingsClick,
+                isDarkTheme = isDarkTheme,
+                onThemeChanged = onThemeChanged,
                 onSignOut = onSignOut
             )
         }
@@ -122,6 +127,8 @@ private fun ProfileLandingView(
     uiState: ProfileUiState,
     onEditProfileClick: () -> Unit,
     onMyListingsClick: () -> Unit,
+    isDarkTheme: Boolean,
+    onThemeChanged: (Boolean) -> Unit,
     onSignOut: () -> Unit
 ) {
     val profile = uiState.profile
@@ -225,7 +232,7 @@ private fun ProfileLandingView(
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
+                                tint = BulletinExtras.colors.star,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -269,6 +276,35 @@ private fun ProfileLandingView(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            BulletinCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Dark mode",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isDarkTheme) "Using the dark theme" else "Using the light theme",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = isDarkTheme,
+                        onCheckedChange = onThemeChanged
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = onMyListingsClick,

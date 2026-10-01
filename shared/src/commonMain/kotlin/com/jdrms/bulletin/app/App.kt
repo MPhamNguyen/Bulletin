@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,8 +64,10 @@ import com.jdrms.bulletin.domain.profile.presentation.SignUpScreen
 fun App(appContainer: AppContainer? = null) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
+    val systemDarkTheme = isSystemInDarkTheme()
+    var isDarkTheme by rememberSaveable { mutableStateOf(systemDarkTheme) }
 
-    BulletinTheme {
+    BulletinTheme(darkTheme = isDarkTheme) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
         val profileViewModel = remember { container.createProfileViewModel() }
         val profileUiState by profileViewModel.uiState.collectAsState()
@@ -125,6 +129,8 @@ fun App(appContainer: AppContainer? = null) {
                     MainAppScaffold(
                         appContainer = container,
                         profileViewModel = profileViewModel,
+                        darkTheme = isDarkTheme,
+                        onThemeChanged = { isDarkTheme = it },
                         onSignOut = {
                             profileViewModel.signOut {
                                 currentRootScreen = AppRootScreen.SIGN_IN
@@ -154,12 +160,14 @@ internal fun resolveRootScreen(
 fun MainAppScaffold(
     appContainer: AppContainer? = null,
     profileViewModel: ProfileViewModel? = null,
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    onThemeChanged: (Boolean) -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
 
-    BulletinTheme {
+    BulletinTheme(darkTheme = darkTheme) {
         var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
         var profileDestination by remember { mutableStateOf(ProfileDestination.PROFILE) }
 
@@ -210,6 +218,8 @@ fun MainAppScaffold(
                         } else {
                             ProfileScreen(
                                 viewModel = resolvedProfileViewModel,
+                                isDarkTheme = darkTheme,
+                                onThemeChanged = onThemeChanged,
                                 onSignOut = onSignOut,
                                 onMyListingsClick = {
                                     listingsViewModel.clearMessages()
@@ -234,7 +244,7 @@ fun BulletinBottomNavigationBar(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 2.dp,
         shadowElevation = 8.dp
     ) {
