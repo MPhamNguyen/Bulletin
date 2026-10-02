@@ -464,7 +464,8 @@ class ListingsViewModelTest {
             viewModel.uiState.value.myListings.map { it.title }.toSet()
         )
 
-        viewModel.deleteListing(firstListing.id)
+        viewModel.requestDeleteListing(firstListing)
+        viewModel.confirmDeleteListing()
         advanceUntilIdle()
 
         assertEquals(listOf("Study Chair"), viewModel.uiState.value.myListings.map { it.title })
@@ -477,7 +478,8 @@ class ListingsViewModelTest {
         viewModel.loadMyListings(ListingSeller(sellerId, sellerName))
         advanceUntilIdle()
 
-        viewModel.deleteListing(ListingId("missing-listing"))
+        viewModel.requestDeleteListing(listing.copy(id = ListingId("missing-listing")))
+        viewModel.confirmDeleteListing()
         advanceUntilIdle()
 
         assertEquals(listOf("Desk Lamp"), viewModel.uiState.value.myListings.map { it.title })
