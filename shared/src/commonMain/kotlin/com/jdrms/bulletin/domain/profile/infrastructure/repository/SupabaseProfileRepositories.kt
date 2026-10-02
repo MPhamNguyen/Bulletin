@@ -172,6 +172,16 @@ class SupabaseAuthRepository(
     private val profileRepository: ProfileRepository
 ) : AuthRepository {
 
+    override suspend fun getCurrentUserId(): Result<UserId?> {
+        return runCatching {
+            supabase.auth.awaitInitialization()
+            supabase.auth.currentUserOrNull()?.id?.let(::UserId)
+        }.fold(
+            onSuccess = { Result.Success(it) },
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+        )
+    }
+
     override suspend fun getCurrentUser(): Result<StudentProfile?> {
         return runCatching {
             supabase.auth.awaitInitialization()

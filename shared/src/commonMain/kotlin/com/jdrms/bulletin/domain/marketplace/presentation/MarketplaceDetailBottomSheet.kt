@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -373,7 +374,7 @@ private fun SellerInfoCard(
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = "Reputation Score",
-                    tint = MaterialTheme.colorScheme.tertiary,
+                    tint = BulletinExtras.colors.star,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(

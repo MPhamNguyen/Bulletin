@@ -95,6 +95,8 @@ class InMemoryAuthRepository(
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
     private var currentUser: StudentProfile? = null
 
+    override suspend fun getCurrentUserId(): Result<UserId?> = Result.Success(currentUser?.id)
+
     override suspend fun getCurrentUser(): Result<StudentProfile?> = Result.Success(currentUser)
 
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
