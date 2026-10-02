@@ -62,6 +62,13 @@ class AuthListingSellerProviderTest {
     private class FakeAuthRepository(
         private val currentUserResult: Result<StudentProfile?>
     ) : AuthRepository {
+        override suspend fun getCurrentUserId(): Result<UserId?> {
+            return when (currentUserResult) {
+                is Result.Success -> Result.Success(currentUserResult.data?.id)
+                is Result.Error -> currentUserResult
+            }
+        }
+
         override suspend fun getCurrentUser(): Result<StudentProfile?> = currentUserResult
 
         override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {

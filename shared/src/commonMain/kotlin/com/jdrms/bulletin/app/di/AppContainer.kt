@@ -3,6 +3,9 @@ package com.jdrms.bulletin.app.di
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
+import com.jdrms.bulletin.app.theme.ThemePreferenceStore
+import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
@@ -34,6 +37,7 @@ import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
@@ -52,8 +56,10 @@ import io.github.jan.supabase.SupabaseClient
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
-    private val allowInMemoryFallback: Boolean = true
+    private val allowInMemoryFallback: Boolean = true,
+    themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore()
 ) {
+    private val themePreferenceStore = themePreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     val supabaseClient: SupabaseClient? by lazy {
         if (!isInspectionMode && supabaseConfig.isConfigured) {
@@ -154,6 +160,7 @@ class AppContainer(
 
     // Use Cases - Profile
     val authenticateUser by lazy { AuthenticateUser(authRepository) }
+    val getAuthenticatedUserId by lazy { GetAuthenticatedUserId(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
     val signOutUser by lazy { SignOutUser(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
@@ -199,4 +206,6 @@ class AppContainer(
         updateStudentProfile = updateStudentProfile,
         submitStudentReview = submitStudentReview
     )
+
+    fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }

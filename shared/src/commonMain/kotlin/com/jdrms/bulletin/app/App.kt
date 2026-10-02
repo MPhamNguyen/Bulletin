@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,9 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
+import com.jdrms.bulletin.app.theme.ThemePreference
+import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
@@ -62,12 +66,29 @@ import com.jdrms.bulletin.domain.profile.presentation.SignUpScreen
 fun App(appContainer: AppContainer? = null) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
+    val systemDarkTheme = isSystemInDarkTheme()
+    val themeViewModel = remember { container.createThemeViewModel() }
+    val themePreference by themeViewModel.themePreference.collectAsState()
+    val isDarkTheme = resolveIsDarkTheme(themePreference, systemDarkTheme)
 
-    BulletinTheme {
+    BulletinTheme(darkTheme = isDarkTheme) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
         val profileViewModel = remember { container.createProfileViewModel() }
         val profileUiState by profileViewModel.uiState.collectAsState()
         val effectiveRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
+
+        LaunchedEffect(profileUiState.authSessionState) {
+            when (profileUiState.authSessionState) {
+                AuthSessionState.CHECKING,
+                AuthSessionState.AUTHENTICATED -> {
+                    when (val result = container.getAuthenticatedUserId()) {
+                        is Result.Success -> result.data?.let(themeViewModel::setAccount)
+                        is Result.Error -> Unit
+                    }
+                }
+                AuthSessionState.UNAUTHENTICATED -> themeViewModel.setAccount(null)
+            }
+        }
 
         LaunchedEffect(profileUiState.authSessionState) {
             currentRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
@@ -125,6 +146,8 @@ fun App(appContainer: AppContainer? = null) {
                     MainAppScaffold(
                         appContainer = container,
                         profileViewModel = profileViewModel,
+                        themeViewModel = themeViewModel,
+                        darkTheme = isDarkTheme,
                         onSignOut = {
                             profileViewModel.signOut {
                                 currentRootScreen = AppRootScreen.SIGN_IN
@@ -150,16 +173,27 @@ internal fun resolveRootScreen(
     }
 }
 
+internal fun resolveIsDarkTheme(
+    themePreference: ThemePreference,
+    systemDarkTheme: Boolean
+): Boolean = when (themePreference) {
+    ThemePreference.SYSTEM -> systemDarkTheme
+    ThemePreference.LIGHT -> false
+    ThemePreference.DARK -> true
+}
+
 @Composable
 fun MainAppScaffold(
     appContainer: AppContainer? = null,
     profileViewModel: ProfileViewModel? = null,
+    themeViewModel: ThemeViewModel? = null,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     onSignOut: () -> Unit = {}
 ) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
 
-    BulletinTheme {
+    BulletinTheme(darkTheme = darkTheme) {
         var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
         var profileDestination by remember { mutableStateOf(ProfileDestination.PROFILE) }
 
@@ -210,6 +244,7 @@ fun MainAppScaffold(
                         } else {
                             ProfileScreen(
                                 viewModel = resolvedProfileViewModel,
+                                themeViewModel = themeViewModel,
                                 onSignOut = onSignOut,
                                 onMyListingsClick = {
                                     listingsViewModel.clearMessages()
@@ -234,21 +269,21 @@ fun BulletinBottomNavigationBar(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-        shadowElevation = 8.dp
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.96f),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp
     ) {
         Column {
             HorizontalDivider(
                 thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
             )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .windowInsetsPadding(NavigationBarDefaults.windowInsets)
-                    .height(68.dp)
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .height(64.dp)
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -264,8 +299,8 @@ fun BulletinBottomNavigationBar(
                                 onClick = { onDestinationSelected(destination) },
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.primary,
-                                shadowElevation = if (currentDestination == destination) 4.dp else 2.dp,
-                                modifier = Modifier.size(54.dp)
+                                shadowElevation = 6.dp,
+                                modifier = Modifier.size(44.dp)
                             ) {
                                 Box(
                                     contentAlignment = Alignment.Center,
@@ -275,7 +310,7 @@ fun BulletinBottomNavigationBar(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = destination.label,
                                         tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(30.dp)
+                                        modifier = Modifier.size(26.dp)
                                     )
                                 }
                             }
@@ -283,9 +318,9 @@ fun BulletinBottomNavigationBar(
                     } else {
                         val isSelected = currentDestination == destination
                         val contentColor = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
+                            MaterialTheme.colorScheme.tertiary
                         } else {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
+                            MaterialTheme.colorScheme.onSurfaceVariant
                         }
 
                         Column(
@@ -306,13 +341,13 @@ fun BulletinBottomNavigationBar(
                                 imageVector = destination.icon,
                                 contentDescription = destination.label,
                                 tint = contentColor,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = destination.label,
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                                 color = contentColor
                             )
                         }

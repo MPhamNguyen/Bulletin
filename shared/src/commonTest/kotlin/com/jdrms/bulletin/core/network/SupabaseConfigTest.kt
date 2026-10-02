@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.core.network
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -20,6 +21,18 @@ class SupabaseConfigTest {
         )
         assertTrue(config.isConfigured)
         assertTrue(config.isConnected)
+    }
+
+    @Test
+    fun testConfiguredFactoryTrimsTheUrlAndAnonymousKeyBeforeLoadingConfiguration() {
+        val config = SupabaseConfig.configured(
+            url = "  https://jdrms-project.supabase.co  ",
+            apiKey = "  anon-key  "
+        )
+
+        assertTrue(config.isConfigured)
+        assertEquals("https://jdrms-project.supabase.co", config.url)
+        assertEquals("anon-key", config.apiKey)
     }
 
     @Test

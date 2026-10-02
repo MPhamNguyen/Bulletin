@@ -33,6 +33,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -432,6 +433,54 @@ class ListingsViewModelTest {
         advanceTimeBy(ListingsViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
         runCurrent()
         assertNull(viewModel.uiState.value.successMessage)
+    }
+
+    @Test
+    fun loadingAnEmptySellerRepositoryProducesTheMyListingsEmptyState() = runTest {
+        advanceUntilIdle()
+
+        assertEquals(emptyList(), viewModel.uiState.value.myListings)
+        assertFalse(viewModel.uiState.value.isSubmitting)
+        assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun loadingMyListingsThenDeletingOneRefreshesTheRemainingListings() = runTest {
+        val firstListing = testListing(sellerId).copy(
+            id = ListingId("listing-1"),
+            title = "Desk Lamp"
+        )
+        val secondListing = testListing(sellerId).copy(
+            id = ListingId("listing-2"),
+            title = "Study Chair"
+        )
+        repository.createListing(firstListing)
+        repository.createListing(secondListing)
+        viewModel.loadMyListings(ListingSeller(sellerId, sellerName))
+        advanceUntilIdle()
+
+        assertEquals(
+            setOf("Desk Lamp", "Study Chair"),
+            viewModel.uiState.value.myListings.map { it.title }.toSet()
+        )
+
+        viewModel.deleteListing(firstListing.id)
+        advanceUntilIdle()
+
+        assertEquals(listOf("Study Chair"), viewModel.uiState.value.myListings.map { it.title })
+    }
+
+    @Test
+    fun deletingAnUnknownListingLeavesTheLoadedMyListingsStateUnchanged() = runTest {
+        val listing = testListing(sellerId).copy(id = ListingId("listing-1"), title = "Desk Lamp")
+        repository.createListing(listing)
+        viewModel.loadMyListings(ListingSeller(sellerId, sellerName))
+        advanceUntilIdle()
+
+        viewModel.deleteListing(ListingId("missing-listing"))
+        advanceUntilIdle()
+
+        assertEquals(listOf("Desk Lamp"), viewModel.uiState.value.myListings.map { it.title })
     }
 
     private fun testListing(ownerId: SellerId): Listing {
