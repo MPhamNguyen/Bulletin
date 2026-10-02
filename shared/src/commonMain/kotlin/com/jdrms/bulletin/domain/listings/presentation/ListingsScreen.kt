@@ -168,9 +168,18 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
         items(state.myListings) { listing ->
             MyListingCard(
                 listing = listing,
-                onDelete = { viewModel.deleteListing(listing.id) }
+                onDelete = { viewModel.requestDeleteListing(listing) }
             )
         }
+    }
+
+    state.pendingDeletion?.let { listing ->
+        ListingDeleteConfirmationDialog(
+            listing = listing,
+            isDeleting = state.isDeleting,
+            onDismiss = viewModel::cancelDeleteListing,
+            onConfirm = viewModel::confirmDeleteListing
+        )
     }
 }
 

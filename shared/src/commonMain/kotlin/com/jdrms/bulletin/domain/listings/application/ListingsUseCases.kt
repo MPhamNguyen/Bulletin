@@ -81,9 +81,20 @@ class ManageListing(
         }
         return listingsRepository.updateListing(canonicalListing)
     }
+}
 
-    suspend fun deleteListing(id: ListingId): Result<Unit> {
-        return listingsRepository.deleteListing(id)
+class DeleteListing(
+    private val listingsRepository: ListingsRepository,
+    private val policy: ListingValidationPolicy = ListingValidationPolicy()
+) {
+    suspend operator fun invoke(id: ListingId, sellerId: SellerId): Result<Unit> {
+        val listing = listingsRepository.getListing(id)
+            ?: return Result.Error(NoSuchElementException("Listing not found with ID: ${id.value}"))
+        val ownershipValidation = policy.validateOwnership(listing, sellerId, action = "delete")
+        if (ownershipValidation.isError()) {
+            return Result.Error((ownershipValidation as Result.Error).exception)
+        }
+        return listingsRepository.deleteListing(id, sellerId)
     }
 }
 
