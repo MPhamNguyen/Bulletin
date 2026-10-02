@@ -2,10 +2,12 @@ package com.jdrms.bulletin.domain.messages.infrastructure.mapper
 
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.ConversationDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.ConversationParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.MessageDto
 
 object MessagesMapper {
@@ -36,7 +38,7 @@ object MessagesMapper {
     fun toDomain(dto: ConversationDto): Conversation {
         return Conversation(
             id = ConversationId(dto.id),
-            participantNames = dto.participantNames,
+            participants = dto.participants.map { ConversationParticipant(SenderId(it.id), it.displayName) },
             lastMessage = dto.lastMessage?.let { toDomain(it) },
             updatedAtMillis = dto.updatedAtMillis
         )
@@ -45,7 +47,7 @@ object MessagesMapper {
     fun toDto(domain: Conversation): ConversationDto {
         return ConversationDto(
             id = domain.id.value,
-            participantNames = domain.participantNames,
+            participants = domain.participants.map { ConversationParticipantDto(it.id.value, it.displayName) },
             lastMessage = domain.lastMessage?.let { toDto(it) },
             updatedAtMillis = domain.updatedAtMillis
         )
