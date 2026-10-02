@@ -2,16 +2,17 @@ package com.jdrms.bulletin.domain.messages.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.generateUuid
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
+import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
-import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
-import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,37 +23,47 @@ class MessagesViewModel(
     private val getConversations: GetConversations,
     private val getConversationMessages: GetConversationMessages,
     private val sendMessage: SendMessage,
-    private val reportMessage: ReportMessage,
-    private val currentUserId: String = "current_student",
-    private val currentUserName: String = "Dominic Alfonso"
+    private val reportMessage: ReportMessage
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(MessagesUiState())
     val uiState: StateFlow<MessagesUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     init {
         loadConversations()
     }
 
     fun loadConversations() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val convs = getConversations(currentUserId)
-            val selectedId = _uiState.value.selectedConversationId ?: convs.firstOrNull()?.id
-            _uiState.update { it.copy(conversations = convs, selectedConversationId = selectedId, isLoading = false) }
-            selectedId?.let { loadMessages(it) }
+        loadJob?.cancel()
+        val previousSelection = _uiState.value.selectedConversationId
+        _uiState.update { MessagesUiState(isLoading = true) }
+        loadJob = viewModelScope.launch {
+            when (val result = getConversations()) {
+                is Result.Error -> showFailure(result)
+                is Result.Success -> {
+                    val selected = result.data.firstOrNull { it.id == previousSelection } ?: result.data.firstOrNull()
+                    _uiState.update {
+                        it.copy(conversations = result.data, selectedConversationId = selected?.id, isLoading = false)
+                    }
+                    selected?.let { loadMessages(it.id) }
+                }
+            }
         }
     }
 
     fun selectConversation(conversationId: ConversationId) {
-        _uiState.update { it.copy(selectedConversationId = conversationId) }
-        loadMessages(conversationId)
+        if (_uiState.value.conversations.none { it.id == conversationId }) return
+        loadJob?.cancel()
+        _uiState.update {
+            it.copy(selectedConversationId = conversationId, currentMessages = emptyList(), errorMessage = null)
+        }
+        loadJob = viewModelScope.launch { loadMessages(conversationId) }
     }
 
-    private fun loadMessages(conversationId: ConversationId) {
-        viewModelScope.launch {
-            val messages = getConversationMessages(conversationId)
-            _uiState.update { it.copy(currentMessages = messages) }
+    private suspend fun loadMessages(conversationId: ConversationId) {
+        when (val result = getConversationMessages(conversationId)) {
+            is Result.Success -> _uiState.update { it.copy(currentMessages = result.data) }
+            is Result.Error -> showFailure(result)
         }
     }
 
@@ -62,35 +73,41 @@ class MessagesViewModel(
 
     fun sendCurrentMessage() {
         val activeConvId = _uiState.value.selectedConversationId ?: return
-        val text = _uiState.value.messageInput.trim()
-        if (text.isBlank()) return
-
-        val newMessage = Message(
-            id = MessageId("msg_${generateUuid().take(8)}"),
-            conversationId = activeConvId,
-            senderId = SenderId(currentUserId),
-            senderName = currentUserName,
-            content = text,
-            timestampMillis = currentTimeMillis()
-        )
-
+        val text = _uiState.value.messageInput
         viewModelScope.launch {
-            val result = sendMessage(activeConvId, newMessage)
-            if (result.isSuccess()) {
-                _uiState.update { it.copy(messageInput = "") }
-                loadMessages(activeConvId)
-                val convs = getConversations(currentUserId)
-                _uiState.update { it.copy(conversations = convs) }
+            when (val result = sendMessage(activeConvId, text)) {
+                is Result.Success -> loadConversations()
+                is Result.Error -> showFailure(result)
             }
         }
     }
 
     fun report(messageId: MessageId, reason: String = "Inappropriate content") {
+        val activeConvId = _uiState.value.selectedConversationId ?: return
         viewModelScope.launch {
-            val result = reportMessage(messageId, reason)
-            if (result.isSuccess()) {
-                val activeConvId = _uiState.value.selectedConversationId
-                activeConvId?.let { loadMessages(it) }
+            when (val result = reportMessage(activeConvId, messageId, reason)) {
+                is Result.Success -> {
+                    if (_uiState.value.selectedConversationId == activeConvId) selectConversation(activeConvId)
+                }
+                is Result.Error -> showFailure(result)
+            }
+        }
+    }
+
+    private fun showFailure(error: Result.Error) {
+        val identityUnavailable = error.exception is MessagingAuthenticationRequiredException ||
+            error.exception is MessageSenderLookupException || error.exception is ConversationAccessException
+        if (identityUnavailable) loadJob?.cancel()
+        val message = if (error.exception is MessagingAuthenticationRequiredException) {
+            "Sign in to access your messages."
+        } else {
+            "Unable to complete the messaging request. Please try again."
+        }
+        _uiState.update {
+            if (identityUnavailable) {
+                MessagesUiState(errorMessage = message)
+            } else {
+                it.copy(isLoading = false, errorMessage = message)
             }
         }
     }

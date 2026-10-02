@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
+import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.core.common.RefreshSignal
@@ -30,6 +31,7 @@ import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
@@ -105,7 +107,9 @@ class AppContainer(
             )
         }
     }
-    val messagesRepository by lazy { InMemoryMessagesRepository() }
+
+    // BULLETIN-85 will supply the Supabase adapter for this same participant-scoped contract.
+    val messagesRepository: MessagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -145,10 +149,11 @@ class AppContainer(
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
 
     // Use Cases - Messages
-    val getConversations by lazy { GetConversations(messagesRepository) }
-    val getConversationMessages by lazy { GetConversationMessages(messagesRepository) }
-    val sendMessage by lazy { SendMessage(messagesRepository) }
-    val reportMessage by lazy { ReportMessage(messagesRepository) }
+    val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
+    val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
+    val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
+    val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
 
     // Use Cases - Profile
     val authenticateUser by lazy { AuthenticateUser(authRepository) }

@@ -47,6 +47,7 @@ jobs:
               - 'shared/build.gradle.kts'
               - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/core/**'
               - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/app/**'
+              - 'shared/src/commonTest/kotlin/com/jdrms/bulletin/app/**'
               - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/App.kt'
               - 'shared/src/commonMain/composeResources/**'
               - 'shared/src/androidMain/**'
