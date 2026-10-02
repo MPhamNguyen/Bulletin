@@ -8,21 +8,29 @@ class SystemBarAppearanceTest {
 
     @Test
     fun darkThemeRequiresLightSystemBarIcons() {
-        val isDarkTheme = true
-        val isAppearanceLightStatusBars = !isDarkTheme
-        val isAppearanceLightNavigationBars = !isDarkTheme
+        val appearance = resolveSystemBarAppearance(isDarkTheme = true)
 
-        assertFalse(isAppearanceLightStatusBars, "Status bar icons should be light on dark background")
-        assertFalse(isAppearanceLightNavigationBars, "Navigation bar icons should be light on dark background")
+        assertFalse(
+            actual = appearance.isAppearanceLightStatusBars,
+            message = "Status bar icons should be light on dark background"
+        )
+        assertFalse(
+            actual = appearance.isAppearanceLightNavigationBars,
+            message = "Navigation bar icons should be light on dark background"
+        )
     }
 
     @Test
     fun lightThemeRequiresDarkSystemBarIcons() {
-        val isDarkTheme = false
-        val isAppearanceLightStatusBars = !isDarkTheme
-        val isAppearanceLightNavigationBars = !isDarkTheme
+        val appearance = resolveSystemBarAppearance(isDarkTheme = false)
 
-        assertTrue(isAppearanceLightStatusBars, "Status bar icons should be dark on light background")
-        assertTrue(isAppearanceLightNavigationBars, "Navigation bar icons should be dark on light background")
+        assertTrue(
+            actual = appearance.isAppearanceLightStatusBars,
+            message = "Status bar icons should be dark on light background"
+        )
+        assertTrue(
+            actual = appearance.isAppearanceLightNavigationBars,
+            message = "Navigation bar icons should be dark on light background"
+        )
     }
 }

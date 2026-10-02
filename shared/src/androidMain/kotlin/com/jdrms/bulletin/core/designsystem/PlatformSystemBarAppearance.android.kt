@@ -53,8 +53,9 @@ internal fun applySystemBarAppearance(
 
     val window = activity.window ?: return
     val insetsController = WindowCompat.getInsetsController(window, view)
-    insetsController.isAppearanceLightStatusBars = !isDarkTheme
-    insetsController.isAppearanceLightNavigationBars = !isDarkTheme
+    val appearance = resolveSystemBarAppearance(isDarkTheme)
+    insetsController.isAppearanceLightStatusBars = appearance.isAppearanceLightStatusBars
+    insetsController.isAppearanceLightNavigationBars = appearance.isAppearanceLightNavigationBars
 }
 
 internal tailrec fun Context.findActivity(): Activity? = when (this) {
