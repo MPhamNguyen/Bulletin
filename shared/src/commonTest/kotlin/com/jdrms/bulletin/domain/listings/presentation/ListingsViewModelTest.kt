@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -20,6 +21,7 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -180,6 +182,96 @@ class ListingsViewModelTest {
 
         assertEquals(listing, repository.getListing(listing.id))
         assertEquals("Only the owner can delete this listing.", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun testDeleteRequiresAuthenticatedSeller() = runTest {
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        sellerProvider.currentSeller = Result.Error(IllegalStateException("session expired"))
+        advanceUntilIdle()
+
+        viewModel.requestDeleteListing(listing)
+        viewModel.confirmDeleteListing()
+        advanceUntilIdle()
+
+        assertEquals(listing, repository.getListing(listing.id))
+        assertEquals("An Error has Occured, Please Try Again Later", viewModel.uiState.value.errorMessage)
+        assertTrue(!viewModel.uiState.value.isDeleting)
+        assertEquals(listing, viewModel.uiState.value.pendingDeletion)
+    }
+
+    @Test
+    fun testDeleteFailureKeepsConfirmationStateAndShowsError() = runTest {
+        val countingRepository = CountingListingsRepository(repository).apply {
+            deleteFailure = IllegalStateException("database unavailable")
+        }
+        val failingViewModel = ListingsViewModel(
+            createListing = CreateListing(countingRepository),
+            manageListing = ManageListing(countingRepository),
+            deleteListing = DeleteListing(countingRepository),
+            getSellerListings = GetSellerListings(countingRepository),
+            currentSellerProvider = sellerProvider
+        )
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        failingViewModel.requestDeleteListing(listing)
+        failingViewModel.confirmDeleteListing()
+        advanceUntilIdle()
+
+        assertEquals(1, countingRepository.deleteCount)
+        assertEquals(listing, failingViewModel.uiState.value.pendingDeletion)
+        assertTrue(!failingViewModel.uiState.value.isDeleting)
+        assertEquals("An Error has Occured, Please Try Again Later", failingViewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun testRepeatedDeleteConfirmationOnlyCallsRepositoryOnce() = runTest {
+        val countingRepository = CountingListingsRepository(repository)
+        val protectedViewModel = ListingsViewModel(
+            createListing = CreateListing(countingRepository),
+            manageListing = ManageListing(countingRepository),
+            deleteListing = DeleteListing(countingRepository),
+            getSellerListings = GetSellerListings(countingRepository),
+            currentSellerProvider = sellerProvider
+        )
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        protectedViewModel.requestDeleteListing(listing)
+        protectedViewModel.confirmDeleteListing()
+        protectedViewModel.confirmDeleteListing()
+        advanceUntilIdle()
+
+        assertEquals(1, countingRepository.deleteCount)
+    }
+
+    @Test
+    fun testSuccessfulDeleteEmitsListingRefreshSignal() = runTest {
+        val signal = RefreshSignal()
+        val signaledViewModel = ListingsViewModel(
+            createListing = CreateListing(repository),
+            manageListing = ManageListing(repository),
+            deleteListing = DeleteListing(repository),
+            getSellerListings = GetSellerListings(repository),
+            currentSellerProvider = sellerProvider,
+            listingChangedSignal = signal
+        )
+        var signalCount = 0
+        val collector = launch { signal.events.collect { signalCount++ } }
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        signaledViewModel.requestDeleteListing(listing)
+        signaledViewModel.confirmDeleteListing()
+        runCurrent()
+
+        assertEquals(1, signalCount)
+        collector.cancel()
     }
 
     @Test
@@ -367,6 +459,8 @@ private class CountingListingsRepository(
     private val delegate: ListingsRepository
 ) : ListingsRepository {
     var updateCount = 0
+    var deleteCount = 0
+    var deleteFailure: Throwable? = null
 
     override suspend fun createListing(listing: Listing): Result<Listing> = delegate.createListing(listing)
 
@@ -378,8 +472,10 @@ private class CountingListingsRepository(
 
     override suspend fun getListing(id: ListingId): Listing? = delegate.getListing(id)
 
-    override suspend fun deleteListing(id: ListingId, sellerId: SellerId): Result<Unit> =
-        delegate.deleteListing(id, sellerId)
+    override suspend fun deleteListing(id: ListingId, sellerId: SellerId): Result<Unit> {
+        deleteCount += 1
+        return deleteFailure?.let { Result.Error(it) } ?: delegate.deleteListing(id, sellerId)
+    }
 
     override suspend fun getSellerListings(sellerId: SellerId): List<Listing> = delegate.getSellerListings(sellerId)
 

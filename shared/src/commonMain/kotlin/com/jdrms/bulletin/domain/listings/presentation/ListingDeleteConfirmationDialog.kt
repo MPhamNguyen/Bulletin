@@ -17,6 +17,7 @@ fun ListingDeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = { if (!isDeleting) onDismiss() },
+        shape = MaterialTheme.shapes.large,
         title = { Text("Delete listing?") },
         text = {
             Text(

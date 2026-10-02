@@ -172,11 +172,19 @@ class ListingsViewModel(
     }
 
     fun confirmDeleteListing() {
-        val listing = _uiState.value.pendingDeletion ?: return
+        var pendingListing: Listing? = null
+        while (pendingListing == null) {
+            val state = _uiState.value
+            val listing = state.pendingDeletion ?: return
+            if (state.isDeleting) return
+            if (_uiState.compareAndSet(state, state.copy(isDeleting = true, errorMessage = null))) {
+                pendingListing = listing
+            }
+        }
+        val listing = checkNotNull(pendingListing)
         viewModelScope.launch {
             when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(isDeleting = true, errorMessage = null) }
                     when (val result = deleteListing(listing.id, sellerResult.data.id)) {
                         is Result.Success -> {
                             _uiState.update { it.copy(pendingDeletion = null, isDeleting = false) }
@@ -193,7 +201,10 @@ class ListingsViewModel(
                     }
                 }
                 is Result.Error -> _uiState.update {
-                    it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
+                    it.copy(
+                        isDeleting = false,
+                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                    )
                 }
             }
         }
