@@ -203,12 +203,14 @@ class ProfileDomainTest {
             fullName = "  John Doe  ",
             major = "  Computer Science  ",
             university = "  California State University - Long Beach  ",
-            bio = "  Campus seller and student.  "
+            bio = "  Campus seller and student.  ",
+            graduationDate = "  Class of 2025  "
         )
 
         assertTrue(result is Result.Success)
         assertEquals("John Doe", result.data.fullName)
         assertEquals("Computer Science", result.data.major)
+        assertEquals("Class of 2025", result.data.graduationDate)
         assertEquals("California State University - Long Beach", result.data.university)
         assertEquals("Campus seller and student.", result.data.bio)
         assertEquals("Original Name", profile.fullName)
@@ -238,19 +240,31 @@ class ProfileDomainTest {
         )
         assertTrue(longBio is Result.Error)
         assertEquals("Bio must be 500 characters or fewer.", longBio.exception.message)
+
+        val longGradDate = profile.updateDetails(
+            fullName = "John Doe",
+            major = "Computer Science",
+            university = "CSULB",
+            bio = "Bio",
+            graduationDate = "x".repeat(StudentProfile.MAX_GRAD_DATE_LENGTH + 1)
+        )
+        assertTrue(longGradDate is Result.Error)
+        assertEquals("Graduation date must be 50 characters or fewer.", longGradDate.exception.message)
     }
 
     @Test
-    fun testProfileMapperPreservesMajor() {
+    fun testProfileMapperPreservesMajorAndGraduationDate() {
         val profile = StudentProfile(
             id = UserId("student_1"),
             email = StudentEmail("student@example.com"),
             fullName = "John Doe",
-            major = "Computer Science"
+            major = "Computer Science",
+            graduationDate = "Class of 2025"
         )
 
         val dto = ProfileMapper.toDto(profile)
         assertEquals("Computer Science", dto.major)
+        assertEquals("Class of 2025", dto.graduationDate)
         assertEquals(profile, ProfileMapper.toDomain(dto))
     }
 
