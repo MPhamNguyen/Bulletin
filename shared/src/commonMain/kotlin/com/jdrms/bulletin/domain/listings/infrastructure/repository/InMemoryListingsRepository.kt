@@ -30,8 +30,13 @@ class InMemoryListingsRepository(
 
     override suspend fun getListing(id: ListingId): Listing? = listings.firstOrNull { it.id == id }
 
-    override suspend fun deleteListing(id: ListingId): Result<Unit> {
-        val removed = listings.removeAll { it.id == id }
+    override suspend fun deleteListing(id: ListingId, sellerId: SellerId): Result<Unit> {
+        val listing = listings.firstOrNull { it.id == id }
+            ?: return Result.Error(NoSuchElementException("Listing not found with ID: ${id.value}"))
+        if (!listing.isOwnedBy(sellerId)) {
+            return Result.Error(IllegalAccessException("Only the owner can delete this listing."))
+        }
+        val removed = listings.remove(listing)
         return if (removed) {
             Result.Success(Unit)
         } else {

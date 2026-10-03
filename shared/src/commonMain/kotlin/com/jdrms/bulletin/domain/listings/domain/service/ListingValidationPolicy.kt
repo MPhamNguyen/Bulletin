@@ -25,9 +25,15 @@ class ListingValidationPolicy {
         return Result.Success(Unit)
     }
 
-    fun validateOwnership(listing: Listing, editorSellerId: SellerId): Result<Unit> {
+    fun validateOwnership(
+        listing: Listing,
+        editorSellerId: SellerId,
+        action: String = "edit"
+    ): Result<Unit> {
         if (!listing.isOwnedBy(editorSellerId)) {
-            return Result.Error(ListingValidationException.Unauthorized())
+            return Result.Error(
+                ListingValidationException.Unauthorized("Only the owner can $action this listing.")
+            )
         }
         return Result.Success(Unit)
     }
