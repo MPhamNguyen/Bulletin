@@ -74,6 +74,34 @@ class ProfileValidationPolicy {
         }
     }
 
+    fun validateEmail(emailStr: String): Result<Unit> {
+        val trimmedEmail = emailStr.trim()
+        val errorMessage = when {
+            trimmedEmail.isEmpty() -> "Email is required."
+            !StudentEmail.isValid(trimmedEmail) -> "Invalid email address format."
+            else -> null
+        }
+        return if (errorMessage != null) {
+            Result.Error(IllegalArgumentException(errorMessage))
+        } else {
+            Result.Success(Unit)
+        }
+    }
+
+    fun validatePassword(password: String): Result<Unit> {
+        val errorMessage = when {
+            password.isEmpty() -> "Password is required."
+            password.length < MIN_PASSWORD_LENGTH ->
+                "Password must be at least $MIN_PASSWORD_LENGTH characters."
+            else -> null
+        }
+        return if (errorMessage != null) {
+            Result.Error(IllegalArgumentException(errorMessage))
+        } else {
+            Result.Success(Unit)
+        }
+    }
+
     fun validateUniversityRegistration(emailStr: String): Result<Unit> {
         val studentEmail = runCatching { StudentEmail(emailStr) }.getOrNull()
             ?: return Result.Error(IllegalArgumentException("Invalid email address format."))

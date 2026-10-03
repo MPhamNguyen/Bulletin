@@ -10,6 +10,9 @@ interface AuthRepository {
 
     suspend fun getCurrentUser(): Result<StudentProfile?>
     suspend fun login(email: StudentEmail, password: String): Result<StudentProfile>
+    suspend fun requestPasswordReset(email: StudentEmail): Result<Unit>
+    suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit>
+    suspend fun updatePassword(password: String): Result<Unit>
     suspend fun register(
         email: StudentEmail,
         password: String,

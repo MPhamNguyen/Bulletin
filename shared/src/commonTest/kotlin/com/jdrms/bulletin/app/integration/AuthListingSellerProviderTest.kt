@@ -75,6 +75,18 @@ class AuthListingSellerProviderTest {
             return Result.Error(UnsupportedOperationException())
         }
 
+        override suspend fun requestPasswordReset(email: StudentEmail): Result<Unit> {
+            return Result.Error(UnsupportedOperationException())
+        }
+
+        override suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit> {
+            return Result.Error(UnsupportedOperationException())
+        }
+
+        override suspend fun updatePassword(password: String): Result<Unit> {
+            return Result.Error(UnsupportedOperationException())
+        }
+
         override suspend fun register(
             email: StudentEmail,
             password: String,

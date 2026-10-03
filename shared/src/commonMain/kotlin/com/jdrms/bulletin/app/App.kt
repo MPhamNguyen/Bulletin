@@ -57,6 +57,10 @@ import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
+import com.jdrms.bulletin.domain.profile.presentation.ChangePasswordScreen
+import com.jdrms.bulletin.domain.profile.presentation.ForgotPasswordScreen
+import com.jdrms.bulletin.domain.profile.presentation.PasswordConfirmationCodeScreen
+import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignInScreen
@@ -106,24 +110,42 @@ fun App(appContainer: AppContainer? = null) {
         } else {
             when (effectiveRootScreen) {
                 AppRootScreen.SIGN_IN -> {
-                    SignInScreen(
-                        errorMessage = profileUiState.errorMessage,
-                        isLoading = profileUiState.isLoading,
-                        onClearMessages = { profileViewModel.clearMessages() },
-                        onSignIn = { email, password ->
-                            profileViewModel.login(
-                                emailStr = email,
-                                pass = password,
-                                onSuccess = {
+                    when (profileUiState.passwordRecoveryStage) {
+                        PasswordRecoveryStage.NONE -> SignInScreen(
+                            errorMessage = profileUiState.errorMessage,
+                            isLoading = profileUiState.isLoading,
+                            onClearMessages = { profileViewModel.clearMessages() },
+                            onSignIn = { email, password ->
+                                profileViewModel.login(emailStr = email, pass = password) {
                                     currentRootScreen = AppRootScreen.MAIN
                                 }
-                            )
-                        },
-                        onCreateAccount = {
-                            profileViewModel.resetRegistration()
-                            currentRootScreen = AppRootScreen.CREATE_PROFILE
-                        }
-                    )
+                            },
+                            onForgotPassword = { profileViewModel.beginPasswordReset() },
+                            onCreateAccount = {
+                                profileViewModel.resetRegistration()
+                                currentRootScreen = AppRootScreen.CREATE_PROFILE
+                            }
+                        )
+                        PasswordRecoveryStage.ENTER_EMAIL -> ForgotPasswordScreen(
+                            errorMessage = profileUiState.errorMessage,
+                            isLoading = profileUiState.isLoading,
+                            onSubmit = profileViewModel::requestPasswordReset,
+                            onBack = profileViewModel::cancelPasswordReset
+                        )
+                        PasswordRecoveryStage.ENTER_CODE -> PasswordConfirmationCodeScreen(
+                            email = profileUiState.passwordRecoveryEmail,
+                            errorMessage = profileUiState.errorMessage,
+                            isLoading = profileUiState.isLoading,
+                            onSubmit = profileViewModel::verifyPasswordResetCode,
+                            onBack = profileViewModel::beginPasswordReset
+                        )
+                        PasswordRecoveryStage.CHANGE_PASSWORD -> ChangePasswordScreen(
+                            errorMessage = profileUiState.errorMessage,
+                            isLoading = profileUiState.isLoading,
+                            onSubmit = profileViewModel::updatePassword,
+                            onBack = profileViewModel::cancelPasswordReset
+                        )
+                    }
                 }
                 AppRootScreen.CREATE_PROFILE -> {
                     SignUpScreen(
