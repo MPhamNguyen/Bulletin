@@ -51,10 +51,21 @@ class ProfileViewModel(
         restoreSession()
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
-                val currentUserId = _uiState.value.profile?.id ?: return@collect
-                val activeCount = fetchActiveListingsCount(currentUserId)
-                _uiState.update { it.copy(activeListingsCount = activeCount) }
+                refreshActiveListings()
             }
+        }
+    }
+
+    fun refreshActiveListings() {
+        viewModelScope.launch {
+            val currentUserId = _uiState.value.profile?.id
+                ?: when (val result = restoreAuthenticatedProfile()) {
+                    is Result.Success -> result.data?.id
+                    is Result.Error -> null
+                }
+                ?: return@launch
+            val activeCount = fetchActiveListingsCount(currentUserId)
+            _uiState.update { it.copy(activeListingsCount = activeCount) }
         }
     }
 
