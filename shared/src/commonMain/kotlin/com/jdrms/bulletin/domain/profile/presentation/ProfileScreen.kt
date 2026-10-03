@@ -25,15 +25,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    themeViewModel: com.jdrms.bulletin.app.theme.ThemeViewModel? = null,
+    themeViewModel: ThemeViewModel? = null,
     onBack: () -> Unit = {},
     onSignOut: () -> Unit = {},
-    onMyListingsClick: () -> Unit = {}
+    onMyListingsClick: () -> Unit = {},
+    onBookmarkedListingsClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -42,28 +44,17 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (uiState.isEditingProfile) {
-            EditProfileView(
-                uiState = uiState,
-                onBack = {
-                    viewModel.cancelEditingProfile()
-                    onBack()
-                },
-                onCancel = viewModel::cancelEditingProfile,
-                onDraftChanged = viewModel::onProfileDraftChanged,
-                onUpdate = viewModel::updateProfileDetails,
-                onSignOut = onSignOut
-            )
-        } else {
-            ProfileLandingView(
-                uiState = uiState,
-                onEditProfileClick = viewModel::startEditingProfile,
-                onMyListingsClick = onMyListingsClick,
-                themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
-                onThemePreferenceChanged = themeViewModel?.let { vm -> vm::setThemePreference },
-                onSignOut = onSignOut
-            )
-        }
+        val handleBack = { handleSubscreenBack(uiState.activeSubscreen, viewModel, onBack) }
+
+        ProfileSubscreenHost(
+            uiState = uiState,
+            viewModel = viewModel,
+            themeViewModel = themeViewModel,
+            handleBack = handleBack,
+            onSignOut = onSignOut,
+            onMyListingsClick = onMyListingsClick,
+            onBookmarkedListingsClick = onBookmarkedListingsClick
+        )
 
         AnimatedContent(
             targetState = uiState.successMessage,
@@ -78,6 +69,112 @@ fun ProfileScreen(
             label = "Profile flash notification"
         ) { message ->
             if (message != null) ProfileUpdateMessage(message)
+        }
+    }
+}
+
+@Composable
+private fun ProfileSubscreenHost(
+    uiState: ProfileUiState,
+    viewModel: ProfileViewModel,
+    themeViewModel: ThemeViewModel?,
+    handleBack: () -> Unit,
+    onSignOut: () -> Unit,
+    onMyListingsClick: () -> Unit,
+    onBookmarkedListingsClick: () -> Unit
+) {
+    when {
+        uiState.activeSubscreen == ProfileSubscreen.EDIT_ACCOUNT || uiState.isEditingProfile -> {
+            EditProfileView(
+                uiState = uiState,
+                onBack = handleBack,
+                onCancel = viewModel::cancelEditingProfile,
+                onDraftChanged = viewModel::onProfileDraftChanged,
+                onUpdate = viewModel::updateProfileDetails,
+                onSignOut = onSignOut
+            )
+        }
+        uiState.activeSubscreen == ProfileSubscreen.SETTINGS -> {
+            SettingsView(
+                uiState = uiState,
+                onBack = handleBack,
+                actions = SettingsActions(
+                    onEditAccount = viewModel::openEditAccount,
+                    onNotifications = viewModel::openNotifications,
+                    onPrivacy = viewModel::openPrivacy,
+                    onHelpSupport = viewModel::openHelpAndSupport,
+                    onTermsConditions = viewModel::openTermsAndConditions,
+                    onSignOut = onSignOut
+                ),
+                themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
+                onThemePreferenceChanged = themeViewModel?.let { vm -> vm::setThemePreference }
+            )
+        }
+        uiState.activeSubscreen == ProfileSubscreen.BOOKMARKED_LISTINGS -> {
+            BookmarkedListingsView(onBack = handleBack)
+        }
+        uiState.activeSubscreen == ProfileSubscreen.NOTIFICATIONS -> {
+            NotificationsView(onBack = handleBack)
+        }
+        uiState.activeSubscreen == ProfileSubscreen.PRIVACY -> {
+            PrivacyView(onBack = handleBack)
+        }
+        uiState.activeSubscreen == ProfileSubscreen.HELP_AND_SUPPORT -> {
+            HelpAndSupportView(onBack = handleBack)
+        }
+        uiState.activeSubscreen == ProfileSubscreen.TERMS_AND_CONDITIONS -> {
+            TermsAndConditionsView(onBack = handleBack)
+        }
+        else -> {
+            MarketplaceProfileView(
+                uiState = uiState,
+                onSettingsClick = viewModel::openSettings,
+                onMyListingsClick = onMyListingsClick,
+                onBookmarkedListingsClick = {
+                    onBookmarkedListingsClick()
+                    viewModel.openBookmarkedListings()
+                }
+            )
+        }
+    }
+}
+
+private fun handleSubscreenBack(
+    activeSubscreen: ProfileSubscreen,
+    viewModel: ProfileViewModel,
+    onBack: () -> Unit
+) {
+    when (activeSubscreen) {
+        ProfileSubscreen.EDIT_ACCOUNT -> {
+            viewModel.closeEditAccount()
+            onBack()
+        }
+        ProfileSubscreen.SETTINGS -> {
+            viewModel.closeSettings()
+            onBack()
+        }
+        ProfileSubscreen.BOOKMARKED_LISTINGS -> {
+            viewModel.closeBookmarkedListings()
+            onBack()
+        }
+        ProfileSubscreen.NOTIFICATIONS -> {
+            viewModel.closeNotifications()
+            onBack()
+        }
+        ProfileSubscreen.PRIVACY -> {
+            viewModel.closePrivacy()
+            onBack()
+        }
+        ProfileSubscreen.HELP_AND_SUPPORT -> {
+            viewModel.closeHelpAndSupport()
+            onBack()
+        }
+        ProfileSubscreen.TERMS_AND_CONDITIONS -> {
+            viewModel.closeTermsAndConditions()
+            onBack()
+        }
+        ProfileSubscreen.PROFILE -> {
+            onBack()
         }
     }
 }
