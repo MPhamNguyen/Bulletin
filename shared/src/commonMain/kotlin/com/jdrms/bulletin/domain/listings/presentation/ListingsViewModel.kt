@@ -145,6 +145,7 @@ class ListingsViewModel(
                         }
                         showFlashNotification("Listing posted successfully!")
                         loadMyListings(seller)
+                        listingChangedSignal?.emit()
                     }
                     is Result.Error -> _uiState.update {
                         it.copy(

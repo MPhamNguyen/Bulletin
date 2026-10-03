@@ -629,6 +629,38 @@ class ProfileViewModelTest {
             Dispatchers.resetMain()
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelRefreshActiveListingsDirectInvocation() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            var currentCount = 2
+            val fakeProvider = ProfileActiveListingsProvider { currentCount }
+
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                activeListingsProvider = fakeProvider
+            )
+            advanceUntilIdle()
+
+            viewModel.createAccount("Direct", "Refresh", "direct@csulb.edu", "password123")
+            advanceUntilIdle()
+            assertEquals(2, viewModel.uiState.value.activeListingsCount)
+
+            currentCount = 4
+            viewModel.refreshActiveListings()
+            advanceUntilIdle()
+
+            assertEquals(4, viewModel.uiState.value.activeListingsCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 }
 
 private class SessionFailureAuthRepository(
