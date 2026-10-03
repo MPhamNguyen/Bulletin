@@ -17,13 +17,16 @@ enum class ProfileSubscreen {
     NOTIFICATIONS,
     PRIVACY,
     HELP_AND_SUPPORT,
-    TERMS_AND_CONDITIONS
+    TERMS_AND_CONDITIONS,
+    PUBLIC_PROFILE
 }
 
 data class ProfileUiState(
     val profile: StudentProfile? = null,
     val profileDraft: ProfileDraft = ProfileDraft(),
     val reputation: StudentReputation? = null,
+    val activeListingsCount: Int = 4,
+    val itemsSoldCount: Int = 18,
     val showReviewDialog: Boolean = false,
     val newScore: Int = 5,
     val newComment: String = "",

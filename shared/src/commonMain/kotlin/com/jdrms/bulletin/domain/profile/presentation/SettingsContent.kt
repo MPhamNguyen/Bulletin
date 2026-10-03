@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +44,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 internal data class SettingsActions(
     val onEditAccount: () -> Unit,
+    val onViewPublicProfile: () -> Unit,
     val onNotifications: () -> Unit,
     val onPrivacy: () -> Unit,
     val onHelpSupport: () -> Unit,
@@ -77,6 +79,13 @@ internal fun SettingsView(
             SettingsEditAccountCard(
                 profile = uiState.profile,
                 onClick = actions.onEditAccount
+            )
+
+            SettingsActionCard(
+                icon = Icons.Outlined.Visibility,
+                title = "View Public Profile",
+                description = "Preview how your profile and campus listings appear to others",
+                onClick = actions.onViewPublicProfile
             )
 
             // Section: Preferences
