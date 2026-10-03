@@ -1,8 +1,10 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -159,7 +161,9 @@ class ProfileViewModelTest {
 
     private fun createProfileViewModel(
         authRepository: AuthRepository,
-        profileRepository: InMemoryProfileRepository
+        profileRepository: InMemoryProfileRepository,
+        activeListingsProvider: ProfileActiveListingsProvider? = null,
+        listingChangedSignal: RefreshSignal? = null
     ): ProfileViewModel {
         return ProfileViewModel(
             authenticateUser = AuthenticateUser(authRepository, policy),
@@ -168,7 +172,9 @@ class ProfileViewModelTest {
             verifyStudentEmail = VerifyStudentEmail(authRepository),
             manageProfile = ManageProfile(profileRepository),
             updateStudentProfile = UpdateStudentProfile(profileRepository),
-            submitStudentReview = SubmitStudentReview(profileRepository, policy)
+            submitStudentReview = SubmitStudentReview(profileRepository, policy),
+            activeListingsProvider = activeListingsProvider,
+            listingChangedSignal = listingChangedSignal
         )
     }
 
@@ -557,8 +563,68 @@ class ProfileViewModelTest {
             viewModel.closePublicProfile()
             assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
 
-            assertEquals(4, viewModel.uiState.value.activeListingsCount)
+            assertEquals(0, viewModel.uiState.value.activeListingsCount)
             assertEquals(18, viewModel.uiState.value.itemsSoldCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelLoadsActiveListingsCountFromProvider() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            var countToReturn = 7
+            val fakeProvider = ProfileActiveListingsProvider { countToReturn }
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                activeListingsProvider = fakeProvider
+            )
+            advanceUntilIdle()
+
+            viewModel.createAccount("Provider", "User", "provider@csulb.edu", "password123")
+            advanceUntilIdle()
+
+            assertEquals(7, viewModel.uiState.value.activeListingsCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelRefreshesActiveListingsCountOnSignal() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val signal = RefreshSignal()
+            var currentCount = 3
+            val fakeProvider = ProfileActiveListingsProvider { currentCount }
+
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                activeListingsProvider = fakeProvider,
+                listingChangedSignal = signal
+            )
+            advanceUntilIdle()
+
+            viewModel.createAccount("Refresh", "User", "refresh@csulb.edu", "password123")
+            advanceUntilIdle()
+            assertEquals(3, viewModel.uiState.value.activeListingsCount)
+
+            currentCount = 5
+            signal.emit()
+            advanceUntilIdle()
+
+            assertEquals(5, viewModel.uiState.value.activeListingsCount)
         } finally {
             Dispatchers.resetMain()
         }

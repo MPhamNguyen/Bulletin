@@ -2,11 +2,13 @@ package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -36,7 +38,9 @@ class ProfileViewModel(
     private val updateStudentProfile: UpdateStudentProfile,
     private val submitStudentReview: SubmitStudentReview,
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
-    private val defaultUserId: UserId = UserId("current_student")
+    private val defaultUserId: UserId = UserId("current_student"),
+    private val activeListingsProvider: ProfileActiveListingsProvider? = null,
+    private val listingChangedSignal: RefreshSignal? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -45,6 +49,18 @@ class ProfileViewModel(
 
     init {
         restoreSession()
+        viewModelScope.launch {
+            listingChangedSignal?.events?.collect {
+                val currentUserId = _uiState.value.profile?.id ?: return@collect
+                val activeCount = fetchActiveListingsCount(currentUserId)
+                _uiState.update { it.copy(activeListingsCount = activeCount) }
+            }
+        }
+    }
+
+    private suspend fun fetchActiveListingsCount(userId: UserId?): Int {
+        if (userId == null) return 0
+        return activeListingsProvider?.getActiveListingsCount(userId) ?: 0
     }
 
     private fun restoreSession() {
@@ -53,10 +69,12 @@ class ProfileViewModel(
                 is Result.Success -> {
                     val profile = result.data
                     val rep = profile?.let { manageProfile.getReputation(it.id) }
+                    val activeCount = fetchActiveListingsCount(profile?.id)
                     _uiState.update {
                         it.copy(
                             profile = profile,
                             reputation = rep ?: it.reputation,
+                            activeListingsCount = activeCount,
                             profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
                             activeSubscreen = ProfileSubscreen.PROFILE,
                             authSessionState = if (profile == null) {
@@ -71,6 +89,7 @@ class ProfileViewModel(
                     _uiState.update {
                         it.copy(
                             authSessionState = AuthSessionState.UNAUTHENTICATED,
+                            activeListingsCount = 0,
                             errorMessage = null
                         )
                     }
@@ -87,11 +106,13 @@ class ProfileViewModel(
                 is Result.Success -> {
                     val studentProfile = profileResult.data
                     val rep = manageProfile.getReputation(userId)
+                    val activeCount = fetchActiveListingsCount(userId)
                     _uiState.update {
                         it.copy(
                             profile = studentProfile,
                             profileDraft = studentProfile?.let(ProfileDraft::from) ?: ProfileDraft(),
                             reputation = rep,
+                            activeListingsCount = activeCount,
                             isLoading = false
                         )
                     }
@@ -149,11 +170,13 @@ class ProfileViewModel(
         when (result) {
             is Result.Success -> {
                 val rep = manageProfile.getReputation(result.data.id)
+                val activeCount = fetchActiveListingsCount(result.data.id)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         profile = result.data,
                         reputation = rep,
+                        activeListingsCount = activeCount,
                         profileDraft = ProfileDraft.from(result.data),
                         isAccountCreated = true,
                         isEditingProfile = false,
@@ -424,11 +447,13 @@ class ProfileViewModel(
             when (result) {
                 is Result.Success -> {
                     val rep = manageProfile.getReputation(result.data.id)
+                    val activeCount = fetchActiveListingsCount(result.data.id)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             profile = result.data,
                             reputation = rep,
+                            activeListingsCount = activeCount,
                             profileDraft = ProfileDraft.from(result.data),
                             errorMessage = null,
                             isAccountCreated = false,

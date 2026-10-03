@@ -25,7 +25,7 @@ data class ProfileUiState(
     val profile: StudentProfile? = null,
     val profileDraft: ProfileDraft = ProfileDraft(),
     val reputation: StudentReputation? = null,
-    val activeListingsCount: Int = 4,
+    val activeListingsCount: Int = 0,
     val itemsSoldCount: Int = 18,
     val showReviewDialog: Boolean = false,
     val newScore: Int = 5,
