@@ -58,6 +58,7 @@ class ProfileViewModel(
                             profile = profile,
                             reputation = rep ?: it.reputation,
                             profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
+                            activeSubscreen = ProfileSubscreen.PROFILE,
                             authSessionState = if (profile == null) {
                                 AuthSessionState.UNAUTHENTICATED
                             } else {
@@ -156,6 +157,7 @@ class ProfileViewModel(
                         profileDraft = ProfileDraft.from(result.data),
                         isAccountCreated = true,
                         isEditingProfile = false,
+                        activeSubscreen = ProfileSubscreen.PROFILE,
                         authSessionState = AuthSessionState.AUTHENTICATED,
                         errorMessage = null
                     )
@@ -178,12 +180,122 @@ class ProfileViewModel(
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 
+    fun openSettings() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.SETTINGS,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun openProfile() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.PROFILE,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun closeSettings() {
+        openProfile()
+    }
+
+    fun openBookmarkedListings() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.BOOKMARKED_LISTINGS,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun closeBookmarkedListings() {
+        openProfile()
+    }
+
+    fun openNotifications() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.NOTIFICATIONS,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun closeNotifications() {
+        openSettings()
+    }
+
+    fun openPrivacy() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.PRIVACY,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun closePrivacy() {
+        openSettings()
+    }
+
+    fun openHelpAndSupport() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.HELP_AND_SUPPORT,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun closeHelpAndSupport() {
+        openSettings()
+    }
+
+    fun openTermsAndConditions() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.TERMS_AND_CONDITIONS,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun closeTermsAndConditions() {
+        openSettings()
+    }
+
+    fun openEditAccount() {
+        startEditingProfile()
+    }
+
+    fun closeEditAccount() {
+        cancelEditingProfile()
+    }
+
     fun startEditingProfile() {
         val profile = _uiState.value.profile
         _uiState.update {
             it.copy(
                 profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
                 isEditingProfile = true,
+                activeSubscreen = ProfileSubscreen.EDIT_ACCOUNT,
                 errorMessage = null,
                 successMessage = null
             )
@@ -197,6 +309,7 @@ class ProfileViewModel(
             it.copy(
                 profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
                 isEditingProfile = false,
+                activeSubscreen = ProfileSubscreen.SETTINGS,
                 errorMessage = null,
                 successMessage = null
             )
@@ -233,11 +346,12 @@ class ProfileViewModel(
             _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
             when (
                 val result = updateStudentProfile(
-                    profile,
-                    draft.fullName,
-                    draft.major,
-                    draft.university,
-                    draft.bio
+                    profile = profile,
+                    fullName = draft.fullName,
+                    major = draft.major,
+                    university = draft.university,
+                    bio = draft.bio,
+                    graduationDate = draft.graduationDate
                 )
             ) {
                 is Result.Success -> {
@@ -246,6 +360,7 @@ class ProfileViewModel(
                             profile = result.data,
                             profileDraft = ProfileDraft.from(result.data),
                             isEditingProfile = false,
+                            activeSubscreen = ProfileSubscreen.PROFILE,
                             isLoading = false,
                             errorMessage = null
                         )
@@ -303,6 +418,7 @@ class ProfileViewModel(
                             errorMessage = null,
                             isAccountCreated = false,
                             isEditingProfile = false,
+                            activeSubscreen = ProfileSubscreen.PROFILE,
                             authSessionState = AuthSessionState.AUTHENTICATED
                         )
                     }

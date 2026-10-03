@@ -449,6 +449,96 @@ class ProfileViewModelTest {
             Dispatchers.resetMain()
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelSubscreenNavigation() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.createAccount("Taylor", "Swift", "taylor@csulb.edu", "password123")
+            advanceUntilIdle()
+
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openSettings()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openEditAccount()
+            assertEquals(ProfileSubscreen.EDIT_ACCOUNT, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeEditAccount()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.closeSettings()
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openBookmarkedListings()
+            assertEquals(ProfileSubscreen.BOOKMARKED_LISTINGS, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeBookmarkedListings()
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openNotifications()
+            assertEquals(ProfileSubscreen.NOTIFICATIONS, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeNotifications()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openPrivacy()
+            assertEquals(ProfileSubscreen.PRIVACY, viewModel.uiState.value.activeSubscreen)
+            viewModel.closePrivacy()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openHelpAndSupport()
+            assertEquals(ProfileSubscreen.HELP_AND_SUPPORT, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeHelpAndSupport()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openTermsAndConditions()
+            assertEquals(ProfileSubscreen.TERMS_AND_CONDITIONS, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeTermsAndConditions()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelGraduationDateUpdate() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.createAccount("Taylor", "Swift", "taylor@csulb.edu", "password123")
+            advanceUntilIdle()
+
+            viewModel.openEditAccount()
+            viewModel.onProfileDraftChanged(
+                viewModel.uiState.value.profileDraft.copy(
+                    graduationDate = "Class of 2026"
+                )
+            )
+            viewModel.updateProfileDetails()
+            runCurrent()
+
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+            assertFalse(viewModel.uiState.value.isEditingProfile)
+            assertEquals("Class of 2026", viewModel.uiState.value.profile?.graduationDate)
+            assertEquals("Class of 2026", viewModel.uiState.value.profileDraft.graduationDate)
+            assertEquals("Profile updated", viewModel.uiState.value.successMessage)
+            advanceUntilIdle()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 }
 
 private class SessionFailureAuthRepository(
