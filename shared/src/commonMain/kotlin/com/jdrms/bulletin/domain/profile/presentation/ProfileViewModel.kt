@@ -281,6 +281,21 @@ class ProfileViewModel(
         openSettings()
     }
 
+    fun openPublicProfile() {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeSubscreen = ProfileSubscreen.PUBLIC_PROFILE,
+                isEditingProfile = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun closePublicProfile() {
+        openSettings()
+    }
+
     fun openEditAccount() {
         startEditingProfile()
     }

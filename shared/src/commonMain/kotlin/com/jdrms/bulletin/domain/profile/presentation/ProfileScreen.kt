@@ -100,6 +100,7 @@ private fun ProfileSubscreenHost(
                 onBack = handleBack,
                 actions = SettingsActions(
                     onEditAccount = viewModel::openEditAccount,
+                    onViewPublicProfile = viewModel::openPublicProfile,
                     onNotifications = viewModel::openNotifications,
                     onPrivacy = viewModel::openPrivacy,
                     onHelpSupport = viewModel::openHelpAndSupport,
@@ -124,6 +125,9 @@ private fun ProfileSubscreenHost(
         }
         uiState.activeSubscreen == ProfileSubscreen.TERMS_AND_CONDITIONS -> {
             TermsAndConditionsView(onBack = handleBack)
+        }
+        uiState.activeSubscreen == ProfileSubscreen.PUBLIC_PROFILE -> {
+            PublicProfileView(onBack = handleBack)
         }
         else -> {
             MarketplaceProfileView(
@@ -171,6 +175,10 @@ private fun handleSubscreenBack(
         }
         ProfileSubscreen.TERMS_AND_CONDITIONS -> {
             viewModel.closeTermsAndConditions()
+            onBack()
+        }
+        ProfileSubscreen.PUBLIC_PROFILE -> {
+            viewModel.closePublicProfile()
             onBack()
         }
         ProfileSubscreen.PROFILE -> {

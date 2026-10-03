@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -201,5 +206,86 @@ internal fun ProfileNavigationButtons(
             subtitle = "Saved items and favorites from marketplace",
             onClick = onBookmarkedListingsClick
         )
+    }
+}
+
+@Composable
+internal fun MarketplaceActivityStatsCard(
+    activeListings: Int,
+    itemsSold: Int,
+    rating: Double,
+    modifier: Modifier = Modifier
+) {
+    BulletinCard(modifier = modifier) {
+        ProfileSectionLabel("MARKETPLACE ACTIVITY")
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ActivityStatBadge(
+                value = "$activeListings Active",
+                label = "Listings",
+                icon = Icons.Outlined.Storefront,
+                modifier = Modifier.weight(1f)
+            )
+            ActivityStatBadge(
+                value = "$itemsSold Sold",
+                label = "Completed",
+                icon = Icons.Outlined.CheckCircle,
+                modifier = Modifier.weight(1f)
+            )
+            ActivityStatBadge(
+                value = "$rating ★",
+                label = "Reputation",
+                icon = Icons.Filled.Star,
+                iconTint = BulletinExtras.colors.star,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityStatBadge(
+    value: String,
+    label: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    iconTint: Color? = null
+) {
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint ?: MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
     }
 }

@@ -44,7 +44,11 @@ internal fun MarketplaceProfileView(
                 graduationDate = profile?.graduationDate?.ifBlank { null } ?: "Class of 2025"
             )
 
-            ProfileReputationCard(reputation = uiState.reputation)
+            MarketplaceActivityStatsCard(
+                activeListings = uiState.activeListingsCount,
+                itemsSold = uiState.itemsSoldCount,
+                rating = uiState.reputation?.averageRating ?: 4.8
+            )
 
             ProfileAboutCard(bio = profile?.bio)
 
