@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationException
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
+import kotlinx.coroutines.CancellationException
 
 data class ListingSeller(
     val id: SellerId,
@@ -87,8 +88,15 @@ class DeleteListing(
     private val listingsRepository: ListingsRepository,
     private val policy: ListingValidationPolicy = ListingValidationPolicy()
 ) {
+    @Suppress("TooGenericExceptionCaught")
     suspend operator fun invoke(id: ListingId, sellerId: SellerId): Result<Unit> {
-        val listing = listingsRepository.getListing(id)
+        val listing = try {
+            listingsRepository.getListing(id)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            return Result.Error(exception)
+        }
             ?: return Result.Error(NoSuchElementException("Listing not found with ID: ${id.value}"))
         val ownershipValidation = policy.validateOwnership(listing, sellerId, action = "delete")
         if (ownershipValidation.isError()) {

@@ -229,6 +229,31 @@ class ListingsViewModelTest {
     }
 
     @Test
+    fun testDeleteLookupFailureKeepsConfirmationStateAndResetsBusyState() = runTest {
+        val countingRepository = CountingListingsRepository(repository).apply {
+            getListingFailure = IllegalStateException("database unavailable")
+        }
+        val failingViewModel = ListingsViewModel(
+            createListing = CreateListing(countingRepository),
+            manageListing = ManageListing(countingRepository),
+            deleteListing = DeleteListing(countingRepository),
+            getSellerListings = GetSellerListings(countingRepository),
+            currentSellerProvider = sellerProvider
+        )
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        failingViewModel.requestDeleteListing(listing)
+        failingViewModel.confirmDeleteListing()
+        advanceUntilIdle()
+
+        assertEquals(listing, failingViewModel.uiState.value.pendingDeletion)
+        assertFalse(failingViewModel.uiState.value.isDeleting)
+        assertEquals("An Error has Occured, Please Try Again Later", failingViewModel.uiState.value.errorMessage)
+    }
+
+    @Test
     fun testRepeatedDeleteConfirmationOnlyCallsRepositoryOnce() = runTest {
         val countingRepository = CountingListingsRepository(repository)
         val protectedViewModel = ListingsViewModel(
@@ -512,6 +537,7 @@ private class CountingListingsRepository(
     var updateCount = 0
     var deleteCount = 0
     var deleteFailure: Throwable? = null
+    var getListingFailure: Throwable? = null
 
     override suspend fun createListing(listing: Listing): Result<Listing> = delegate.createListing(listing)
 
@@ -521,7 +547,10 @@ private class CountingListingsRepository(
         return delegate.updateListing(listing)
     }
 
-    override suspend fun getListing(id: ListingId): Listing? = delegate.getListing(id)
+    override suspend fun getListing(id: ListingId): Listing? {
+        getListingFailure?.let { throw it }
+        return delegate.getListing(id)
+    }
 
     override suspend fun deleteListing(id: ListingId, sellerId: SellerId): Result<Unit> {
         deleteCount += 1

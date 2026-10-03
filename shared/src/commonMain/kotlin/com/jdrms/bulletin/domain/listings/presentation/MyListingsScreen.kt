@@ -96,6 +96,7 @@ fun MyListingsScreen(
             ListingDeleteConfirmationDialog(
                 listing = listing,
                 isDeleting = uiState.isDeleting,
+                errorMessage = uiState.errorMessage,
                 onDismiss = viewModel::cancelDeleteListing,
                 onConfirm = viewModel::confirmDeleteListing
             )

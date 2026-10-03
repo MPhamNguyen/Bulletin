@@ -177,6 +177,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
         ListingDeleteConfirmationDialog(
             listing = listing,
             isDeleting = state.isDeleting,
+            errorMessage = state.errorMessage,
             onDismiss = viewModel::cancelDeleteListing,
             onConfirm = viewModel::confirmDeleteListing
         )
