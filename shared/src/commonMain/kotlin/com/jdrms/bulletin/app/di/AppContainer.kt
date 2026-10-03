@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
@@ -165,6 +166,7 @@ class AppContainer(
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
+    val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
 
     // ViewModels
     fun createHomeViewModel() = HomeViewModel(
@@ -201,7 +203,9 @@ class AppContainer(
         verifyStudentEmail = verifyStudentEmail,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,
-        submitStudentReview = submitStudentReview
+        submitStudentReview = submitStudentReview,
+        activeListingsProvider = profileActiveListingsProvider,
+        listingChangedSignal = listingChangedSignal
     )
 
     fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)

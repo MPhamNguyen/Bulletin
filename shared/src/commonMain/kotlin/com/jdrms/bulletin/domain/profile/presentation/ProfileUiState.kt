@@ -9,15 +9,30 @@ enum class AuthSessionState {
     UNAUTHENTICATED
 }
 
+enum class ProfileSubscreen {
+    PROFILE,
+    SETTINGS,
+    EDIT_ACCOUNT,
+    BOOKMARKED_LISTINGS,
+    NOTIFICATIONS,
+    PRIVACY,
+    HELP_AND_SUPPORT,
+    TERMS_AND_CONDITIONS,
+    PUBLIC_PROFILE
+}
+
 data class ProfileUiState(
     val profile: StudentProfile? = null,
     val profileDraft: ProfileDraft = ProfileDraft(),
     val reputation: StudentReputation? = null,
+    val activeListingsCount: Int = 0,
+    val itemsSoldCount: Int = 18,
     val showReviewDialog: Boolean = false,
     val newScore: Int = 5,
     val newComment: String = "",
     val isLoading: Boolean = false,
     val isEditingProfile: Boolean = false,
+    val activeSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false,
@@ -30,6 +45,7 @@ data class ProfileUiState(
 data class ProfileDraft(
     val fullName: String = "",
     val major: String = "",
+    val graduationDate: String = "",
     val university: String = "",
     val bio: String = ""
 ) {
@@ -38,6 +54,7 @@ data class ProfileDraft(
             return ProfileDraft(
                 fullName = profile.fullName,
                 major = profile.major,
+                graduationDate = profile.graduationDate,
                 university = profile.university,
                 bio = profile.bio
             )

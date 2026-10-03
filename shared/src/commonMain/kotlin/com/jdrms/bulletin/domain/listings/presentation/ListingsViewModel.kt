@@ -143,6 +143,7 @@ class ListingsViewModel(
                         }
                         showFlashNotification("Listing posted successfully!")
                         loadMyListings(seller)
+                        listingChangedSignal?.emit()
                     }
                     is Result.Error -> _uiState.update {
                         it.copy(
@@ -165,7 +166,10 @@ class ListingsViewModel(
         viewModelScope.launch {
             when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
                 is Result.Success -> {
-                    if (manageListing.deleteListing(id).isSuccess()) loadMyListings()
+                    if (manageListing.deleteListing(id).isSuccess()) {
+                        loadMyListings()
+                        listingChangedSignal?.emit()
+                    }
                 }
                 is Result.Error -> _uiState.update {
                     it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
