@@ -184,7 +184,7 @@ Personalized results should also refresh as user behavior changes without notice
 ## 🗺️ Development Roadmap
 
 - [ ] Finalize production backend/cloud provider
-- [ ] Implement university email verification
+- [ ] Validate email ownership verification with the deployed email provider (see setup below)
 - [ ] Complete authentication and account management
 - [ ] Build marketplace listing CRUD functionality
 - [ ] Add search, filtering, and sorting
@@ -238,3 +238,35 @@ Testing should cover both successful workflows and documented failure cases, inc
 **Bulletin — connect locally, transact confidently.**
 
 </div>
+
+## Signup email verification setup
+
+The signup flow requests a confirmation code and keeps registration pending until Supabase Auth verifies it.
+This confirms ownership of the supplied email address; it does not prove university enrollment or add a second
+factor to subsequent password sign-ins. A Supabase user record may exist before confirmation, but registration
+must not grant an authenticated session until the email is confirmed.
+
+1. Configure the Android build with `SUPABASE_URL`, `SUPABASE_API_KEY` (the public anonymous key), and
+   `SUPABASE_IS_CONNECTED=true` using the existing configuration mechanism shown in `.env.example`.
+2. In the Supabase project's Auth email provider settings, enable **Confirm email**. This server-side setting is
+   required to block password sign-in before verification. Do not enable automatic email confirmation.
+3. In Auth **Email Templates**, replace **Confirm signup** with
+   [`supabase/templates/confirmation.html`](supabase/templates/confirmation.html). Set the subject to
+   `Your Bulletin verification code`. The template uses `{{ .Token }}` to send a code instead of a link.
+   Configure six-digit email OTPs to match the app's validation.
+4. Configure custom SMTP for delivery to registered users. Supabase's default sender restricts delivery to
+   project team addresses and is not suitable for public signup. Keep SMTP credentials on the server.
+5. Configure email OTP expiry and authentication/email rate limits in Supabase. Code generation, expiry,
+   single-use enforcement, and throttling belong to Supabase Auth; the app does not generate or store email codes.
+
+These instructions do not change hosted project settings automatically. See Supabase's
+[email template documentation](https://supabase.com/docs/guides/auth/auth-email-templates) and
+[SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp).
+The in-memory fallback cannot send email and reports that signup verification is unavailable. Unit tests
+explicitly inject a deterministic code into that test adapter; it is not wired into application composition.
+
+To verify a configured deployment, register a new email, check that password sign-in is blocked before
+confirmation, enter an incorrect code, resend, and complete verification with the delivered code. Check expired
+and already-used codes are rejected. After reopening the app, a pending user can open Create Account, enter the
+same email, and use the resend action to resume. If verification succeeds but profile loading fails, sign in
+with the original password to retry profile loading. No live email delivery has been validated by the unit tests.

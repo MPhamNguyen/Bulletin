@@ -56,11 +56,42 @@ class ProfileDomainTest {
     @Test
     fun testValidateRegistrationSuccess() {
         val result = policy.validateRegistration(
-            emailStr = "student@gmail.com",
+            emailStr = "bob.smith@student.school.edu",
             password = "securePassword123",
             fullName = "Jane Student"
         )
         assertTrue(result.isSuccess())
+    }
+
+    @Test
+    fun testValidateRegistrationRejectsNonEduEmail() {
+        val result = policy.validateRegistration(
+            emailStr = "student@gmail.com",
+            password = "securePassword123",
+            fullName = "Jane Student"
+        )
+
+        assertTrue(result.isError())
+        assertEquals(
+            "Bulletin requires a valid .edu university email.",
+            (result as Result.Error).exception.message
+        )
+    }
+
+    @Test
+    fun testValidateRegistrationWithSeparateNamesRequiresEduEmail() {
+        val result = policy.validateRegistration(
+            firstName = "Jane",
+            lastName = "Student",
+            emailStr = "student@example.com",
+            password = "securePassword123"
+        )
+
+        assertTrue(result.isError())
+        assertEquals(
+            "Bulletin requires a valid .edu university email.",
+            (result as Result.Error).exception.message
+        )
     }
 
     @Test

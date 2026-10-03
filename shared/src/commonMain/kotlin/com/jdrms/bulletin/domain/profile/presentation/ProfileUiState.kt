@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
@@ -11,6 +12,7 @@ enum class AuthSessionState {
 
 data class ProfileUiState(
     val profile: StudentProfile? = null,
+    val pendingRegistration: PendingRegistration? = null,
     val profileDraft: ProfileDraft = ProfileDraft(),
     val reputation: StudentReputation? = null,
     val showReviewDialog: Boolean = false,

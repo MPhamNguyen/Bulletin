@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -90,6 +91,7 @@ fun SignUpScreen(
             SignUpLogoHeader()
 
             val createdProfile = uiState.profile
+            val pendingRegistration = uiState.pendingRegistration
             if (uiState.isAccountCreated && createdProfile != null) {
                 SignUpSuccessContent(
                     profile = createdProfile,
@@ -97,10 +99,18 @@ fun SignUpScreen(
                     onContinueToApp = onContinueToApp,
                     onNavigateToSignIn = onNavigateToSignIn
                 )
+            } else if (pendingRegistration != null) {
+                EmailVerificationContent(
+                    uiState = uiState,
+                    onVerify = { viewModel.verifyEmail(pendingRegistration.email.value, it) },
+                    onResend = { viewModel.resendEmailCode(pendingRegistration.email.value) },
+                    onChangeEmail = { viewModel.resetRegistration() }
+                )
             } else {
                 SignUpFormContent(
                     uiState = uiState,
                     onClearMessages = { viewModel.clearMessages() },
+                    onResumeVerification = { viewModel.resendEmailCode(it) },
                     onCreateAccount = { first, last, mail, pass ->
                         viewModel.createAccount(first, last, mail, pass)
                     },
@@ -261,6 +271,7 @@ private fun SignUpSuccessContent(
 private fun SignUpFormContent(
     uiState: ProfileUiState,
     onClearMessages: () -> Unit,
+    onResumeVerification: (String) -> Unit,
     onCreateAccount: (String, String, String, String) -> Unit,
     onNavigateToSignIn: () -> Unit
 ) {
@@ -330,6 +341,10 @@ private fun SignUpFormContent(
     )
 
     Spacer(modifier = Modifier.height(16.dp))
+
+    TextButton(onClick = { onResumeVerification(email) }, enabled = !uiState.isLoading) {
+        Text("Already registered? Resend verification code")
+    }
 
     PasswordInputField(
         password = password,

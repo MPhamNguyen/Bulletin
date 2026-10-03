@@ -2,6 +2,8 @@ package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.generateUuid
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
@@ -87,13 +89,16 @@ class InMemoryProfileRepository(
 
 class InMemoryAuthRepository(
     private val profileRepository: ProfileRepository = InMemoryProfileRepository(),
-    initialCredentials: Map<String, String> = defaultSeedCredentials
+    initialCredentials: Map<String, String> = defaultSeedCredentials,
+    // Deterministic test seam only: no email delivery, expiry, or rate-limit simulation.
+    private val testVerificationCode: String? = null
 ) : AuthRepository {
 
     // Development/test adapter only. Production authentication must never retain raw passwords in application memory.
     private val credentials = initialCredentials.mapKeys { it.key.lowercase() }.toMutableMap()
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
     private var currentUser: StudentProfile? = null
+    private val pendingEmails = mutableSetOf<String>()
 
     override suspend fun getCurrentUserId(): Result<UserId?> = Result.Success(currentUser?.id)
 
@@ -102,15 +107,13 @@ class InMemoryAuthRepository(
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
         val normalizedEmail = email.value.lowercase()
         val storedPassword = credentials[normalizedEmail]
-
-        if (storedPassword == null) {
-            val error = IllegalArgumentException("Account not found. Please check your email or create an account.")
-            return Result.Error(error)
+        val loginError = when {
+            normalizedEmail in pendingEmails -> "Please verify your email address before logging in."
+            storedPassword == null -> "Account not found. Please check your email or create an account."
+            storedPassword != password -> "Incorrect password. Please try again."
+            else -> null
         }
-
-        if (storedPassword != password) {
-            return Result.Error(IllegalArgumentException("Incorrect password. Please try again."))
-        }
+        if (loginError != null) return Result.Error(IllegalArgumentException(loginError))
 
         val userProfile = profilesByEmail[normalizedEmail]
             ?: when (val res = profileRepository.getProfile(UserId("current_student"))) {
@@ -131,7 +134,12 @@ class InMemoryAuthRepository(
         password: String,
         fullName: String,
         university: String
-    ): Result<StudentProfile> {
+    ): Result<PendingRegistration> {
+        if (testVerificationCode == null) {
+            return Result.Error(
+                IllegalStateException("Email verification requires a configured authentication service.")
+            )
+        }
         val normalizedEmail = email.value.lowercase()
         if (credentials.containsKey(normalizedEmail)) {
             return Result.Error(IllegalArgumentException("An account with this email already exists."))
@@ -148,13 +156,34 @@ class InMemoryAuthRepository(
 
         credentials[normalizedEmail] = password
         profilesByEmail[normalizedEmail] = newProfile
-        profileRepository.updateProfile(newProfile)
-        currentUser = newProfile
-        return Result.Success(newProfile)
+        pendingEmails.add(normalizedEmail)
+        return Result.Success(PendingRegistration(email))
     }
 
-    override suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean> {
-        return Result.Success(code.trim().isNotEmpty())
+    override suspend fun verifyEmail(
+        email: StudentEmail,
+        code: EmailVerificationCode
+    ): Result<StudentProfile> {
+        if (email.value !in pendingEmails || code.value != testVerificationCode) {
+            return Result.Error(IllegalArgumentException("This code is invalid or has expired."))
+        }
+        val profile = profilesByEmail.getValue(email.value)
+        return when (val saved = profileRepository.updateProfile(profile)) {
+            is Result.Error -> saved
+            is Result.Success -> {
+                pendingEmails.remove(email.value)
+                currentUser = saved.data
+                Result.Success(saved.data)
+            }
+        }
+    }
+
+    override suspend fun resendVerificationCode(email: StudentEmail): Result<Unit> {
+        return if (testVerificationCode != null && email.value in pendingEmails) {
+            Result.Success(Unit)
+        } else {
+            Result.Error(IllegalStateException("No email verification is pending."))
+        }
     }
 
     override suspend fun signOut(): Result<Unit> {

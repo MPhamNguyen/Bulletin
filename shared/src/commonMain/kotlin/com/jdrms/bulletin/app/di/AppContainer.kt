@@ -38,6 +38,7 @@ import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -161,6 +162,7 @@ class AppContainer(
     val getAuthenticatedUserId by lazy { GetAuthenticatedUserId(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
     val signOutUser by lazy { SignOutUser(authRepository) }
+    val resendVerificationCode by lazy { ResendVerificationCode(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
@@ -199,6 +201,7 @@ class AppContainer(
         restoreAuthenticatedProfile = restoreAuthenticatedProfile,
         signOutUser = signOutUser,
         verifyStudentEmail = verifyStudentEmail,
+        resendVerificationCode = resendVerificationCode,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,
         submitStudentReview = submitStudentReview
