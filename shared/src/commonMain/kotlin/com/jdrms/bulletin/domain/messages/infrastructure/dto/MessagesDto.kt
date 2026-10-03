@@ -12,7 +12,9 @@ data class MessageDto(
 
 data class ConversationDto(
     val id: String,
-    val participantNames: List<String>,
+    val participants: List<ConversationParticipantDto>,
     val lastMessage: MessageDto? = null,
     val updatedAtMillis: Long = 0L
 )
+
+data class ConversationParticipantDto(val id: String, val displayName: String)
