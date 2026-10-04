@@ -661,6 +661,42 @@ class ProfileViewModelTest {
             Dispatchers.resetMain()
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testHandleSubscreenBackDoesNotTriggerRootOnBackForSubscreens() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            var onBackCalled = false
+            val onBack = { onBackCalled = true }
+
+            viewModel.openNotifications()
+            assertEquals(ProfileSubscreen.NOTIFICATIONS, viewModel.uiState.value.activeSubscreen)
+            handleSubscreenBack(ProfileSubscreen.NOTIFICATIONS, viewModel, onBack)
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+            assertFalse(onBackCalled)
+
+            handleSubscreenBack(ProfileSubscreen.SETTINGS, viewModel, onBack)
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+            assertFalse(onBackCalled)
+
+            viewModel.openEditAccount()
+            handleSubscreenBack(ProfileSubscreen.EDIT_ACCOUNT, viewModel, onBack)
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+            assertFalse(onBackCalled)
+
+            handleSubscreenBack(ProfileSubscreen.PROFILE, viewModel, onBack)
+            assertTrue(onBackCalled)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 }
 
 private class SessionFailureAuthRepository(

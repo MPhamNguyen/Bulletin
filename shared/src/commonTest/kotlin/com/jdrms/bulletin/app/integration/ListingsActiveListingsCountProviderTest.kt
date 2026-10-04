@@ -10,9 +10,11 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class ListingsActiveListingsCountProviderTest {
 
@@ -61,6 +63,20 @@ class ListingsActiveListingsCountProviderTest {
         assertEquals(0, count)
     }
 
+    @Test
+    fun rethrowsCancellationException() = runTest {
+        val repository = object : FakeListingsRepository(emptyList()) {
+            override suspend fun getSellerListings(sellerId: SellerId): List<Listing> {
+                throw CancellationException("Operation cancelled")
+            }
+        }
+        val provider = ListingsActiveListingsCountProvider(repository)
+
+        assertFailsWith<CancellationException> {
+            provider.getActiveListingsCount(UserId("user-123"))
+        }
+    }
+
     private fun createTestListing(
         id: String,
         sellerId: SellerId,
@@ -88,7 +104,7 @@ private open class FakeListingsRepository(
     override suspend fun createListing(listing: Listing): Result<Listing> = Result.Success(listing)
     override suspend fun updateListing(listing: Listing): Result<Listing> = Result.Success(listing)
     override suspend fun getListing(id: ListingId): Listing? = listings.firstOrNull { it.id == id }
-    override suspend fun deleteListing(id: ListingId): Result<Unit> = Result.Success(Unit)
+    override suspend fun deleteListing(id: ListingId, sellerId: SellerId): Result<Unit> = Result.Success(Unit)
     override suspend fun getSellerListings(sellerId: SellerId): List<Listing> {
         return listings.filter { it.sellerId == sellerId }
     }

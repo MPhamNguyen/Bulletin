@@ -521,6 +521,7 @@ class ListingsViewModelTest {
         val customViewModel = ListingsViewModel(
             createListing = CreateListing(repository, policy),
             manageListing = ManageListing(repository, policy),
+            deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
             currentSellerProvider = sellerProvider,
             listingChangedSignal = signal
@@ -555,13 +556,15 @@ class ListingsViewModelTest {
         val customViewModel = ListingsViewModel(
             createListing = CreateListing(repository, policy),
             manageListing = ManageListing(repository, policy),
+            deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
             currentSellerProvider = sellerProvider,
             listingChangedSignal = signal
         )
         advanceUntilIdle()
 
-        customViewModel.deleteListing(listing.id)
+        customViewModel.requestDeleteListing(listing)
+        customViewModel.confirmDeleteListing()
         advanceUntilIdle()
 
         assertEquals(1, emittedCount)

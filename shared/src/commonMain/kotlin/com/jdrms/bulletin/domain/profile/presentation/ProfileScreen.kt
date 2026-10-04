@@ -148,47 +148,21 @@ private fun ProfileSubscreenHost(
     }
 }
 
-private fun handleSubscreenBack(
+internal fun handleSubscreenBack(
     activeSubscreen: ProfileSubscreen,
     viewModel: ProfileViewModel,
     onBack: () -> Unit
 ) {
     when (activeSubscreen) {
-        ProfileSubscreen.EDIT_ACCOUNT -> {
-            viewModel.closeEditAccount()
-            onBack()
-        }
-        ProfileSubscreen.SETTINGS -> {
-            viewModel.closeSettings()
-            onBack()
-        }
-        ProfileSubscreen.BOOKMARKED_LISTINGS -> {
-            viewModel.closeBookmarkedListings()
-            onBack()
-        }
-        ProfileSubscreen.NOTIFICATIONS -> {
-            viewModel.closeNotifications()
-            onBack()
-        }
-        ProfileSubscreen.PRIVACY -> {
-            viewModel.closePrivacy()
-            onBack()
-        }
-        ProfileSubscreen.HELP_AND_SUPPORT -> {
-            viewModel.closeHelpAndSupport()
-            onBack()
-        }
-        ProfileSubscreen.TERMS_AND_CONDITIONS -> {
-            viewModel.closeTermsAndConditions()
-            onBack()
-        }
-        ProfileSubscreen.PUBLIC_PROFILE -> {
-            viewModel.closePublicProfile()
-            onBack()
-        }
-        ProfileSubscreen.PROFILE -> {
-            onBack()
-        }
+        ProfileSubscreen.EDIT_ACCOUNT -> viewModel.closeEditAccount()
+        ProfileSubscreen.SETTINGS -> viewModel.closeSettings()
+        ProfileSubscreen.BOOKMARKED_LISTINGS -> viewModel.closeBookmarkedListings()
+        ProfileSubscreen.NOTIFICATIONS -> viewModel.closeNotifications()
+        ProfileSubscreen.PRIVACY -> viewModel.closePrivacy()
+        ProfileSubscreen.HELP_AND_SUPPORT -> viewModel.closeHelpAndSupport()
+        ProfileSubscreen.TERMS_AND_CONDITIONS -> viewModel.closeTermsAndConditions()
+        ProfileSubscreen.PUBLIC_PROFILE -> viewModel.closePublicProfile()
+        ProfileSubscreen.PROFILE -> onBack()
     }
 }
 
