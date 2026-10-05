@@ -352,6 +352,10 @@ class ListingsViewModelTest {
         viewModel.saveListingChanges()
         assertEquals("Please enter a valid price ($ >= 0)", viewModel.uiState.value.errorMessage)
 
+        viewModel.onEditPriceChanged("40.555")
+        viewModel.saveListingChanges()
+        assertEquals("Price cannot have more than 2 decimal places", viewModel.uiState.value.errorMessage)
+
         viewModel.onEditPriceChanged("25.0")
         viewModel.onEditTitleChanged("No")
         viewModel.saveListingChanges()
@@ -458,6 +462,18 @@ class ListingsViewModelTest {
         advanceTimeBy(ListingsViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
         runCurrent()
         assertNull(viewModel.uiState.value.successMessage)
+    }
+
+    @Test
+    fun testSubmitNewListingRejectsPriceWithMoreThanTwoDecimalPlaces() = runTest {
+        viewModel.onTitleChanged("Brand New Textbook")
+        viewModel.onDescriptionChanged("Used for CS 101, excellent condition")
+        viewModel.onPriceChanged("45.555")
+
+        viewModel.submitNewListing()
+
+        assertEquals("Price cannot have more than 2 decimal places", viewModel.uiState.value.errorMessage)
+        assertFalse(viewModel.uiState.value.isSubmitting)
     }
 
     @Test

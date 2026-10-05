@@ -6,6 +6,7 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
+import com.jdrms.bulletin.core.common.hasAtMostTwoDecimalPlaces
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -97,8 +98,15 @@ class ListingsViewModel(
     private fun buildListingDraft(): NewListingDraft? {
         val state = _uiState.value
         val parsedPrice = state.newPrice.toDoubleOrNull()
-        if (parsedPrice == null || !parsedPrice.isFinite() || parsedPrice < 0.0) {
-            _uiState.update { it.copy(errorMessage = "Please enter a valid price ($ >= 0)") }
+        val priceValidationError = when {
+            parsedPrice == null || !parsedPrice.isFinite() || parsedPrice < 0.0 ->
+                "Please enter a valid price ($ >= 0)"
+            !hasAtMostTwoDecimalPlaces(parsedPrice) ->
+                "Price cannot have more than 2 decimal places"
+            else -> null
+        }
+        if (priceValidationError != null) {
+            _uiState.update { it.copy(errorMessage = priceValidationError) }
             return null
         }
 
@@ -114,7 +122,13 @@ class ListingsViewModel(
             return null
         }
 
-        return NewListingDraft(title, description, parsedPrice, state.newCategory, state.newCondition)
+        return NewListingDraft(
+            title,
+            description,
+            checkNotNull(parsedPrice),
+            state.newCategory,
+            state.newCondition
+        )
     }
 
     private suspend fun submitListing(draft: NewListingDraft) {
@@ -303,6 +317,8 @@ class ListingsViewModel(
         val validationError = when {
             parsedPrice == null || !parsedPrice.isFinite() || parsedPrice < 0.0 ->
                 "Please enter a valid price ($ >= 0)"
+            !hasAtMostTwoDecimalPlaces(parsedPrice) ->
+                "Price cannot have more than 2 decimal places"
             state.editTitle.trim().length < 3 ->
                 "Title must be at least 3 characters"
             state.editDescription.trim().isBlank() ->

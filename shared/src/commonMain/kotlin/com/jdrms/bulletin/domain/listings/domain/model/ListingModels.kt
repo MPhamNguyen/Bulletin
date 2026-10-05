@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.listings.domain.model
 
+import com.jdrms.bulletin.core.common.formatUsdAmount
+import com.jdrms.bulletin.core.common.hasAtMostTwoDecimalPlaces
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -38,10 +40,13 @@ data class ListingPrice(
 ) {
     init {
         require(amount >= 0.0) { "Listing price cannot be negative." }
+        require(hasAtMostTwoDecimalPlaces(amount)) {
+            "Listing price cannot have more than two decimal places."
+        }
     }
 
     val formatted: String
-        get() = "$$amount"
+        get() = formatUsdAmount(amount)
 }
 
 data class Listing(
