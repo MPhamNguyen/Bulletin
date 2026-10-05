@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.DeleteStudentAccount
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
@@ -45,6 +46,7 @@ class ProfileViewModelTest {
             val manageProfile = ManageProfile(profileRepo)
             val updateStudentProfile = UpdateStudentProfile(profileRepo)
             val submitStudentReview = SubmitStudentReview(profileRepo, policy)
+            val deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
 
             val viewModel = ProfileViewModel(
                 authenticateUser = authenticateUser,
@@ -54,7 +56,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                deleteStudentAccount = deleteStudentAccount
             )
             advanceUntilIdle()
 
@@ -127,7 +130,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
-                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+                submitStudentReview = SubmitStudentReview(profileRepo, policy),
+                deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
             )
             advanceUntilIdle()
             viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
@@ -202,7 +206,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
             )
             advanceUntilIdle()
 

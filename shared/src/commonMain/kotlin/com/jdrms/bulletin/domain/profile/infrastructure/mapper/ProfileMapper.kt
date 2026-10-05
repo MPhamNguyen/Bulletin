@@ -24,7 +24,8 @@ object ProfileMapper {
             bio = dto.bio?.trim().orEmpty(),
             avatarUrl = dto.avatarUrl?.trim()?.takeIf(String::isNotBlank),
             isVerified = dto.isVerified ?: false,
-            reputation = reputation
+            reputation = reputation,
+            deleteAtMillis = dto.deleteAt.toEpochMillisecondsOrNull()
         )
     }
 
@@ -38,7 +39,8 @@ object ProfileMapper {
             university = domain.university,
             bio = domain.bio,
             avatarUrl = domain.avatarUrl,
-            isVerified = domain.isVerified
+            isVerified = domain.isVerified,
+            deleteAt = domain.deleteAtMillis?.let { Instant.fromEpochMilliseconds(it).toString() }
         )
     }
 
@@ -49,7 +51,8 @@ object ProfileMapper {
             graduationDate = domain.graduationDate.trim(),
             university = domain.university.trim(),
             bio = domain.bio.trim(),
-            avatarUrl = domain.avatarUrl?.trim()?.ifBlank { null }
+            avatarUrl = domain.avatarUrl?.trim()?.ifBlank { null },
+            deleteAt = domain.deleteAtMillis?.let { Instant.fromEpochMilliseconds(it).toString() }
         )
     }
 
@@ -80,5 +83,12 @@ object ProfileMapper {
 
     private fun String.toEpochMillisecondsOrZero(): Long {
         return if (isBlank()) 0L else Instant.parse(this).toEpochMilliseconds()
+    }
+
+    private fun String?.toEpochMillisecondsOrNull(): Long? {
+        if (this == null || isBlank()) return null
+        return runCatching {
+            toLongOrNull() ?: Instant.parse(this).toEpochMilliseconds()
+        }.getOrNull()
     }
 }

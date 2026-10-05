@@ -4,6 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
@@ -131,5 +132,22 @@ class SubmitStudentReview(
             return Result.Error((validation as Result.Error).exception)
         }
         return profileRepository.submitReview(targetUserId, review)
+    }
+}
+
+class DeleteStudentAccount(
+    private val profileRepository: ProfileRepository,
+    private val authRepository: AuthRepository,
+    private val nowMillis: () -> Long = ::currentTimeMillis
+) {
+    suspend operator fun invoke(userId: UserId): Result<Unit> {
+        val timestamp = nowMillis()
+        return when (val result = profileRepository.deleteProfile(userId, timestamp)) {
+            is Result.Success -> {
+                authRepository.signOut()
+                Result.Success(Unit)
+            }
+            is Result.Error -> result
+        }
     }
 }

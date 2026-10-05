@@ -50,6 +50,18 @@ class InMemoryProfileRepository(
         return policy.calculateReputation(userId, userReviews)
     }
 
+    override suspend fun deleteProfile(userId: UserId, deletedAtMillis: Long): Result<Unit> {
+        val existing = profiles[userId.value]
+            ?: return Result.Error(NoSuchElementException("Profile not found."))
+        return when (val deleted = existing.markDeleted(deletedAtMillis)) {
+            is Result.Success -> {
+                profiles[userId.value] = deleted.data
+                Result.Success(Unit)
+            }
+            is Result.Error -> deleted
+        }
+    }
+
     companion object {
         private val defaultSeedProfiles = mapOf(
             "current_student" to ProfileDto(
@@ -101,9 +113,18 @@ class InMemoryAuthRepository(
     private var currentUser: StudentProfile? = null
     private val pendingEmails = mutableSetOf<String>()
 
-    override suspend fun getCurrentUserId(): Result<UserId?> = Result.Success(currentUser?.id)
+    override suspend fun getCurrentUserId(): Result<UserId?> {
+        return Result.Success(currentUser?.takeUnless { it.isDeleted }?.id)
+    }
 
-    override suspend fun getCurrentUser(): Result<StudentProfile?> = Result.Success(currentUser)
+    override suspend fun getCurrentUser(): Result<StudentProfile?> {
+        val user = currentUser ?: return Result.Success(null)
+        if (user.isDeleted) {
+            currentUser = null
+            return Result.Success(null)
+        }
+        return Result.Success(user)
+    }
 
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
         val normalizedEmail = email.value.lowercase()
@@ -116,18 +137,25 @@ class InMemoryAuthRepository(
         }
         if (loginError != null) return Result.Error(IllegalArgumentException(loginError))
 
-        val userProfile = profilesByEmail[normalizedEmail]
-            ?: when (val res = profileRepository.getProfile(UserId("current_student"))) {
-                is Result.Success -> res.data
-                is Result.Error -> null
-            }
-        if (userProfile != null) {
-            currentUser = userProfile
-            return Result.Success(userProfile)
+        val profileId = profilesByEmail[normalizedEmail]?.id ?: UserId("current_student")
+        val userProfile = when (val res = profileRepository.getProfile(profileId)) {
+            is Result.Success -> res.data ?: profilesByEmail[normalizedEmail]
+            is Result.Error -> profilesByEmail[normalizedEmail]
         }
-
-        val error = IllegalArgumentException("Account not found. Please check your email or create an account.")
-        return Result.Error(error)
+        return when {
+            userProfile == null -> {
+                Result.Error(
+                    IllegalArgumentException("Account not found. Please check your email or create an account.")
+                )
+            }
+            userProfile.isDeleted -> {
+                Result.Error(IllegalArgumentException("Account has been deleted."))
+            }
+            else -> {
+                currentUser = userProfile
+                Result.Success(userProfile)
+            }
+        }
     }
 
     override suspend fun register(

@@ -40,6 +40,7 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.DeleteStudentAccount
 import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
@@ -175,6 +176,7 @@ class AppContainer(
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
+    val deleteStudentAccount by lazy { DeleteStudentAccount(profileRepository, authRepository) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
 
     // ViewModels
@@ -215,6 +217,7 @@ class AppContainer(
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,
         submitStudentReview = submitStudentReview,
+        deleteStudentAccount = deleteStudentAccount,
         activeListingsProvider = profileActiveListingsProvider,
         listingChangedSignal = listingChangedSignal
     )

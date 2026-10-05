@@ -14,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ProfileDomainTest {
@@ -328,5 +329,39 @@ class ProfileDomainTest {
         val regLastNameResult = policy.validateRegistration("First", "", "test@csulb.edu", "password123")
         assertTrue(regLastNameResult.isError())
         assertEquals("Last name is required.", (regLastNameResult as Result.Error).exception.message)
+    }
+
+    @Test
+    fun testStudentProfileSoftDeleteStateTransitions() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "John Doe"
+        )
+        assertFalse(profile.isDeleted)
+        assertNull(profile.deleteAtMillis)
+
+        val deleteTimestamp = 1_700_000_000_000L
+        val deleteResult = profile.markDeleted(deleteTimestamp)
+        assertTrue(deleteResult is Result.Success)
+
+        val deletedProfile = deleteResult.data
+        assertTrue(deletedProfile.isDeleted)
+        assertEquals(deleteTimestamp, deletedProfile.deleteAtMillis)
+
+        // Cannot mark deleted twice
+        val secondDelete = deletedProfile.markDeleted(1_700_000_001_000L)
+        assertTrue(secondDelete is Result.Error)
+        assertEquals("Profile is already marked as deleted.", secondDelete.exception.message)
+
+        // Cannot update details on a deleted profile
+        val updateResult = deletedProfile.updateDetails(
+            fullName = "Jane Doe",
+            major = "Math",
+            university = "CSULB",
+            bio = "Bio"
+        )
+        assertTrue(updateResult is Result.Error)
+        assertEquals("Cannot update a deleted profile.", updateResult.exception.message)
     }
 }

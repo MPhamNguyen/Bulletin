@@ -22,6 +22,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -375,5 +376,76 @@ class ProfileInfrastructureTest {
         assertFalse(SupabaseProfileRepository.isValidUuid("user_101"))
         assertFalse(SupabaseProfileRepository.isValidUuid(""))
         assertFalse(SupabaseProfileRepository.isValidUuid("not-a-uuid-at-all"))
+    }
+
+    @Test
+    fun testProfileMapperHandlesDeleteAtTimestamp() {
+        val dto = ProfileDto(
+            id = "student_deleted",
+            email = "deleted@example.com",
+            fullName = "Deleted Student",
+            deleteAt = "2026-10-05T12:00:00Z"
+        )
+        val domain = ProfileMapper.toDomain(dto)
+        assertTrue(domain.isDeleted)
+        assertEquals(1791201600000L, domain.deleteAtMillis)
+
+        val mappedBackDto = ProfileMapper.toDto(domain)
+        assertEquals("2026-10-05T12:00:00Z", mappedBackDto.deleteAt)
+
+        val updateDto = ProfileMapper.toUpdateDto(domain)
+        assertEquals("2026-10-05T12:00:00Z", updateDto.deleteAt)
+    }
+
+    @Test
+    fun testInMemoryProfileRepositoryDeleteProfile() = runTest {
+        val repo = InMemoryProfileRepository(
+            initialProfiles = emptyMap(),
+            initialReviews = emptyMap()
+        )
+        val profile = StudentProfile(
+            id = UserId("student_del"),
+            email = StudentEmail("del@csulb.edu"),
+            fullName = "To Delete"
+        )
+        repo.updateProfile(profile)
+
+        val deleteTimestamp = 1_700_000_000_000L
+        val deleteResult = repo.deleteProfile(UserId("student_del"), deleteTimestamp)
+        assertTrue(deleteResult.isSuccess())
+
+        val fetched = repo.getProfile(UserId("student_del"))
+        assertTrue(fetched is Result.Success)
+        val fetchedData = fetched.data
+        assertNotNull(fetchedData)
+        assertTrue(fetchedData.isDeleted)
+        assertEquals(deleteTimestamp, fetchedData.deleteAtMillis)
+
+        // Nonexistent profile deletion returns error
+        val nonExistentDelete = repo.deleteProfile(UserId("unknown_student"), deleteTimestamp)
+        assertTrue(nonExistentDelete.isError())
+    }
+
+    @Test
+    fun testInMemoryAuthRepositoryRejectsLoginForDeletedAccount() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo)
+
+        val email = StudentEmail("active@example.com")
+        val registerResult = authRepo.register(
+            email = email,
+            password = "password123",
+            fullName = "Active User"
+        )
+        assertTrue(registerResult is Result.Success)
+
+        // Soft delete the profile
+        val deleteResult = profileRepo.deleteProfile(registerResult.data.id, 1_700_000_000_000L)
+        assertTrue(deleteResult.isSuccess())
+
+        // Login fails because account is deleted
+        val loginResult = authRepo.login(email, "password123")
+        assertTrue(loginResult.isError())
+        assertEquals("Account has been deleted.", (loginResult as Result.Error).exception.message)
     }
 }

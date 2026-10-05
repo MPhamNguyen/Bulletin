@@ -11,4 +11,5 @@ interface ProfileRepository {
     suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile>
     suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit>
     suspend fun getReputation(userId: UserId): StudentReputation
+    suspend fun deleteProfile(userId: UserId, deletedAtMillis: Long): Result<Unit>
 }

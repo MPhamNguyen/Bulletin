@@ -21,16 +21,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.app.theme.ThemePreference
+import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
@@ -49,7 +55,10 @@ internal data class SettingsActions(
     val onPrivacy: () -> Unit,
     val onHelpSupport: () -> Unit,
     val onTermsConditions: () -> Unit,
-    val onSignOut: () -> Unit
+    val onSignOut: () -> Unit,
+    val onDeleteAccount: () -> Unit = {},
+    val onDismissDeleteAccount: () -> Unit = {},
+    val onConfirmDeleteAccount: () -> Unit = {}
 )
 
 @Composable
@@ -133,8 +142,17 @@ internal fun SettingsView(
             // Sign Out at the bottom of the list, styled as a visually distinct destructive action
             SignOutButton(onClick = actions.onSignOut)
 
+            DeleteAccountButton(onClick = actions.onDeleteAccount)
+
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    if (uiState.showDeleteAccountDialog) {
+        DeleteAccountConfirmationDialog(
+            onDismiss = actions.onDismissDeleteAccount,
+            onConfirm = actions.onConfirmDeleteAccount
+        )
     }
 }
 
@@ -314,4 +332,89 @@ private fun SettingsActionCard(
             }
         }
     }
+}
+
+@Composable
+internal fun DeleteAccountButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = MaterialTheme.shapes.large,
+        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
+        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Delete Account",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+internal fun DeleteAccountConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        title = {
+            Text(
+                text = "Delete Account?",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = "Are you sure you want to delete your account?",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Cancel",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(
+                    text = "Delete",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    )
 }

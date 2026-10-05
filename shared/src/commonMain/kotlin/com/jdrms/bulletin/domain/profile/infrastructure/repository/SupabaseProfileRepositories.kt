@@ -92,6 +92,25 @@ class SupabaseProfileRepository(
         )
     }
 
+    override suspend fun deleteProfile(userId: UserId, deletedAtMillis: Long): Result<Unit> {
+        return runCatching {
+            val resolvedId = resolveUserId(userId) ?: userId.value
+            val deleteAtIso = kotlin.time.Instant.fromEpochMilliseconds(deletedAtMillis).toString()
+            val updatePayload = buildJsonObject {
+                put("delete_at", deleteAtIso)
+            }
+            supabase.from(PROFILES_TABLE).update(updatePayload) {
+                filter {
+                    eq("id", resolvedId)
+                }
+            }
+            Unit
+        }.fold(
+            onSuccess = { Result.Success(it) },
+            onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+        )
+    }
+
     override suspend fun getReputation(userId: UserId): StudentReputation {
         val resolvedId = resolveUserId(userId) ?: return policy.calculateReputation(userId, emptyList())
 
@@ -194,7 +213,10 @@ class SupabaseAuthRepository(
             val userId = UserId(currentUser.id)
 
             when (val profileResult = profileRepository.getProfile(userId)) {
-                is Result.Success -> profileResult.data ?: createProfileFromAuthUser(currentUser)
+                is Result.Success -> {
+                    val profile = profileResult.data ?: createProfileFromAuthUser(currentUser)
+                    if (profile.isDeleted) null else profile
+                }
                 is Result.Error -> throw profileResult.exception
             }
         }.fold(
@@ -247,11 +269,11 @@ class SupabaseAuthRepository(
             val profileResult = profileRepository.getProfile(userId)
             val profile = when (profileResult) {
                 is Result.Success -> {
-                    if (profileResult.data != null) {
-                        profileResult.data
-                    } else {
-                        createProfileFromAuthUser(currentUser, email)
+                    val foundProfile = profileResult.data ?: createProfileFromAuthUser(currentUser, email)
+                    if (foundProfile.isDeleted) {
+                        error("Account has been deleted.")
                     }
+                    foundProfile
                 }
                 is Result.Error -> {
                     // Propagate repository errors instead of silently overwriting existing profile data

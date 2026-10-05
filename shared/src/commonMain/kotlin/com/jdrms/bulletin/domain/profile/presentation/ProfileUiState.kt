@@ -32,6 +32,7 @@ data class ProfileUiState(
     val activeListingsCount: Int = 0,
     val itemsSoldCount: Int = 18,
     val showReviewDialog: Boolean = false,
+    val showDeleteAccountDialog: Boolean = false,
     val newScore: Int = 5,
     val newComment: String = "",
     val isLoading: Boolean = false,

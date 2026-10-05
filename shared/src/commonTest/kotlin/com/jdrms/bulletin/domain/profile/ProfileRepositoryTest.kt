@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -260,5 +261,27 @@ class ProfileRepositoryTest {
         val foundResult = repo.getProfile(UserId("u_100"))
         assertTrue(foundResult is Result.Success)
         assertEquals("Test User", foundResult.data?.fullName)
+    }
+
+    @Test
+    fun testProfileRepositoryDeleteProfile() = runTest {
+        val repo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val profile = StudentProfile(
+            id = UserId("user_delete_test"),
+            email = StudentEmail("delete@csulb.edu"),
+            fullName = "Delete Candidate"
+        )
+        repo.updateProfile(profile)
+
+        val timestamp = 1_700_000_000_000L
+        val deleteResult = repo.deleteProfile(profile.id, timestamp)
+        assertTrue(deleteResult.isSuccess())
+
+        val stored = repo.getProfile(profile.id)
+        assertTrue(stored is Result.Success)
+        val storedData = stored.data
+        assertNotNull(storedData)
+        assertTrue(storedData.isDeleted)
+        assertEquals(timestamp, storedData.deleteAtMillis)
     }
 }

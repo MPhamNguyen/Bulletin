@@ -13,7 +13,8 @@ data class ProfileDto(
     @SerialName("university") val university: String? = null,
     @SerialName("bio") val bio: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
-    @SerialName("is_verified") val isVerified: Boolean? = null
+    @SerialName("is_verified") val isVerified: Boolean? = null,
+    @SerialName("delete_at") val deleteAt: String? = null
 )
 
 @Serializable
@@ -23,7 +24,8 @@ data class ProfileUpdateDto(
     @SerialName("graduation_date") val graduationDate: String = "",
     @SerialName("university") val university: String,
     @SerialName("bio") val bio: String = "",
-    @SerialName("avatar_url") val avatarUrl: String? = null
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("delete_at") val deleteAt: String? = null
 )
 
 @Serializable

@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile.presentation
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.DeleteStudentAccount
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
@@ -33,6 +34,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class ProfileViewModelTest {
 
     private val policy = ProfileValidationPolicy()
@@ -61,7 +63,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
-                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+                submitStudentReview = SubmitStudentReview(profileRepo, policy),
+                deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
             )
             advanceUntilIdle()
 
@@ -179,6 +182,7 @@ class ProfileViewModelTest {
             manageProfile = ManageProfile(profileRepository),
             updateStudentProfile = UpdateStudentProfile(profileRepository),
             submitStudentReview = SubmitStudentReview(profileRepository, policy),
+            deleteStudentAccount = DeleteStudentAccount(profileRepository, authRepository),
             activeListingsProvider = activeListingsProvider,
             listingChangedSignal = listingChangedSignal
         )
@@ -279,7 +283,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
-                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+                submitStudentReview = SubmitStudentReview(profileRepo, policy),
+                deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
             )
             advanceUntilIdle()
             viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
@@ -354,7 +359,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
             )
             advanceUntilIdle()
 
@@ -719,6 +725,114 @@ class ProfileViewModelTest {
 
             handleSubscreenBack(ProfileSubscreen.PROFILE, viewModel, onBack)
             assertTrue(onBackCalled)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelDeleteAccountModalStateTransitions() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.showDeleteAccountDialog)
+
+            viewModel.requestDeleteAccount()
+            assertTrue(viewModel.uiState.value.showDeleteAccountDialog)
+
+            viewModel.cancelDeleteAccount()
+            assertFalse(viewModel.uiState.value.showDeleteAccountDialog)
+
+            viewModel.requestDeleteAccount()
+            assertTrue(viewModel.uiState.value.showDeleteAccountDialog)
+            viewModel.confirmDeleteAccount()
+            assertFalse(viewModel.uiState.value.showDeleteAccountDialog)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelConfirmDeleteAccountExecutesSoftDeleteAndResetsSession() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val registered = authRepo.register(
+                email = StudentEmail("delete_candidate@example.com"),
+                password = "validPassword123",
+                fullName = "Delete Candidate"
+            )
+            assertTrue(registered is Result.Success)
+            val userId = registered.data.id
+
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertEquals("Delete Candidate", viewModel.uiState.value.profile?.fullName)
+
+            viewModel.requestDeleteAccount()
+            assertTrue(viewModel.uiState.value.showDeleteAccountDialog)
+
+            var onSuccessCalled = false
+            viewModel.confirmDeleteAccount(onSuccess = { onSuccessCalled = true })
+            runCurrent()
+
+            assertTrue(onSuccessCalled)
+            assertFalse(viewModel.uiState.value.showDeleteAccountDialog)
+            assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertNull(viewModel.uiState.value.profile)
+            assertEquals("Account deleted", viewModel.uiState.value.successMessage)
+            assertFalse(viewModel.uiState.value.isLoading)
+
+            advanceTimeBy(ProfileViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
+            runCurrent()
+            assertNull(viewModel.uiState.value.successMessage)
+
+            // Verify underlying repository has soft deleted the profile with timestamp
+            val stored = profileRepo.getProfile(userId)
+            assertTrue(stored is Result.Success)
+            val storedData = stored.data
+            assertNotNull(storedData)
+            assertTrue(storedData.isDeleted)
+            assertNotNull(storedData.deleteAtMillis)
+
+            // Verify auth session is cleared
+            val currentAuthUser = authRepo.getCurrentUser()
+            assertTrue(currentAuthUser is Result.Success)
+            assertNull(currentAuthUser.data)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelDeleteAccountWhenProfileUnavailableSetsError() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            // When no profile is logged in
+            assertNull(viewModel.uiState.value.profile)
+            viewModel.confirmDeleteAccount()
+            advanceUntilIdle()
+
+            assertEquals("Profile is unavailable.", viewModel.uiState.value.errorMessage)
+            assertFalse(viewModel.uiState.value.showDeleteAccountDialog)
         } finally {
             Dispatchers.resetMain()
         }

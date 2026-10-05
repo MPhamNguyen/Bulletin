@@ -7,6 +7,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.DeleteStudentAccount
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
@@ -43,6 +44,7 @@ class ProfileViewModel(
     private val manageProfile: ManageProfile,
     private val updateStudentProfile: UpdateStudentProfile,
     private val submitStudentReview: SubmitStudentReview,
+    private val deleteStudentAccount: DeleteStudentAccount,
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student"),
     private val activeListingsProvider: ProfileActiveListingsProvider? = null,
@@ -656,6 +658,47 @@ class ProfileViewModel(
                 loadProfile(targetId)
             } else {
                 _uiState.update { it.copy(errorMessage = "Failed to submit review") }
+            }
+        }
+    }
+
+    fun requestDeleteAccount() {
+        _uiState.update { it.copy(showDeleteAccountDialog = true) }
+    }
+
+    fun cancelDeleteAccount() {
+        _uiState.update { it.copy(showDeleteAccountDialog = false) }
+    }
+
+    fun confirmDeleteAccount(onSuccess: () -> Unit = {}) {
+        val currentUserId = _uiState.value.profile?.id
+        _uiState.update { it.copy(showDeleteAccountDialog = false) }
+        if (currentUserId == null) {
+            _uiState.update { it.copy(errorMessage = "Profile is unavailable.") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+            when (val result = deleteStudentAccount(currentUserId)) {
+                is Result.Success -> {
+                    flashNotificationJob?.cancel()
+                    _uiState.update {
+                        ProfileUiState(
+                            authSessionState = AuthSessionState.UNAUTHENTICATED,
+                            activeSubscreen = ProfileSubscreen.PROFILE
+                        )
+                    }
+                    showFlashNotification("Account deleted")
+                    onSuccess()
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = result.exception.message ?: "Failed to delete account"
+                        )
+                    }
+                }
             }
         }
     }

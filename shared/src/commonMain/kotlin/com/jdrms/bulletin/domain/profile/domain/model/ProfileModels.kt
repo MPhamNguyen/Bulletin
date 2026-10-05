@@ -74,9 +74,20 @@ data class StudentProfile(
     val bio: String = "",
     val avatarUrl: String? = null,
     val isVerified: Boolean = false,
-    val reputation: StudentReputation? = null
+    val reputation: StudentReputation? = null,
+    val deleteAtMillis: Long? = null
 ) {
     fun confirmEmail(): StudentProfile = if (isVerified) this else copy(isVerified = true)
+
+    val isDeleted: Boolean
+        get() = deleteAtMillis != null
+
+    fun markDeleted(timestampMillis: Long): Result<StudentProfile> {
+        if (isDeleted) {
+            return Result.Error(IllegalStateException("Profile is already marked as deleted."))
+        }
+        return Result.Success(copy(deleteAtMillis = timestampMillis))
+    }
 
     fun updateDetails(
         fullName: String,
@@ -86,6 +97,9 @@ data class StudentProfile(
         graduationDate: String = this.graduationDate,
         avatarUrl: String? = this.avatarUrl
     ): Result<StudentProfile> {
+        if (isDeleted) {
+            return Result.Error(IllegalStateException("Cannot update a deleted profile."))
+        }
         val normalizedName = fullName.trim()
         val normalizedUniversity = university.trim()
         val normalizedBio = bio.trim()

@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.DeleteStudentAccount
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
@@ -17,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -131,5 +133,59 @@ class ProfileApplicationTest {
 
         assertTrue(signOutUser() is Result.Success)
         assertNull((restoreAuthenticatedProfile() as Result.Success).data)
+    }
+
+    @Test
+    fun testDeleteStudentAccountDeletesProfileAndSignsOut() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authenticateUser = AuthenticateUser(authRepo, policy)
+        val restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo)
+        val fixedTimestamp = 1_700_000_000_000L
+        val deleteStudentAccount = DeleteStudentAccount(
+            profileRepository = profileRepo,
+            authRepository = authRepo,
+            nowMillis = { fixedTimestamp }
+        )
+
+        val registered = authenticateUser.register(
+            email = StudentEmail("delete_me@example.com"),
+            password = "validPassword123",
+            fullName = "To Be Deleted"
+        )
+        assertTrue(registered is Result.Success)
+        val userId = registered.data.id
+
+        // Verify active session before deletion
+        val currentProfile = restoreAuthenticatedProfile()
+        assertTrue(currentProfile is Result.Success)
+        assertNotNull(currentProfile.data)
+
+        // Delete account
+        val deleteResult = deleteStudentAccount(userId)
+        assertTrue(deleteResult.isSuccess())
+
+        // Verify session signed out
+        val sessionAfterDelete = restoreAuthenticatedProfile()
+        assertTrue(sessionAfterDelete is Result.Success)
+        assertNull(sessionAfterDelete.data)
+
+        // Verify repository profile is soft deleted with timestamp
+        val storedProfile = profileRepo.getProfile(userId)
+        assertTrue(storedProfile is Result.Success)
+        val profileData = storedProfile.data
+        assertNotNull(profileData)
+        assertTrue(profileData.isDeleted)
+        assertEquals(fixedTimestamp, profileData.deleteAtMillis)
+    }
+
+    @Test
+    fun testDeleteStudentAccountFailsForNonexistentProfile() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo)
+        val deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
+
+        val deleteResult = deleteStudentAccount(UserId("nonexistent_user"))
+        assertTrue(deleteResult.isError())
     }
 }
