@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile.infrastructure.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
@@ -163,17 +164,19 @@ class InMemoryAuthRepository(
     override suspend fun verifyEmail(
         email: StudentEmail,
         code: EmailVerificationCode
-    ): Result<StudentProfile> {
+    ): Result<EmailVerificationOutcome> {
         if (email.value !in pendingEmails || code.value != testVerificationCode) {
             return Result.Error(IllegalArgumentException("This code is invalid or has expired."))
         }
-        val profile = profilesByEmail.getValue(email.value)
+        val profile = profilesByEmail.getValue(email.value).confirmEmail()
+        profilesByEmail[email.value] = profile
+        pendingEmails.remove(email.value)
+        currentUser = profile
         return when (val saved = profileRepository.updateProfile(profile)) {
-            is Result.Error -> saved
+            is Result.Error -> Result.Success(EmailVerificationOutcome.ProfileRecoveryRequired)
             is Result.Success -> {
-                pendingEmails.remove(email.value)
                 currentUser = saved.data
-                Result.Success(saved.data)
+                Result.Success(EmailVerificationOutcome.ProfileAvailable(saved.data))
             }
         }
     }

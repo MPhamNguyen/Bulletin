@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
@@ -163,30 +164,65 @@ class ProfileViewModel(
         }
     }
 
-    private suspend fun handleVerificationResult(result: Result<StudentProfile>) {
+    private suspend fun handleVerificationResult(result: Result<EmailVerificationOutcome>) {
         when (result) {
             is Result.Success -> {
-                val rep = manageProfile.getReputation(result.data.id)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        profile = result.data,
-                        reputation = rep,
-                        profileDraft = ProfileDraft.from(result.data),
-                        isAccountCreated = true,
-                        pendingRegistration = null,
-                        isEditingProfile = false,
-                        authSessionState = AuthSessionState.AUTHENTICATED,
-                        errorMessage = null
-                    )
+                when (val outcome = result.data) {
+                    is EmailVerificationOutcome.ProfileAvailable -> completeVerifiedRegistration(outcome.profile)
+                    EmailVerificationOutcome.ProfileRecoveryRequired -> _uiState.update { state ->
+                        state.copy(
+                            isLoading = false,
+                            pendingRegistration = null,
+                            verifiedEmailAwaitingProfile = state.pendingRegistration?.email,
+                            errorMessage = null,
+                            successMessage = "Your email is verified. Finish loading your profile to continue."
+                        )
+                    }
                 }
-                showFlashNotification("Account created successfully!")
             }
             is Result.Error -> {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         errorMessage = result.exception.message ?: "Failed to create account"
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun completeVerifiedRegistration(profile: StudentProfile) {
+        val rep = manageProfile.getReputation(profile.id)
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                profile = profile,
+                reputation = rep,
+                profileDraft = ProfileDraft.from(profile),
+                isAccountCreated = true,
+                pendingRegistration = null,
+                verifiedEmailAwaitingProfile = null,
+                isEditingProfile = false,
+                authSessionState = AuthSessionState.AUTHENTICATED,
+                errorMessage = null
+            )
+        }
+        showFlashNotification("Account created successfully!")
+    }
+
+    fun retryVerifiedProfile() {
+        if (_uiState.value.isLoading || _uiState.value.verifiedEmailAwaitingProfile == null) return
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            when (val result = restoreAuthenticatedProfile()) {
+                is Result.Success -> result.data?.let { completeVerifiedRegistration(it) }
+                    ?: _uiState.update {
+                        it.copy(isLoading = false, errorMessage = "Profile setup is not ready yet. Please try again.")
+                    }
+                is Result.Error -> _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = result.exception.message ?: "Unable to finish loading your profile."
                     )
                 }
             }
@@ -291,6 +327,7 @@ class ProfileViewModel(
             it.copy(
                 isAccountCreated = false,
                 pendingRegistration = null,
+                verifiedEmailAwaitingProfile = null,
                 isEditingProfile = false,
                 successMessage = null,
                 errorMessage = null
@@ -391,7 +428,7 @@ class ProfileViewModel(
     }
 
     fun resendEmailCode(emailStr: String) {
-        if (_uiState.value.isLoading) return
+        if (_uiState.value.isLoading || _uiState.value.verifiedEmailAwaitingProfile != null) return
         if (!StudentEmail.isValid(emailStr)) {
             _uiState.update { it.copy(errorMessage = "Enter the email address you registered with.") }
             return

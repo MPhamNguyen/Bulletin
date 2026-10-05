@@ -92,12 +92,22 @@ fun SignUpScreen(
 
             val createdProfile = uiState.profile
             val pendingRegistration = uiState.pendingRegistration
+            val verifiedEmailAwaitingProfile = uiState.verifiedEmailAwaitingProfile
             if (uiState.isAccountCreated && createdProfile != null) {
                 SignUpSuccessContent(
                     profile = createdProfile,
                     successMessage = uiState.successMessage,
                     onContinueToApp = onContinueToApp,
                     onNavigateToSignIn = onNavigateToSignIn
+                )
+            } else if (verifiedEmailAwaitingProfile != null) {
+                EmailVerificationRecoveryContent(
+                    uiState = uiState,
+                    onRetry = viewModel::retryVerifiedProfile,
+                    onSignIn = {
+                        viewModel.resetRegistration()
+                        onNavigateToSignIn()
+                    }
                 )
             } else if (pendingRegistration != null) {
                 EmailVerificationContent(

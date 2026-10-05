@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.profile.application
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
@@ -65,7 +66,7 @@ class SignOutUser(
 class VerifyStudentEmail(
     private val authRepository: AuthRepository
 ) {
-    suspend operator fun invoke(email: StudentEmail, code: String): Result<StudentProfile> {
+    suspend operator fun invoke(email: StudentEmail, code: String): Result<EmailVerificationOutcome> {
         return when (val parsed = EmailVerificationCode.parse(code)) {
             is Result.Success -> authRepository.verifyEmail(email, parsed.data)
             is Result.Error -> parsed

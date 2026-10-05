@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
@@ -268,7 +269,7 @@ class SupabaseAuthRepository(
     override suspend fun verifyEmail(
         email: StudentEmail,
         code: EmailVerificationCode
-    ): Result<StudentProfile> {
+    ): Result<EmailVerificationOutcome> {
         return runCatching {
             supabase.auth.verifyEmailOtp(
                 type = OtpType.Email.EMAIL,
@@ -281,8 +282,9 @@ class SupabaseAuthRepository(
                 rejectSession("Email verification failed. Please try again.")
             }
             when (val result = getCurrentUser()) {
-                is Result.Success -> result.data ?: error("Please sign in to finish setting up your profile.")
-                is Result.Error -> throw result.exception
+                is Result.Success -> result.data?.let(EmailVerificationOutcome::ProfileAvailable)
+                    ?: EmailVerificationOutcome.ProfileRecoveryRequired
+                is Result.Error -> EmailVerificationOutcome.ProfileRecoveryRequired
             }
         }.fold(
             onSuccess = { Result.Success(it) },
@@ -360,6 +362,8 @@ class SupabaseAuthRepository(
                 "Invalid email or password. Please try again.",
             listOf("email_address_invalid", "invalid email") to
                 "Invalid email address. Please use a valid university or personal email domain.",
+            listOf("bulletin requires a valid .edu university email") to
+                "Bulletin requires a valid .edu university email.",
             listOf("signup_disabled", "signups not allowed") to
                 "Account registration is currently disabled.",
             listOf("email_not_confirmed") to

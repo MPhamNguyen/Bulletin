@@ -5,6 +5,13 @@ import com.jdrms.bulletin.core.common.Result
 /** Registration is pending until the authentication provider confirms ownership of this email. */
 data class PendingRegistration(val email: StudentEmail)
 
+sealed interface EmailVerificationOutcome {
+    data class ProfileAvailable(val profile: StudentProfile) : EmailVerificationOutcome
+
+    /** The provider confirmed the email, but the application could not finish loading the profile. */
+    data object ProfileRecoveryRequired : EmailVerificationOutcome
+}
+
 class EmailVerificationCode private constructor(val value: String) {
     override fun toString(): String = "EmailVerificationCode([redacted])"
 

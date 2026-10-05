@@ -61,3 +61,30 @@ internal fun EmailVerificationContent(
         }
     }
 }
+
+@Composable
+internal fun EmailVerificationRecoveryContent(
+    uiState: ProfileUiState,
+    onRetry: () -> Unit,
+    onSignIn: () -> Unit
+) {
+    BulletinCard {
+        Column {
+            SectionHeader("Email verified", uiState.verifiedEmailAwaitingProfile?.value)
+            Text(
+                "Your code was accepted, but Bulletin could not finish loading your profile.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            uiState.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            uiState.successMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            if (uiState.isLoading) CircularProgressIndicator()
+            Button(
+                onClick = onRetry,
+                enabled = !uiState.isLoading,
+                colors = BulletinButtonDefaults.buttonColors(),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Retry setup") }
+            TextButton(onClick = onSignIn, enabled = !uiState.isLoading) { Text("Sign in instead") }
+        }
+    }
+}

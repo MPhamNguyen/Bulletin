@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
@@ -32,9 +33,12 @@ class EmailVerificationApplicationTest {
         assertIs<Result.Error>(VerifyStudentEmail(repository)(StudentEmail("other@example.com"), "012345"))
         assertNull((repository.getCurrentUser() as Result.Success).data)
         assertIs<Result.Success<Unit>>(ResendVerificationCode(repository)(email))
-        val verified = assertIs<Result.Success<StudentProfile>>(VerifyStudentEmail(repository)(email, "012345"))
-        assertEquals(email, verified.data.email)
-        assertEquals(verified.data, (repository.getCurrentUser() as Result.Success).data)
+        val verified = assertIs<Result.Success<EmailVerificationOutcome>>(
+            VerifyStudentEmail(repository)(email, "012345")
+        )
+        val profile = assertIs<EmailVerificationOutcome.ProfileAvailable>(verified.data).profile
+        assertEquals(email, profile.email)
+        assertEquals(profile, (repository.getCurrentUser() as Result.Success).data)
         assertIs<Result.Error>(VerifyStudentEmail(repository)(email, "012345"))
         repository.signOut()
         assertIs<Result.Success<StudentProfile>>(repository.login(email, "password123"))
@@ -50,7 +54,7 @@ class EmailVerificationApplicationTest {
     }
 
     @Test
-    fun profileSaveFailureDoesNotAuthenticateTheTestAdapter() = runTest {
+    fun acceptedCodeReportsRecoveryWhenProfileSaveFails() = runTest {
         val profiles = object : ProfileRepository by InMemoryProfileRepository() {
             override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
                 return Result.Error(IllegalStateException("Profile save failed"))
@@ -58,10 +62,12 @@ class EmailVerificationApplicationTest {
         }
         val repository = InMemoryAuthRepository(profiles, testVerificationCode = "123456")
         AuthenticateUser(repository).register(email, "password123", "Student Name")
-        val failure = assertIs<Result.Error>(VerifyStudentEmail(repository)(email, "123456"))
-        assertEquals("Profile save failed", failure.message)
-        assertNull((repository.getCurrentUser() as Result.Success).data)
-        assertIs<Result.Error>(repository.login(email, "password123"))
+        val result = assertIs<Result.Success<EmailVerificationOutcome>>(
+            VerifyStudentEmail(repository)(email, "123456")
+        )
+        assertIs<EmailVerificationOutcome.ProfileRecoveryRequired>(result.data)
+        assertEquals(true, (repository.getCurrentUser() as Result.Success).data?.isVerified)
+        assertIs<Result.Error>(VerifyStudentEmail(repository)(email, "123456"))
     }
 
     @Test
@@ -72,7 +78,7 @@ class EmailVerificationApplicationTest {
             override suspend fun verifyEmail(
                 email: StudentEmail,
                 code: EmailVerificationCode
-            ): Result<StudentProfile> {
+            ): Result<EmailVerificationOutcome> {
                 calls++
                 assertEquals("012345", code.value)
                 return failure

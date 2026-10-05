@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
@@ -15,6 +16,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -124,7 +126,8 @@ class ProfileApplicationTest {
         assertNull((restoreAuthenticatedProfile() as Result.Success).data)
         val verified = VerifyStudentEmail(authRepo)(registered.data.email, "123456")
         assertTrue(verified is Result.Success)
-        assertEquals(verified.data, (restoreAuthenticatedProfile() as Result.Success).data)
+        val profile = assertIs<EmailVerificationOutcome.ProfileAvailable>(verified.data).profile
+        assertEquals(profile, (restoreAuthenticatedProfile() as Result.Success).data)
 
         assertTrue(signOutUser() is Result.Success)
         assertNull((restoreAuthenticatedProfile() as Result.Success).data)

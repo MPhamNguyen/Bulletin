@@ -28,6 +28,22 @@ class ProfileDomainTest {
     }
 
     @Test
+    fun confirmingEmailPreservesProfileIdentityAndIsIdempotent() {
+        val profile = StudentProfile(
+            id = UserId("student-id"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Student Name"
+        )
+
+        val confirmed = profile.confirmEmail()
+
+        assertTrue(confirmed.isVerified)
+        assertEquals(profile.id, confirmed.id)
+        assertEquals(profile.email, confirmed.email)
+        assertEquals(confirmed, confirmed.confirmEmail())
+    }
+
+    @Test
     fun testValidNonUniversityEmailsMatchRegex() {
         val gmail = StudentEmail("jane.doe@gmail.com")
         assertFalse(gmail.isUniversityEmail)

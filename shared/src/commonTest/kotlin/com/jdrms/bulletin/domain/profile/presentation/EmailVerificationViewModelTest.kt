@@ -10,7 +10,9 @@ import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
 import kotlinx.coroutines.Dispatchers
@@ -100,6 +102,33 @@ class EmailVerificationViewModelTest {
     }
 
     @Test
+    fun acceptedCodeMovesToProfileRecoveryAndRetryCompletesRegistration() = withViewModel(
+        failInitialProfileSave = true
+    ) { viewModel ->
+        viewModel.createAccount("Student", "Name", EMAIL, "password123")
+        advanceUntilIdle()
+
+        viewModel.verifyEmail(EMAIL, "123456")
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.pendingRegistration)
+        assertEquals(StudentEmail(EMAIL), viewModel.uiState.value.verifiedEmailAwaitingProfile)
+        assertFalse(viewModel.uiState.value.isAccountCreated)
+        assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
+
+        viewModel.verifyEmail(EMAIL, "123456")
+        viewModel.resendEmailCode(EMAIL)
+        assertNotNull(viewModel.uiState.value.verifiedEmailAwaitingProfile)
+
+        viewModel.retryVerifiedProfile()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.verifiedEmailAwaitingProfile)
+        assertTrue(viewModel.uiState.value.isAccountCreated)
+        assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+    }
+
+    @Test
     fun registrationFailureDoesNotCreateSessionOrPendingState() = withViewModel { viewModel ->
         viewModel.createAccount("Student", "Name", EMAIL, "password123")
         advanceUntilIdle()
@@ -115,11 +144,23 @@ class EmailVerificationViewModelTest {
 
     private fun withViewModel(
         failResend: Boolean = false,
+        failInitialProfileSave: Boolean = false,
         block: suspend TestScope.(ProfileViewModel) -> Unit
     ) = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
-            val profiles = InMemoryProfileRepository(initialProfiles = emptyMap())
+            val storedProfiles = InMemoryProfileRepository(initialProfiles = emptyMap())
+            var shouldFailSave = failInitialProfileSave
+            val profiles = object : ProfileRepository by storedProfiles {
+                override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
+                    return if (shouldFailSave) {
+                        shouldFailSave = false
+                        Result.Error(IllegalStateException("Profile temporarily unavailable"))
+                    } else {
+                        storedProfiles.updateProfile(profile)
+                    }
+                }
+            }
             val delegate = InMemoryAuthRepository(profiles, testVerificationCode = "123456")
             val auth = object : AuthRepository by delegate {
                 override suspend fun resendVerificationCode(email: StudentEmail): Result<Unit> {

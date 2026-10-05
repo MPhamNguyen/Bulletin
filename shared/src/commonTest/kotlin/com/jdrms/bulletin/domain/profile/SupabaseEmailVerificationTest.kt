@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
@@ -76,10 +77,13 @@ class SupabaseEmailVerificationTest {
         try {
             val profiles = InMemoryProfileRepository(initialProfiles = emptyMap())
             val repository = SupabaseAuthRepository(client, profiles)
-            val result = assertIs<Result.Success<StudentProfile>>(VerifyStudentEmail(repository)(email, "012345"))
-            assertEquals("Student Name", result.data.fullName)
-            assertEquals("CSULB", result.data.university)
-            assertTrue(result.data.isVerified)
+            val result = assertIs<Result.Success<EmailVerificationOutcome>>(
+                VerifyStudentEmail(repository)(email, "012345")
+            )
+            val profile = assertIs<EmailVerificationOutcome.ProfileAvailable>(result.data).profile
+            assertEquals("Student Name", profile.fullName)
+            assertEquals("CSULB", profile.university)
+            assertTrue(profile.isVerified)
             assertEquals(UserId(USER_ID), (repository.getCurrentUserId() as Result.Success).data)
         } finally {
             client.close()
@@ -196,7 +200,7 @@ class SupabaseEmailVerificationTest {
     }
 
     @Test
-    fun profileFailureAfterConfirmationIsReportedAndIdentityRemainsConfirmed() = runTest {
+    fun profileFailureAfterConfirmationReturnsRecoverableOutcomeAndIdentityRemainsConfirmed() = runTest {
         val client = client { _, _ -> session() }
         val profiles = object : ProfileRepository by InMemoryProfileRepository() {
             override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
@@ -205,8 +209,10 @@ class SupabaseEmailVerificationTest {
         }
         try {
             val repository = SupabaseAuthRepository(client, profiles)
-            val failure = assertIs<Result.Error>(VerifyStudentEmail(repository)(email, "123456"))
-            assertEquals("Profile temporarily unavailable", failure.message)
+            val result = assertIs<Result.Success<EmailVerificationOutcome>>(
+                VerifyStudentEmail(repository)(email, "123456")
+            )
+            assertIs<EmailVerificationOutcome.ProfileRecoveryRequired>(result.data)
             assertEquals(UserId(USER_ID), (repository.getCurrentUserId() as Result.Success).data)
         } finally {
             client.close()
