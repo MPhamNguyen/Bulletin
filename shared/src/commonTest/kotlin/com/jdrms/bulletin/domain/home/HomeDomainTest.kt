@@ -34,6 +34,15 @@ class HomeDomainTest {
     }
 
     @Test
+    fun testPriceWithMoreThanTwoDecimalPlacesThrowsException() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            HomePrice(40.555)
+        }
+
+        assertEquals("Price amount cannot have more than two decimal places.", exception.message)
+    }
+
+    @Test
     fun testBlankTitleThrowsException() {
         assertFailsWith<IllegalArgumentException> {
             HomeFeedItem(

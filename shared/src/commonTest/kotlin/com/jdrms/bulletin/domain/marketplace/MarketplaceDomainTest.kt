@@ -33,6 +33,15 @@ class MarketplaceDomainTest {
     }
 
     @Test
+    fun testPriceWithMoreThanTwoDecimalPlacesThrowsException() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            MarketplacePrice(40.555)
+        }
+
+        assertEquals("Marketplace price amount cannot have more than two decimal places.", exception.message)
+    }
+
+    @Test
     fun testBlankTitleThrowsException() {
         assertFailsWith<IllegalArgumentException> {
             MarketplaceItem(
