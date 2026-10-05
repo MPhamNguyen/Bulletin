@@ -510,6 +510,67 @@ class ListingsViewModelTest {
         assertEquals(listOf("Desk Lamp"), viewModel.uiState.value.myListings.map { it.title })
     }
 
+    @Test
+    fun testSubmitListingEmitsListingChangedSignal() = runTest {
+        val signal = RefreshSignal()
+        var emittedCount = 0
+        val job = launch {
+            signal.events.collect { emittedCount++ }
+        }
+        val policy = ListingValidationPolicy()
+        val customViewModel = ListingsViewModel(
+            createListing = CreateListing(repository, policy),
+            manageListing = ManageListing(repository, policy),
+            deleteListing = DeleteListing(repository, policy),
+            getSellerListings = GetSellerListings(repository),
+            currentSellerProvider = sellerProvider,
+            listingChangedSignal = signal
+        )
+        advanceUntilIdle()
+
+        customViewModel.onTitleChanged("Signal Test Item")
+        customViewModel.onDescriptionChanged("Valid signal description")
+        customViewModel.onPriceChanged("15.00")
+        customViewModel.onCategorySelected(ListingCategory.OTHER)
+        customViewModel.onConditionSelected(ListingCondition.GOOD)
+
+        customViewModel.submitNewListing()
+        advanceUntilIdle()
+
+        assertEquals(1, emittedCount)
+        job.cancel()
+    }
+
+    @Test
+    fun testDeleteListingEmitsListingChangedSignal() = runTest {
+        val signal = RefreshSignal()
+        var emittedCount = 0
+        val job = launch {
+            signal.events.collect { emittedCount++ }
+        }
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        val policy = ListingValidationPolicy()
+        val customViewModel = ListingsViewModel(
+            createListing = CreateListing(repository, policy),
+            manageListing = ManageListing(repository, policy),
+            deleteListing = DeleteListing(repository, policy),
+            getSellerListings = GetSellerListings(repository),
+            currentSellerProvider = sellerProvider,
+            listingChangedSignal = signal
+        )
+        advanceUntilIdle()
+
+        customViewModel.requestDeleteListing(listing)
+        customViewModel.confirmDeleteListing()
+        advanceUntilIdle()
+
+        assertEquals(1, emittedCount)
+        job.cancel()
+    }
+
     private fun testListing(ownerId: SellerId): Listing {
         return Listing(
             id = ListingId("list_test_vm"),

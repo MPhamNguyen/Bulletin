@@ -60,7 +60,7 @@ internal fun EditProfileView(
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         ProfileTopBar(
-            title = "Edit Profile",
+            title = "Edit Account",
             onBackClick = onBack,
             actionLabel = "Cancel",
             onActionClick = onCancel
@@ -146,8 +146,15 @@ private fun ProfileContent(
     ProfileEditField(
         label = "Major",
         value = uiState.profileDraft.major,
-        placeholder = "Your major",
+        placeholder = "e.g. Computer Science",
         onValueChange = { onDraftChanged(uiState.profileDraft.copy(major = it)) }
+    )
+    Spacer(modifier = Modifier.height(18.dp))
+    ProfileEditField(
+        label = "Graduation Date",
+        value = uiState.profileDraft.graduationDate,
+        placeholder = "e.g. Class of 2025 or Spring 2026",
+        onValueChange = { onDraftChanged(uiState.profileDraft.copy(graduationDate = it)) }
     )
     Spacer(modifier = Modifier.height(18.dp))
     ProfileEditField(
@@ -176,7 +183,7 @@ private fun ProfileContent(
     val isModified = uiState.isProfileModified
     val isButtonEnabled = isModified && !uiState.isLoading
 
-    Spacer(modifier = Modifier.height(40.dp))
+    Spacer(modifier = Modifier.height(36.dp))
     Button(
         onClick = onUpdate,
         enabled = isButtonEnabled,
@@ -202,9 +209,7 @@ private fun ProfileContent(
     }
 
     Spacer(modifier = Modifier.height(24.dp))
-
     SignOutButton(onClick = onSignOut)
-
     Spacer(modifier = Modifier.height(16.dp))
 }
 
@@ -332,7 +337,7 @@ internal fun SignOutButton(
             Text(
                 text = "Sign Out",
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error
             )
         }
