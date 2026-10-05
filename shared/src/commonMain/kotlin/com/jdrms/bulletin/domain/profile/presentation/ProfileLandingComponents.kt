@@ -9,32 +9,45 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import kotlin.math.roundToInt
 
 internal object ProfileIcons {
     val MyListings: ImageVector = Icons.Outlined.GridView
+    val BookmarkedListings: ImageVector = Icons.Outlined.BookmarkBorder
+    val Settings: ImageVector = Icons.Outlined.Settings
+    val School: ImageVector = Icons.Outlined.School
+    val Graduation: ImageVector = Icons.Outlined.CalendarToday
+    val Verified: ImageVector = Icons.Outlined.CheckCircle
 }
 
 @Composable
@@ -42,16 +55,20 @@ internal fun ProfileSectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         letterSpacing = 1.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
 @Composable
-internal fun ProfileLandingTopBar(onEditProfileClick: () -> Unit) {
+internal fun MarketplaceProfileTopBar(
+    onSettingsClick: () -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -61,88 +78,127 @@ internal fun ProfileLandingTopBar(onEditProfileClick: () -> Unit) {
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
-        TextButton(
-            onClick = onEditProfileClick,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary)
+        IconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier
+                .size(44.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = CircleShape
+                )
         ) {
-            Text(text = "Edit", style = MaterialTheme.typography.labelLarge)
+            Icon(
+                imageVector = Icons.Outlined.Settings,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(22.dp)
+            )
         }
     }
 }
 
 @Composable
-internal fun ProfileAvatarHeader(fullName: String, university: String, isVerified: Boolean) {
-    Box {
+internal fun ProfileProminentAvatar(
+    fullName: String,
+    university: String,
+    isVerified: Boolean
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Box(
             modifier = Modifier
-                .size(80.dp)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                .size(96.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = CircleShape
+                )
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    shape = CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = profileInitials(fullName),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.tertiary
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
-        if (isVerified) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .background(MaterialTheme.colorScheme.background, CircleShape)
-                    .padding(3.dp)
-                    .size(22.dp)
-                    .background(BulletinExtras.colors.successContainer, CircleShape)
-                    .border(1.dp, BulletinExtras.colors.success.copy(alpha = 0.5f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Outlined.CheckCircle,
-                    contentDescription = "Verified student",
-                    tint = BulletinExtras.colors.success,
-                    modifier = Modifier.size(14.dp)
-                )
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = fullName,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = university,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            if (isVerified) {
+                Surface(
+                    shape = CircleShape,
+                    color = BulletinExtras.colors.successContainer,
+                    border = BorderStroke(1.dp, BulletinExtras.colors.success.copy(alpha = 0.25f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CheckCircle,
+                            contentDescription = null,
+                            tint = BulletinExtras.colors.success,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "Verified",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = BulletinExtras.colors.success
+                        )
+                    }
+                }
             }
         }
     }
-    Spacer(modifier = Modifier.size(12.dp))
-    Text(
-        text = fullName,
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.Center
-    )
-    Spacer(modifier = Modifier.size(4.dp))
-    Text(
-        text = university,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center
-    )
-    if (isVerified) {
-        Spacer(modifier = Modifier.size(8.dp))
-        Row(
-            modifier = Modifier
-                .background(BulletinExtras.colors.successContainer, CircleShape)
-                .border(1.dp, BulletinExtras.colors.success.copy(alpha = 0.2f), CircleShape)
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
+}
+
+@Composable
+internal fun StarRatingDisplay(
+    rating: Double,
+    maxStars: Int = 5,
+    starSize: Dp = 18.dp,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val clampedRating = rating.coerceIn(0.0, maxStars.toDouble())
+        val roundedStars = clampedRating.roundToInt().coerceIn(0, maxStars)
+
+        for (i in 1..maxStars) {
+            val isFilled = i <= roundedStars
             Icon(
-                Icons.Outlined.CheckCircle,
+                imageVector = if (isFilled) Icons.Filled.Star else Icons.Outlined.StarBorder,
                 contentDescription = null,
-                tint = BulletinExtras.colors.success,
-                modifier = Modifier.size(14.dp)
-            )
-            Text(
-                text = "Verified Student",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = BulletinExtras.colors.success
+                tint = if (isFilled) BulletinExtras.colors.star else MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.size(starSize)
             )
         }
     }
@@ -171,17 +227,36 @@ internal fun ProfileActionRow(
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            ProfileActionIcon(icon)
-            Spacer(modifier = Modifier.width(12.dp))
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = MaterialTheme.shapes.medium
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 subtitle?.let {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = it,
                         style = MaterialTheme.typography.bodySmall,
@@ -190,41 +265,11 @@ internal fun ProfileActionRow(
                 }
             }
             Icon(
-                Icons.Outlined.ChevronRight,
+                imageVector = Icons.Outlined.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
-    }
-}
-
-@Composable
-private fun ProfileActionIcon(icon: ImageVector) {
-    val color = MaterialTheme.colorScheme.primary
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .background(color.copy(alpha = 0.1f), MaterialTheme.shapes.small),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-    }
-}
-
-@Composable
-internal fun ProfileInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }

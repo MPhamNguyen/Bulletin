@@ -9,6 +9,7 @@ import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
+import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 class ListingsViewModel(
     private val createListing: CreateListing,
     private val manageListing: ManageListing,
+    private val deleteListing: DeleteListing,
     private val getSellerListings: GetSellerListings,
     private val currentSellerProvider: CurrentListingSellerProvider,
     private val listingChangedSignal: RefreshSignal? = null
@@ -143,6 +145,7 @@ class ListingsViewModel(
                         }
                         showFlashNotification("Listing posted successfully!")
                         loadMyListings(seller)
+                        listingChangedSignal?.emit()
                     }
                     is Result.Error -> _uiState.update {
                         it.copy(
@@ -161,14 +164,48 @@ class ListingsViewModel(
         }
     }
 
-    fun deleteListing(id: ListingId) {
+    fun requestDeleteListing(listing: Listing) {
+        _uiState.update { it.copy(pendingDeletion = listing, errorMessage = null) }
+    }
+
+    fun cancelDeleteListing() {
+        _uiState.update { it.copy(pendingDeletion = null) }
+    }
+
+    fun confirmDeleteListing() {
+        var pendingListing: Listing? = null
+        while (pendingListing == null) {
+            val state = _uiState.value
+            val listing = state.pendingDeletion ?: return
+            if (state.isDeleting) return
+            if (_uiState.compareAndSet(state, state.copy(isDeleting = true, errorMessage = null))) {
+                pendingListing = listing
+            }
+        }
+        val listing = checkNotNull(pendingListing)
         viewModelScope.launch {
             when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
                 is Result.Success -> {
-                    if (manageListing.deleteListing(id).isSuccess()) loadMyListings()
+                    when (val result = deleteListing(listing.id, sellerResult.data.id)) {
+                        is Result.Success -> {
+                            _uiState.update { it.copy(pendingDeletion = null, isDeleting = false) }
+                            showFlashNotification("Listing deleted successfully!")
+                            loadMyListings(sellerResult.data)
+                            listingChangedSignal?.emit()
+                        }
+                        is Result.Error -> _uiState.update {
+                            it.copy(
+                                isDeleting = false,
+                                errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
+                            )
+                        }
+                    }
                 }
                 is Result.Error -> _uiState.update {
-                    it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
+                    it.copy(
+                        isDeleting = false,
+                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                    )
                 }
             }
         }

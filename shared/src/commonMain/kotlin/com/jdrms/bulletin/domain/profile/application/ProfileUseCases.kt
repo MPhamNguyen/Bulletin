@@ -102,11 +102,21 @@ class UpdateStudentProfile(
         fullName: String,
         major: String,
         university: String,
-        bio: String
+        bio: String,
+        graduationDate: String = profile.graduationDate,
+        avatarUrl: String? = profile.avatarUrl
     ): Result<StudentProfile> {
-        return when (val updatedProfile = profile.updateDetails(fullName, major, university, bio)) {
-            is Result.Success -> profileRepository.updateProfile(updatedProfile.data)
-            is Result.Error -> updatedProfile
+        val updateResult = profile.updateDetails(
+            fullName = fullName,
+            major = major,
+            university = university,
+            bio = bio,
+            graduationDate = graduationDate,
+            avatarUrl = avatarUrl
+        )
+        return when (updateResult) {
+            is Result.Success -> profileRepository.updateProfile(updateResult.data)
+            is Result.Error -> updateResult
         }
     }
 }

@@ -69,8 +69,10 @@ data class StudentProfile(
     val email: StudentEmail,
     val fullName: String,
     val major: String = "",
+    val graduationDate: String = "",
     val university: String = "CSU Long Beach",
     val bio: String = "",
+    val avatarUrl: String? = null,
     val isVerified: Boolean = false,
     val reputation: StudentReputation? = null
 ) {
@@ -80,33 +82,41 @@ data class StudentProfile(
         fullName: String,
         major: String,
         university: String,
-        bio: String
+        bio: String,
+        graduationDate: String = this.graduationDate,
+        avatarUrl: String? = this.avatarUrl
     ): Result<StudentProfile> {
         val normalizedName = fullName.trim()
         val normalizedUniversity = university.trim()
         val normalizedBio = bio.trim()
+        val normalizedGradDate = graduationDate.trim()
 
-        if (normalizedName.isBlank()) {
-            return Result.Error(IllegalArgumentException("Full name is required."))
+        val validationError = when {
+            normalizedName.isBlank() -> "Full name is required."
+            normalizedUniversity.isBlank() -> "School is required."
+            normalizedBio.length > MAX_BIO_LENGTH -> "Bio must be $MAX_BIO_LENGTH characters or fewer."
+            normalizedGradDate.length > MAX_GRAD_DATE_LENGTH ->
+                "Graduation date must be $MAX_GRAD_DATE_LENGTH characters or fewer."
+            else -> null
         }
-        if (normalizedUniversity.isBlank()) {
-            return Result.Error(IllegalArgumentException("School is required."))
-        }
-        if (normalizedBio.length > MAX_BIO_LENGTH) {
-            return Result.Error(IllegalArgumentException("Bio must be $MAX_BIO_LENGTH characters or fewer."))
+        if (validationError != null) {
+            return Result.Error(IllegalArgumentException(validationError))
         }
 
         return Result.Success(
             copy(
                 fullName = normalizedName,
                 major = major.trim(),
+                graduationDate = normalizedGradDate,
                 university = normalizedUniversity,
-                bio = normalizedBio
+                bio = normalizedBio,
+                avatarUrl = avatarUrl?.trim()?.ifBlank { null }
             )
         )
     }
 
     companion object {
         const val MAX_BIO_LENGTH = 500
+        const val MAX_GRAD_DATE_LENGTH = 50
     }
 }

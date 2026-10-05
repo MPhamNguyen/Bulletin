@@ -56,14 +56,18 @@ class SupabaseListingsRepository internal constructor(
         return listingsTable.findById(id.value)?.let(SupabaseListingMapper::toDomain)
     }
 
-    override suspend fun deleteListing(id: ListingId): Result<Unit> {
+    override suspend fun deleteListing(id: ListingId, sellerId: SellerId): Result<Unit> {
         return runCatching {
             val existing = listingsTable.findById(id.value)
             if (existing == null) {
                 Result.Error(NoSuchElementException("Listing not found."))
             } else {
-                listingsTable.delete(id.value)
-                Result.Success(Unit)
+                if (existing.userId != sellerId.value) {
+                    Result.Error(IllegalAccessException("Only the owner can delete this listing."))
+                } else {
+                    listingsTable.delete(id.value, sellerId.value)
+                    Result.Success(Unit)
+                }
             }
         }.fold(
             onSuccess = { it },
@@ -90,7 +94,7 @@ internal interface SupabaseListingsTable {
     suspend fun findById(id: String): SupabaseListingDto?
     suspend fun insert(listing: SupabaseListingInsertDto)
     suspend fun update(listing: SupabaseListingWriteDto)
-    suspend fun delete(id: String)
+    suspend fun delete(id: String, sellerId: String)
     suspend fun getListings(sellerId: String?): List<SupabaseListingDto>
 }
 
@@ -113,9 +117,12 @@ private class PostgrestSupabaseListingsTable(
         }
     }
 
-    override suspend fun delete(id: String) {
+    override suspend fun delete(id: String, sellerId: String) {
         supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).delete {
-            filter { eq("id", id) }
+            filter {
+                eq("id", id)
+                eq("user_id", sellerId)
+            }
         }
     }
 

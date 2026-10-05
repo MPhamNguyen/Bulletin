@@ -103,6 +103,30 @@ class ListingsSupabaseInfrastructureTest {
         assertEquals(CreateListingErrorMessages.GENERIC_FAILURE, (result as Result.Error).message)
     }
 
+    @Test
+    fun deleteListingPassesListingAndOwnerToSupabase() = runTest {
+        val table = FakeSupabaseListingsTable(existingId = "listing-uuid")
+        val repository = SupabaseListingsRepository(table)
+
+        val result = repository.deleteListing(ListingId("listing-uuid"), SellerId("seller-uuid"))
+
+        assertTrue(result.isSuccess())
+        assertEquals("listing-uuid", table.deletedId)
+        assertEquals("seller-uuid", table.deletedSellerId)
+    }
+
+    @Test
+    fun deleteListingRejectsDifferentOwnerBeforeDelete() = runTest {
+        val table = FakeSupabaseListingsTable(existingId = "listing-uuid")
+        val repository = SupabaseListingsRepository(table)
+
+        val result = repository.deleteListing(ListingId("listing-uuid"), SellerId("other-seller"))
+
+        assertTrue(result.isError())
+        assertEquals("Only the owner can delete this listing.", (result as Result.Error).message)
+        assertEquals(null, table.deletedId)
+    }
+
     private fun testListing(): Listing {
         return Listing(
             id = ListingId("listing-uuid"),
@@ -125,6 +149,8 @@ class ListingsSupabaseInfrastructureTest {
     ) : SupabaseListingsTable {
         var inserted: SupabaseListingInsertDto? = null
         var updated: SupabaseListingWriteDto? = null
+        var deletedId: String? = null
+        var deletedSellerId: String? = null
 
         override suspend fun findById(id: String): SupabaseListingDto? {
             return if (id == existingId) {
@@ -144,7 +170,10 @@ class ListingsSupabaseInfrastructureTest {
             updated = listing
         }
 
-        override suspend fun delete(id: String) = Unit
+        override suspend fun delete(id: String, sellerId: String) {
+            deletedId = id
+            deletedSellerId = sellerId
+        }
 
         override suspend fun getListings(sellerId: String?): List<SupabaseListingDto> = emptyList()
     }

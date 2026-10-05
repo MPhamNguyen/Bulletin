@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,47 +13,50 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.app.theme.ThemePreference
 
 @Composable
-internal fun ProfileLandingView(
+internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
-    onEditProfileClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onMyListingsClick: () -> Unit,
-    themePreference: ThemePreference?,
-    onThemePreferenceChanged: ((ThemePreference) -> Unit)?,
-    onSignOut: () -> Unit
+    onBookmarkedListingsClick: () -> Unit
 ) {
     val profile = uiState.profile
     Column(modifier = Modifier.fillMaxSize()) {
-        ProfileLandingTopBar(onEditProfileClick)
+        MarketplaceProfileTopBar(onSettingsClick = onSettingsClick)
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, top = 2.dp, end = 20.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 20.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            ProfileAvatarHeader(
-                fullName = profile?.fullName ?: "Student Profile",
-                university = profile?.university ?: "CSU Long Beach",
+            ProfileProminentAvatar(
+                fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso",
+                university = profile?.university?.ifBlank { null } ?: "CSU Long Beach",
                 isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true
             )
+
+            ProfileAcademicInformationCard(
+                major = profile?.major?.ifBlank { null } ?: "Computer Science",
+                graduationDate = profile?.graduationDate?.ifBlank { null } ?: "Class of 2025"
+            )
+
+            MarketplaceActivityStatsCard(
+                activeListings = uiState.activeListingsCount,
+                itemsSold = uiState.itemsSoldCount,
+                rating = uiState.reputation?.averageRating ?: 4.8
+            )
+
+            ProfileAboutCard(bio = profile?.bio)
+
+            ProfileNavigationButtons(
+                onMyListingsClick = onMyListingsClick,
+                onBookmarkedListingsClick = onBookmarkedListingsClick
+            )
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileAboutCard(profile?.bio)
-            Spacer(modifier = Modifier.height(16.dp))
-            ProfileAcademicInformationCard(profile?.university, profile?.major, profile?.email?.value)
-            Spacer(modifier = Modifier.height(16.dp))
-            ProfileReputationCard(uiState.reputation)
-            Spacer(modifier = Modifier.height(16.dp))
-            ProfileActionRow(ProfileIcons.MyListings, "My Listings", onMyListingsClick)
-            if (themePreference != null && onThemePreferenceChanged != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                AppearanceCard(themePreference, onThemePreferenceChanged)
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            SignOutButton(onSignOut)
         }
     }
 }
