@@ -1,6 +1,9 @@
 package com.jdrms.bulletin.domain.profile.application
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
+import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
@@ -23,7 +26,7 @@ class AuthenticateUser(
         password: String,
         fullName: String,
         university: String = "CSU Long Beach"
-    ): Result<StudentProfile> {
+    ): Result<PendingRegistration> {
         val validation = policy.validateRegistration(
             emailStr = email.value,
             password = password,
@@ -63,9 +66,16 @@ class SignOutUser(
 class VerifyStudentEmail(
     private val authRepository: AuthRepository
 ) {
-    suspend operator fun invoke(email: StudentEmail, code: String): Result<Boolean> {
-        return authRepository.verifyEmail(email, code)
+    suspend operator fun invoke(email: StudentEmail, code: String): Result<EmailVerificationOutcome> {
+        return when (val parsed = EmailVerificationCode.parse(code)) {
+            is Result.Success -> authRepository.verifyEmail(email, parsed.data)
+            is Result.Error -> parsed
+        }
     }
+}
+
+class ResendVerificationCode(private val authRepository: AuthRepository) {
+    suspend operator fun invoke(email: StudentEmail): Result<Unit> = authRepository.resendVerificationCode(email)
 }
 
 class ManageProfile(

@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
@@ -19,6 +21,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -229,7 +232,7 @@ class ProfileInfrastructureTest {
     @Test
     fun testInMemoryAuthRepositoryRegisterAndLogin() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
 
         val email = StudentEmail("newuser@gmail.com")
         val registerResult = authRepo.register(
@@ -240,7 +243,11 @@ class ProfileInfrastructureTest {
         )
         assertTrue(registerResult is Result.Success)
 
-        val createdProfile = registerResult.data
+        assertTrue(authRepo.login(email, "mypassword123").isError())
+        assertNull((authRepo.getCurrentUser() as Result.Success).data)
+        val verified = VerifyStudentEmail(authRepo)(email, "123456")
+        assertTrue(verified is Result.Success)
+        val createdProfile = assertIs<EmailVerificationOutcome.ProfileAvailable>(verified.data).profile
         assertEquals("New User", createdProfile.fullName)
         assertEquals(email, createdProfile.email)
         assertEquals(createdProfile, (authRepo.getCurrentUser() as Result.Success).data)

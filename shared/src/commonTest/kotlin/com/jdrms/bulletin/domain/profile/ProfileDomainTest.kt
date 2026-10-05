@@ -28,6 +28,22 @@ class ProfileDomainTest {
     }
 
     @Test
+    fun confirmingEmailPreservesProfileIdentityAndIsIdempotent() {
+        val profile = StudentProfile(
+            id = UserId("student-id"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Student Name"
+        )
+
+        val confirmed = profile.confirmEmail()
+
+        assertTrue(confirmed.isVerified)
+        assertEquals(profile.id, confirmed.id)
+        assertEquals(profile.email, confirmed.email)
+        assertEquals(confirmed, confirmed.confirmEmail())
+    }
+
+    @Test
     fun testValidNonUniversityEmailsMatchRegex() {
         val gmail = StudentEmail("jane.doe@gmail.com")
         assertFalse(gmail.isUniversityEmail)
@@ -56,11 +72,42 @@ class ProfileDomainTest {
     @Test
     fun testValidateRegistrationSuccess() {
         val result = policy.validateRegistration(
-            emailStr = "student@gmail.com",
+            emailStr = "bob.smith@student.school.edu",
             password = "securePassword123",
             fullName = "Jane Student"
         )
         assertTrue(result.isSuccess())
+    }
+
+    @Test
+    fun testValidateRegistrationRejectsNonEduEmail() {
+        val result = policy.validateRegistration(
+            emailStr = "student@gmail.com",
+            password = "securePassword123",
+            fullName = "Jane Student"
+        )
+
+        assertTrue(result.isError())
+        assertEquals(
+            "Bulletin requires a valid .edu university email.",
+            (result as Result.Error).exception.message
+        )
+    }
+
+    @Test
+    fun testValidateRegistrationWithSeparateNamesRequiresEduEmail() {
+        val result = policy.validateRegistration(
+            firstName = "Jane",
+            lastName = "Student",
+            emailStr = "student@example.com",
+            password = "securePassword123"
+        )
+
+        assertTrue(result.isError())
+        assertEquals(
+            "Bulletin requires a valid .edu university email.",
+            (result as Result.Error).exception.message
+        )
     }
 
     @Test

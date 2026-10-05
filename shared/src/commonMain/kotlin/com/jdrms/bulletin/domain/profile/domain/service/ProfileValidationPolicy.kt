@@ -29,7 +29,7 @@ class ProfileValidationPolicy {
         return if (errorMessage != null) {
             Result.Error(IllegalArgumentException(errorMessage))
         } else {
-            Result.Success(Unit)
+            validateUniversityRegistration(trimmedEmail)
         }
     }
 
@@ -52,7 +52,7 @@ class ProfileValidationPolicy {
         return if (errorMessage != null) {
             Result.Error(IllegalArgumentException(errorMessage))
         } else {
-            Result.Success(Unit)
+            validateUniversityRegistration(trimmedEmail)
         }
     }
 

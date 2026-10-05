@@ -76,6 +76,8 @@ data class StudentProfile(
     val isVerified: Boolean = false,
     val reputation: StudentReputation? = null
 ) {
+    fun confirmEmail(): StudentProfile = if (isVerified) this else copy(isVerified = true)
+
     fun updateDetails(
         fullName: String,
         major: String,

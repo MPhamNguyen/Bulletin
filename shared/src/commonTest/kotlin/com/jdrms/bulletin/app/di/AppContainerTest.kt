@@ -20,10 +20,9 @@ class AppContainerTest {
         assertIs<MessagingAuthenticationRequiredException>(
             assertIs<Result.Error>(container.getConversations()).exception
         )
-        val profile = container.authRepository.register(
-            StudentEmail("new.student@example.edu"),
-            "password123",
-            "New Student"
+        val profile = container.authRepository.login(
+            StudentEmail("dominic.alfonso@student.csulb.edu"),
+            "password123"
         ).getOrThrow()
         val sender = container.currentMessageSenderProvider.getCurrentSender().getOrThrow()
         assertEquals(profile.id.value, sender.id.value)
