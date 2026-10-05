@@ -88,7 +88,7 @@ abstract class MessagesRepositoryContractTest {
     @Test
     fun reportingOlderMessageDoesNotReplaceLatestSummary() = runTest {
         val repository = createRepository(listOf(conversation()), listOf(message()))
-        val latest = message(carol, id = MessageId("latest"))
+        val latest = message(alice, id = MessageId("latest")).copy(timestampMillis = 43L)
         repository.sendMessage(latest).getOrThrow()
         repository.reportMessage(alice.id, conversationId, message().id, "Spam").getOrThrow()
         assertEquals(latest, repository.getConversations(alice.id).getOrThrow().single().lastMessage)

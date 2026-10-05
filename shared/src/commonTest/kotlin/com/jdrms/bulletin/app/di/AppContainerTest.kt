@@ -4,7 +4,10 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,6 +15,20 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class AppContainerTest {
+
+    @Test
+    fun configuredContainerUsesSupabaseMessagesRepository() {
+        val container = AppContainer(
+            providedSupabaseClient = createSupabaseClient(
+                supabaseUrl = "https://example.supabase.co",
+                supabaseKey = "test-anon-key"
+            ) {
+                install(Postgrest)
+            }
+        )
+
+        assertIs<SupabaseMessagesRepository>(container.messagesRepository)
+    }
 
     @Test
     fun messagingUsesTheSameAuthSessionAndKeepsInMemoryStorage() = runTest {
@@ -49,6 +66,10 @@ class AppContainerTest {
 
         assertFailsWith<IllegalStateException> {
             container.authRepository
+        }
+
+        assertFailsWith<IllegalStateException> {
+            container.messagesRepository
         }
     }
 }
