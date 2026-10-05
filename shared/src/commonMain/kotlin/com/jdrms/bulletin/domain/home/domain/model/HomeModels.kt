@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.home.domain.model
 
+import com.jdrms.bulletin.core.common.formatUsdAmount
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -23,7 +24,7 @@ data class HomePrice(
     }
 
     val formatted: String
-        get() = "$$amount"
+        get() = formatUsdAmount(amount)
 }
 
 data class UserPreferences(

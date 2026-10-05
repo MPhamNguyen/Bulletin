@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.marketplace.domain.model
 
+import com.jdrms.bulletin.core.common.formatUsdAmount
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -23,7 +24,7 @@ data class MarketplacePrice(
     }
 
     val formatted: String
-        get() = "$$amount"
+        get() = formatUsdAmount(amount)
 }
 
 data class MarketplaceItem(

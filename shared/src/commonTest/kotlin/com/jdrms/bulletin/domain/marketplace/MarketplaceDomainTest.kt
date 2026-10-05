@@ -20,8 +20,9 @@ class MarketplaceDomainTest {
 
     @Test
     fun testValidPriceFormatting() {
-        val price = MarketplacePrice(29.99)
-        assertEquals("$29.99", price.formatted)
+        assertEquals("$30.00", MarketplacePrice(30.0).formatted)
+        assertEquals("$29.99", MarketplacePrice(29.99).formatted)
+        assertEquals("$25.50", MarketplacePrice(25.5).formatted)
     }
 
     @Test
