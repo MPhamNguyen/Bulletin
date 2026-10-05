@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.profile.presentation
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.DeleteStudentAccount
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
@@ -179,7 +180,8 @@ class EmailVerificationViewModelTest {
                 resendVerificationCode = ResendVerificationCode(auth),
                 manageProfile = ManageProfile(profiles),
                 updateStudentProfile = UpdateStudentProfile(profiles),
-                submitStudentReview = SubmitStudentReview(profiles)
+                submitStudentReview = SubmitStudentReview(profiles),
+                deleteStudentAccount = DeleteStudentAccount(profiles, auth)
             )
             advanceUntilIdle()
             block(viewModel)

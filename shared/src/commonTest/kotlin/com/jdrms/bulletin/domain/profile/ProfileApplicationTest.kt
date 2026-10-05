@@ -17,6 +17,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -138,7 +139,7 @@ class ProfileApplicationTest {
     @Test
     fun testDeleteStudentAccountDeletesProfileAndSignsOut() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
         val authenticateUser = AuthenticateUser(authRepo, policy)
         val restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo)
         val fixedTimestamp = 1_700_000_000_000L
@@ -149,12 +150,15 @@ class ProfileApplicationTest {
         )
 
         val registered = authenticateUser.register(
-            email = StudentEmail("delete_me@example.com"),
+            email = StudentEmail("delete_me@school.edu"),
             password = "validPassword123",
             fullName = "To Be Deleted"
         )
         assertTrue(registered is Result.Success)
-        val userId = registered.data.id
+        VerifyStudentEmail(authRepo)(StudentEmail("delete_me@school.edu"), "123456")
+        val userId = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        ).id
 
         // Verify active session before deletion
         val currentProfile = restoreAuthenticatedProfile()
@@ -182,7 +186,7 @@ class ProfileApplicationTest {
     @Test
     fun testDeleteStudentAccountFailsForNonexistentProfile() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
         val deleteStudentAccount = DeleteStudentAccount(profileRepo, authRepo)
 
         val deleteResult = deleteStudentAccount(UserId("nonexistent_user"))
@@ -192,24 +196,88 @@ class ProfileApplicationTest {
     @Test
     fun testAuthenticateUserLoginFailsForSoftDeletedAccount() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
         val authenticateUser = AuthenticateUser(authRepo, policy)
 
-        val email = StudentEmail("deleted_user@example.com")
+        val email = StudentEmail("deleted_user@school.edu")
         val registerResult = authenticateUser.register(
             email = email,
             password = "validPassword123",
             fullName = "Deleted User"
         )
         assertTrue(registerResult is Result.Success)
+        VerifyStudentEmail(authRepo)(email, "123456")
+        val deletedUserId = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        ).id
 
         // Soft delete the profile
-        val deleteResult = profileRepo.deleteProfile(registerResult.data.id, 1_700_000_000_000L)
+        val deleteResult = profileRepo.deleteProfile(
+            deletedUserId,
+            1_700_000_000_000L
+        )
         assertTrue(deleteResult.isSuccess())
 
         // Attempting to login fails
         val loginResult = authenticateUser.login(email, "validPassword123")
         assertTrue(loginResult is Result.Error)
         assertEquals("Account has been deleted.", loginResult.exception.message)
+    }
+
+    @Test
+    fun testRemakingAccountWithSameEmailAfterSoftDeleteSucceeds() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+        val authenticateUser = AuthenticateUser(authRepo, policy)
+
+        val email = StudentEmail("remade_user@school.edu")
+        val registerResult = authenticateUser.register(
+            email = email,
+            password = "oldPassword123",
+            fullName = "Old Name"
+        )
+        assertTrue(registerResult is Result.Success)
+        VerifyStudentEmail(authRepo)(email, "123456")
+        val initialId = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        ).id
+
+        // Soft delete the profile
+        val deleteResult = profileRepo.deleteProfile(initialId, 1_700_000_000_000L)
+        assertTrue(deleteResult.isSuccess())
+
+        // Re-register with the same email
+        val remakeResult = authenticateUser.register(
+            email = email,
+            password = "newPassword456",
+            fullName = "New Name"
+        )
+        assertTrue(remakeResult is Result.Success)
+        VerifyStudentEmail(authRepo)(email, "123456")
+        val remadeProfile = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        )
+        assertEquals("New Name", remadeProfile.fullName)
+        assertFalse(remadeProfile.isDeleted)
+        assertNull(remadeProfile.deleteAtMillis)
+
+        // Profile repo has active profile
+        val stored = profileRepo.getProfile(remadeProfile.id)
+        assertTrue(stored is Result.Success)
+        assertNotNull(stored.data)
+        assertFalse(assertNotNull(stored.data).isDeleted)
+
+        // Old profile ID entry is cleaned up
+        if (initialId != remadeProfile.id) {
+            val oldStored = profileRepo.getProfile(initialId)
+            assertTrue(oldStored is Result.Success)
+            assertNull(oldStored.data)
+        }
+
+        // Signing out and logging in with new credentials succeeds
+        authRepo.signOut()
+        val loginResult = authenticateUser.login(email, "newPassword456")
+        assertTrue(loginResult is Result.Success)
+        assertFalse(loginResult.data.isDeleted)
     }
 }

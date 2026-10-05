@@ -59,10 +59,45 @@ class SupabaseProfileRepository(
             } else {
                 profile
             }
-            val updateDto = ProfileMapper.toUpdateDto(profileToSave)
-            supabase.from(PROFILES_TABLE).update(updateDto) {
-                filter {
-                    eq("id", resolvedId)
+            val fullDto = ProfileMapper.toDto(profileToSave)
+
+            val existingById = runCatching {
+                supabase.from(PROFILES_TABLE).select {
+                    filter {
+                        eq("id", resolvedId)
+                    }
+                }.decodeSingleOrNull<ProfileDto>()
+            }.getOrNull()
+
+            val existingByEmail = if (existingById == null && profile.email.value.isNotBlank()) {
+                runCatching {
+                    supabase.from(PROFILES_TABLE).select {
+                        filter {
+                            eq("email", profile.email.value)
+                        }
+                    }.decodeSingleOrNull<ProfileDto>()
+                }.getOrNull()
+            } else {
+                null
+            }
+
+            when {
+                existingById != null -> {
+                    supabase.from(PROFILES_TABLE).update(fullDto) {
+                        filter {
+                            eq("id", resolvedId)
+                        }
+                    }
+                }
+                existingByEmail != null -> {
+                    supabase.from(PROFILES_TABLE).update(fullDto) {
+                        filter {
+                            eq("email", profile.email.value)
+                        }
+                    }
+                }
+                else -> {
+                    supabase.from(PROFILES_TABLE).upsert(fullDto)
                 }
             }
             profileToSave

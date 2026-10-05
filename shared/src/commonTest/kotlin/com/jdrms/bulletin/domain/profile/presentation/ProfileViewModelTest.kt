@@ -30,6 +30,7 @@ import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -269,6 +270,7 @@ class ProfileViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    @Suppress("LongMethod")
     fun testProfileViewModelUpdatesAndResetsProfileDraft() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(testDispatcher)
@@ -765,14 +767,18 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val email = StudentEmail("delete_candidate@example.com")
             val registered = authRepo.register(
-                email = StudentEmail("delete_candidate@example.com"),
+                email = email,
                 password = "validPassword123",
                 fullName = "Delete Candidate"
             )
             assertTrue(registered is Result.Success)
-            val userId = registered.data.id
+            VerifyStudentEmail(authRepo)(email, "123456")
+            val userId = assertNotNull(
+                assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+            ).id
 
             val viewModel = createProfileViewModel(authRepo, profileRepo)
             advanceUntilIdle()
@@ -845,14 +851,18 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val email = StudentEmail("deleted_login@example.com")
             val registered = authRepo.register(
-                email = StudentEmail("deleted_login@example.com"),
+                email = email,
                 password = "validPassword123",
                 fullName = "Deleted Student"
             )
             assertTrue(registered is Result.Success)
-            val userId = registered.data.id
+            VerifyStudentEmail(authRepo)(email, "123456")
+            val userId = assertNotNull(
+                assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+            ).id
 
             // Soft delete the profile and sign out
             profileRepo.deleteProfile(userId, 1_700_000_000_000L)
@@ -870,6 +880,55 @@ class ProfileViewModelTest {
             assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
             assertNull(viewModel.uiState.value.profile)
             assertFalse(viewModel.uiState.value.isLoading)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelReRegistrationAfterSoftDeleteSucceeds() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val email = StudentEmail("deleted_rereg@school.edu")
+            val registered = authRepo.register(
+                email = email,
+                password = "oldPassword123",
+                fullName = "Old Name"
+            )
+            assertTrue(registered is Result.Success)
+            VerifyStudentEmail(authRepo)(email, "123456")
+            val userId = assertNotNull(
+                assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+            ).id
+
+            // Soft delete the profile and sign out
+            profileRepo.deleteProfile(userId, 1_700_000_000_000L)
+            authRepo.signOut()
+
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.createAccount(
+                firstName = "New",
+                lastName = "Student",
+                emailStr = "deleted_rereg@school.edu",
+                passwordStr = "newPassword456",
+                university = "CSULB"
+            )
+            advanceUntilIdle()
+
+            viewModel.verifyEmail("deleted_rereg@school.edu", "123456")
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertNotNull(viewModel.uiState.value.profile)
+            assertEquals("New Student", viewModel.uiState.value.profile?.fullName)
+            assertFalse(viewModel.uiState.value.profile?.isDeleted == true)
+            assertNull(viewModel.uiState.value.errorMessage)
         } finally {
             Dispatchers.resetMain()
         }

@@ -35,6 +35,12 @@ class InMemoryProfileRepository(
     }
 
     override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
+        val oldEntry = profiles.entries.find {
+            it.value.email.value.equals(profile.email.value, ignoreCase = true) && it.key != profile.id.value
+        }
+        if (oldEntry != null) {
+            profiles.remove(oldEntry.key)
+        }
         profiles[profile.id.value] = profile
         return Result.Success(profile)
     }
@@ -170,7 +176,20 @@ class InMemoryAuthRepository(
             )
         }
         val normalizedEmail = email.value.lowercase()
-        if (credentials.containsKey(normalizedEmail)) {
+        val cached = profilesByEmail[normalizedEmail]
+        val existingProfile = if (cached != null) {
+            when (val res = profileRepository.getProfile(cached.id)) {
+                is Result.Success -> res.data ?: cached
+                is Result.Error -> cached
+            }
+        } else {
+            when (val res = profileRepository.getProfile(UserId(normalizedEmail))) {
+                is Result.Success -> res.data
+                is Result.Error -> null
+            }
+        }
+
+        if (credentials.containsKey(normalizedEmail) && existingProfile?.isDeleted != true) {
             return Result.Error(IllegalArgumentException("An account with this email already exists."))
         }
 
@@ -180,7 +199,8 @@ class InMemoryAuthRepository(
             email = email,
             fullName = fullName,
             university = university,
-            isVerified = false
+            isVerified = false,
+            deleteAtMillis = null
         )
 
         credentials[normalizedEmail] = password

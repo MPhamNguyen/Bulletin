@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // Manual DI keeps each focused authentication and profile use case explicit.
-@Suppress("LongParameterList")
+@Suppress("LargeClass", "LongParameterList")
 class ProfileViewModel(
     private val authenticateUser: AuthenticateUser,
     private val restoreAuthenticatedProfile: RestoreAuthenticatedProfile,

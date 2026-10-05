@@ -450,7 +450,7 @@ class ProfileInfrastructureTest {
     @Test
     fun testInMemoryAuthRepositoryRejectsLoginForDeletedAccount() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
 
         val email = StudentEmail("active@example.com")
         val registerResult = authRepo.register(
@@ -459,14 +459,91 @@ class ProfileInfrastructureTest {
             fullName = "Active User"
         )
         assertTrue(registerResult is Result.Success)
+        VerifyStudentEmail(authRepo)(email, "123456")
+        val deletedUserId = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        ).id
 
         // Soft delete the profile
-        val deleteResult = profileRepo.deleteProfile(registerResult.data.id, 1_700_000_000_000L)
+        val deleteResult = profileRepo.deleteProfile(
+            deletedUserId,
+            1_700_000_000_000L
+        )
         assertTrue(deleteResult.isSuccess())
 
         // Login fails because account is deleted
         val loginResult = authRepo.login(email, "password123")
         assertTrue(loginResult.isError())
         assertEquals("Account has been deleted.", (loginResult as Result.Error).exception.message)
+    }
+
+    @Test
+    fun testInMemoryProfileRepositoryUpdateProfileReplacesOldEntryWithSameEmail() = runTest {
+        val repo = InMemoryProfileRepository(
+            initialProfiles = emptyMap(),
+            initialReviews = emptyMap()
+        )
+        val email = StudentEmail("reused@csulb.edu")
+        val oldProfile = StudentProfile(
+            id = UserId("old_id"),
+            email = email,
+            fullName = "Old User",
+            deleteAtMillis = 1_700_000_000_000L
+        )
+        repo.updateProfile(oldProfile)
+        val initialFetched = repo.getProfile(UserId("old_id"))
+        assertTrue(initialFetched is Result.Success && initialFetched.data?.isDeleted == true)
+
+        val newProfile = StudentProfile(
+            id = UserId("new_id"),
+            email = email,
+            fullName = "New User",
+            deleteAtMillis = null
+        )
+        repo.updateProfile(newProfile)
+
+        val oldFetched = repo.getProfile(UserId("old_id"))
+        assertTrue(oldFetched is Result.Success)
+        assertNull(oldFetched.data)
+
+        val newFetched = repo.getProfile(UserId("new_id"))
+        assertTrue(newFetched is Result.Success)
+        assertNotNull(newFetched.data)
+        val newFetchedData = assertNotNull(newFetched.data)
+        assertFalse(newFetchedData.isDeleted)
+        assertEquals("New User", newFetchedData.fullName)
+    }
+
+    @Test
+    fun testInMemoryAuthRepositoryAllowsReRegistrationForSoftDeletedAccount() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+
+        val email = StudentEmail("recycle@example.com")
+        val reg1 = authRepo.register(email, "pw1", "User One")
+        assertTrue(reg1 is Result.Success)
+
+        // Soft delete profile and sign out
+        VerifyStudentEmail(authRepo)(email, "123456")
+        val oldUserId = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        ).id
+        profileRepo.deleteProfile(oldUserId, 1_700_000_000_000L)
+        authRepo.signOut()
+
+        // Re-registration with same email succeeds
+        val reg2 = authRepo.register(email, "pw2", "User Two")
+        assertTrue(reg2 is Result.Success)
+        VerifyStudentEmail(authRepo)(email, "123456")
+        val reg2Data = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        )
+        assertEquals("User Two", reg2Data.fullName)
+        assertFalse(reg2Data.isDeleted)
+
+        val current = authRepo.getCurrentUser()
+        assertTrue(current is Result.Success)
+        assertEquals("User Two", current.data?.fullName)
+        assertFalse(current.data?.isDeleted == true)
     }
 }

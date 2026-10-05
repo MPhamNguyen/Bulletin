@@ -35,6 +35,7 @@ class ProfileViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    @Suppress("LongMethod")
     fun testProfileViewModelCreateAccountAndValidation() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(testDispatcher)
@@ -116,6 +117,7 @@ class ProfileViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    @Suppress("LongMethod")
     fun testProfileViewModelUpdatesAndResetsProfileDraft() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(testDispatcher)
