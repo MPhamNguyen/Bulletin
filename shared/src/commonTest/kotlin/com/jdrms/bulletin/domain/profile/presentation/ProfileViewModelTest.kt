@@ -837,6 +837,43 @@ class ProfileViewModelTest {
             Dispatchers.resetMain()
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelLoginFailsForSoftDeletedAccount() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val registered = authRepo.register(
+                email = StudentEmail("deleted_login@example.com"),
+                password = "validPassword123",
+                fullName = "Deleted Student"
+            )
+            assertTrue(registered is Result.Success)
+            val userId = registered.data.id
+
+            // Soft delete the profile and sign out
+            profileRepo.deleteProfile(userId, 1_700_000_000_000L)
+            authRepo.signOut()
+
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            var onSuccessCalled = false
+            viewModel.login("deleted_login@example.com", "validPassword123", onSuccess = { onSuccessCalled = true })
+            advanceUntilIdle()
+
+            assertFalse(onSuccessCalled)
+            assertEquals("Account has been deleted.", viewModel.uiState.value.errorMessage)
+            assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertNull(viewModel.uiState.value.profile)
+            assertFalse(viewModel.uiState.value.isLoading)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 }
 
 private class SessionFailureAuthRepository(

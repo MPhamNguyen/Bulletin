@@ -188,4 +188,28 @@ class ProfileApplicationTest {
         val deleteResult = deleteStudentAccount(UserId("nonexistent_user"))
         assertTrue(deleteResult.isError())
     }
+
+    @Test
+    fun testAuthenticateUserLoginFailsForSoftDeletedAccount() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo)
+        val authenticateUser = AuthenticateUser(authRepo, policy)
+
+        val email = StudentEmail("deleted_user@example.com")
+        val registerResult = authenticateUser.register(
+            email = email,
+            password = "validPassword123",
+            fullName = "Deleted User"
+        )
+        assertTrue(registerResult is Result.Success)
+
+        // Soft delete the profile
+        val deleteResult = profileRepo.deleteProfile(registerResult.data.id, 1_700_000_000_000L)
+        assertTrue(deleteResult.isSuccess())
+
+        // Attempting to login fails
+        val loginResult = authenticateUser.login(email, "validPassword123")
+        assertTrue(loginResult is Result.Error)
+        assertEquals("Account has been deleted.", loginResult.exception.message)
+    }
 }

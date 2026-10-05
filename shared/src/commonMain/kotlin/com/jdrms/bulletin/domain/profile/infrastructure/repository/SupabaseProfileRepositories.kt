@@ -97,7 +97,7 @@ class SupabaseProfileRepository(
             val resolvedId = resolveUserId(userId) ?: userId.value
             val deleteAtIso = kotlin.time.Instant.fromEpochMilliseconds(deletedAtMillis).toString()
             val updatePayload = buildJsonObject {
-                put("delete_at", deleteAtIso)
+                put(DELETED_AT_COLUMN, deleteAtIso)
             }
             supabase.from(PROFILES_TABLE).update(updatePayload) {
                 filter {
@@ -148,6 +148,7 @@ class SupabaseProfileRepository(
         const val PROFILES_TABLE = "profiles"
         const val REVIEWS_TABLE = "reviews"
         const val REVIEWS_VIEW = "reviews_with_names"
+        const val DELETED_AT_COLUMN = "deleted_at"
 
         private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
@@ -271,6 +272,7 @@ class SupabaseAuthRepository(
                 is Result.Success -> {
                     val foundProfile = profileResult.data ?: createProfileFromAuthUser(currentUser, email)
                     if (foundProfile.isDeleted) {
+                        supabase.auth.signOut()
                         error("Account has been deleted.")
                     }
                     foundProfile

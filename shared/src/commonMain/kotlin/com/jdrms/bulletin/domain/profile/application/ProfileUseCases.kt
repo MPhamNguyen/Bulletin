@@ -19,7 +19,25 @@ class AuthenticateUser(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy()
 ) {
     suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
-        return authRepository.login(email, password)
+        val validation = policy.validateLogin(
+            emailStr = email.value,
+            password = password
+        )
+        if (validation.isError()) {
+            return Result.Error((validation as Result.Error).exception)
+        }
+        val loginResult = authRepository.login(email, password)
+        return when (loginResult) {
+            is Result.Success -> {
+                if (loginResult.data.isDeleted) {
+                    authRepository.signOut()
+                    Result.Error(IllegalArgumentException("Account has been deleted."))
+                } else {
+                    loginResult
+                }
+            }
+            is Result.Error -> loginResult
+        }
     }
 
     suspend fun register(

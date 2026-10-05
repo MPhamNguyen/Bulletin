@@ -18,6 +18,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthR
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -132,8 +133,11 @@ class ProfileInfrastructureTest {
             email = StudentEmail("student@example.com"),
             fullName = "John Doe",
             major = "Computer Science",
+            graduationDate = "Class of 2026",
             university = "CSULB",
-            bio = "Campus student"
+            bio = "Campus student",
+            avatarUrl = "https://example.com/avatar.png",
+            deleteAtMillis = 1_791_201_600_000L
         )
 
         val updateDto = ProfileMapper.toUpdateDto(profile)
@@ -141,6 +145,18 @@ class ProfileInfrastructureTest {
         assertEquals("Computer Science", updateDto.major)
         assertEquals("CSULB", updateDto.university)
         assertEquals("Campus student", updateDto.bio)
+
+        val serializedFields = Json.encodeToJsonElement(
+            serializer = com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileUpdateDto.serializer(),
+            value = updateDto
+        ).jsonObject.keys
+        assertEquals(
+            setOf("full_name", "major", "university", "bio", "deleted_at"),
+            serializedFields
+        )
+        assertFalse("delete_at" in serializedFields)
+        assertFalse("graduation_date" in serializedFields)
+        assertFalse("avatar_url" in serializedFields)
     }
 
     @Test
@@ -379,22 +395,27 @@ class ProfileInfrastructureTest {
     }
 
     @Test
-    fun testProfileMapperHandlesDeleteAtTimestamp() {
-        val dto = ProfileDto(
-            id = "student_deleted",
-            email = "deleted@example.com",
-            fullName = "Deleted Student",
-            deleteAt = "2026-10-05T12:00:00Z"
+    fun testProfileMapperHandlesDeletedAtTimestamp() {
+        val dto = Json.decodeFromString<ProfileDto>(
+            """
+            {
+                "id": "student_deleted",
+                "email": "deleted@example.com",
+                "full_name": "Deleted Student",
+                "deleted_at": "2026-10-05T12:00:00Z"
+            }
+            """.trimIndent()
         )
         val domain = ProfileMapper.toDomain(dto)
         assertTrue(domain.isDeleted)
         assertEquals(1791201600000L, domain.deleteAtMillis)
 
         val mappedBackDto = ProfileMapper.toDto(domain)
-        assertEquals("2026-10-05T12:00:00Z", mappedBackDto.deleteAt)
+        assertEquals("2026-10-05T12:00:00Z", mappedBackDto.deletedAt)
 
         val updateDto = ProfileMapper.toUpdateDto(domain)
-        assertEquals("2026-10-05T12:00:00Z", updateDto.deleteAt)
+        assertEquals("2026-10-05T12:00:00Z", updateDto.deletedAt)
+        assertEquals("deleted_at", SupabaseProfileRepository.DELETED_AT_COLUMN)
     }
 
     @Test

@@ -25,7 +25,7 @@ object ProfileMapper {
             avatarUrl = dto.avatarUrl?.trim()?.takeIf(String::isNotBlank),
             isVerified = dto.isVerified ?: false,
             reputation = reputation,
-            deleteAtMillis = dto.deleteAt.toEpochMillisecondsOrNull()
+            deleteAtMillis = dto.deletedAt.toEpochMillisecondsOrNull()
         )
     }
 
@@ -40,7 +40,7 @@ object ProfileMapper {
             bio = domain.bio,
             avatarUrl = domain.avatarUrl,
             isVerified = domain.isVerified,
-            deleteAt = domain.deleteAtMillis?.let { Instant.fromEpochMilliseconds(it).toString() }
+            deletedAt = domain.deleteAtMillis?.let { Instant.fromEpochMilliseconds(it).toString() }
         )
     }
 
@@ -48,11 +48,9 @@ object ProfileMapper {
         return ProfileUpdateDto(
             fullName = domain.fullName.trim(),
             major = domain.major.trim(),
-            graduationDate = domain.graduationDate.trim(),
             university = domain.university.trim(),
             bio = domain.bio.trim(),
-            avatarUrl = domain.avatarUrl?.trim()?.ifBlank { null },
-            deleteAt = domain.deleteAtMillis?.let { Instant.fromEpochMilliseconds(it).toString() }
+            deletedAt = domain.deleteAtMillis?.let { Instant.fromEpochMilliseconds(it).toString() }
         )
     }
 
