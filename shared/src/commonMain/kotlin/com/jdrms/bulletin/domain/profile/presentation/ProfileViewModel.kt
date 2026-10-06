@@ -278,6 +278,9 @@ class ProfileViewModel(
 
     fun beginPasswordReset() {
         flashNotificationJob?.cancel()
+        if (_uiState.value.passwordRecoveryStage.hasRecoverySession()) {
+            invalidatePasswordRecoverySession()
+        }
         _uiState.update {
             it.copy(
                 passwordRecoveryStage = PasswordRecoveryStage.ENTER_EMAIL,
@@ -300,6 +303,9 @@ class ProfileViewModel(
     }
 
     fun cancelPasswordReset() {
+        if (_uiState.value.passwordRecoveryStage.hasRecoverySession()) {
+            invalidatePasswordRecoverySession()
+        }
         _uiState.update {
             it.copy(
                 passwordRecoveryStage = PasswordRecoveryStage.NONE,
@@ -384,6 +390,7 @@ class ProfileViewModel(
             }
             when (val result = passwordUpdate(password, confirmation)) {
                 is Result.Success -> {
+                    invalidatePasswordRecoverySession()
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -400,6 +407,16 @@ class ProfileViewModel(
                 }
             }
         }
+    }
+
+    private fun invalidatePasswordRecoverySession() {
+        viewModelScope.launch {
+            signOutUser()
+        }
+    }
+
+    private fun PasswordRecoveryStage.hasRecoverySession(): Boolean {
+        return this == PasswordRecoveryStage.ENTER_CODE || this == PasswordRecoveryStage.CHANGE_PASSWORD
     }
 
     fun closeSettings() {

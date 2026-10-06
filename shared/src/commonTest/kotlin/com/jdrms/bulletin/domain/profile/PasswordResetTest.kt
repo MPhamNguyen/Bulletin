@@ -67,9 +67,11 @@ class PasswordResetTest {
         Dispatchers.setMain(dispatcher)
         try {
             val profileRepository = InMemoryProfileRepository()
-            val authRepository = InMemoryAuthRepository(
-                profileRepository = profileRepository,
-                testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+            val authRepository = RecordingSignOutAuthRepository(
+                InMemoryAuthRepository(
+                    profileRepository = profileRepository,
+                    testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+                )
             )
             authRepository.register(email, "oldPassword", "Reset Student")
             authRepository.verifyEmail(email, testEmailVerificationCode())
@@ -104,6 +106,7 @@ class PasswordResetTest {
             advanceUntilIdle()
             assertTrue(completed)
             assertEquals(PasswordRecoveryStage.NONE, viewModel.uiState.value.passwordRecoveryStage)
+            assertEquals(2, authRepository.signOutCalls)
             assertTrue(authRepository.login(email, "newPassword").isSuccess())
         } finally {
             Dispatchers.resetMain()
@@ -124,6 +127,15 @@ class PasswordResetTest {
         assertTrue(unknownEmail is Result.Error)
         assertTrue(update("short", "short") is Result.Error)
         assertTrue(update("validPassword", "differentPassword") is Result.Error)
+    }
+
+    @Test
+    fun inMemoryPasswordResetIsDisabledWithoutAnExplicitTestCode() = runTest {
+        val authRepository = InMemoryAuthRepository(InMemoryProfileRepository())
+
+        assertTrue(
+            authRepository.requestPasswordReset(email) is Result.Error
+        )
     }
 
     @Test
@@ -192,6 +204,17 @@ class PasswordResetTest {
         override suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit> {
             receivedCode = code
             return Result.Success(Unit)
+        }
+    }
+
+    private class RecordingSignOutAuthRepository(
+        private val delegate: AuthRepository
+    ) : AuthRepository by delegate {
+        var signOutCalls: Int = 0
+
+        override suspend fun signOut(): Result<Unit> {
+            signOutCalls += 1
+            return delegate.signOut()
         }
     }
 

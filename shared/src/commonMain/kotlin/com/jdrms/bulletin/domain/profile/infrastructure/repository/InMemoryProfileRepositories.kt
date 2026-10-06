@@ -134,6 +134,9 @@ class InMemoryAuthRepository(
     }
 
     override suspend fun requestPasswordReset(email: StudentEmail): Result<Unit> {
+        if (testVerificationCode == null) {
+            return Result.Error(IllegalStateException("Password reset requires a configured authentication service."))
+        }
         val normalizedEmail = email.value.lowercase()
         if (!credentials.containsKey(normalizedEmail)) {
             return Result.Error(IllegalArgumentException("No account exists for that email address."))
@@ -147,7 +150,7 @@ class InMemoryAuthRepository(
         if (pendingPasswordResetEmail != email.value.lowercase()) {
             return Result.Error(IllegalStateException("Request a new password reset before entering a code."))
         }
-        if (code.trim() != PasswordResetPolicy.TEST_CONFIRMATION_CODE) {
+        if (code.trim() != testVerificationCode) {
             return Result.Error(IllegalArgumentException("The confirmation code is incorrect."))
         }
         passwordResetCodeVerified = true

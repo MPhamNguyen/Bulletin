@@ -366,7 +366,11 @@ class SupabaseAuthRepository(
 
     override suspend fun signOut(): Result<Unit> {
         return runCatching {
-            supabase.auth.signOut()
+            try {
+                supabase.auth.signOut()
+            } finally {
+                supabase.auth.clearSession()
+            }
         }.fold(
             onSuccess = { Result.Success(Unit) },
             onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
