@@ -1,7 +1,9 @@
 package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
+import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
@@ -13,6 +15,7 @@ import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemoryHomeRepository
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.application.CreateListing
+import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
@@ -33,12 +36,14 @@ import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
+import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -114,7 +119,9 @@ class AppContainer(
             )
         }
     }
-    val messagesRepository by lazy { InMemoryMessagesRepository() }
+
+    // BULLETIN-85 will supply the Supabase adapter for this same participant-scoped contract.
+    val messagesRepository: MessagesRepository by lazy { InMemoryMessagesRepository() }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -150,20 +157,23 @@ class AppContainer(
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
+    val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
 
     // Use Cases - Messages
-    val getConversations by lazy { GetConversations(messagesRepository) }
-    val getConversationMessages by lazy { GetConversationMessages(messagesRepository) }
-    val sendMessage by lazy { SendMessage(messagesRepository) }
-    val reportMessage by lazy { ReportMessage(messagesRepository) }
+    val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
+    val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
+    val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
+    val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
 
     // Use Cases - Profile
     val authenticateUser by lazy { AuthenticateUser(authRepository) }
     val getAuthenticatedUserId by lazy { GetAuthenticatedUserId(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
     val signOutUser by lazy { SignOutUser(authRepository) }
+    val resendVerificationCode by lazy { ResendVerificationCode(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
     val requestPasswordReset by lazy { RequestPasswordReset(authRepository) }
     val verifyPasswordResetCode by lazy { VerifyPasswordResetCode(authRepository) }
@@ -171,6 +181,7 @@ class AppContainer(
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
+    val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
 
     // ViewModels
     fun createHomeViewModel() = HomeViewModel(
@@ -188,6 +199,7 @@ class AppContainer(
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
+        deleteListing = deleteListing,
         getSellerListings = getSellerListings,
         currentSellerProvider = currentListingSellerProvider,
         listingChangedSignal = listingChangedSignal
@@ -208,9 +220,12 @@ class AppContainer(
         requestPasswordReset = requestPasswordReset,
         verifyPasswordResetCode = verifyPasswordResetCode,
         updatePassword = updatePassword,
+        resendVerificationCode = resendVerificationCode,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,
-        submitStudentReview = submitStudentReview
+        submitStudentReview = submitStudentReview,
+        activeListingsProvider = profileActiveListingsProvider,
+        listingChangedSignal = listingChangedSignal
     )
 
     fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)

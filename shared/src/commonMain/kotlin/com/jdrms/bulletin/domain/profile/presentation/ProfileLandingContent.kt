@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,47 +13,63 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.app.theme.ThemePreference
 
 @Composable
-internal fun ProfileLandingView(
+internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
+    onSettingsClick: () -> Unit,
     onEditProfileClick: () -> Unit,
     onMyListingsClick: () -> Unit,
-    themePreference: ThemePreference?,
-    onThemePreferenceChanged: ((ThemePreference) -> Unit)?,
-    onSignOut: () -> Unit
+    onBookmarkedListingsClick: () -> Unit,
+    onCreateListingClick: () -> Unit
 ) {
     val profile = uiState.profile
+    val fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso"
+    val university = profile?.university?.ifBlank { null } ?: "CSU Long Beach"
+    val major = profile?.major?.ifBlank { null } ?: "Computer Science"
+    val graduationDate = profile?.graduationDate?.ifBlank { null } ?: "Class of 2025"
+
     Column(modifier = Modifier.fillMaxSize()) {
-        ProfileLandingTopBar(onEditProfileClick)
+        MarketplaceProfileTopBar(onSettingsClick = onSettingsClick)
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, top = 2.dp, end = 20.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ProfileAvatarHeader(
-                fullName = profile?.fullName ?: "Student Profile",
-                university = profile?.university ?: "CSU Long Beach",
-                isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true
+            ProfileHero(
+                fullName = fullName,
+                major = major,
+                university = university,
+                graduationDate = graduationDate,
+                isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
+                onEditProfileClick = onEditProfileClick
+            )
+
+            MarketplaceActivityStatsCard(
+                activeListings = uiState.activeListingsCount,
+                itemsSold = uiState.itemsSoldCount,
+                rating = uiState.reputation?.averageRating ?: 4.8
+            )
+
+            ProfileAboutCard(
+                major = major,
+                graduationDate = graduationDate,
+                university = university,
+                bio = profile?.bio,
+                onEditProfileClick = onEditProfileClick
+            )
+
+            ProfileMarketplaceCard(
+                activeListings = uiState.activeListingsCount,
+                onMyListingsClick = onMyListingsClick,
+                onBookmarkedListingsClick = onBookmarkedListingsClick,
+                onCreateListingClick = onCreateListingClick
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileAboutCard(profile?.bio)
-            Spacer(modifier = Modifier.height(16.dp))
-            ProfileAcademicInformationCard(profile?.university, profile?.major, profile?.email?.value)
-            Spacer(modifier = Modifier.height(16.dp))
-            ProfileReputationCard(uiState.reputation)
-            Spacer(modifier = Modifier.height(16.dp))
-            ProfileActionRow(ProfileIcons.MyListings, "My Listings", onMyListingsClick)
-            if (themePreference != null && onThemePreferenceChanged != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                AppearanceCard(themePreference, onThemePreferenceChanged)
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            SignOutButton(onSignOut)
         }
     }
 }

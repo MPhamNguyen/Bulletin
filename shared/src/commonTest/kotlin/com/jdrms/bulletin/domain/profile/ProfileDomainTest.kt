@@ -28,6 +28,22 @@ class ProfileDomainTest {
     }
 
     @Test
+    fun confirmingEmailPreservesProfileIdentityAndIsIdempotent() {
+        val profile = StudentProfile(
+            id = UserId("student-id"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Student Name"
+        )
+
+        val confirmed = profile.confirmEmail()
+
+        assertTrue(confirmed.isVerified)
+        assertEquals(profile.id, confirmed.id)
+        assertEquals(profile.email, confirmed.email)
+        assertEquals(confirmed, confirmed.confirmEmail())
+    }
+
+    @Test
     fun testValidNonUniversityEmailsMatchRegex() {
         val gmail = StudentEmail("jane.doe@gmail.com")
         assertFalse(gmail.isUniversityEmail)
@@ -56,11 +72,42 @@ class ProfileDomainTest {
     @Test
     fun testValidateRegistrationSuccess() {
         val result = policy.validateRegistration(
-            emailStr = "student@gmail.com",
+            emailStr = "bob.smith@student.school.edu",
             password = "securePassword123",
             fullName = "Jane Student"
         )
         assertTrue(result.isSuccess())
+    }
+
+    @Test
+    fun testValidateRegistrationRejectsNonEduEmail() {
+        val result = policy.validateRegistration(
+            emailStr = "student@gmail.com",
+            password = "securePassword123",
+            fullName = "Jane Student"
+        )
+
+        assertTrue(result.isError())
+        assertEquals(
+            "Bulletin requires a valid .edu university email.",
+            (result as Result.Error).exception.message
+        )
+    }
+
+    @Test
+    fun testValidateRegistrationWithSeparateNamesRequiresEduEmail() {
+        val result = policy.validateRegistration(
+            firstName = "Jane",
+            lastName = "Student",
+            emailStr = "student@example.com",
+            password = "securePassword123"
+        )
+
+        assertTrue(result.isError())
+        assertEquals(
+            "Bulletin requires a valid .edu university email.",
+            (result as Result.Error).exception.message
+        )
     }
 
     @Test
@@ -203,12 +250,14 @@ class ProfileDomainTest {
             fullName = "  John Doe  ",
             major = "  Computer Science  ",
             university = "  California State University - Long Beach  ",
-            bio = "  Campus seller and student.  "
+            bio = "  Campus seller and student.  ",
+            graduationDate = "  Class of 2025  "
         )
 
         assertTrue(result is Result.Success)
         assertEquals("John Doe", result.data.fullName)
         assertEquals("Computer Science", result.data.major)
+        assertEquals("Class of 2025", result.data.graduationDate)
         assertEquals("California State University - Long Beach", result.data.university)
         assertEquals("Campus seller and student.", result.data.bio)
         assertEquals("Original Name", profile.fullName)
@@ -238,19 +287,31 @@ class ProfileDomainTest {
         )
         assertTrue(longBio is Result.Error)
         assertEquals("Bio must be 500 characters or fewer.", longBio.exception.message)
+
+        val longGradDate = profile.updateDetails(
+            fullName = "John Doe",
+            major = "Computer Science",
+            university = "CSULB",
+            bio = "Bio",
+            graduationDate = "x".repeat(StudentProfile.MAX_GRAD_DATE_LENGTH + 1)
+        )
+        assertTrue(longGradDate is Result.Error)
+        assertEquals("Graduation date must be 50 characters or fewer.", longGradDate.exception.message)
     }
 
     @Test
-    fun testProfileMapperPreservesMajor() {
+    fun testProfileMapperPreservesMajorAndGraduationDate() {
         val profile = StudentProfile(
             id = UserId("student_1"),
             email = StudentEmail("student@example.com"),
             fullName = "John Doe",
-            major = "Computer Science"
+            major = "Computer Science",
+            graduationDate = "Class of 2025"
         )
 
         val dto = ProfileMapper.toDto(profile)
         assertEquals("Computer Science", dto.major)
+        assertEquals("Class of 2025", dto.graduationDate)
         assertEquals(profile, ProfileMapper.toDomain(dto))
     }
 

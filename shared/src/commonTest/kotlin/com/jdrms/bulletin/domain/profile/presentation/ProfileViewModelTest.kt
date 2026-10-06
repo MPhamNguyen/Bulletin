@@ -1,8 +1,11 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
+import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -41,19 +44,21 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val registered = authRepo.register(
                 email = StudentEmail("student@example.com"),
                 password = "validPassword123",
                 fullName = "Student Name"
             )
             assertTrue(registered is Result.Success)
+            VerifyStudentEmail(authRepo)(registered.data.email, "123456")
 
             val viewModel = ProfileViewModel(
                 authenticateUser = AuthenticateUser(authRepo, policy),
                 restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
                 signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = VerifyStudentEmail(authRepo),
+                resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
                 submitStudentReview = SubmitStudentReview(profileRepo, policy)
@@ -82,13 +87,14 @@ class ProfileViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val registered = authRepo.register(
                 email = StudentEmail("restore@example.com"),
                 password = "validPassword123",
                 fullName = "Restored Student"
             )
             assertTrue(registered is Result.Success)
+            VerifyStudentEmail(authRepo)(registered.data.email, "123456")
 
             val firstViewModel = createProfileViewModel(authRepo, profileRepo)
             advanceUntilIdle()
@@ -114,7 +120,7 @@ class ProfileViewModelTest {
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
             val authRepo = SessionFailureAuthRepository(
-                delegate = InMemoryAuthRepository(profileRepo),
+                delegate = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456"),
                 restoreError = IllegalStateException("Session storage unavailable")
             )
             val viewModel = createProfileViewModel(authRepo, profileRepo)
@@ -135,8 +141,9 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val delegate = InMemoryAuthRepository(profileRepo)
+            val delegate = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             delegate.register(StudentEmail("student@example.com"), "validPassword123", "Student Name")
+            VerifyStudentEmail(delegate)(StudentEmail("student@example.com"), "123456")
             val authRepo = SessionFailureAuthRepository(
                 delegate = delegate,
                 signOutError = IllegalStateException("Unable to clear session")
@@ -159,16 +166,21 @@ class ProfileViewModelTest {
 
     private fun createProfileViewModel(
         authRepository: AuthRepository,
-        profileRepository: InMemoryProfileRepository
+        profileRepository: InMemoryProfileRepository,
+        activeListingsProvider: ProfileActiveListingsProvider? = null,
+        listingChangedSignal: RefreshSignal? = null
     ): ProfileViewModel {
         return ProfileViewModel(
             authenticateUser = AuthenticateUser(authRepository, policy),
             restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepository),
             signOutUser = SignOutUser(authRepository),
             verifyStudentEmail = VerifyStudentEmail(authRepository),
+            resendVerificationCode = ResendVerificationCode(authRepository),
             manageProfile = ManageProfile(profileRepository),
             updateStudentProfile = UpdateStudentProfile(profileRepository),
-            submitStudentReview = SubmitStudentReview(profileRepository, policy)
+            submitStudentReview = SubmitStudentReview(profileRepository, policy),
+            activeListingsProvider = activeListingsProvider,
+            listingChangedSignal = listingChangedSignal
         )
     }
 
@@ -179,22 +191,14 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val authenticateUser = AuthenticateUser(authRepo, policy)
             val verifyStudentEmail = VerifyStudentEmail(authRepo)
             val manageProfile = ManageProfile(profileRepo)
             val updateStudentProfile = UpdateStudentProfile(profileRepo)
             val submitStudentReview = SubmitStudentReview(profileRepo, policy)
 
-            val viewModel = ProfileViewModel(
-                authenticateUser = authenticateUser,
-                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
-                signOutUser = SignOutUser(authRepo),
-                verifyStudentEmail = verifyStudentEmail,
-                manageProfile = manageProfile,
-                updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
-            )
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
             advanceUntilIdle()
 
             // Blank first name check
@@ -217,6 +221,14 @@ class ProfileViewModelTest {
             advanceUntilIdle()
             assertEquals("Invalid email address format.", viewModel.uiState.value.errorMessage)
 
+            // Non-university email check
+            viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")
+            advanceUntilIdle()
+            assertEquals(
+                "Bulletin requires a valid .edu university email.",
+                viewModel.uiState.value.errorMessage
+            )
+
             // Empty password check
             viewModel.createAccount("John", "Doe", "test@example.com", "")
             advanceUntilIdle()
@@ -228,9 +240,11 @@ class ProfileViewModelTest {
             assertEquals("Password must be at least 8 characters.", viewModel.uiState.value.errorMessage)
 
             // Successful account creation
-            viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")
+            viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
             runCurrent()
 
+            viewModel.verifyEmail("john.doe@school.edu", "123456")
+            runCurrent()
             val state = viewModel.uiState.value
             assertTrue(state.isAccountCreated)
             assertEquals(AuthSessionState.AUTHENTICATED, state.authSessionState)
@@ -256,18 +270,21 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val viewModel = ProfileViewModel(
                 authenticateUser = AuthenticateUser(authRepo, policy),
                 restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
                 signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = VerifyStudentEmail(authRepo),
+                resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
                 submitStudentReview = SubmitStudentReview(profileRepo, policy)
             )
             advanceUntilIdle()
-            viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")
+            viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("john.doe@school.edu", "123456")
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.isProfileModified)
 
@@ -322,7 +339,7 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val authenticateUser = AuthenticateUser(authRepo, policy)
             val verifyStudentEmail = VerifyStudentEmail(authRepo)
             val manageProfile = ManageProfile(profileRepo)
@@ -334,6 +351,7 @@ class ProfileViewModelTest {
                 restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
                 signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = verifyStudentEmail,
+                resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
                 submitStudentReview = submitStudentReview
@@ -366,6 +384,8 @@ class ProfileViewModelTest {
             // Register an account and test wrong password vs correct password
             viewModel.createAccount("Dominic", "Alfonso", "dominic@csulb.edu", "correctPassword123")
             advanceUntilIdle()
+            viewModel.verifyEmail("dominic@csulb.edu", "123456")
+            advanceUntilIdle()
             assertTrue(viewModel.uiState.value.isAccountCreated)
 
             // Incorrect password check
@@ -395,11 +415,13 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val viewModel = createProfileViewModel(authRepo, profileRepo)
             advanceUntilIdle()
 
             viewModel.createAccount("Alex", "Student", "alex@csulb.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("alex@csulb.edu", "123456")
             advanceUntilIdle()
 
             // Initial state: Landing profile (isEditingProfile == false)
@@ -419,6 +441,14 @@ class ProfileViewModelTest {
             assertFalse(viewModel.uiState.value.isEditingProfile)
             assertFalse(viewModel.uiState.value.isProfileModified)
             assertEquals("Alex Student", viewModel.uiState.value.profileDraft.fullName)
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            // Editing from Settings returns to Settings when cancelled.
+            viewModel.openSettings()
+            viewModel.openEditAccount()
+            viewModel.cancelEditingProfile()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+            viewModel.openProfile()
 
             // Start editing again, trigger invalid update
             viewModel.startEditingProfile()
@@ -445,6 +475,259 @@ class ProfileViewModelTest {
             assertEquals("Computer Science", viewModel.uiState.value.profile?.major)
             assertEquals("Profile updated", viewModel.uiState.value.successMessage)
             advanceUntilIdle()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelSubscreenNavigation() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.createAccount("Taylor", "Swift", "taylor@csulb.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("taylor@csulb.edu", "123456")
+            advanceUntilIdle()
+
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openSettings()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openEditAccount()
+            assertEquals(ProfileSubscreen.EDIT_ACCOUNT, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeEditAccount()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.closeSettings()
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openBookmarkedListings()
+            assertEquals(ProfileSubscreen.BOOKMARKED_LISTINGS, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeBookmarkedListings()
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openNotifications()
+            assertEquals(ProfileSubscreen.NOTIFICATIONS, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeNotifications()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openPrivacy()
+            assertEquals(ProfileSubscreen.PRIVACY, viewModel.uiState.value.activeSubscreen)
+            viewModel.closePrivacy()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openHelpAndSupport()
+            assertEquals(ProfileSubscreen.HELP_AND_SUPPORT, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeHelpAndSupport()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.openTermsAndConditions()
+            assertEquals(ProfileSubscreen.TERMS_AND_CONDITIONS, viewModel.uiState.value.activeSubscreen)
+            viewModel.closeTermsAndConditions()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelGraduationDateUpdate() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.createAccount("Taylor", "Swift", "taylor@csulb.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("taylor@csulb.edu", "123456")
+            advanceUntilIdle()
+
+            viewModel.openEditAccount()
+            viewModel.onProfileDraftChanged(
+                viewModel.uiState.value.profileDraft.copy(
+                    graduationDate = "Class of 2026"
+                )
+            )
+            viewModel.updateProfileDetails()
+            runCurrent()
+
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+            assertFalse(viewModel.uiState.value.isEditingProfile)
+            assertEquals("Class of 2026", viewModel.uiState.value.profile?.graduationDate)
+            assertEquals("Class of 2026", viewModel.uiState.value.profileDraft.graduationDate)
+            assertEquals("Profile updated", viewModel.uiState.value.successMessage)
+            advanceUntilIdle()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelPublicProfileNavigation() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.openPublicProfile()
+            assertEquals(ProfileSubscreen.PUBLIC_PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            viewModel.closePublicProfile()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+
+            assertEquals(0, viewModel.uiState.value.activeListingsCount)
+            assertEquals(18, viewModel.uiState.value.itemsSoldCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelLoadsActiveListingsCountFromProvider() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            var countToReturn = 7
+            val fakeProvider = ProfileActiveListingsProvider { countToReturn }
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                activeListingsProvider = fakeProvider
+            )
+            advanceUntilIdle()
+
+            viewModel.createAccount("Provider", "User", "provider@csulb.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("provider@csulb.edu", "123456")
+            advanceUntilIdle()
+
+            assertEquals(7, viewModel.uiState.value.activeListingsCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelRefreshesActiveListingsCountOnSignal() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val signal = RefreshSignal()
+            var currentCount = 3
+            val fakeProvider = ProfileActiveListingsProvider { currentCount }
+
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                activeListingsProvider = fakeProvider,
+                listingChangedSignal = signal
+            )
+            advanceUntilIdle()
+
+            viewModel.createAccount("Refresh", "User", "refresh@csulb.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("refresh@csulb.edu", "123456")
+            advanceUntilIdle()
+            assertEquals(3, viewModel.uiState.value.activeListingsCount)
+
+            currentCount = 5
+            signal.emit()
+            advanceUntilIdle()
+
+            assertEquals(5, viewModel.uiState.value.activeListingsCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelRefreshActiveListingsDirectInvocation() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            var currentCount = 2
+            val fakeProvider = ProfileActiveListingsProvider { currentCount }
+
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                activeListingsProvider = fakeProvider
+            )
+            advanceUntilIdle()
+
+            viewModel.createAccount("Direct", "Refresh", "direct@csulb.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("direct@csulb.edu", "123456")
+            advanceUntilIdle()
+            assertEquals(2, viewModel.uiState.value.activeListingsCount)
+
+            currentCount = 4
+            viewModel.refreshActiveListings()
+            advanceUntilIdle()
+
+            assertEquals(4, viewModel.uiState.value.activeListingsCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testHandleSubscreenBackDoesNotTriggerRootOnBackForSubscreens() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            var onBackCalled = false
+            val onBack = { onBackCalled = true }
+
+            viewModel.openNotifications()
+            assertEquals(ProfileSubscreen.NOTIFICATIONS, viewModel.uiState.value.activeSubscreen)
+            handleSubscreenBack(ProfileSubscreen.NOTIFICATIONS, viewModel, onBack)
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+            assertFalse(onBackCalled)
+
+            handleSubscreenBack(ProfileSubscreen.SETTINGS, viewModel, onBack)
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+            assertFalse(onBackCalled)
+
+            viewModel.openSettings()
+            viewModel.openEditAccount()
+            handleSubscreenBack(ProfileSubscreen.EDIT_ACCOUNT, viewModel, onBack)
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+            assertFalse(onBackCalled)
+
+            handleSubscreenBack(ProfileSubscreen.PROFILE, viewModel, onBack)
+            assertTrue(onBackCalled)
         } finally {
             Dispatchers.resetMain()
         }

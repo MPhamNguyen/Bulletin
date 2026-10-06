@@ -184,7 +184,7 @@ Personalized results should also refresh as user behavior changes without notice
 ## 🗺️ Development Roadmap
 
 - [ ] Finalize production backend/cloud provider
-- [ ] Implement university email verification
+- [ ] Validate email ownership verification with the deployed email provider (see setup below)
 - [ ] Complete authentication and account management
 - [ ] Build marketplace listing CRUD functionality
 - [ ] Add search, filtering, and sorting
@@ -238,3 +238,4 @@ Testing should cover both successful workflows and documented failure cases, inc
 **Bulletin — connect locally, transact confidently.**
 
 </div>
+

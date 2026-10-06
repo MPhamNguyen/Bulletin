@@ -4,6 +4,9 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
+import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
@@ -92,11 +95,18 @@ class AuthListingSellerProviderTest {
             password: String,
             fullName: String,
             university: String
-        ): Result<StudentProfile> {
+        ): Result<PendingRegistration> {
             return Result.Error(UnsupportedOperationException())
         }
 
-        override suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean> {
+        override suspend fun verifyEmail(
+            email: StudentEmail,
+            code: EmailVerificationCode
+        ): Result<EmailVerificationOutcome> {
+            return Result.Error(UnsupportedOperationException())
+        }
+
+        override suspend fun resendVerificationCode(email: StudentEmail): Result<Unit> {
             return Result.Error(UnsupportedOperationException())
         }
 

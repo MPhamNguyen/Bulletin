@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -38,7 +39,7 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val authenticateUser = AuthenticateUser(authRepo, policy)
             val verifyStudentEmail = VerifyStudentEmail(authRepo)
             val manageProfile = ManageProfile(profileRepo)
@@ -50,6 +51,7 @@ class ProfileViewModelTest {
                 restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
                 signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = verifyStudentEmail,
+                resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
                 submitStudentReview = submitStudentReview
@@ -87,9 +89,11 @@ class ProfileViewModelTest {
             assertEquals("Password must be at least 8 characters.", viewModel.uiState.value.errorMessage)
 
             // Successful account creation
-            viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")
+            viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
             runCurrent()
 
+            viewModel.verifyEmail("john.doe@school.edu", "123456")
+            runCurrent()
             val state = viewModel.uiState.value
             assertTrue(state.isAccountCreated)
             assertEquals("Account created successfully!", state.successMessage)
@@ -114,18 +118,21 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val viewModel = ProfileViewModel(
                 authenticateUser = AuthenticateUser(authRepo, policy),
                 restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
                 signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = VerifyStudentEmail(authRepo),
+                resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
                 submitStudentReview = SubmitStudentReview(profileRepo, policy)
             )
             advanceUntilIdle()
-            viewModel.createAccount("John", "Doe", "john.doe@example.com", "password123")
+            viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
+            advanceUntilIdle()
+            viewModel.verifyEmail("john.doe@school.edu", "123456")
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.isProfileModified)
 
@@ -180,7 +187,7 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         try {
             val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
-            val authRepo = InMemoryAuthRepository(profileRepo)
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             val authenticateUser = AuthenticateUser(authRepo, policy)
             val verifyStudentEmail = VerifyStudentEmail(authRepo)
             val manageProfile = ManageProfile(profileRepo)
@@ -192,6 +199,7 @@ class ProfileViewModelTest {
                 restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo),
                 signOutUser = SignOutUser(authRepo),
                 verifyStudentEmail = verifyStudentEmail,
+                resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
                 submitStudentReview = submitStudentReview

@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.listings
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -27,8 +28,9 @@ class ListingsDomainTest {
 
     @Test
     fun testValidPriceFormatting() {
-        val price = ListingPrice(19.99)
-        assertEquals("$19.99", price.formatted)
+        assertEquals("$40.00", ListingPrice(40.0).formatted)
+        assertEquals("$19.99", ListingPrice(19.99).formatted)
+        assertEquals("$25.50", ListingPrice(25.5).formatted)
     }
 
     @Test
@@ -36,6 +38,15 @@ class ListingsDomainTest {
         assertFailsWith<IllegalArgumentException> {
             ListingPrice(-10.0)
         }
+    }
+
+    @Test
+    fun testPriceWithMoreThanTwoDecimalPlacesThrowsException() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ListingPrice(40.555)
+        }
+
+        assertEquals("Listing price cannot have more than two decimal places.", exception.message)
     }
 
     @Test
@@ -182,9 +193,36 @@ class ListingsDomainTest {
         assertEquals(1, sellerListings.size)
         assertEquals("Wireless Keyboard", sellerListings.first().title)
 
-        val deleteResult = repo.deleteListing(ListingId("list_test_1"))
+        val deleteResult = repo.deleteListing(ListingId("list_test_1"), SellerId("seller_99"))
         assertTrue(deleteResult.isSuccess())
         assertEquals(0, repo.getSellerListings(SellerId("seller_99")).size)
+    }
+
+    @Test
+    fun testDeleteListingRequiresOwnership() = runTest {
+        val repo = InMemoryListingsRepository(initialListings = emptyList())
+        val listing = testListing(SellerId("owner_1"))
+        repo.createListing(listing)
+        val deleteListing = DeleteListing(repo, policy)
+
+        val result = deleteListing(listing.id, SellerId("stranger"))
+
+        assertTrue(result.isError())
+        assertEquals("Only the owner can delete this listing.", (result as Result.Error).message)
+        assertEquals(listing, repo.getListing(listing.id))
+    }
+
+    @Test
+    fun testOwnerCanDeleteListing() = runTest {
+        val repo = InMemoryListingsRepository(initialListings = emptyList())
+        val listing = testListing(SellerId("owner_1"))
+        repo.createListing(listing)
+        val deleteListing = DeleteListing(repo, policy)
+
+        val result = deleteListing(listing.id, SellerId("owner_1"))
+
+        assertTrue(result.isSuccess())
+        assertEquals(null, repo.getListing(listing.id))
     }
 
     @Test

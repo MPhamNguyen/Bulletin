@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
+import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
@@ -16,15 +18,33 @@ enum class PasswordRecoveryStage {
     CHANGE_PASSWORD
 }
 
+enum class ProfileSubscreen {
+    PROFILE,
+    SETTINGS,
+    EDIT_ACCOUNT,
+    BOOKMARKED_LISTINGS,
+    NOTIFICATIONS,
+    PRIVACY,
+    HELP_AND_SUPPORT,
+    TERMS_AND_CONDITIONS,
+    PUBLIC_PROFILE
+}
+
 data class ProfileUiState(
     val profile: StudentProfile? = null,
+    val pendingRegistration: PendingRegistration? = null,
+    val verifiedEmailAwaitingProfile: StudentEmail? = null,
     val profileDraft: ProfileDraft = ProfileDraft(),
     val reputation: StudentReputation? = null,
+    val activeListingsCount: Int = 0,
+    val itemsSoldCount: Int = 18,
     val showReviewDialog: Boolean = false,
     val newScore: Int = 5,
     val newComment: String = "",
     val isLoading: Boolean = false,
     val isEditingProfile: Boolean = false,
+    val activeSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
+    val editReturnSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false,
@@ -39,6 +59,7 @@ data class ProfileUiState(
 data class ProfileDraft(
     val fullName: String = "",
     val major: String = "",
+    val graduationDate: String = "",
     val university: String = "",
     val bio: String = ""
 ) {
@@ -47,6 +68,7 @@ data class ProfileDraft(
             return ProfileDraft(
                 fullName = profile.fullName,
                 major = profile.major,
+                graduationDate = profile.graduationDate,
                 university = profile.university,
                 bio = profile.bio
             )

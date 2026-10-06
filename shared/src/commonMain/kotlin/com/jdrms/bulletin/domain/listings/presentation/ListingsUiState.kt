@@ -28,5 +28,7 @@ data class ListingsUiState(
     val editPrice: String = "",
     val editCategory: ListingCategory = ListingCategory.TEXTBOOKS,
     val editCondition: ListingCondition = ListingCondition.GOOD,
-    val isUpdating: Boolean = false
+    val isUpdating: Boolean = false,
+    val pendingDeletion: Listing? = null,
+    val isDeleting: Boolean = false
 )

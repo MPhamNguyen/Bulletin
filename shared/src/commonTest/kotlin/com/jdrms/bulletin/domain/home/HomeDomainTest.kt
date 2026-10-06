@@ -21,8 +21,9 @@ class HomeDomainTest {
 
     @Test
     fun testValidPriceFormatting() {
-        val price = HomePrice(49.99)
-        assertEquals("$49.99", price.formatted)
+        assertEquals("$50.00", HomePrice(50.0).formatted)
+        assertEquals("$49.99", HomePrice(49.99).formatted)
+        assertEquals("$25.50", HomePrice(25.5).formatted)
     }
 
     @Test
@@ -30,6 +31,15 @@ class HomeDomainTest {
         assertFailsWith<IllegalArgumentException> {
             HomePrice(-5.0)
         }
+    }
+
+    @Test
+    fun testPriceWithMoreThanTwoDecimalPlacesThrowsException() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            HomePrice(40.555)
+        }
+
+        assertEquals("Price amount cannot have more than two decimal places.", exception.message)
     }
 
     @Test
@@ -102,7 +112,7 @@ class HomeDomainTest {
         )
         val domain = HomeMapper.toDomain(dto)
         assertEquals(HomeFeedCategory.CLOTHING, domain.category)
-        assertEquals("$25.0", domain.price.formatted)
+        assertEquals("$25.00", domain.price.formatted)
 
         val backToDto = HomeMapper.toDto(domain)
         assertEquals(dto.id, backToDto.id)

@@ -20,8 +20,9 @@ class MarketplaceDomainTest {
 
     @Test
     fun testValidPriceFormatting() {
-        val price = MarketplacePrice(29.99)
-        assertEquals("$29.99", price.formatted)
+        assertEquals("$30.00", MarketplacePrice(30.0).formatted)
+        assertEquals("$29.99", MarketplacePrice(29.99).formatted)
+        assertEquals("$25.50", MarketplacePrice(25.5).formatted)
     }
 
     @Test
@@ -29,6 +30,15 @@ class MarketplaceDomainTest {
         assertFailsWith<IllegalArgumentException> {
             MarketplacePrice(-1.0)
         }
+    }
+
+    @Test
+    fun testPriceWithMoreThanTwoDecimalPlacesThrowsException() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            MarketplacePrice(40.555)
+        }
+
+        assertEquals("Marketplace price amount cannot have more than two decimal places.", exception.message)
     }
 
     @Test

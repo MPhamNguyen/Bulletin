@@ -1,89 +1,154 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
 @Composable
-internal fun ProfileAboutCard(bio: String?) {
+internal fun ProfileAboutCard(
+    major: String,
+    graduationDate: String,
+    university: String,
+    bio: String?,
+    onEditProfileClick: () -> Unit
+) {
     BulletinCard {
-        ProfileSectionLabel("ABOUT")
-        Spacer(modifier = Modifier.height(8.dp))
-        val bioColor = if (bio.isNullOrBlank()) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "About",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(onClick = onEditProfileClick) {
+                Text("Edit", style = MaterialTheme.typography.labelMedium)
+            }
         }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ProfileInformationChip(Icons.Outlined.School, major)
+            ProfileInformationChip(Icons.Outlined.CalendarToday, graduationDate)
+            ProfileInformationChip(Icons.Outlined.LocationOn, university)
+        }
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = bio?.ifBlank { null }
-                ?: "No bio added yet. Tap Edit to tell fellow students about yourself!",
+                ?: "Senior student buying & selling tech, textbooks, and campus essentials.",
             style = MaterialTheme.typography.bodyMedium,
-            color = bioColor,
-            lineHeight = 20.sp
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
-internal fun ProfileAcademicInformationCard(university: String?, major: String?, email: String?) {
-    BulletinCard {
-        ProfileSectionLabel("ACADEMIC INFORMATION")
-        Spacer(modifier = Modifier.height(12.dp))
-        ProfileInfoRow("School", university?.ifBlank { null } ?: "CSU Long Beach")
-        ProfileDivider()
-        ProfileInfoRow("Major", major?.ifBlank { null } ?: "Undeclared")
-        ProfileDivider()
-        ProfileInfoRow("Email", email ?: "No email linked")
+private fun ProfileInformationChip(icon: ImageVector, text: String) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
 
 @Composable
-private fun ProfileDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(vertical = 10.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
-    )
-}
-
-@Composable
-internal fun ProfileReputationCard(reputation: StudentReputation?) {
-    BulletinCard {
-        ProfileSectionLabel("CAMPUS REPUTATION")
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ReputationMetric(
-                label = "Average Rating",
-                value = (reputation?.averageRating ?: 5.0).toString(),
-                showStar = true,
+internal fun MarketplaceActivityStatsCard(
+    activeListings: Int,
+    itemsSold: Int,
+    rating: Double,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ActivityStat(
+                value = activeListings.toString(),
+                label = "Active listings",
+                icon = Icons.Outlined.Storefront,
                 modifier = Modifier.weight(1f)
             )
-            ReputationMetric(
-                label = "Feedback",
-                value = "${reputation?.totalReviews ?: 0} reviews",
+            ActivityDivider()
+            ActivityStat(
+                value = itemsSold.toString(),
+                label = "Items sold",
+                icon = Icons.Outlined.CheckCircle,
+                modifier = Modifier.weight(1f)
+            )
+            ActivityDivider()
+            ActivityStat(
+                value = rating.toString(),
+                label = "Reputation",
+                icon = Icons.Filled.Star,
+                iconTint = BulletinExtras.colors.star,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -91,43 +156,152 @@ internal fun ProfileReputationCard(reputation: StudentReputation?) {
 }
 
 @Composable
-private fun ReputationMetric(
-    label: String,
+private fun ActivityStat(
     value: String,
-    modifier: Modifier = Modifier,
-    showStar: Boolean = false
+    label: String,
+    icon: ImageVector,
+    modifier: Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.primary
 ) {
     Column(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.medium)
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
-                MaterialTheme.shapes.medium
-            )
-            .padding(12.dp)
+        modifier = modifier.padding(horizontal = 4.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 2
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (showStar) {
+    }
+}
+
+@Composable
+private fun ActivityDivider() {
+    Surface(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(vertical = 12.dp)
+            .width(1.dp),
+        color = MaterialTheme.colorScheme.outlineVariant
+    ) {}
+}
+
+@Composable
+internal fun ProfileMarketplaceCard(
+    activeListings: Int,
+    onMyListingsClick: () -> Unit,
+    onBookmarkedListingsClick: () -> Unit,
+    onCreateListingClick: () -> Unit
+) {
+    BulletinCard {
+        Text(
+            text = "Marketplace",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        MarketplaceActionRow(
+            icon = Icons.Outlined.GridView,
+            title = "My listings",
+            badge = activeListings.toString(),
+            onClick = onMyListingsClick
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        MarketplaceActionRow(
+            icon = Icons.Outlined.BookmarkBorder,
+            title = "Bookmarked listings",
+            onClick = onBookmarkedListingsClick
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        MarketplaceActionRow(
+            icon = Icons.Outlined.Add,
+            title = "Create a listing",
+            onClick = onCreateListingClick
+        )
+    }
+}
+
+@Composable
+private fun MarketplaceActionRow(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit,
+    subtitle: String? = null,
+    badge: String? = null
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (badge != null) {
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Text(
+                        text = badge,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .widthIn(min = 12.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
                 Icon(
-                    imageVector = Icons.Filled.Star,
+                    imageVector = Icons.Outlined.ChevronRight,
                     contentDescription = null,
-                    tint = BulletinExtras.colors.star,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
             }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = if (showStar) FontWeight.Bold else FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
+import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
@@ -18,6 +21,7 @@ import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -178,7 +182,7 @@ class SupabaseAuthRepository(
     override suspend fun getCurrentUserId(): Result<UserId?> {
         return runCatching {
             supabase.auth.awaitInitialization()
-            supabase.auth.currentUserOrNull()?.id?.let(::UserId)
+            supabase.auth.currentUserOrNull()?.takeIf { it.emailConfirmedAt != null }?.id?.let(::UserId)
         }.fold(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
@@ -188,7 +192,8 @@ class SupabaseAuthRepository(
     override suspend fun getCurrentUser(): Result<StudentProfile?> {
         return runCatching {
             supabase.auth.awaitInitialization()
-            val currentUser = supabase.auth.currentUserOrNull() ?: return@runCatching null
+            val currentUser = supabase.auth.currentUserOrNull()
+                ?.takeIf { it.emailConfirmedAt != null } ?: return@runCatching null
             val userId = UserId(currentUser.id)
 
             when (val profileResult = profileRepository.getProfile(userId)) {
@@ -206,9 +211,9 @@ class SupabaseAuthRepository(
         password: String,
         fullName: String,
         university: String
-    ): Result<StudentProfile> {
+    ): Result<PendingRegistration> {
         return runCatching {
-            val authUser = supabase.auth.signUpWith(Email) {
+            supabase.auth.signUpWith(Email) {
                 this.email = email.value
                 this.password = password
                 data = buildJsonObject {
@@ -216,31 +221,14 @@ class SupabaseAuthRepository(
                     put("university", university)
                 }
             }
-
-            val currentUser = supabase.auth.currentUserOrNull()
-            val resolvedUserId = authUser?.id ?: currentUser?.id
-            val generatedFallbackId = "user_${email.value.hashCode().toUInt() and 0x7FFFFFFFu}"
-            val userId = UserId(resolvedUserId ?: generatedFallbackId)
-
-            val newProfile = StudentProfile(
-                id = userId,
-                email = email,
-                fullName = fullName,
-                university = university,
-                isVerified = false
-            )
-
-            if (resolvedUserId != null) {
-                val updateResult = profileRepository.updateProfile(newProfile)
-                if (updateResult is Result.Error) {
-                    throw updateResult.exception
-                }
+            // Confirmation must be enforced by the server, never inferred from a profile row.
+            if (supabase.auth.currentSessionOrNull() != null) {
+                rejectSession("Email confirmation is unavailable. Please contact support.")
             }
-
-            newProfile
+            PendingRegistration(email)
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+            onFailure = { authFailure(it) }
         )
     }
 
@@ -253,6 +241,9 @@ class SupabaseAuthRepository(
 
             val currentUser = supabase.auth.currentUserOrNull()
                 ?: error("Failed to retrieve authenticated user session.")
+            if (currentUser.emailConfirmedAt == null) {
+                rejectSession("Please verify your email address before logging in.")
+            }
 
             val userId = UserId(currentUser.id)
 
@@ -323,18 +314,54 @@ class SupabaseAuthRepository(
         )
     }
 
-    override suspend fun verifyEmail(email: StudentEmail, code: String): Result<Boolean> {
+    override suspend fun verifyEmail(
+        email: StudentEmail,
+        code: EmailVerificationCode
+    ): Result<EmailVerificationOutcome> {
         return runCatching {
             supabase.auth.verifyEmailOtp(
                 type = OtpType.Email.EMAIL,
                 email = email.value,
-                token = code
+                token = code.value
             )
-            true
+            val user = supabase.auth.currentUserOrNull()
+                ?: error("Email verification did not create a session. Please try again.")
+            if (user.emailConfirmedAt == null || user.email?.lowercase() != email.value) {
+                rejectSession("Email verification failed. Please try again.")
+            }
+            when (val result = getCurrentUser()) {
+                is Result.Success -> result.data?.let(EmailVerificationOutcome::ProfileAvailable)
+                    ?: EmailVerificationOutcome.ProfileRecoveryRequired
+                is Result.Error -> EmailVerificationOutcome.ProfileRecoveryRequired
+            }
         }.fold(
             onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+            onFailure = { authFailure(it) }
         )
+    }
+
+    override suspend fun resendVerificationCode(email: StudentEmail): Result<Unit> {
+        return runCatching {
+            supabase.auth.resendEmail(OtpType.Email.SIGNUP, email.value)
+        }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { authFailure(it) }
+        )
+    }
+
+    private fun authFailure(throwable: Throwable): Result.Error {
+        if (throwable is CancellationException) throw throwable
+        return Result.Error(Exception(mapAuthErrorMessage(throwable), throwable))
+    }
+
+    private suspend fun rejectSession(message: String): Nothing {
+        try {
+            supabase.auth.signOut()
+        } finally {
+            // Rejected credentials must not survive a failed remote sign-out or an app restart.
+            supabase.auth.clearSession()
+        }
+        error(message)
     }
 
     override suspend fun signOut(): Result<Unit> {
@@ -373,14 +400,18 @@ class SupabaseAuthRepository(
 
     companion object {
         private val COMMON_ERROR_RULES = listOf(
+            listOf("otp_expired", "token has expired", "token is invalid") to
+                "This code is invalid or has expired. Request a new code and try again.",
+            listOf("over_request_rate_limit", "over_email_send_rate_limit", "email rate limit exceeded") to
+                "Too many signup attempts. Please wait a few minutes before trying again.",
             listOf("user_already_exists", "user already registered") to
                 "An account with this email address already exists. Please log in instead.",
-            listOf("over_email_send_rate_limit", "email rate limit exceeded") to
-                "Too many signup attempts. Please wait a few minutes before trying again.",
             listOf("invalid_credentials", "invalid login credentials") to
                 "Invalid email or password. Please try again.",
             listOf("email_address_invalid", "invalid email") to
                 "Invalid email address. Please use a valid university or personal email domain.",
+            listOf("bulletin requires a valid .edu university email") to
+                "Bulletin requires a valid .edu university email.",
             listOf("signup_disabled", "signups not allowed") to
                 "Account registration is currently disabled.",
             listOf("email_not_confirmed") to
