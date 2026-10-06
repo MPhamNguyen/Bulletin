@@ -15,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -26,9 +28,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import bulletin.shared.generated.resources.Res
+import bulletin.shared.generated.resources.ic_visibility
+import bulletin.shared.generated.resources.ic_visibility_off
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun ForgotPasswordScreen(
@@ -168,6 +175,8 @@ private fun RecoveryField(
     isPassword: Boolean = false,
     onValueChange: (String) -> Unit
 ) {
+    var isPasswordVisible by remember { mutableStateOf(false) }
+
     Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
     Spacer(Modifier.height(6.dp))
     OutlinedTextField(
@@ -176,10 +185,24 @@ private fun RecoveryField(
         modifier = Modifier.fillMaxWidth(),
         placeholder = { Text(placeholder) },
         singleLine = true,
-        visualTransformation = if (isPassword) {
+        visualTransformation = if (isPassword && !isPasswordVisible) {
             PasswordVisualTransformation()
         } else {
-            androidx.compose.ui.text.input.VisualTransformation.None
+            VisualTransformation.None
+        },
+        trailingIcon = if (isPassword) {
+            {
+                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                    val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
+                    Icon(
+                        painter = painterResource(icon),
+                        contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            null
         },
         shape = MaterialTheme.shapes.medium,
         colors = BulletinTextFieldDefaults.colors()
