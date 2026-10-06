@@ -127,6 +127,54 @@ class PasswordResetTest {
     }
 
     @Test
+    fun failedCodeAndPasswordUpdateKeepTheRecoveryWorkflowAtItsCurrentStage() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val profileRepository = InMemoryProfileRepository()
+            val authRepository = InMemoryAuthRepository(
+                profileRepository = profileRepository,
+                testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+            )
+            authRepository.register(email, "oldPassword", "Reset Student")
+            authRepository.verifyEmail(email, testEmailVerificationCode())
+            authRepository.signOut()
+            val viewModel = ProfileViewModel(
+                authenticateUser = AuthenticateUser(authRepository, policy),
+                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepository),
+                signOutUser = SignOutUser(authRepository),
+                verifyStudentEmail = VerifyStudentEmail(authRepository),
+                resendVerificationCode = ResendVerificationCode(authRepository),
+                requestPasswordReset = RequestPasswordReset(authRepository, policy),
+                verifyPasswordResetCode = VerifyPasswordResetCode(authRepository),
+                updatePassword = UpdatePassword(authRepository, policy),
+                manageProfile = ManageProfile(profileRepository),
+                updateStudentProfile = UpdateStudentProfile(profileRepository),
+                submitStudentReview = SubmitStudentReview(profileRepository, policy)
+            )
+
+            viewModel.beginPasswordReset()
+            viewModel.requestPasswordReset(email.value)
+            advanceUntilIdle()
+            viewModel.verifyPasswordResetCode("000000")
+            advanceUntilIdle()
+
+            assertEquals(PasswordRecoveryStage.ENTER_CODE, viewModel.uiState.value.passwordRecoveryStage)
+            assertTrue(viewModel.uiState.value.errorMessage != null)
+
+            viewModel.verifyPasswordResetCode(PasswordResetPolicy.TEST_CONFIRMATION_CODE)
+            advanceUntilIdle()
+            viewModel.updatePassword("newPassword", "differentPassword")
+            advanceUntilIdle()
+
+            assertEquals(PasswordRecoveryStage.CHANGE_PASSWORD, viewModel.uiState.value.passwordRecoveryStage)
+            assertTrue(viewModel.uiState.value.errorMessage != null)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
     fun applicationPassesProviderGeneratedNumericCodeToRepository() = runTest {
         val repository = RecordingPasswordResetRepository()
         val verify = VerifyPasswordResetCode(repository)
