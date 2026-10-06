@@ -401,6 +401,7 @@ class ProfileViewModel(
                 profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
                 isEditingProfile = true,
                 activeSubscreen = ProfileSubscreen.EDIT_ACCOUNT,
+                editReturnSubscreen = it.activeSubscreen,
                 errorMessage = null,
                 successMessage = null
             )
@@ -414,7 +415,7 @@ class ProfileViewModel(
             it.copy(
                 profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
                 isEditingProfile = false,
-                activeSubscreen = ProfileSubscreen.SETTINGS,
+                activeSubscreen = it.editReturnSubscreen,
                 errorMessage = null,
                 successMessage = null
             )

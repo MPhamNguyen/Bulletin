@@ -36,7 +36,8 @@ fun ProfileScreen(
     onBack: () -> Unit = {},
     onSignOut: () -> Unit = {},
     onMyListingsClick: () -> Unit = {},
-    onBookmarkedListingsClick: () -> Unit = {}
+    onBookmarkedListingsClick: () -> Unit = {},
+    onCreateListingClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -57,8 +58,16 @@ fun ProfileScreen(
             themeViewModel = themeViewModel,
             handleBack = handleBack,
             onSignOut = onSignOut,
-            onMyListingsClick = onMyListingsClick,
-            onBookmarkedListingsClick = onBookmarkedListingsClick
+            landingActions = ProfileLandingActions(
+                onSettings = viewModel::openSettings,
+                onEditProfile = viewModel::startEditingProfile,
+                onMyListings = onMyListingsClick,
+                onBookmarkedListings = {
+                    onBookmarkedListingsClick()
+                    viewModel.openBookmarkedListings()
+                },
+                onCreateListing = onCreateListingClick
+            )
         )
 
         AnimatedContent(
@@ -85,8 +94,7 @@ private fun ProfileSubscreenHost(
     themeViewModel: ThemeViewModel?,
     handleBack: () -> Unit,
     onSignOut: () -> Unit,
-    onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit
+    landingActions: ProfileLandingActions
 ) {
     when {
         uiState.activeSubscreen == ProfileSubscreen.EDIT_ACCOUNT || uiState.isEditingProfile -> {
@@ -137,16 +145,23 @@ private fun ProfileSubscreenHost(
         else -> {
             MarketplaceProfileView(
                 uiState = uiState,
-                onSettingsClick = viewModel::openSettings,
-                onMyListingsClick = onMyListingsClick,
-                onBookmarkedListingsClick = {
-                    onBookmarkedListingsClick()
-                    viewModel.openBookmarkedListings()
-                }
+                onSettingsClick = landingActions.onSettings,
+                onEditProfileClick = landingActions.onEditProfile,
+                onMyListingsClick = landingActions.onMyListings,
+                onBookmarkedListingsClick = landingActions.onBookmarkedListings,
+                onCreateListingClick = landingActions.onCreateListing
             )
         }
     }
 }
+
+private data class ProfileLandingActions(
+    val onSettings: () -> Unit,
+    val onEditProfile: () -> Unit,
+    val onMyListings: () -> Unit,
+    val onBookmarkedListings: () -> Unit,
+    val onCreateListing: () -> Unit
+)
 
 internal fun handleSubscreenBack(
     activeSubscreen: ProfileSubscreen,
