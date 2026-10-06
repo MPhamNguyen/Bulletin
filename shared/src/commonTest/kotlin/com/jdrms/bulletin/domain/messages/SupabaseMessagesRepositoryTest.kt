@@ -79,7 +79,11 @@ class SupabaseMessagesRepositoryTest {
 
     @Test
     fun reportWritesAuthenticatedReporterAndReason() = runTest {
-        val table = FakeSupabaseMessagesTable(listOf(conversation()), listOf(message()))
+        val table = FakeSupabaseMessagesTable(
+            conversations = listOf(conversation()),
+            messages = listOf(message()),
+            authenticatedUserId = carol.id.value
+        )
         val repository = SupabaseMessagesRepository(table)
 
         repository.reportMessage(carol.id, conversationId, message().id, "Harassment").getOrThrow()
@@ -88,6 +92,44 @@ class SupabaseMessagesRepositoryTest {
             SupabaseMessageReportInsertDto("message-a", "carol-id", "Harassment"),
             table.insertedReport
         )
+    }
+
+    @Test
+    fun authenticatedUserCannotReportAsAnotherParticipant() = runTest {
+        val table = FakeSupabaseMessagesTable(
+            conversations = listOf(conversation()),
+            messages = listOf(message()),
+            authenticatedUserId = alice.id.value
+        )
+
+        val result = SupabaseMessagesRepository(table).reportMessage(
+            carol.id,
+            conversationId,
+            message().id,
+            "Harassment"
+        )
+
+        assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
+        assertNull(table.insertedReport)
+    }
+
+    @Test
+    fun reportRequiresAnAuthenticatedSession() = runTest {
+        val table = FakeSupabaseMessagesTable(
+            conversations = listOf(conversation()),
+            messages = listOf(message()),
+            authenticatedUserId = null
+        )
+
+        val result = SupabaseMessagesRepository(table).reportMessage(
+            alice.id,
+            conversationId,
+            message().id,
+            "Harassment"
+        )
+
+        assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
+        assertNull(table.insertedReport)
     }
 
     @Test

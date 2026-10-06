@@ -86,6 +86,7 @@ class SupabaseMessagesMapperTest {
         assertEquals("Hello from Supabase", decoded.content)
         assertEquals("Hello", encoded.getValue("body").jsonPrimitive.content)
         assertFalse("content" in encoded)
+        assertFalse("sender_id" in encoded)
     }
 
     @Test

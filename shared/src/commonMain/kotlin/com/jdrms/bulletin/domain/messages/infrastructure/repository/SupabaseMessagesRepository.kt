@@ -42,13 +42,7 @@ class SupabaseMessagesRepository internal constructor(
     }
 
     override suspend fun sendMessage(message: Message): Result<Message> = repositoryCall {
-        val authenticatedSenderId = messagesTable.getAuthenticatedUserId()
-            ?.takeIf(String::isNotBlank)
-            ?.let(::SenderId)
-            ?: throw ConversationAccessException()
-        if (authenticatedSenderId != message.senderId) {
-            throw ConversationAccessException()
-        }
+        val authenticatedSenderId = requireAuthenticatedUser(message.senderId)
         requireParticipant(authenticatedSenderId, message.conversationId)
         messagesTable.insertMessage(SupabaseMessagesMapper.toInsertDto(message))
         message
@@ -60,11 +54,14 @@ class SupabaseMessagesRepository internal constructor(
         messageId: MessageId,
         reason: String
     ): Result<Unit> = repositoryCall {
-        requireParticipant(userId, conversationId)
+        val authenticatedReporterId = requireAuthenticatedUser(userId)
+        requireParticipant(authenticatedReporterId, conversationId)
         if (messagesTable.findMessage(conversationId.value, messageId.value) == null) {
             throw ConversationAccessException()
         }
-        messagesTable.insertReport(SupabaseMessagesMapper.toReportInsertDto(messageId, userId, reason))
+        messagesTable.insertReport(
+            SupabaseMessagesMapper.toReportInsertDto(messageId, authenticatedReporterId, reason)
+        )
     }
 
     private suspend fun loadConversation(conversationId: String): Conversation {
@@ -78,6 +75,17 @@ class SupabaseMessagesRepository internal constructor(
         if (!messagesTable.isParticipant(conversationId.value, userId.value)) {
             throw ConversationAccessException()
         }
+    }
+
+    private suspend fun requireAuthenticatedUser(claimedUserId: SenderId): SenderId {
+        val authenticatedUserId = messagesTable.getAuthenticatedUserId()
+            ?.takeIf(String::isNotBlank)
+            ?.let(::SenderId)
+            ?: throw ConversationAccessException()
+        if (authenticatedUserId != claimedUserId) {
+            throw ConversationAccessException()
+        }
+        return authenticatedUserId
     }
 
     @Suppress("TooGenericExceptionCaught")
