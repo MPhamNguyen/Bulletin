@@ -1,118 +1,171 @@
-name: Build & Test
+name: CI
 
 on:
   push:
+    # Pull requests are covered by the branch-push check.
 
+  # Merge queue runs always do a full build (no diff range is computed for them).
+  merge_group:
+  schedule:
+    - cron: "19 2 * * 6"
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
 
 jobs:
+  # Keep this as ONE always-running job and mark it as the required check.
+  # Skipping happens at the step level, so docs-only changes still report
+  # success instead of leaving a required check pending forever.
   build:
-    name: Build & Test
+    name: Build and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Full history so we can diff against github.event.before on pushes.
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Detect Changed Paths
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            global:
-              - 'build.gradle.kts'
-              - 'settings.gradle.kts'
-              - 'gradle.properties'
-              - 'gradle/**'
-              - 'config/**'
-              - '.github/workflows/**'
-              - 'shared/build.gradle.kts'
-              - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/core/**'
-              - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/app/**'
-              - 'shared/src/commonTest/kotlin/com/jdrms/bulletin/app/**'
-              - 'shared/src/commonMain/kotlin/com/jdrms/bulletin/App.kt'
-              - 'shared/src/commonMain/composeResources/**'
-              - 'shared/src/androidMain/**'
-              - 'shared/src/androidHostTest/**'
-              - 'shared/src/commonTest/kotlin/com/jdrms/bulletin/GreetingTest.kt'
-            home:
-              - 'shared/src/**/domain/home/**'
-            marketplace:
-              - 'shared/src/**/domain/marketplace/**'
-            listings:
-              - 'shared/src/**/domain/listings/**'
-            messages:
-              - 'shared/src/**/domain/messages/**'
-            profile:
-              - 'shared/src/**/domain/profile/**'
-            androidApp:
-              - 'androidApp/**'
-
-      - name: Run Build and Tests
+      - name: Decide scope
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ steps.filter.outputs.global }}" = "true" ]; then
-            echo "Running full build and check (main branch merge/push, manual trigger, or global/core changes)..."
-            ./gradlew check --no-daemon
-          else
-            GRADLE_TASKS=()
-            TEST_FILTERS=()
+          set -euo pipefail
 
-            if [ "${{ steps.filter.outputs.home }}" = "true" ]; then
-              echo "Changes detected in Home domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.home.*")
-            fi
+          mode=full     # full | affected | skip
+          tasks=""
 
-            if [ "${{ steps.filter.outputs.marketplace }}" = "true" ]; then
-              echo "Changes detected in Marketplace domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.marketplace.*")
-            fi
+          # Compute a diff range only where it is reliable. Every other case
+          # (schedule, workflow_dispatch, merge_group, new branch, force push,
+          # missing parent commit) stays on the safe default: full.
+          range=()
+          if [ "$EVENT" = "pull_request" ] \
+            && git rev-parse --verify -q 'HEAD^1' >/dev/null; then
+            range=(HEAD^1 HEAD)
+          elif [ "$EVENT" = "push" ] \
+            && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            range=("$BEFORE" "$AFTER")
+          fi
 
-            if [ "${{ steps.filter.outputs.listings }}" = "true" ]; then
-              echo "Changes detected in Listings domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.listings.*")
-            fi
+          if [ ${#range[@]} -gt 0 ]; then
+            count=0
+            docs=0
+            force_full=false
+            domain_changed=false
+            android_app_changed=false
 
-            if [ "${{ steps.filter.outputs.messages }}" = "true" ]; then
-              echo "Changes detected in Messages domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.messages.*")
-            fi
+            while IFS= read -r -d '' path; do
+              count=$((count + 1))
 
-            if [ "${{ steps.filter.outputs.profile }}" = "true" ]; then
-              echo "Changes detected in Profile domain"
-              TEST_FILTERS+=(--tests "com.jdrms.bulletin.domain.profile.*")
-            fi
+              case "$path" in
+                *.md|docs/*|LICENSE|LICENSE.*) docs=$((docs + 1)); continue ;;
+              esac
 
-            if [ ${#TEST_FILTERS[@]} -gt 0 ]; then
-              GRADLE_TASKS+=(:shared:compileAndroidMain :shared:testAndroidHostTest "${TEST_FILTERS[@]}")
-            fi
+              # Build-wide changes affect every module and every bounded context.
+              case "$path" in
+                build.gradle*|settings.gradle*|gradle.properties|gradle/*|buildSrc/*|build-logic/*|gradlew|gradlew.bat|.github/*)
+                  force_full=true ;;
+              esac
 
-            if [ "${{ steps.filter.outputs.androidApp }}" = "true" ]; then
-              echo "Changes detected in Android App module"
-              GRADLE_TASKS+=(:androidApp:check)
-            fi
+              # Bounded contexts are source packages inside :shared, not Gradle
+              # modules. Anything unrecognized falls through to a full build.
+              case "$path" in
+                shared/src/*/kotlin/com/jdrms/bulletin/domain/home/* \
+                | shared/src/*/kotlin/com/jdrms/bulletin/domain/marketplace/* \
+                | shared/src/*/kotlin/com/jdrms/bulletin/domain/listings/* \
+                | shared/src/*/kotlin/com/jdrms/bulletin/domain/messages/* \
+                | shared/src/*/kotlin/com/jdrms/bulletin/domain/profile/*)
+                  domain_changed=true ;;
+                androidApp/*)
+                  android_app_changed=true ;;
+                shared/*)
+                  force_full=true ;;
+                *)
+                  force_full=true ;; # root-level or unknown path: fail safe
+              esac
+            done < <(git diff -z --name-only --no-renames "${range[@]}")
 
-            if [ ${#GRADLE_TASKS[@]} -gt 0 ]; then
-              echo "Running targeted build tasks: ${GRADLE_TASKS[*]}"
-              ./gradlew "${GRADLE_TASKS[@]}" --no-daemon
+            if [ "$count" -eq 0 ]; then
+              mode=full                       # empty/failed diff: fail safe
+            elif [ "$count" -eq "$docs" ]; then
+              mode=skip                       # docs only
+            elif [ "$force_full" = "true" ]; then
+              mode=full
             else
-              echo "No application code changes detected. Skipping build."
+              mode=affected
+              # Domain aggregates can be consumed across contexts, so any
+              # domain change runs every domain test package, plus app/core
+              # tests that cover composition and shared infrastructure.
+              if [ "$domain_changed" = "true" ]; then
+                tasks="$tasks :shared:compileAndroidMain :shared:testAndroidHostTest"
+                for domain in home marketplace listings messages profile; do
+                  tasks="$tasks --tests com.jdrms.bulletin.domain.${domain}.*"
+                done
+                tasks="$tasks --tests com.jdrms.bulletin.app.* --tests com.jdrms.bulletin.core.*"
+              fi
+
+              if [ "$android_app_changed" = "true" ]; then
+                tasks="$tasks :androidApp:check"
+              fi
             fi
           fi
+
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "tasks=$tasks" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "**Scope:** \`$mode\`"
+            if [ -n "$tasks" ]; then
+              echo "**Tasks:** \`$tasks\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Setup Java
+        if: steps.scope.outputs.mode != 'skip'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        if: steps.scope.outputs.mode != 'skip'
+        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+
+      - name: Run Gradle (full)
+        if: steps.scope.outputs.mode == 'full'
+        run: ./gradlew check --stacktrace --continue --console=plain
+
+      - name: Run Gradle (affected domains/modules)
+        if: steps.scope.outputs.mode == 'affected'
+        env:
+          TASKS: ${{ steps.scope.outputs.tasks }}
+        run: |
+          set -euo pipefail
+          # Keep Gradle's --tests patterns literal instead of allowing shell
+          # pathname expansion to alter them.
+          set -f
+          read -r -a gradle_tasks <<< "$TASKS"
+          ./gradlew "${gradle_tasks[@]}" --stacktrace --continue --console=plain
+
+      - name: Upload build reports
+        if: failure() && steps.scope.outputs.mode != 'skip'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-reports
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            **/build/reports/**
+            **/build/test-results/**

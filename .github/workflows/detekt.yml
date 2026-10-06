@@ -2,10 +2,7 @@ name: Scan with Detekt
 
 on:
   push:
-    branches:
-      - main
-
-  pull_request:
+    # Pull requests are covered by the branch-push check.
 
   merge_group:
 
