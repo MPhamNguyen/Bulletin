@@ -12,6 +12,7 @@ import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
@@ -109,5 +110,26 @@ class PasswordResetTest {
         assertTrue(unknownEmail is Result.Error)
         assertTrue(update("short", "short") is Result.Error)
         assertTrue(update("validPassword", "differentPassword") is Result.Error)
+    }
+
+    @Test
+    fun applicationPassesProviderGeneratedNumericCodeToRepository() = runTest {
+        val repository = RecordingPasswordResetRepository()
+        val verify = VerifyPasswordResetCode(repository)
+
+        assertTrue(verify(email, "654321").isSuccess())
+        assertEquals("654321", repository.receivedCode)
+        assertTrue(verify(email, "not-a-code").isError())
+    }
+
+    private class RecordingPasswordResetRepository : AuthRepository by InMemoryAuthRepository(
+        InMemoryProfileRepository()
+    ) {
+        var receivedCode: String? = null
+
+        override suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit> {
+            receivedCode = code
+            return Result.Success(Unit)
+        }
     }
 }

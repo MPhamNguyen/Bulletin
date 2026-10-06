@@ -54,7 +54,7 @@ class VerifyPasswordResetCode(
     private val authRepository: AuthRepository
 ) {
     suspend operator fun invoke(email: StudentEmail, code: String): Result<Unit> {
-        val validation = PasswordResetPolicy.validateConfirmationCode(code)
+        val validation = PasswordResetPolicy.validateCodeFormat(code)
         if (validation.isError()) {
             return Result.Error((validation as Result.Error).exception)
         }

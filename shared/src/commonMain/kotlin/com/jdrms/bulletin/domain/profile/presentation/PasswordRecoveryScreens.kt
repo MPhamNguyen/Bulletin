@@ -29,7 +29,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 
 @Composable
 fun ForgotPasswordScreen(
@@ -67,8 +66,7 @@ fun PasswordConfirmationCodeScreen(
     var code by remember { mutableStateOf("") }
     RecoveryLayout(
         title = "Confirm your reset",
-        description = "Enter the confirmation code for $email. For local testing, use " +
-            PasswordResetPolicy.TEST_CONFIRMATION_CODE + ".",
+        description = "Enter the confirmation code sent to $email.",
         errorMessage = errorMessage,
         content = {
             RecoveryField(label = "Confirmation code", value = code, placeholder = "123456") {

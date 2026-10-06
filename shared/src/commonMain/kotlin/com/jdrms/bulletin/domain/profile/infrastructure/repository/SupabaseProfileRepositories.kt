@@ -8,7 +8,6 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
-import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
@@ -293,11 +292,18 @@ class SupabaseAuthRepository(
     override suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit> {
         return if (!passwordResetRequested) {
             Result.Error(IllegalStateException("Request a new password reset before entering a code."))
-        } else if (code.trim() != PasswordResetPolicy.TEST_CONFIRMATION_CODE) {
-            Result.Error(IllegalArgumentException("The confirmation code is incorrect."))
         } else {
-            passwordResetCodeVerified = true
-            Result.Success(Unit)
+            runCatching {
+                supabase.auth.verifyEmailOtp(
+                    type = OtpType.Email.RECOVERY,
+                    email = email.value,
+                    token = code.trim()
+                )
+                passwordResetCodeVerified = true
+            }.fold(
+                onSuccess = { Result.Success(Unit) },
+                onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+            )
         }
     }
 
