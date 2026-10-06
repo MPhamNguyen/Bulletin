@@ -183,14 +183,21 @@ class ProfileViewModel(
                 university = university
             )
             when (result) {
-                is Result.Success -> _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        pendingRegistration = result.data,
-                        profile = null,
-                        isAccountCreated = false,
-                        authSessionState = AuthSessionState.UNAUTHENTICATED
-                    )
+                is Result.Success -> {
+                    val restoredProfile = result.data.restoredProfile
+                    if (restoredProfile != null) {
+                        completeVerifiedRegistration(restoredProfile)
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                pendingRegistration = result.data,
+                                profile = null,
+                                isAccountCreated = false,
+                                authSessionState = AuthSessionState.UNAUTHENTICATED
+                            )
+                        }
+                    }
                 }
                 is Result.Error -> _uiState.update {
                     it.copy(isLoading = false, errorMessage = result.exception.message)

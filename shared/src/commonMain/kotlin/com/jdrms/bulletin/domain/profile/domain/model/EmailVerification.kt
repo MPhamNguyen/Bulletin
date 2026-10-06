@@ -3,7 +3,10 @@ package com.jdrms.bulletin.domain.profile.domain.model
 import com.jdrms.bulletin.core.common.Result
 
 /** Registration is pending until the authentication provider confirms ownership of this email. */
-data class PendingRegistration(val email: StudentEmail)
+data class PendingRegistration(
+    val email: StudentEmail,
+    val restoredProfile: StudentProfile? = null
+)
 
 sealed interface EmailVerificationOutcome {
     data class ProfileAvailable(val profile: StudentProfile) : EmailVerificationOutcome

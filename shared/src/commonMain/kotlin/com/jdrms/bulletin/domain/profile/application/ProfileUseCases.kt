@@ -161,10 +161,7 @@ class DeleteStudentAccount(
     suspend operator fun invoke(userId: UserId): Result<Unit> {
         val timestamp = nowMillis()
         return when (val result = profileRepository.deleteProfile(userId, timestamp)) {
-            is Result.Success -> {
-                authRepository.signOut()
-                Result.Success(Unit)
-            }
+            is Result.Success -> authRepository.signOut()
             is Result.Error -> result
         }
     }

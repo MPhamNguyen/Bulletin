@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -191,6 +192,41 @@ class ProfileApplicationTest {
 
         val deleteResult = deleteStudentAccount(UserId("nonexistent_user"))
         assertTrue(deleteResult.isError())
+    }
+
+    @Test
+    fun testDeleteStudentAccountPropagatesSignOutFailure() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+        val authenticateUser = AuthenticateUser(authRepo, policy)
+        val email = StudentEmail("signout_failure@school.edu")
+        val signOutFailure = IllegalStateException("Unable to clear session")
+        val failingAuthRepository = object : AuthRepository by authRepo {
+            override suspend fun signOut(): Result<Unit> = Result.Error(signOutFailure)
+        }
+
+        val registered = authenticateUser.register(
+            email = email,
+            password = "validPassword123",
+            fullName = "Sign Out Failure"
+        )
+        assertTrue(registered is Result.Success)
+        val verified = VerifyStudentEmail(authRepo)(email, "123456")
+        assertTrue(verified is Result.Success)
+        val userId = assertNotNull(
+            assertIs<Result.Success<StudentProfile?>>(authRepo.getCurrentUser()).data
+        ).id
+
+        val deleteResult = DeleteStudentAccount(
+            profileRepository = profileRepo,
+            authRepository = failingAuthRepository,
+            nowMillis = { 1_700_000_000_000L }
+        )(userId)
+
+        assertIs<Result.Error>(deleteResult)
+        assertEquals(signOutFailure, deleteResult.exception)
+        assertTrue(profileRepo.getProfile(userId).getOrThrow()!!.isDeleted)
+        assertNotNull(authRepo.getCurrentUser().getOrThrow())
     }
 
     @Test

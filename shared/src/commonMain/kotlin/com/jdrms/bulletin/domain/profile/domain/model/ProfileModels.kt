@@ -89,6 +89,28 @@ data class StudentProfile(
         return Result.Success(copy(deleteAtMillis = timestampMillis))
     }
 
+    fun restoreForRegistration(fullName: String, university: String): Result<StudentProfile> {
+        if (!isDeleted) {
+            return Result.Error(IllegalStateException("Profile is not marked as deleted."))
+        }
+        val normalizedName = fullName.trim()
+        val normalizedUniversity = university.trim()
+        if (normalizedName.isBlank()) {
+            return Result.Error(IllegalArgumentException("Full name is required."))
+        }
+        if (normalizedUniversity.isBlank()) {
+            return Result.Error(IllegalArgumentException("School is required."))
+        }
+        return Result.Success(
+            copy(
+                fullName = normalizedName,
+                university = normalizedUniversity,
+                isVerified = true,
+                deleteAtMillis = null
+            )
+        )
+    }
+
     fun updateDetails(
         fullName: String,
         major: String,

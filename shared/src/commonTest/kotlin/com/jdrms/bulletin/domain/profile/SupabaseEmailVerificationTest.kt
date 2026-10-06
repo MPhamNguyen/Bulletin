@@ -31,7 +31,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class SupabaseEmailVerificationTest {
     private val email = StudentEmail("student@example.com")
@@ -65,7 +64,7 @@ class SupabaseEmailVerificationTest {
     }
 
     @Test
-    fun verificationExchangesCodeForConfirmedSessionAndMapsMetadata() = runTest {
+    fun verificationRequiresAnAuthoritativeProfileRow() = runTest {
         val client = client { path, body ->
             assertEquals("/auth/v1/verify", path)
             val request = Json.parseToJsonElement(body).jsonObject
@@ -80,11 +79,9 @@ class SupabaseEmailVerificationTest {
             val result = assertIs<Result.Success<EmailVerificationOutcome>>(
                 VerifyStudentEmail(repository)(email, "012345")
             )
-            val profile = assertIs<EmailVerificationOutcome.ProfileAvailable>(result.data).profile
-            assertEquals("Student Name", profile.fullName)
-            assertEquals("CSULB", profile.university)
-            assertTrue(profile.isVerified)
-            assertEquals(UserId(USER_ID), (repository.getCurrentUserId() as Result.Success).data)
+            assertIs<EmailVerificationOutcome.ProfileRecoveryRequired>(result.data)
+            assertNull(profiles.getProfile(UserId(USER_ID)).getOrThrow())
+            assertNull((repository.getCurrentUserId() as Result.Success).data)
         } finally {
             client.close()
         }
@@ -186,6 +183,61 @@ class SupabaseEmailVerificationTest {
     }
 
     @Test
+    fun deletedProfileInvalidatesThePersistedSessionAndUserId() = runTest {
+        val client = client { path, _ -> if (path.endsWith("/logout")) "{}" else session() }
+        val deletedProfile = StudentProfile(
+            id = UserId(USER_ID),
+            email = email,
+            fullName = "Deleted Student",
+            deleteAtMillis = 1_700_000_000_000L
+        )
+        val profiles = object : ProfileRepository by InMemoryProfileRepository() {
+            override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+                return Result.Success(deletedProfile)
+            }
+        }
+        try {
+            val repository = SupabaseAuthRepository(client, profiles)
+            client.auth.signInWith(Email) {
+                this.email = "student@example.com"
+                password = "password123"
+            }
+
+            val result = assertIs<Result.Error>(repository.getCurrentUserId())
+            assertEquals("Account has been deleted.", result.exception.message)
+            assertNull(client.auth.currentSessionOrNull())
+            assertEquals(null, (repository.getCurrentUserId() as Result.Success).data)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun loginClearsDeletedProfileSessionWhenRemoteSignOutFails() = runTest {
+        val client = client { path, _ ->
+            if (path.endsWith("/logout")) error("Unable to connect") else session()
+        }
+        val deletedProfile = StudentProfile(
+            id = UserId(USER_ID),
+            email = email,
+            fullName = "Deleted Student",
+            deleteAtMillis = 1_700_000_000_000L
+        )
+        val profiles = object : ProfileRepository by InMemoryProfileRepository() {
+            override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+                return Result.Success(deletedProfile)
+            }
+        }
+        try {
+            val repository = SupabaseAuthRepository(client, profiles)
+            assertIs<Result.Error>(repository.login(email, "password123"))
+            assertNull(client.auth.currentSessionOrNull())
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun rejectsVerificationSessionForADifferentEmail() = runTest {
         val client = client { path, _ ->
             if (path.endsWith("/logout")) "{}" else session().replace("student@example.com", "other@example.com")
@@ -200,7 +252,7 @@ class SupabaseEmailVerificationTest {
     }
 
     @Test
-    fun profileFailureAfterConfirmationReturnsRecoverableOutcomeAndIdentityRemainsConfirmed() = runTest {
+    fun profileFailureAfterConfirmationDoesNotExposeIdentity() = runTest {
         val client = client { _, _ -> session() }
         val profiles = object : ProfileRepository by InMemoryProfileRepository() {
             override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
@@ -213,7 +265,7 @@ class SupabaseEmailVerificationTest {
                 VerifyStudentEmail(repository)(email, "123456")
             )
             assertIs<EmailVerificationOutcome.ProfileRecoveryRequired>(result.data)
-            assertEquals(UserId(USER_ID), (repository.getCurrentUserId() as Result.Success).data)
+            assertIs<Result.Error>(repository.getCurrentUserId())
         } finally {
             client.close()
         }

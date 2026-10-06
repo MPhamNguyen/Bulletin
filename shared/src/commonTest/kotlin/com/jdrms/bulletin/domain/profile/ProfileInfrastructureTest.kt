@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -328,6 +329,13 @@ class ProfileInfrastructureTest {
     }
 
     @Test
+    fun testSupabaseAuthRepositoryRecognizesExistingUserErrors() {
+        assertTrue(SupabaseAuthRepository.isExistingUserError(Exception("user_already_exists")))
+        assertTrue(SupabaseAuthRepository.isExistingUserError(Exception("User already registered")))
+        assertFalse(SupabaseAuthRepository.isExistingUserError(Exception("Invalid login credentials")))
+    }
+
+    @Test
     fun testSupabaseProfileRepositoryErrorMapping() {
         val schemaCacheError = Exception(
             "Could not find the table `public.profiles` in the schema cache.\n\n" +
@@ -416,6 +424,22 @@ class ProfileInfrastructureTest {
         val updateDto = ProfileMapper.toUpdateDto(domain)
         assertEquals("2026-10-05T12:00:00Z", updateDto.deletedAt)
         assertEquals("deleted_at", SupabaseProfileRepository.DELETED_AT_COLUMN)
+    }
+
+    @Test
+    fun testSupabaseProfileRepositoryRejectsUpdateWithNoAffectedRows() {
+        assertFailsWith<IllegalStateException> {
+            SupabaseProfileRepository.requireAffectedProfileRows(emptyList())
+        }
+
+        SupabaseProfileRepository.requireAffectedProfileRows(
+            listOf(
+                ProfileDto(
+                    id = "student_del",
+                    email = "deleted@example.com"
+                )
+            )
+        )
     }
 
     @Test

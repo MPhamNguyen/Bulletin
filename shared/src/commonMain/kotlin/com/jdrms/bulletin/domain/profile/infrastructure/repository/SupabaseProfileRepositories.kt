@@ -19,10 +19,10 @@ import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -134,11 +134,14 @@ class SupabaseProfileRepository(
             val updatePayload = buildJsonObject {
                 put(DELETED_AT_COLUMN, deleteAtIso)
             }
-            supabase.from(PROFILES_TABLE).update(updatePayload) {
+            val updatedProfiles = supabase.from(PROFILES_TABLE).update(updatePayload) {
                 filter {
                     eq("id", resolvedId)
                 }
+                select()
             }
+                .decodeList<ProfileDto>()
+            requireAffectedProfileRows(updatedProfiles)
             Unit
         }.fold(
             onSuccess = { Result.Success(it) },
@@ -189,6 +192,12 @@ class SupabaseProfileRepository(
 
         fun isValidUuid(value: String): Boolean = UUID_REGEX.matches(value)
 
+        internal fun requireAffectedProfileRows(updatedProfiles: List<ProfileDto>) {
+            check(updatedProfiles.isNotEmpty()) {
+                "Profile was not found or could not be updated."
+            }
+        }
+
         private val PROFILE_ERROR_RULES = listOf(
             listOf("could not find the table", "schema cache") to
                 "Database table not found. Please verify your Supabase schema setup.",
@@ -232,13 +241,10 @@ class SupabaseAuthRepository(
 ) : AuthRepository {
 
     override suspend fun getCurrentUserId(): Result<UserId?> {
-        return runCatching {
-            supabase.auth.awaitInitialization()
-            supabase.auth.currentUserOrNull()?.takeIf { it.emailConfirmedAt != null }?.id?.let(::UserId)
-        }.fold(
-            onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
-        )
+        return when (val currentUser = getCurrentUser()) {
+            is Result.Success -> Result.Success(currentUser.data?.id)
+            is Result.Error -> currentUser
+        }
     }
 
     override suspend fun getCurrentUser(): Result<StudentProfile?> {
@@ -250,8 +256,11 @@ class SupabaseAuthRepository(
 
             when (val profileResult = profileRepository.getProfile(userId)) {
                 is Result.Success -> {
-                    val profile = profileResult.data ?: createProfileFromAuthUser(currentUser)
-                    if (profile.isDeleted) null else profile
+                    val profile = profileResult.data ?: return@runCatching null
+                    if (profile.isDeleted) {
+                        rejectSession("Account has been deleted.")
+                    }
+                    profile
                 }
                 is Result.Error -> throw profileResult.exception
             }
@@ -268,19 +277,46 @@ class SupabaseAuthRepository(
         university: String
     ): Result<PendingRegistration> {
         return runCatching {
-            supabase.auth.signUpWith(Email) {
-                this.email = email.value
-                this.password = password
-                data = buildJsonObject {
-                    put("full_name", fullName)
-                    put("university", university)
+            val restoredProfile = try {
+                supabase.auth.signUpWith(Email) {
+                    this.email = email.value
+                    this.password = password
+                    data = buildJsonObject {
+                        put("full_name", fullName)
+                        put("university", university)
+                    }
+                }
+                null
+            } catch (throwable: AuthRestException) {
+                if (!isExistingUserError(throwable)) throw throwable
+
+                supabase.auth.signInWith(Email) {
+                    this.email = email.value
+                    this.password = password
+                }
+                val currentUser = supabase.auth.currentUserOrNull()
+                    ?: error("Failed to retrieve authenticated user session.")
+                if (currentUser.emailConfirmedAt == null) {
+                    rejectSession("Please verify your email address before restoring the account.")
+                }
+                val existingProfile = when (val result = profileRepository.getProfile(UserId(currentUser.id))) {
+                    is Result.Success -> result.data
+                    is Result.Error -> throw result.exception
+                } ?: error("Profile record not found. Please contact support.")
+                val restored = when (val result = existingProfile.restoreForRegistration(fullName, university)) {
+                    is Result.Success -> result.data
+                    is Result.Error -> throw result.exception
+                }
+                when (val result = profileRepository.updateProfile(restored)) {
+                    is Result.Success -> result.data
+                    is Result.Error -> throw result.exception
                 }
             }
             // Confirmation must be enforced by the server, never inferred from a profile row.
-            if (supabase.auth.currentSessionOrNull() != null) {
+            if (restoredProfile == null && supabase.auth.currentSessionOrNull() != null) {
                 rejectSession("Email confirmation is unavailable. Please contact support.")
             }
-            PendingRegistration(email)
+            PendingRegistration(email, restoredProfile)
         }.fold(
             onSuccess = { Result.Success(it) },
             onFailure = { authFailure(it) }
@@ -305,10 +341,10 @@ class SupabaseAuthRepository(
             val profileResult = profileRepository.getProfile(userId)
             val profile = when (profileResult) {
                 is Result.Success -> {
-                    val foundProfile = profileResult.data ?: createProfileFromAuthUser(currentUser, email)
+                    val foundProfile = profileResult.data
+                        ?: rejectSession("Profile record not found. Please contact support.")
                     if (foundProfile.isDeleted) {
-                        supabase.auth.signOut()
-                        error("Account has been deleted.")
+                        rejectSession("Account has been deleted.")
                     }
                     foundProfile
                 }
@@ -384,31 +420,6 @@ class SupabaseAuthRepository(
         )
     }
 
-    private suspend fun createProfileFromAuthUser(
-        authUser: io.github.jan.supabase.auth.user.UserInfo,
-        fallbackEmail: StudentEmail? = null
-    ): StudentProfile {
-        val email = authUser.email?.let(::StudentEmail) ?: fallbackEmail
-            ?: error("Authenticated user does not have an email address.")
-        val metadataName = (authUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
-            it.isNotBlank()
-        }
-        val metadataUniversity = (authUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
-            it.isNotBlank()
-        }
-        val profile = StudentProfile(
-            id = UserId(authUser.id),
-            email = email,
-            fullName = metadataName ?: "Student",
-            university = metadataUniversity ?: "CSU Long Beach",
-            isVerified = authUser.emailConfirmedAt != null
-        )
-        when (val saveResult = profileRepository.updateProfile(profile)) {
-            is Result.Success -> return saveResult.data
-            is Result.Error -> throw saveResult.exception
-        }
-    }
-
     companion object {
         private val COMMON_ERROR_RULES = listOf(
             listOf("otp_expired", "token has expired", "token is invalid") to
@@ -476,6 +487,11 @@ class SupabaseAuthRepository(
                 throwable = throwable,
                 defaultMessage = "Authentication failed. Please check your details and try again."
             )
+        }
+
+        internal fun isExistingUserError(throwable: Throwable): Boolean {
+            val message = throwable.message?.lowercase() ?: return false
+            return message.contains("user_already_exists") || message.contains("user already registered")
         }
     }
 }

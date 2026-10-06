@@ -14,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -42,6 +43,41 @@ class ProfileDomainTest {
         assertEquals(profile.id, confirmed.id)
         assertEquals(profile.email, confirmed.email)
         assertEquals(confirmed, confirmed.confirmEmail())
+    }
+
+    @Test
+    fun restoringDeletedProfileClearsDeletionAndUpdatesRegistrationDetails() {
+        val deleted = StudentProfile(
+            id = UserId("student-id"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Old Name",
+            university = "Old School",
+            isVerified = true,
+            deleteAtMillis = 1_700_000_000_000L
+        )
+
+        val restored = assertIs<Result.Success<StudentProfile>>(
+            deleted.restoreForRegistration("  New Name ", "  New School ")
+        ).data
+
+        assertEquals("New Name", restored.fullName)
+        assertEquals("New School", restored.university)
+        assertFalse(restored.isDeleted)
+        assertTrue(restored.isVerified)
+        assertEquals(deleted.id, restored.id)
+    }
+
+    @Test
+    fun restoringActiveProfileIsRejected() {
+        val active = StudentProfile(
+            id = UserId("student-id"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Student Name"
+        )
+
+        val result = active.restoreForRegistration("New Name", "New School")
+
+        assertEquals("Profile is not marked as deleted.", (result as Result.Error).exception.message)
     }
 
     @Test
