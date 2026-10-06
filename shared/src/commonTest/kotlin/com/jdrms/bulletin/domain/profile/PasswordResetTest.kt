@@ -4,6 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
+import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -11,6 +12,7 @@ import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
@@ -39,8 +41,12 @@ class PasswordResetTest {
     @Test
     fun inMemoryRepositoryChangesCredentialAfterVerifiedCode() = runTest {
         val profileRepository = InMemoryProfileRepository()
-        val authRepository = InMemoryAuthRepository(profileRepository)
+        val authRepository = InMemoryAuthRepository(
+            profileRepository = profileRepository,
+            testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+        )
         authRepository.register(email, "oldPassword", "Reset Student")
+        authRepository.verifyEmail(email, testEmailVerificationCode())
         authRepository.signOut()
 
         assertTrue(authRepository.requestPasswordReset(email).isSuccess())
@@ -61,14 +67,19 @@ class PasswordResetTest {
         Dispatchers.setMain(dispatcher)
         try {
             val profileRepository = InMemoryProfileRepository()
-            val authRepository = InMemoryAuthRepository(profileRepository)
+            val authRepository = InMemoryAuthRepository(
+                profileRepository = profileRepository,
+                testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+            )
             authRepository.register(email, "oldPassword", "Reset Student")
+            authRepository.verifyEmail(email, testEmailVerificationCode())
             authRepository.signOut()
             val viewModel = ProfileViewModel(
                 authenticateUser = AuthenticateUser(authRepository, policy),
                 restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepository),
                 signOutUser = SignOutUser(authRepository),
                 verifyStudentEmail = VerifyStudentEmail(authRepository),
+                resendVerificationCode = ResendVerificationCode(authRepository),
                 requestPasswordReset = RequestPasswordReset(authRepository, policy),
                 verifyPasswordResetCode = VerifyPasswordResetCode(authRepository),
                 updatePassword = UpdatePassword(authRepository, policy),
@@ -102,7 +113,10 @@ class PasswordResetTest {
     @Test
     fun invalidPasswordConfirmationAndUnknownEmailAreRejected() = runTest {
         val profileRepository = InMemoryProfileRepository()
-        val authRepository = InMemoryAuthRepository(profileRepository)
+        val authRepository = InMemoryAuthRepository(
+            profileRepository = profileRepository,
+            testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+        )
         val request = RequestPasswordReset(authRepository, policy)
         val update = UpdatePassword(authRepository, policy)
 
@@ -130,6 +144,13 @@ class PasswordResetTest {
         override suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit> {
             receivedCode = code
             return Result.Success(Unit)
+        }
+    }
+
+    private fun testEmailVerificationCode(): EmailVerificationCode {
+        return when (val result = EmailVerificationCode.parse(PasswordResetPolicy.TEST_CONFIRMATION_CODE)) {
+            is Result.Success -> result.data
+            is Result.Error -> error("Test verification code should be valid.")
         }
     }
 }

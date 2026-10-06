@@ -8,8 +8,8 @@ import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
-import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
+import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
@@ -36,7 +36,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // Manual DI keeps each focused authentication and profile use case explicit.
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 class ProfileViewModel(
     private val authenticateUser: AuthenticateUser,
     private val restoreAuthenticatedProfile: RestoreAuthenticatedProfile,
