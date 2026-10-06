@@ -31,6 +31,7 @@ class ListingsDomainTest {
         assertEquals("$40.00", ListingPrice(40.0).formatted)
         assertEquals("$19.99", ListingPrice(19.99).formatted)
         assertEquals("$25.50", ListingPrice(25.5).formatted)
+        assertEquals("$1,250.00", ListingPrice(1250.0).formatted)
     }
 
     @Test
