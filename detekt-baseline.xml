@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ArgumentListWrapping:Res.kt$Res$("composeResources/bulletin.shared.generated.resources/" + path)</ID>
+    <ID>FunctionNaming:Drawable0.commonMain.kt$@InternalResourceApi internal fun _collectCommonMainDrawable0Resources(map: MutableMap&lt;String, DrawableResource&gt;)</ID>
+    <ID>ImportOrdering:ActualResourceCollectors.kt$import kotlin.OptIn import kotlin.String import kotlin.collections.Map import org.jetbrains.compose.resources.DrawableResource import org.jetbrains.compose.resources.FontResource import org.jetbrains.compose.resources.PluralStringResource import org.jetbrains.compose.resources.StringArrayResource import org.jetbrains.compose.resources.StringResource</ID>
+    <ID>ImportOrdering:Drawable0.commonMain.kt$import kotlin.OptIn import kotlin.String import kotlin.collections.MutableMap import org.jetbrains.compose.resources.DrawableResource import org.jetbrains.compose.resources.InternalResourceApi import org.jetbrains.compose.resources.ResourceContentHash import org.jetbrains.compose.resources.ResourceItem</ID>
+    <ID>ImportOrdering:ExpectResourceCollectors.kt$import kotlin.String import kotlin.collections.Map import org.jetbrains.compose.resources.DrawableResource import org.jetbrains.compose.resources.FontResource import org.jetbrains.compose.resources.PluralStringResource import org.jetbrains.compose.resources.StringArrayResource import org.jetbrains.compose.resources.StringResource</ID>
+    <ID>ImportOrdering:Res.kt$import kotlin.ByteArray import kotlin.OptIn import kotlin.String import kotlin.Suppress import org.jetbrains.compose.resources.InternalResourceApi import org.jetbrains.compose.resources.getResourceUri import org.jetbrains.compose.resources.readResourceBytes</ID>
+    <ID>Indentation:ActualResourceCollectors.kt$ </ID>
+    <ID>Indentation:Drawable0.commonMain.kt$ </ID>
+    <ID>Indentation:Res.kt$ </ID>
+    <ID>Indentation:Res.kt$Res$ </ID>
+    <ID>MaxLineLength:BULLETIN-81-decompose-MyListingsScreen.kt$0</ID>
+    <ID>MaxLineLength:Res.kt$Res$public</ID>
+    <ID>MaxLineLength:Res.kt$Res$public suspend</ID>
+    <ID>MaximumLineLength:BULLETIN-81-decompose-MyListingsScreen.kt$0</ID>
+    <ID>MaximumLineLength:Res.kt$Res$ </ID>
+    <ID>ParameterListWrapping:Res.kt$Res$(path: String)</ID>
+    <ID>SpacingAroundOperators:BULLETIN-81-decompose-MyListingsScreen.kt$-</ID>
+    <ID>Wrapping:Drawable0.commonMain.kt$(</ID>
+    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:compose_multiplatform", setOf( ResourceItem(setOf(), "${MD}drawable/compose-multiplatform.xml", -1, -1), ))</ID>
+    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_arrow_back", setOf( ResourceItem(setOf(), "${MD}drawable/ic_arrow_back.xml", -1, -1), ))</ID>
+    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_graduation_cap", setOf( ResourceItem(setOf(), "${MD}drawable/ic_graduation_cap.xml", -1, -1), ))</ID>
+    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_visibility", setOf( ResourceItem(setOf(), "${MD}drawable/ic_visibility.xml", -1, -1), ))</ID>
+    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_visibility_off", setOf( ResourceItem(setOf(), "${MD}drawable/ic_visibility_off.xml", -1, -1), ))</ID>
+  </CurrentIssues>
+</SmellBaseline>

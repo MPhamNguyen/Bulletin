@@ -67,3 +67,11 @@ kotlin {
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
 }
+
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = false
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}

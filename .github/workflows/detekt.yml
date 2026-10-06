@@ -2,64 +2,118 @@ name: Scan with Detekt
 
 on:
   push:
+    # Pull requests are covered by the branch-push check.
 
-  schedule:
-    - cron: "19 2 * * 6"
+  merge_group:
 
   workflow_dispatch:
 
+# PRs cancel superseded runs. Everything else (main pushes, merge queue, manual)
+# gets its own group so no commit's scan is ever cancelled or dropped.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
-  security-events: write
 
 env:
   DETEKT_VERSION: "1.23.8"
+  # Compute once locally and paste here (see the commands at the bottom).
+  # The check fails closed: a mismatch or a placeholder stops the job.
+  DETEKT_CLI_SHA256: "ff9f9258879ff2ec4349114740221498afec46a85cf6302c9f80b06eb4429501"
+  DETEKT_FORMATTING_SHA256: "a18a3f680d232ad746ccec3d5a251776ce39131b395c455b92e1bb0a9e8fb6ba"
 
 jobs:
   scan:
     name: Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Job-level so only this job can write code-scanning results.
+    # `actions: read` is needed by upload-sarif on private repositories.
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
-      - name: Download Detekt CLI
+      - name: Install Detekt (checksum-verified)
         run: |
-          curl -sSLO \
-            "https://github.com/detekt/detekt/releases/download/v${DETEKT_VERSION}/detekt-cli-${DETEKT_VERSION}.zip"
+          set -euo pipefail
 
-          unzip "detekt-cli-${DETEKT_VERSION}.zip"
+          download() {
+            curl --fail --silent --show-error --location --retry 3 \
+              --output "$2" "$1"
+          }
 
-          echo "$GITHUB_WORKSPACE/detekt-cli-${DETEKT_VERSION}/bin" >> "$GITHUB_PATH"
+          download \
+            "https://github.com/detekt/detekt/releases/download/v${DETEKT_VERSION}/detekt-cli-${DETEKT_VERSION}.zip" \
+            "$RUNNER_TEMP/detekt-cli.zip"
+          echo "${DETEKT_CLI_SHA256}  $RUNNER_TEMP/detekt-cli.zip" | sha256sum --check --strict
+          unzip -q "$RUNNER_TEMP/detekt-cli.zip" -d "$RUNNER_TEMP"
 
-      - name: Download Detekt formatting plugin
-        run: |
-          curl -sSL \
+          download \
             "https://repo1.maven.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/${DETEKT_VERSION}/detekt-formatting-${DETEKT_VERSION}.jar" \
-            --output "$GITHUB_WORKSPACE/detekt-formatting.jar"
+            "$RUNNER_TEMP/detekt-formatting.jar"
+          echo "${DETEKT_FORMATTING_SHA256}  $RUNNER_TEMP/detekt-formatting.jar" | sha256sum --check --strict
+
+          echo "$RUNNER_TEMP/detekt-cli-${DETEKT_VERSION}/bin" >> "$GITHUB_PATH"
 
       - name: Run Detekt
         run: |
+          set -euo pipefail
+          mkdir -p detekt-reports
+
+          # Note: the plain CLI has no type resolution, so rules that need
+          # type information are skipped.
           detekt-cli \
             --input "$GITHUB_WORKSPACE" \
             --config "$GITHUB_WORKSPACE/config/detekt/detekt.yml" \
             --build-upon-default-config \
-            --plugins "$GITHUB_WORKSPACE/detekt-formatting.jar" \
-            --report "sarif:$GITHUB_WORKSPACE/detekt.sarif.json"
+            --baseline "$GITHUB_WORKSPACE/detekt-baseline.xml" \
+            --base-path "$GITHUB_WORKSPACE" \
+            --plugins "$RUNNER_TEMP/detekt-formatting.jar" \
+            --parallel \
+            --report "sarif:detekt-reports/detekt.sarif.json" \
+            --report "md:detekt-reports/detekt.md"
+
+      # Fork PRs cannot upload SARIF, so surface findings in the run summary.
+      - name: Publish summary
+        if: >-
+          !cancelled() && hashFiles('detekt-reports/detekt.md') != ''
+        run: cat detekt-reports/detekt.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Detekt SARIF
-        if: always() && hashFiles('detekt.sarif.json') != ''
-        uses: github/codeql-action/upload-sarif@v4
+        if: >-
+          !cancelled() && hashFiles('detekt-reports/detekt.sarif.json') != '' &&
+          github.event_name != 'merge_group' &&
+          github.actor != 'dependabot[bot]' &&
+          (github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
-          sarif_file: detekt.sarif.json
+          sarif_file: detekt-reports/detekt.sarif.json
+          category: detekt
+
+# One-time checksum setup (run locally, paste results into the env block above):
+#
+#   v=1.23.8
+#   curl -fsSL -o /tmp/cli.zip https://github.com/detekt/detekt/releases/download/v$v/detekt-cli-$v.zip
+#   curl -fsSL -o /tmp/fmt.jar https://repo1.maven.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/$v/detekt-formatting-$v.jar
+#   sha256sum /tmp/cli.zip /tmp/fmt.jar
