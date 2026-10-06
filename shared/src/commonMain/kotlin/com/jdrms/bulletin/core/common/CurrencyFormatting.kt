@@ -23,5 +23,25 @@ fun formatUsdAmount(amount: Double): String {
     val roundedCents = round(amount * 100.0 + CURRENCY_ROUNDING_EPSILON).toLong()
     val dollars = roundedCents / 100
     val cents = (roundedCents % 100).toString().padStart(2, '0')
-    return "$$dollars.$cents"
+    val formattedDollars = formatThousands(dollars)
+    return "$$formattedDollars.$cents"
+}
+
+private fun formatThousands(value: Long): String {
+    val raw = value.toString()
+    val length = raw.length
+    if (length <= 3) return raw
+
+    val firstGroupLength = length % 3
+    val builder = StringBuilder(length + (length - 1) / 3)
+    if (firstGroupLength > 0) {
+        builder.append(raw, 0, firstGroupLength)
+    }
+    for (i in firstGroupLength until length step 3) {
+        if (builder.isNotEmpty()) {
+            builder.append(',')
+        }
+        builder.append(raw, i, i + 3)
+    }
+    return builder.toString()
 }

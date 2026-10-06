@@ -22,6 +22,17 @@ class CurrencyFormattingTest {
     }
 
     @Test
+    fun formatsThousandsWithSeparators() {
+        assertEquals("$999.99", formatUsdAmount(999.99))
+        assertEquals("$1,000.00", formatUsdAmount(1000.0))
+        assertEquals("$1,234.56", formatUsdAmount(1234.56))
+        assertEquals("$12,345.67", formatUsdAmount(12345.67))
+        assertEquals("$123,456.78", formatUsdAmount(123456.78))
+        assertEquals("$1,000,000.00", formatUsdAmount(1000000.0))
+        assertEquals("$1,234,567,890.12", formatUsdAmount(1234567890.12))
+    }
+
+    @Test
     fun rejectsNonFiniteAmounts() {
         assertFalse(hasAtMostTwoDecimalPlaces(Double.NaN))
         assertFalse(hasAtMostTwoDecimalPlaces(Double.POSITIVE_INFINITY))
