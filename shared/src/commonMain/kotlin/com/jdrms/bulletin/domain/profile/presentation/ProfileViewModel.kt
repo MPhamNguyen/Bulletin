@@ -14,6 +14,7 @@ import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
+import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
@@ -33,7 +34,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // Manual DI keeps each focused authentication and profile use case explicit.
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 class ProfileViewModel(
     private val authenticateUser: AuthenticateUser,
     private val restoreAuthenticatedProfile: RestoreAuthenticatedProfile,
@@ -43,6 +44,7 @@ class ProfileViewModel(
     private val manageProfile: ManageProfile,
     private val updateStudentProfile: UpdateStudentProfile,
     private val submitStudentReview: SubmitStudentReview,
+    private val uploadProfilePhoto: UploadProfilePhoto? = null,
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student"),
     private val activeListingsProvider: ProfileActiveListingsProvider? = null,
@@ -482,6 +484,49 @@ class ProfileViewModel(
                 }
             }
         }
+    }
+
+    fun uploadProfilePhoto(bytes: ByteArray, mediaType: String) {
+        val profile = _uiState.value.profile
+        if (profile == null) {
+            _uiState.update { it.copy(errorMessage = "Profile is unavailable.") }
+            return
+        }
+        val upload = uploadProfilePhoto
+        if (upload == null) {
+            _uiState.update { it.copy(errorMessage = "Profile photo uploads are unavailable.") }
+            return
+        }
+        if (_uiState.value.isPhotoUploading) return
+
+        _uiState.update {
+            it.copy(isPhotoUploading = true, errorMessage = null, successMessage = null)
+        }
+        viewModelScope.launch {
+            when (val result = upload(profile, bytes, mediaType)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            profile = result.data,
+                            profileDraft = ProfileDraft.from(result.data),
+                            isPhotoUploading = false,
+                            errorMessage = null
+                        )
+                    }
+                    showFlashNotification("Profile photo updated")
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(
+                        isPhotoUploading = false,
+                        errorMessage = result.exception.message ?: "Failed to upload profile photo"
+                    )
+                }
+            }
+        }
+    }
+
+    fun onProfilePhotoSelectionError(message: String) {
+        _uiState.update { it.copy(errorMessage = message, successMessage = null) }
     }
 
     fun resetRegistration() {

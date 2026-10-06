@@ -10,12 +10,15 @@ import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
+import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,9 +36,60 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class ProfileViewModelTest {
 
     private val policy = ProfileValidationPolicy()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun profilePhotoSelectionUploadsAndUpdatesVisibleProfileState() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val registration = authRepo.register(
+                StudentEmail("photo@school.edu"),
+                "validPassword123",
+                "Photo Student"
+            ) as Result.Success
+            VerifyStudentEmail(authRepo)(registration.data.email, "123456")
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                profilePhotoRepository = InMemoryProfilePhotoRepository()
+            )
+            advanceUntilIdle()
+
+            viewModel.uploadProfilePhoto(byteArrayOf(1, 2, 3), "image/jpeg")
+            assertTrue(viewModel.uiState.value.isPhotoUploading)
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isPhotoUploading)
+            assertTrue(viewModel.uiState.value.profile?.avatarUrl?.startsWith("memory://profile-photo/") == true)
+            assertEquals("Profile photo updated", viewModel.uiState.value.successMessage)
+            advanceUntilIdle()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun profilePhotoPickerErrorsAreExposedToTheScreen() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val profileRepo = InMemoryProfileRepository()
+            val authRepo = InMemoryAuthRepository(profileRepo)
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+
+            viewModel.onProfilePhotoSelectionError("Unable to read the selected image.")
+
+            assertEquals("Unable to read the selected image.", viewModel.uiState.value.errorMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
@@ -168,7 +222,8 @@ class ProfileViewModelTest {
         authRepository: AuthRepository,
         profileRepository: InMemoryProfileRepository,
         activeListingsProvider: ProfileActiveListingsProvider? = null,
-        listingChangedSignal: RefreshSignal? = null
+        listingChangedSignal: RefreshSignal? = null,
+        profilePhotoRepository: ProfilePhotoRepository? = null
     ): ProfileViewModel {
         return ProfileViewModel(
             authenticateUser = AuthenticateUser(authRepository, policy),
@@ -179,6 +234,9 @@ class ProfileViewModelTest {
             manageProfile = ManageProfile(profileRepository),
             updateStudentProfile = UpdateStudentProfile(profileRepository),
             submitStudentReview = SubmitStudentReview(profileRepository, policy),
+            uploadProfilePhoto = profilePhotoRepository?.let {
+                UploadProfilePhoto(it, profileRepository)
+            },
             activeListingsProvider = activeListingsProvider,
             listingChangedSignal = listingChangedSignal
         )

@@ -47,12 +47,16 @@ import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
+import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import io.github.jan.supabase.SupabaseClient
@@ -130,6 +134,9 @@ class AppContainer(
             InMemoryProfileRepository()
         }
     }
+    val profilePhotoRepository: ProfilePhotoRepository by lazy {
+        supabaseClient?.let(::SupabaseProfilePhotoRepository) ?: InMemoryProfilePhotoRepository()
+    }
     val authRepository: AuthRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -174,6 +181,7 @@ class AppContainer(
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
+    val uploadProfilePhoto by lazy { UploadProfilePhoto(profilePhotoRepository, profileRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
 
@@ -214,6 +222,7 @@ class AppContainer(
         resendVerificationCode = resendVerificationCode,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,
+        uploadProfilePhoto = uploadProfilePhoto,
         submitStudentReview = submitStudentReview,
         activeListingsProvider = profileActiveListingsProvider,
         listingChangedSignal = listingChangedSignal

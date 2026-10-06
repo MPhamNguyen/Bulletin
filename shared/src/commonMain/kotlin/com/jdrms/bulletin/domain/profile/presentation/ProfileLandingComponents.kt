@@ -32,12 +32,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import kotlin.math.roundToInt
 
@@ -101,33 +104,19 @@ internal fun MarketplaceProfileTopBar(
 internal fun ProfileProminentAvatar(
     fullName: String,
     university: String,
-    isVerified: Boolean
+    isVerified: Boolean,
+    avatarUrl: String? = null
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = CircleShape
-                )
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = profileInitials(fullName),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
+        ProfileAvatarImage(
+            avatarUrl = avatarUrl,
+            fullName = fullName,
+            size = 96.dp,
+            borderWidth = 2.dp
+        )
         Spacer(modifier = Modifier.height(14.dp))
         Text(
             text = fullName,
@@ -173,6 +162,44 @@ internal fun ProfileProminentAvatar(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+internal fun ProfileAvatarImage(
+    avatarUrl: String?,
+    fullName: String,
+    size: Dp,
+    borderWidth: Dp = 0.dp
+) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
+            .then(
+                if (borderWidth > 0.dp) {
+                    Modifier.border(borderWidth, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                } else {
+                    Modifier
+                }
+            )
+            .clip(CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = profileInitials(fullName),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        if (!avatarUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = "$fullName profile photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(size)
+            )
         }
     }
 }

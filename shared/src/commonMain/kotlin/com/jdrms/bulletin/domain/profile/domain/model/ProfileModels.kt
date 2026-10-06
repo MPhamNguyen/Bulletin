@@ -9,6 +9,56 @@ value class UserId(val value: String)
 @JvmInline
 value class ReviewId(val value: String)
 
+@JvmInline
+value class ProfilePhotoUrl(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Profile photo URL cannot be blank." }
+    }
+}
+
+enum class ProfilePhotoMediaType(val value: String) {
+    JPEG("image/jpeg"),
+    PNG("image/png"),
+    WEBP("image/webp");
+
+    companion object {
+        fun from(value: String): ProfilePhotoMediaType? = entries.firstOrNull {
+            it.value.equals(value.trim(), ignoreCase = true)
+        }
+    }
+}
+
+class ProfilePhoto private constructor(
+    bytes: ByteArray,
+    val mediaType: ProfilePhotoMediaType
+) {
+    private val content = bytes.copyOf()
+
+    val bytes: ByteArray
+        get() = content.copyOf()
+
+    val sizeBytes: Int
+        get() = content.size
+
+    companion object {
+        const val MAX_SIZE_BYTES = 5 * 1024 * 1024
+
+        fun create(bytes: ByteArray, mediaType: String): Result<ProfilePhoto> {
+            val resolvedMediaType = ProfilePhotoMediaType.from(mediaType)
+                ?: return Result.Error(
+                    IllegalArgumentException("Choose a JPEG, PNG, or WebP image.")
+                )
+            if (bytes.isEmpty()) {
+                return Result.Error(IllegalArgumentException("The selected image is empty."))
+            }
+            if (bytes.size > MAX_SIZE_BYTES) {
+                return Result.Error(IllegalArgumentException("Profile photos must be 5 MB or smaller."))
+            }
+            return Result.Success(ProfilePhoto(bytes, resolvedMediaType))
+        }
+    }
+}
+
 class StudentEmail(raw: String) {
     val value: String = raw.trim().lowercase()
 
@@ -77,6 +127,8 @@ data class StudentProfile(
     val reputation: StudentReputation? = null
 ) {
     fun confirmEmail(): StudentProfile = if (isVerified) this else copy(isVerified = true)
+
+    fun changeProfilePhoto(photoUrl: ProfilePhotoUrl): StudentProfile = copy(avatarUrl = photoUrl.value)
 
     fun updateDetails(
         fullName: String,

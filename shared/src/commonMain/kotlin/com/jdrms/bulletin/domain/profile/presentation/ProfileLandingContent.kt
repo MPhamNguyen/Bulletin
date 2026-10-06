@@ -36,7 +36,8 @@ internal fun MarketplaceProfileView(
             ProfileProminentAvatar(
                 fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso",
                 university = profile?.university?.ifBlank { null } ?: "CSU Long Beach",
-                isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true
+                isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
+                avatarUrl = profile?.avatarUrl
             )
 
             ProfileAcademicInformationCard(

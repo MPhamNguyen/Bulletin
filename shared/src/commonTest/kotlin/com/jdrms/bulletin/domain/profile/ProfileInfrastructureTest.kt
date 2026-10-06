@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
+import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhoto
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
@@ -14,7 +15,9 @@ import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.ProfilePhotoStorage
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -26,6 +29,34 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ProfileInfrastructureTest {
+
+    @Test
+    fun supabasePhotoRepositoryUsesOwnedStablePathAndPublicCacheBustedUrl() = runTest {
+        val storage = FakeProfilePhotoStorage()
+        val photo = (ProfilePhoto.create(byteArrayOf(1, 2), "image/png") as Result.Success).data
+
+        val result = SupabaseProfilePhotoRepository(storage) { "version-1" }
+            .upload(UserId("student-123"), photo)
+
+        assertTrue(result is Result.Success)
+        assertEquals("student-123/avatar", storage.path)
+        assertEquals("image/png", storage.mediaType)
+        assertEquals("https://cdn.example/pfp/student-123/avatar?v=version-1", result.data.value)
+    }
+
+    @Test
+    fun supabasePhotoRepositoryMapsStorageFailures() = runTest {
+        val storage = FakeProfilePhotoStorage(IllegalStateException("row-level security denied"))
+        val photo = (ProfilePhoto.create(byteArrayOf(1), "image/jpeg") as Result.Success).data
+
+        val result = SupabaseProfilePhotoRepository(storage).upload(UserId("student-123"), photo)
+
+        assertTrue(result is Result.Error)
+        assertEquals(
+            "You do not have permission to upload this profile photo.",
+            result.exception.message
+        )
+    }
 
     @Test
     fun testMapperScoreClamping() {
@@ -375,5 +406,20 @@ class ProfileInfrastructureTest {
         assertFalse(SupabaseProfileRepository.isValidUuid("user_101"))
         assertFalse(SupabaseProfileRepository.isValidUuid(""))
         assertFalse(SupabaseProfileRepository.isValidUuid("not-a-uuid-at-all"))
+    }
+
+    private class FakeProfilePhotoStorage(
+        private val failure: Throwable? = null
+    ) : ProfilePhotoStorage {
+        var path: String? = null
+        var mediaType: String? = null
+
+        override suspend fun upload(path: String, bytes: ByteArray, mediaType: String) {
+            failure?.let { throw it }
+            this.path = path
+            this.mediaType = mediaType
+        }
+
+        override fun publicUrl(path: String): String = "https://cdn.example/pfp/$path"
     }
 }

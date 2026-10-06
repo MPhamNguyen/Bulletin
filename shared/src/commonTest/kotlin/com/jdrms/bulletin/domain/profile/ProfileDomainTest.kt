@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhoto
+import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhotoUrl
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
@@ -19,6 +21,39 @@ import kotlin.test.assertTrue
 class ProfileDomainTest {
 
     private val policy = ProfileValidationPolicy()
+
+    @Test
+    fun profilePhotoAcceptsSupportedImagesAndDefensivelyCopiesBytes() {
+        val source = byteArrayOf(1, 2, 3)
+        val result = ProfilePhoto.create(source, "image/png")
+
+        assertTrue(result is Result.Success)
+        source[0] = 9
+        val returned = result.data.bytes
+        returned[1] = 9
+        assertEquals(listOf<Byte>(1, 2, 3), result.data.bytes.toList())
+    }
+
+    @Test
+    fun profilePhotoRejectsEmptyOversizedAndUnsupportedContent() {
+        assertTrue(ProfilePhoto.create(byteArrayOf(), "image/jpeg") is Result.Error)
+        assertTrue(ProfilePhoto.create(ByteArray(ProfilePhoto.MAX_SIZE_BYTES + 1), "image/webp") is Result.Error)
+        assertTrue(ProfilePhoto.create(byteArrayOf(1), "image/gif") is Result.Error)
+    }
+
+    @Test
+    fun studentProfileChangesItsPhotoThroughTheAggregateOperation() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "Student"
+        )
+
+        val updated = profile.changeProfilePhoto(ProfilePhotoUrl("https://example.com/avatar.jpg"))
+
+        assertEquals("https://example.com/avatar.jpg", updated.avatarUrl)
+        assertEquals(null, profile.avatarUrl)
+    }
 
     @Test
     fun testValidUniversityEmail() {

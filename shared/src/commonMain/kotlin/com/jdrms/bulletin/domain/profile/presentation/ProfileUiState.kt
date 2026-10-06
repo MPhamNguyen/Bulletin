@@ -35,6 +35,7 @@ data class ProfileUiState(
     val newScore: Int = 5,
     val newComment: String = "",
     val isLoading: Boolean = false,
+    val isPhotoUploading: Boolean = false,
     val isEditingProfile: Boolean = false,
     val activeSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val errorMessage: String? = null,

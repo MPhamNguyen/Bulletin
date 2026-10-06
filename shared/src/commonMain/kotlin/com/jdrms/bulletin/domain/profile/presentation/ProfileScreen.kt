@@ -90,12 +90,17 @@ private fun ProfileSubscreenHost(
 ) {
     when {
         uiState.activeSubscreen == ProfileSubscreen.EDIT_ACCOUNT || uiState.isEditingProfile -> {
+            val profilePhotoPicker = rememberProfilePhotoPicker(
+                onPhotoSelected = viewModel::uploadProfilePhoto,
+                onError = viewModel::onProfilePhotoSelectionError
+            )
             EditProfileView(
                 uiState = uiState,
                 onBack = handleBack,
                 onCancel = viewModel::cancelEditingProfile,
                 onDraftChanged = viewModel::onProfileDraftChanged,
                 onUpdate = viewModel::updateProfileDetails,
+                onChangePhoto = profilePhotoPicker,
                 onSignOut = onSignOut
             )
         }
