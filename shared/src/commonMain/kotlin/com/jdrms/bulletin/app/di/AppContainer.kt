@@ -38,6 +38,7 @@ import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
@@ -61,12 +62,15 @@ class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
     private val allowInMemoryFallback: Boolean = true,
-    themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore()
+    themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
+    private val providedSupabaseClient: SupabaseClient? = null
 ) {
     private val themePreferenceStore = themePreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     val supabaseClient: SupabaseClient? by lazy {
-        if (!isInspectionMode && supabaseConfig.isConfigured) {
+        if (providedSupabaseClient != null) {
+            providedSupabaseClient
+        } else if (!isInspectionMode && supabaseConfig.isConfigured) {
             runCatching {
                 supabaseConfig.createClient()
             }.fold(
@@ -117,8 +121,17 @@ class AppContainer(
         }
     }
 
-    // BULLETIN-85 will supply the Supabase adapter for this same participant-scoped contract.
-    val messagesRepository: MessagesRepository by lazy { InMemoryMessagesRepository() }
+    val messagesRepository: MessagesRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseMessagesRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryMessagesRepository()
+        }
+    }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
