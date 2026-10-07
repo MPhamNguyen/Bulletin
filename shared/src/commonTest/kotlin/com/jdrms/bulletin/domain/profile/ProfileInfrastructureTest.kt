@@ -451,6 +451,7 @@ class ProfileInfrastructureTest {
         0x0a,
         0x01
     )
+
     @Test
     fun testProfileDtoDeletedAtSerialization() {
         val json = """

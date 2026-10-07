@@ -202,8 +202,10 @@ class SoftDeleteProfile(
 
         return when (val repoResult = profileRepository.softDelete(deletedProfile.id, timestamp)) {
             is Result.Success -> {
-                signOutUser()
-                Result.Success(deletedProfile)
+                when (val signOutResult = signOutUser()) {
+                    is Result.Success -> Result.Success(deletedProfile)
+                    is Result.Error -> signOutResult
+                }
             }
             is Result.Error -> repoResult
         }

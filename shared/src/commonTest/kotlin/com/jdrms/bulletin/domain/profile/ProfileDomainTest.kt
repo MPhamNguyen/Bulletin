@@ -407,6 +407,7 @@ class ProfileDomainTest {
         0x0a,
         0x01
     )
+
     @Test
     fun testSoftDeleteSetsTimestampAndIsDeleted() {
         val profile = StudentProfile(

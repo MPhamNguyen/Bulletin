@@ -14,8 +14,8 @@ import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhotoUrl
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
-import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -180,6 +180,7 @@ class ProfileApplicationTest {
     }
 
     private fun jpegBytes(): ByteArray = byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0x01)
+
     @Test
     fun testSoftDeleteProfilePersistsTimestampAndSignsOut() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
@@ -215,7 +216,7 @@ class ProfileApplicationTest {
     }
 
     @Test
-    fun testSoftDeleteProfileSucceedsWhenSignOutCleanupFails() = runTest {
+    fun testSoftDeleteProfileReportsSignOutFailureAfterPersistingDeletion() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
         val authRepo = InMemoryAuthRepository(profileRepo)
         val profile = StudentProfile(
@@ -233,8 +234,8 @@ class ProfileApplicationTest {
 
         val result = softDeleteProfile(profile)
 
-        assertTrue(result is Result.Success)
-        assertTrue(result.data.isDeleted)
+        assertTrue(result is Result.Error)
+        assertEquals("Sign-out cleanup unavailable", result.exception.message)
         val persisted = profileRepo.getProfile(profile.id)
         assertTrue(persisted is Result.Success)
         assertEquals("2026-10-06T19:00:00Z", persisted.data?.deletedAt)

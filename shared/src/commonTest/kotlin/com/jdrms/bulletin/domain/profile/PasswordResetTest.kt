@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
+import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
@@ -90,7 +91,8 @@ class PasswordResetTest {
                 updatePassword = UpdatePassword(authRepository, policy),
                 manageProfile = ManageProfile(profileRepository),
                 updateStudentProfile = UpdateStudentProfile(profileRepository),
-                submitStudentReview = SubmitStudentReview(profileRepository, policy)
+                submitStudentReview = SubmitStudentReview(profileRepository, policy),
+                softDeleteProfile = SoftDeleteProfile(profileRepository, SignOutUser(authRepository))
             )
             advanceUntilIdle()
             assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
@@ -165,7 +167,8 @@ class PasswordResetTest {
                 updatePassword = UpdatePassword(authRepository, policy),
                 manageProfile = ManageProfile(profileRepository),
                 updateStudentProfile = UpdateStudentProfile(profileRepository),
-                submitStudentReview = SubmitStudentReview(profileRepository, policy)
+                submitStudentReview = SubmitStudentReview(profileRepository, policy),
+                softDeleteProfile = SoftDeleteProfile(profileRepository, SignOutUser(authRepository))
             )
 
             viewModel.beginPasswordReset()
