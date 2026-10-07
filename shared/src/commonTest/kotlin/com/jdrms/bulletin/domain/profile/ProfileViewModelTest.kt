@@ -54,7 +54,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
 
@@ -127,7 +128,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
-                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+                submitStudentReview = SubmitStudentReview(profileRepo, policy),
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
             viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
@@ -202,7 +204,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
 

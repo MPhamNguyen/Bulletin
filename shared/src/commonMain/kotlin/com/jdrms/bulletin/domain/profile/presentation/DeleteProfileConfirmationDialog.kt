@@ -56,12 +56,7 @@ import androidx.compose.ui.window.Dialog
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 
 internal fun formatListingsConsequence(activeListingsCount: Int): String {
-    return if (activeListingsCount > 0) {
-        val unit = if (activeListingsCount == 1) "listing" else "listings"
-        "$activeListingsCount active $unit, removed now"
-    } else {
-        "Active listings, removed now"
-    }
+    return "Your profile is marked for soft-delete"
 }
 
 internal fun formatHoldHint(holdDurationMillis: Int): String {
@@ -127,7 +122,7 @@ internal fun DeleteProfileConfirmationDialog(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "This can’t be undone. Here’s what goes with it.",
+                    text = "Your profile will be marked as deleted and you’ll be signed out.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -154,7 +149,7 @@ internal fun DeleteProfileConfirmationDialog(
                         )
                         ConsequenceRow(
                             icon = Icons.AutoMirrored.Outlined.Chat,
-                            text = "Messages, gone for other students too"
+                            text = "Your listings and messages are not changed"
                         )
                         HorizontalDivider(
                             thickness = 0.5.dp,
@@ -162,7 +157,7 @@ internal fun DeleteProfileConfirmationDialog(
                         )
                         ConsequenceRow(
                             icon = Icons.Outlined.School,
-                            text = "Campus verification, redo to rejoin"
+                            text = "You can contact support if you need help later"
                         )
                     }
                 }
@@ -328,7 +323,10 @@ internal fun HoldToDeleteButton(
                 .semantics {
                     role = Role.Button
                     onClick(label = "Hold to delete profile") {
-                        onConfirm()
+                        // A semantic activation is the accessible equivalent of starting
+                        // the deliberate hold. The same timed safeguard applies to every
+                        // input method instead of allowing an immediate delete.
+                        isPressed = true
                         true
                     }
                 }

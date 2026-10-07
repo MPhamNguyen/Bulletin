@@ -75,11 +75,9 @@ class ProfilePresentationTest {
     }
 
     @Test
-    fun formatListingsConsequenceHandlesPluralSingularAndZero() {
-        assertEquals("3 active listings, removed now", formatListingsConsequence(3))
-        assertEquals("1 active listing, removed now", formatListingsConsequence(1))
-        assertEquals("Active listings, removed now", formatListingsConsequence(0))
-        assertEquals("Active listings, removed now", formatListingsConsequence(-1))
+    fun formatListingsConsequenceDescribesSoftDeleteWithoutClaimingSideEffects() {
+        assertEquals("Your profile is marked for soft-delete", formatListingsConsequence(3))
+        assertEquals("Your profile is marked for soft-delete", formatListingsConsequence(0))
     }
 
     @Test

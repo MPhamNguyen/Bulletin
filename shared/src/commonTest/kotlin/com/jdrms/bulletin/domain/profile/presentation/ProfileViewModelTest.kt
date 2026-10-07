@@ -18,6 +18,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
@@ -121,7 +122,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
-                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+                submitStudentReview = SubmitStudentReview(profileRepo, policy),
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
 
@@ -230,7 +232,7 @@ class ProfileViewModelTest {
         activeListingsProvider: ProfileActiveListingsProvider? = null,
         listingChangedSignal: RefreshSignal? = null,
         profilePhotoRepository: ProfilePhotoRepository? = null,
-        softDeleteProfile: SoftDeleteProfile? = null
+        softDeleteProfile: SoftDeleteProfile = SoftDeleteProfile(profileRepository, SignOutUser(authRepository))
     ): ProfileViewModel {
         return ProfileViewModel(
             authenticateUser = AuthenticateUser(authRepository, policy),
@@ -345,7 +347,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
-                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+                submitStudentReview = SubmitStudentReview(profileRepo, policy),
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
             viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
@@ -420,7 +423,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
 
@@ -846,11 +850,81 @@ class ProfileViewModelTest {
             assertTrue(successCallbackCalled)
             assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
             assertNull(viewModel.uiState.value.profile)
+            assertNull((RestoreAuthenticatedProfile(authRepo)() as Result.Success).data)
 
             val persisted = profileRepo.getProfile(profile.id)
             assertTrue(persisted is Result.Success)
             assertEquals(fixedTimestamp, persisted.data?.deletedAt)
             assertTrue(persisted.data?.isDeleted == true)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelDeletionKeepsAuthenticatedStateWhenSignOutFails() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val delegate = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val registered = delegate.register(
+                StudentEmail("student@example.com"),
+                "validPassword123",
+                "Student Name"
+            )
+            assertTrue(registered is Result.Success)
+            VerifyStudentEmail(delegate)(registered.data.email, "123456")
+            val authRepo = SessionFailureAuthRepository(
+                delegate = delegate,
+                signOutError = IllegalStateException("Unable to clear session")
+            )
+            val viewModel = createProfileViewModel(authRepo, profileRepo)
+            advanceUntilIdle()
+
+            viewModel.deleteProfile()
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertEquals("Unable to clear session", viewModel.uiState.value.errorMessage)
+            assertNotNull((RestoreAuthenticatedProfile(delegate)() as Result.Success).data)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelDeletionFailureDoesNotSignOut() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+            val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
+            val registered = authRepo.register(
+                StudentEmail("student@example.com"),
+                "validPassword123",
+                "Student Name"
+            )
+            assertTrue(registered is Result.Success)
+            VerifyStudentEmail(authRepo)(registered.data.email, "123456")
+            val failingProfileRepo = object : ProfileRepository by profileRepo {
+                override suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit> {
+                    return Result.Error(IllegalStateException("Profile storage unavailable"))
+                }
+            }
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                softDeleteProfile = SoftDeleteProfile(failingProfileRepo, SignOutUser(authRepo))
+            )
+            advanceUntilIdle()
+
+            viewModel.deleteProfile()
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertEquals("Profile storage unavailable", viewModel.uiState.value.errorMessage)
+            assertNotNull((RestoreAuthenticatedProfile(authRepo)() as Result.Success).data)
         } finally {
             Dispatchers.resetMain()
         }

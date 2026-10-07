@@ -56,12 +56,8 @@ class ProfileViewModel(
     private val defaultUserId: UserId = UserId("current_student"),
     private val activeListingsProvider: ProfileActiveListingsProvider? = null,
     private val listingChangedSignal: RefreshSignal? = null,
-    private val softDeleteProfile: SoftDeleteProfile? = null
+    private val softDeleteProfile: SoftDeleteProfile
 ) : ViewModel() {
-
-    private val profileDeleter: SoftDeleteProfile by lazy {
-        softDeleteProfile ?: SoftDeleteProfile(manageProfile.profileRepository, signOutUser)
-    }
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -752,7 +748,7 @@ class ProfileViewModel(
         val currentProfile = _uiState.value.profile ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (val result = profileDeleter(currentProfile)) {
+            when (val result = softDeleteProfile(currentProfile)) {
                 is Result.Success -> {
                     flashNotificationJob?.cancel()
                     _uiState.update {

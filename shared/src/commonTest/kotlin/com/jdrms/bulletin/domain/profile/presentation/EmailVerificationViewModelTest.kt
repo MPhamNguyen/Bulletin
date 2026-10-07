@@ -179,7 +179,8 @@ class EmailVerificationViewModelTest {
                 resendVerificationCode = ResendVerificationCode(auth),
                 manageProfile = ManageProfile(profiles),
                 updateStudentProfile = UpdateStudentProfile(profiles),
-                submitStudentReview = SubmitStudentReview(profiles)
+                submitStudentReview = SubmitStudentReview(profiles),
+                softDeleteProfile = SoftDeleteProfile(profiles, SignOutUser(auth))
             )
             advanceUntilIdle()
             block(viewModel)
