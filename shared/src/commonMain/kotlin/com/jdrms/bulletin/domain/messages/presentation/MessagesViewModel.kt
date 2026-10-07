@@ -33,10 +33,12 @@ class MessagesViewModel(
         loadConversations()
     }
 
-    fun loadConversations() {
+    fun loadConversations() = refreshConversations()
+
+    private fun refreshConversations(statusMessage: String? = null) {
         loadJob?.cancel()
         val previousSelection = _uiState.value.selectedConversationId
-        _uiState.update { MessagesUiState(isLoading = true) }
+        _uiState.update { MessagesUiState(isLoading = true, statusMessage = statusMessage) }
         loadJob = viewModelScope.launch {
             when (val result = getConversations()) {
                 is Result.Error -> showFailure(result)
@@ -55,39 +57,56 @@ class MessagesViewModel(
         if (_uiState.value.conversations.none { it.id == conversationId }) return
         loadJob?.cancel()
         _uiState.update {
-            it.copy(selectedConversationId = conversationId, currentMessages = emptyList(), errorMessage = null)
+            it.copy(
+                selectedConversationId = conversationId,
+                currentMessages = emptyList(),
+                isLoadingMessages = true,
+                errorMessage = null,
+                statusMessage = null
+            )
         }
         loadJob = viewModelScope.launch { loadMessages(conversationId) }
     }
 
     private suspend fun loadMessages(conversationId: ConversationId) {
+        _uiState.update { it.copy(isLoadingMessages = true) }
         when (val result = getConversationMessages(conversationId)) {
-            is Result.Success -> _uiState.update { it.copy(currentMessages = result.data) }
+            is Result.Success -> _uiState.update { it.copy(currentMessages = result.data, isLoadingMessages = false) }
             is Result.Error -> showFailure(result)
         }
     }
 
     fun onMessageInputChanged(input: String) {
-        _uiState.update { it.copy(messageInput = input) }
+        _uiState.update { it.copy(messageInput = input, errorMessage = null, statusMessage = null) }
     }
 
     fun sendCurrentMessage() {
-        val activeConvId = _uiState.value.selectedConversationId ?: return
-        val text = _uiState.value.messageInput
+        val state = _uiState.value
+        val activeConvId = state.selectedConversationId ?: return
+        if (state.isSending || state.isLoading || state.messageInput.isBlank()) return
+        val text = state.messageInput
+        _uiState.update { it.copy(isSending = true, errorMessage = null, statusMessage = null) }
         viewModelScope.launch {
             when (val result = sendMessage(activeConvId, text)) {
-                is Result.Success -> loadConversations()
+                is Result.Success -> refreshConversations("Message sent.")
                 is Result.Error -> showFailure(result)
             }
         }
     }
 
     fun report(messageId: MessageId, reason: String = "Inappropriate content") {
-        val activeConvId = _uiState.value.selectedConversationId ?: return
+        val state = _uiState.value
+        val activeConvId = state.selectedConversationId ?: return
+        if (state.isReporting || state.isLoading) return
+        _uiState.update { it.copy(isReporting = true, errorMessage = null, statusMessage = null) }
         viewModelScope.launch {
             when (val result = reportMessage(activeConvId, messageId, reason)) {
                 is Result.Success -> {
-                    if (_uiState.value.selectedConversationId == activeConvId) selectConversation(activeConvId)
+                    if (_uiState.value.selectedConversationId == activeConvId) {
+                        selectConversation(activeConvId)
+                        _uiState.update { it.copy(statusMessage = "Message reported.") }
+                    }
+                    _uiState.update { it.copy(isReporting = false) }
                 }
                 is Result.Error -> showFailure(result)
             }
@@ -107,7 +126,14 @@ class MessagesViewModel(
             if (identityUnavailable) {
                 MessagesUiState(errorMessage = message)
             } else {
-                it.copy(isLoading = false, errorMessage = message)
+                it.copy(
+                    isLoading = false,
+                    isLoadingMessages = false,
+                    isSending = false,
+                    isReporting = false,
+                    errorMessage = message,
+                    statusMessage = null
+                )
             }
         }
     }

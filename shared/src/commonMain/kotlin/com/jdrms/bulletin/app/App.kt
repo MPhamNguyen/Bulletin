@@ -212,6 +212,7 @@ fun MainAppScaffold(
                 BulletinBottomNavigationBar(
                     currentDestination = currentDestination,
                     onDestinationSelected = {
+                        if (it == AppDestination.MESSAGES) messagesViewModel.loadConversations()
                         if (it != AppDestination.PROFILE) {
                             profileDestination = ProfileDestination.PROFILE
                             listingsViewModel.cancelEditing()

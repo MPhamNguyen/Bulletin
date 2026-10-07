@@ -61,6 +61,7 @@ class MessagesViewModelTest {
         assertEquals(listOf(message()), state.currentMessages)
         assertEquals(conversationId, state.selectedConversationId)
         assertFalse(state.isLoading)
+        assertFalse(state.isLoadingMessages)
     }
 
     @Test
@@ -78,6 +79,8 @@ class MessagesViewModelTest {
         assertEquals("", viewModel.uiState.value.messageInput)
         assertEquals(conversationId, viewModel.uiState.value.selectedConversationId)
         assertEquals(listOf(sent), viewModel.uiState.value.currentMessages)
+        assertEquals("Message sent.", viewModel.uiState.value.statusMessage)
+        assertFalse(viewModel.uiState.value.isSending)
     }
 
     @Test
@@ -148,6 +151,8 @@ class MessagesViewModelTest {
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.currentMessages.single().isReported)
         assertEquals("Unsent draft", viewModel.uiState.value.messageInput)
+        assertEquals("Message reported.", viewModel.uiState.value.statusMessage)
+        assertFalse(viewModel.uiState.value.isReporting)
     }
 
     @Test
@@ -192,6 +197,84 @@ class MessagesViewModelTest {
             "Unable to complete the messaging request. Please try again.",
             viewModel.uiState.value.errorMessage
         )
+    }
+
+    @Test
+    fun retryAfterSignInLoadsInboxAndClearsAuthenticationError() = runTest {
+        provider.result = Result.Error(MessagingAuthenticationRequiredException())
+        val viewModel = viewModel(messagesRepository(messages = listOf(message())))
+        advanceUntilIdle()
+        assertEquals("Sign in to access your messages.", viewModel.uiState.value.errorMessage)
+        provider.result = Result.Success(alice)
+        viewModel.loadConversations()
+        assertTrue(viewModel.uiState.value.isLoading)
+        assertNull(viewModel.uiState.value.errorMessage)
+        advanceUntilIdle()
+        assertEquals(listOf(message()), viewModel.uiState.value.currentMessages)
+    }
+
+    @Test
+    fun loadingAndFailedSendExposeProgressAndKeepDraftForRetry() = runTest {
+        val backing = messagesRepository()
+        val repository = object : MessagesRepository by backing {
+            override suspend fun sendMessage(message: Message): Result<Message> {
+                delay(1000)
+                return Result.Error(IllegalStateException("Private transport detail"))
+            }
+        }
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.onMessageInputChanged("Hello")
+        viewModel.sendCurrentMessage()
+        runCurrent()
+        assertTrue(viewModel.uiState.value.isSending)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isSending)
+        assertEquals("Hello", viewModel.uiState.value.messageInput)
+        assertNotNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun reportingFailureExposesProgressAndKeepsMessagesVisible() = runTest {
+        val backing = messagesRepository(messages = listOf(message()))
+        val repository = object : MessagesRepository by backing {
+            override suspend fun reportMessage(
+                userId: SenderId,
+                conversationId: ConversationId,
+                messageId: MessageId,
+                reason: String
+            ): Result<Unit> {
+                delay(1000)
+                return Result.Error(IllegalStateException("Private transport detail"))
+            }
+        }
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.report(message().id)
+        runCurrent()
+        assertTrue(viewModel.uiState.value.isReporting)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isReporting)
+        assertEquals(listOf(message()), viewModel.uiState.value.currentMessages)
+        assertNotNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun selectingConversationExposesMessageLoadingState() = runTest {
+        val other = conversation(ConversationId("other"))
+        val backing = messagesRepository(listOf(conversation(), other))
+        val repository = object : MessagesRepository by backing {
+            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+                delay(1000)
+                return backing.getMessages(userId, conversationId)
+            }
+        }
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.selectConversation(other.id)
+        assertTrue(viewModel.uiState.value.isLoadingMessages)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isLoadingMessages)
     }
 
     @Test

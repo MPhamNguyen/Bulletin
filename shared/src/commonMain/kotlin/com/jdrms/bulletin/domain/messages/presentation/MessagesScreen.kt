@@ -1,10 +1,26 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -12,7 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 
@@ -22,13 +40,18 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         SectionHeader(
-            title = "Real-Time Student Messages",
-            subtitle = "Communicate securely with campus buyers and sellers"
+            title = "Messages",
+            subtitle = "Conversations with campus buyers and sellers"
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (state.conversations.isEmpty()) {
+        MessagesFeedback(state, viewModel::loadConversations)
+
+        if (state.isLoading) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            Text("Loading conversations...", style = MaterialTheme.typography.bodyMedium)
+        } else if (state.conversations.isEmpty() && state.errorMessage == null) {
             BulletinCard {
                 Text(
                     text = "No active conversations found.",
@@ -87,15 +110,21 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
 
                 // Messages view column
                 Column(modifier = Modifier.weight(0.6f)) {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).padding(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.currentMessages) { msg ->
-                            MessageItemCard(
-                                message = msg,
-                                onReport = { viewModel.report(msg.id, "Inappropriate content") }
-                            )
+                    if (state.isLoadingMessages) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        Text("Loading messages...", style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f).padding(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.currentMessages) { msg ->
+                                MessageItemCard(
+                                    message = msg,
+                                    canReport = !state.isReporting,
+                                    onReport = { viewModel.report(msg.id, "Inappropriate content") }
+                                )
+                            }
                         }
                     }
 
@@ -108,17 +137,17 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
                             onValueChange = { viewModel.onMessageInputChanged(it) },
                             placeholder = { Text("Type a message...") },
                             singleLine = true,
+                            enabled = !state.isSending,
+                            colors = BulletinTextFieldDefaults.colors(),
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = { viewModel.sendCurrentMessage() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
+                            enabled = !state.isSending && !state.isLoadingMessages && state.messageInput.isNotBlank(),
+                            colors = BulletinButtonDefaults.buttonColors()
                         ) {
-                            Text("Send")
+                            Text(if (state.isSending) "Sending..." else "Send")
                         }
                     }
                 }
@@ -128,8 +157,25 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
 }
 
 @Composable
+private fun MessagesFeedback(state: MessagesUiState, onRetry: () -> Unit) {
+    state.errorMessage?.let { error ->
+        BulletinCard {
+            Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onRetry) { Text("Retry") }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+    state.statusMessage?.let { status ->
+        Text(status, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
 private fun MessageItemCard(
     message: Message,
+    canReport: Boolean,
     onReport: () -> Unit
 ) {
     Card(
@@ -176,6 +222,7 @@ private fun MessageItemCard(
             } else {
                 TextButton(
                     onClick = onReport,
+                    enabled = canReport,
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.primary
                     )

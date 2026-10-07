@@ -10,5 +10,9 @@ data class MessagesUiState(
     val currentMessages: List<Message> = emptyList(),
     val messageInput: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val isLoadingMessages: Boolean = false,
+    val isSending: Boolean = false,
+    val isReporting: Boolean = false,
+    val errorMessage: String? = null,
+    val statusMessage: String? = null
 )
