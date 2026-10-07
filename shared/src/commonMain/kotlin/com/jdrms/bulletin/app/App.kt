@@ -249,6 +249,10 @@ fun MainAppScaffold(
                                 onMyListingsClick = {
                                     listingsViewModel.clearMessages()
                                     profileDestination = ProfileDestination.MY_LISTINGS
+                                },
+                                onCreateListingClick = {
+                                    listingsViewModel.clearMessages()
+                                    currentDestination = AppDestination.LISTINGS
                                 }
                             )
                         }

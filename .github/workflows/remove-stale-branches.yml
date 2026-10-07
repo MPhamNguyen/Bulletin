@@ -14,10 +14,11 @@ permissions:
 jobs:
   remove-stale-branches:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Find stale branches
-        uses: fpicalausa/remove-stale-branches@v2.6.1
+        uses: fpicalausa/remove-stale-branches@bfaf2b7f95cfd85485960c9d2d98a0702c84a74c # v2.6.1
         with:
           dry-run: false
           days-before-branch-stale: 7

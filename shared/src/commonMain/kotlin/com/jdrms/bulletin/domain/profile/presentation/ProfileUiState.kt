@@ -38,6 +38,7 @@ data class ProfileUiState(
     val isPhotoUploading: Boolean = false,
     val isEditingProfile: Boolean = false,
     val activeSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
+    val editReturnSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false,

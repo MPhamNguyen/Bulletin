@@ -23,6 +23,7 @@ class MarketplaceDomainTest {
         assertEquals("$30.00", MarketplacePrice(30.0).formatted)
         assertEquals("$29.99", MarketplacePrice(29.99).formatted)
         assertEquals("$25.50", MarketplacePrice(25.5).formatted)
+        assertEquals("$1,250.00", MarketplacePrice(1250.0).formatted)
     }
 
     @Test

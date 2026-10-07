@@ -18,10 +18,17 @@ import androidx.compose.ui.unit.dp
 internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
     onSettingsClick: () -> Unit,
+    onEditProfileClick: () -> Unit,
     onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit
+    onBookmarkedListingsClick: () -> Unit,
+    onCreateListingClick: () -> Unit
 ) {
     val profile = uiState.profile
+    val fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso"
+    val university = profile?.university?.ifBlank { null } ?: "CSU Long Beach"
+    val major = profile?.major?.ifBlank { null } ?: "Computer Science"
+    val graduationDate = profile?.graduationDate?.ifBlank { null } ?: "Class of 2025"
+
     Column(modifier = Modifier.fillMaxSize()) {
         MarketplaceProfileTopBar(onSettingsClick = onSettingsClick)
         Column(
@@ -29,20 +36,18 @@ internal fun MarketplaceProfileView(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 6.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ProfileProminentAvatar(
-                fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso",
-                university = profile?.university?.ifBlank { null } ?: "CSU Long Beach",
+            ProfileHero(
+                fullName = fullName,
+                major = major,
+                university = university,
+                graduationDate = graduationDate,
                 isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
+                onEditProfileClick = onEditProfileClick,
                 avatarUrl = profile?.avatarUrl
-            )
-
-            ProfileAcademicInformationCard(
-                major = profile?.major?.ifBlank { null } ?: "Computer Science",
-                graduationDate = profile?.graduationDate?.ifBlank { null } ?: "Class of 2025"
             )
 
             MarketplaceActivityStatsCard(
@@ -51,11 +56,19 @@ internal fun MarketplaceProfileView(
                 rating = uiState.reputation?.averageRating ?: 4.8
             )
 
-            ProfileAboutCard(bio = profile?.bio)
+            ProfileAboutCard(
+                major = major,
+                graduationDate = graduationDate,
+                university = university,
+                bio = profile?.bio,
+                onEditProfileClick = onEditProfileClick
+            )
 
-            ProfileNavigationButtons(
+            ProfileMarketplaceCard(
+                activeListings = uiState.activeListingsCount,
                 onMyListingsClick = onMyListingsClick,
-                onBookmarkedListingsClick = onBookmarkedListingsClick
+                onBookmarkedListingsClick = onBookmarkedListingsClick,
+                onCreateListingClick = onCreateListingClick
             )
             Spacer(modifier = Modifier.height(16.dp))
         }

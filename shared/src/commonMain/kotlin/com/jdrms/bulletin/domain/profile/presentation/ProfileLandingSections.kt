@@ -2,210 +2,112 @@ package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
 @Composable
-internal fun ProfileAboutCard(bio: String?) {
-    BulletinCard {
-        ProfileSectionLabel("ABOUT")
-        Spacer(modifier = Modifier.height(10.dp))
-        val bioColor = if (bio.isNullOrBlank()) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-        }
-        Text(
-            text = bio?.ifBlank { null }
-                ?: "Senior student buying & selling tech, textbooks, and campus essentials.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = bioColor,
-            lineHeight = 22.sp
-        )
-    }
-}
-
-@Composable
-internal fun ProfileAcademicInformationCard(
-    major: String?,
-    graduationDate: String?
+internal fun ProfileAboutCard(
+    major: String,
+    graduationDate: String,
+    university: String,
+    bio: String?,
+    onEditProfileClick: () -> Unit
 ) {
     BulletinCard {
-        ProfileSectionLabel("ACADEMIC DETAILS")
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            AcademicCompactBadge(
-                icon = ProfileIcons.School,
-                label = "Major",
-                value = major?.ifBlank { null } ?: "Computer Science",
-                modifier = Modifier.weight(1f)
-            )
-            AcademicCompactBadge(
-                icon = ProfileIcons.Graduation,
-                label = "Graduation",
-                value = graduationDate?.ifBlank { null } ?: "Class of 2025",
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun AcademicCompactBadge(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-internal fun ProfileReputationCard(reputation: StudentReputation?) {
-    val averageRating = reputation?.averageRating ?: 4.8
-    val totalReviews = reputation?.totalReviews ?: 5
-
-    BulletinCard {
-        ProfileSectionLabel("CAMPUS REPUTATION")
-        Spacer(modifier = Modifier.height(12.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = averageRating.toString(),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Column {
-                    StarRatingDisplay(
-                        rating = averageRating,
-                        maxStars = 5,
-                        starSize = 18.dp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "$totalReviews verified reviews",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = BulletinExtras.colors.successContainer,
-                border = BorderStroke(1.dp, BulletinExtras.colors.success.copy(alpha = 0.3f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = ProfileIcons.Verified,
-                        contentDescription = null,
-                        tint = BulletinExtras.colors.success,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = "Top Rated",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = BulletinExtras.colors.onSuccessContainer
-                    )
-                }
+            Text(
+                text = "About",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(onClick = onEditProfileClick) {
+                Text("Edit", style = MaterialTheme.typography.labelMedium)
             }
         }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ProfileInformationChip(Icons.Outlined.School, major)
+            ProfileInformationChip(Icons.Outlined.CalendarToday, graduationDate)
+            ProfileInformationChip(Icons.Outlined.LocationOn, university)
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = bio?.ifBlank { null }
+                ?: "Senior student buying & selling tech, textbooks, and campus essentials.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
-internal fun ProfileNavigationButtons(
-    onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+private fun ProfileInformationChip(icon: ImageVector, text: String) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        ProfileSectionLabel("MARKETPLACE SHORTCUTS")
-        ProfileActionRow(
-            icon = ProfileIcons.MyListings,
-            title = "My Listings",
-            subtitle = "Active, pending & sold campus listings",
-            onClick = onMyListingsClick
-        )
-        ProfileActionRow(
-            icon = ProfileIcons.BookmarkedListings,
-            title = "Bookmarked Listings",
-            subtitle = "Saved items and favorites from marketplace",
-            onClick = onBookmarkedListingsClick
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
 
@@ -216,27 +118,34 @@ internal fun MarketplaceActivityStatsCard(
     rating: Double,
     modifier: Modifier = Modifier
 ) {
-    BulletinCard(modifier = modifier) {
-        ProfileSectionLabel("MARKETPLACE ACTIVITY")
-        Spacer(modifier = Modifier.height(10.dp))
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            ActivityStatBadge(
-                value = "$activeListings Active",
-                label = "Listings",
+            ActivityStat(
+                value = activeListings.toString(),
+                label = "Active listings",
                 icon = Icons.Outlined.Storefront,
                 modifier = Modifier.weight(1f)
             )
-            ActivityStatBadge(
-                value = "$itemsSold Sold",
-                label = "Completed",
+            ActivityDivider()
+            ActivityStat(
+                value = itemsSold.toString(),
+                label = "Items sold",
                 icon = Icons.Outlined.CheckCircle,
                 modifier = Modifier.weight(1f)
             )
-            ActivityStatBadge(
-                value = "$rating ★",
+            ActivityDivider()
+            ActivityStat(
+                value = rating.toString(),
                 label = "Reputation",
                 icon = Icons.Filled.Star,
                 iconTint = BulletinExtras.colors.star,
@@ -247,45 +156,152 @@ internal fun MarketplaceActivityStatsCard(
 }
 
 @Composable
-private fun ActivityStatBadge(
+private fun ActivityStat(
     value: String,
     label: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier,
-    iconTint: Color? = null
+    modifier: Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.primary
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 4.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 2
+        )
+    }
+}
+
+@Composable
+private fun ActivityDivider() {
+    Surface(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(vertical = 12.dp)
+            .width(1.dp),
+        color = MaterialTheme.colorScheme.outlineVariant
+    ) {}
+}
+
+@Composable
+internal fun ProfileMarketplaceCard(
+    activeListings: Int,
+    onMyListingsClick: () -> Unit,
+    onBookmarkedListingsClick: () -> Unit,
+    onCreateListingClick: () -> Unit
+) {
+    BulletinCard {
+        Text(
+            text = "Marketplace",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        MarketplaceActionRow(
+            icon = Icons.Outlined.GridView,
+            title = "My listings",
+            badge = activeListings.toString(),
+            onClick = onMyListingsClick
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        MarketplaceActionRow(
+            icon = Icons.Outlined.BookmarkBorder,
+            title = "Bookmarked listings",
+            onClick = onBookmarkedListingsClick
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        MarketplaceActionRow(
+            icon = Icons.Outlined.Add,
+            title = "Create a listing",
+            onClick = onCreateListingClick
+        )
+    }
+}
+
+@Composable
+private fun MarketplaceActionRow(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit,
+    subtitle: String? = null,
+    badge: String? = null
 ) {
     Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint ?: MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (badge != null) {
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Text(
+                        text = badge,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .widthIn(min = 12.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }

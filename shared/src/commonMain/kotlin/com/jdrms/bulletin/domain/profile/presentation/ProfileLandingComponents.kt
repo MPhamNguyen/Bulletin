@@ -10,22 +10,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.CalendarToday
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,135 +28,139 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import kotlin.math.roundToInt
-
-internal object ProfileIcons {
-    val MyListings: ImageVector = Icons.Outlined.GridView
-    val BookmarkedListings: ImageVector = Icons.Outlined.BookmarkBorder
-    val Settings: ImageVector = Icons.Outlined.Settings
-    val School: ImageVector = Icons.Outlined.School
-    val Graduation: ImageVector = Icons.Outlined.CalendarToday
-    val Verified: ImageVector = Icons.Outlined.CheckCircle
-}
 
 @Composable
-internal fun ProfileSectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-}
-
-@Composable
-internal fun MarketplaceProfileTopBar(
-    onSettingsClick: () -> Unit
-) {
+internal fun MarketplaceProfileTopBar(onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "Profile",
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
-        IconButton(
+        Surface(
             onClick = onSettingsClick,
-            modifier = Modifier
-                .size(44.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shape = CircleShape
-                )
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(22.dp)
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = "Settings",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
-internal fun ProfileProminentAvatar(
+internal fun ProfileHero(
     fullName: String,
+    major: String,
     university: String,
+    graduationDate: String,
     isVerified: Boolean,
+    onEditProfileClick: () -> Unit,
     avatarUrl: String? = null
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ProfileAvatarImage(
-            avatarUrl = avatarUrl,
-            fullName = fullName,
-            size = 96.dp,
-            borderWidth = 2.dp
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = fullName,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = university,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            if (isVerified) {
-                Surface(
-                    shape = CircleShape,
-                    color = BulletinExtras.colors.successContainer,
-                    border = BorderStroke(1.dp, BulletinExtras.colors.success.copy(alpha = 0.25f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            tint = BulletinExtras.colors.success,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Text(
-                            text = "Verified",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = BulletinExtras.colors.success
-                        )
-                    }
+        Box(modifier = Modifier.size(110.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(104.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                ProfileAvatarImage(
+                    avatarUrl = avatarUrl,
+                    fullName = fullName,
+                    size = 104.dp,
+                    backgroundColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            Surface(
+                onClick = onEditProfileClick,
+                modifier = Modifier
+                    .size(34.dp)
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-1).dp, y = (-1).dp)
+                    .border(3.dp, MaterialTheme.colorScheme.background, CircleShape),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = "Edit profile",
+                        modifier = Modifier.size(15.dp)
+                    )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = fullName,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            if (isVerified) VerifiedBadge()
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "$major @ $university\n$graduationDate",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(18.dp))
+        Button(
+            onClick = onEditProfileClick,
+            modifier = Modifier
+                .widthIn(min = 184.dp)
+                .height(48.dp),
+            shape = MaterialTheme.shapes.medium,
+            colors = BulletinButtonDefaults.buttonColors()
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Edit,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("Edit profile")
         }
     }
 }
@@ -171,12 +170,14 @@ internal fun ProfileAvatarImage(
     avatarUrl: String?,
     fullName: String,
     size: Dp,
-    borderWidth: Dp = 0.dp
+    borderWidth: Dp = 0.dp,
+    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     Box(
         modifier = Modifier
             .size(size)
-            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
+            .background(backgroundColor, CircleShape)
             .then(
                 if (borderWidth > 0.dp) {
                     Modifier.border(borderWidth, MaterialTheme.colorScheme.outlineVariant, CircleShape)
@@ -191,7 +192,7 @@ internal fun ProfileAvatarImage(
             text = profileInitials(fullName),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            color = contentColor
         )
         if (!avatarUrl.isNullOrBlank()) {
             AsyncImage(
@@ -205,27 +206,26 @@ internal fun ProfileAvatarImage(
 }
 
 @Composable
-internal fun StarRatingDisplay(
-    rating: Double,
-    maxStars: Int = 5,
-    starSize: Dp = 18.dp,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun VerifiedBadge() {
+    Surface(
+        shape = CircleShape,
+        color = BulletinExtras.colors.successContainer,
+        contentColor = BulletinExtras.colors.success
     ) {
-        val clampedRating = rating.coerceIn(0.0, maxStars.toDouble())
-        val roundedStars = clampedRating.roundToInt().coerceIn(0, maxStars)
-
-        for (i in 1..maxStars) {
-            val isFilled = i <= roundedStars
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
-                imageVector = if (isFilled) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                imageVector = Icons.Outlined.Check,
                 contentDescription = null,
-                tint = if (isFilled) BulletinExtras.colors.star else MaterialTheme.colorScheme.outlineVariant,
-                modifier = Modifier.size(starSize)
+                modifier = Modifier.size(12.dp)
+            )
+            Text(
+                text = "Verified",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -237,66 +237,4 @@ internal fun profileInitials(fullName: String): String {
     val firstInitial = nameParts.first().first().uppercaseChar()
     val lastInitial = nameParts.takeIf { it.size > 1 }?.last()?.first()?.uppercaseChar()
     return if (lastInitial == null) firstInitial.toString() else "$firstInitial$lastInitial"
-}
-
-@Composable
-internal fun ProfileActionRow(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = MaterialTheme.shapes.medium
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                subtitle?.let {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
 }

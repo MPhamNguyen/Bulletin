@@ -24,6 +24,7 @@ class HomeDomainTest {
         assertEquals("$50.00", HomePrice(50.0).formatted)
         assertEquals("$49.99", HomePrice(49.99).formatted)
         assertEquals("$25.50", HomePrice(25.5).formatted)
+        assertEquals("$1,250.00", HomePrice(1250.0).formatted)
     }
 
     @Test

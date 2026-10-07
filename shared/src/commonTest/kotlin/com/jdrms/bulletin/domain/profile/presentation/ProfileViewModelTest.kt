@@ -499,6 +499,14 @@ class ProfileViewModelTest {
             assertFalse(viewModel.uiState.value.isEditingProfile)
             assertFalse(viewModel.uiState.value.isProfileModified)
             assertEquals("Alex Student", viewModel.uiState.value.profileDraft.fullName)
+            assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
+
+            // Editing from Settings returns to Settings when cancelled.
+            viewModel.openSettings()
+            viewModel.openEditAccount()
+            viewModel.cancelEditingProfile()
+            assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
+            viewModel.openProfile()
 
             // Start editing again, trigger invalid update
             viewModel.startEditingProfile()
@@ -770,6 +778,7 @@ class ProfileViewModelTest {
             assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
             assertFalse(onBackCalled)
 
+            viewModel.openSettings()
             viewModel.openEditAccount()
             handleSubscreenBack(ProfileSubscreen.EDIT_ACCOUNT, viewModel, onBack)
             assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
