@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+
+
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
