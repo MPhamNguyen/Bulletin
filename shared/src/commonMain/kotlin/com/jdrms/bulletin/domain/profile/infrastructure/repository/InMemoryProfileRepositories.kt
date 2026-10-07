@@ -99,6 +99,8 @@ class InMemoryAuthRepository(
     private val credentials = initialCredentials.mapKeys { it.key.lowercase() }.toMutableMap()
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
     private var currentUser: StudentProfile? = null
+    private var pendingPasswordResetEmail: String? = null
+    private var passwordResetCodeVerified = false
     private val pendingEmails = mutableSetOf<String>()
 
     override suspend fun getCurrentUserId(): Result<UserId?> = Result.Success(currentUser?.id)
@@ -128,6 +130,42 @@ class InMemoryAuthRepository(
 
         val error = IllegalArgumentException("Account not found. Please check your email or create an account.")
         return Result.Error(error)
+    }
+
+    override suspend fun requestPasswordReset(email: StudentEmail): Result<Unit> {
+        if (testVerificationCode == null) {
+            return Result.Error(IllegalStateException("Password reset requires a configured authentication service."))
+        }
+        val normalizedEmail = email.value.lowercase()
+        if (!credentials.containsKey(normalizedEmail)) {
+            return Result.Error(IllegalArgumentException("No account exists for that email address."))
+        }
+        pendingPasswordResetEmail = normalizedEmail
+        passwordResetCodeVerified = false
+        return Result.Success(Unit)
+    }
+
+    override suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit> {
+        if (pendingPasswordResetEmail != email.value.lowercase()) {
+            return Result.Error(IllegalStateException("Request a new password reset before entering a code."))
+        }
+        if (code.trim() != testVerificationCode) {
+            return Result.Error(IllegalArgumentException("The confirmation code is incorrect."))
+        }
+        passwordResetCodeVerified = true
+        return Result.Success(Unit)
+    }
+
+    override suspend fun updatePassword(password: String): Result<Unit> {
+        val email = pendingPasswordResetEmail
+            ?: return Result.Error(IllegalStateException("Start a password reset before choosing a new password."))
+        if (!passwordResetCodeVerified) {
+            return Result.Error(IllegalStateException("Verify the confirmation code before choosing a new password."))
+        }
+        credentials[email] = password
+        pendingPasswordResetEmail = null
+        passwordResetCodeVerified = false
+        return Result.Success(Unit)
     }
 
     override suspend fun register(
