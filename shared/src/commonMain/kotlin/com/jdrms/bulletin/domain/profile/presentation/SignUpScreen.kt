@@ -64,6 +64,17 @@ fun SignUpScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val pendingRegistration = uiState.pendingRegistration
+    if (pendingRegistration != null) {
+        EmailVerificationContent(
+            uiState = uiState,
+            onVerify = { viewModel.verifyEmail(pendingRegistration.email.value, it) },
+            onResend = { viewModel.resendEmailCode(pendingRegistration.email.value) },
+            onChangeEmail = { viewModel.resetRegistration() }
+        )
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -91,7 +102,6 @@ fun SignUpScreen(
             SignUpLogoHeader()
 
             val createdProfile = uiState.profile
-            val pendingRegistration = uiState.pendingRegistration
             val verifiedEmailAwaitingProfile = uiState.verifiedEmailAwaitingProfile
             if (uiState.isAccountCreated && createdProfile != null) {
                 SignUpSuccessContent(
@@ -108,13 +118,6 @@ fun SignUpScreen(
                         viewModel.resetRegistration()
                         onNavigateToSignIn()
                     }
-                )
-            } else if (pendingRegistration != null) {
-                EmailVerificationContent(
-                    uiState = uiState,
-                    onVerify = { viewModel.verifyEmail(pendingRegistration.email.value, it) },
-                    onResend = { viewModel.resendEmailCode(pendingRegistration.email.value) },
-                    onChangeEmail = { viewModel.resetRegistration() }
                 )
             } else {
                 SignUpFormContent(
