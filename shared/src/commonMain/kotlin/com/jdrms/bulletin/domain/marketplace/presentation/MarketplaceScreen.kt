@@ -24,11 +24,18 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
     val state by viewModel.uiState.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+    if (state.isSellerProfileOpen) {
+        SellerProfileScreen(
+            profile = state.selectedSellerProfile,
+            isLoading = state.isSellerProfileLoading,
+            onBack = { viewModel.dismissSellerProfile() }
+        )
+    } else {
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
             item {
                 SectionHeader(
                     title = "Campus Marketplace",
@@ -144,10 +151,15 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                 onRetry = { viewModel.retryLoadListingDetail() },
                 onToggleSave = {
                     state.selectedListing?.let { viewModel.toggleSaved(it.id) }
+                },
+                onSellerClick = { sellerId ->
+                    viewModel.onSellerClicked(sellerId)
                 }
             )
         }
     }
+}
+
 }
 
 @Composable

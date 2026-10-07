@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
@@ -232,6 +233,47 @@ class MarketplaceViewModel(
                 selectedListingId = null,
                 detailErrorMessage = null,
                 isDetailLoading = false
+            )
+        }
+    }
+
+    fun onSellerClicked(sellerId: String) {
+        val currentListing = _uiState.value.selectedListing
+        _uiState.update {
+            it.copy(
+                isDetailSheetOpen = false,
+                isSellerProfileOpen = true,
+                isSellerProfileLoading = true,
+                selectedSellerProfile = null
+            )
+        }
+        viewModelScope.launch {
+            val profile = runCatching { viewMarketplaceListing.getSellerProfile(sellerId) }.getOrNull()
+            val fallbackProfile = MarketplaceSellerProfile(
+                sellerId = sellerId,
+                name = currentListing?.sellerName?.takeIf(String::isNotBlank) ?: "Student Seller",
+                school = currentListing?.sellerSchool?.takeIf(String::isNotBlank) ?: "CSU Long Beach",
+                major = "Student",
+                bio = "Student at ${currentListing?.sellerSchool ?: "CSU Long Beach"}. Buying and selling on campus.",
+                avatarUrl = currentListing?.sellerAvatarUrl,
+                reputationScore = currentListing?.sellerReputationScore,
+                isVerified = true
+            )
+            _uiState.update {
+                it.copy(
+                    isSellerProfileLoading = false,
+                    selectedSellerProfile = profile ?: fallbackProfile
+                )
+            }
+        }
+    }
+
+    fun dismissSellerProfile() {
+        _uiState.update {
+            it.copy(
+                isSellerProfileOpen = false,
+                selectedSellerProfile = null,
+                isDetailSheetOpen = it.selectedListing != null
             )
         }
     }

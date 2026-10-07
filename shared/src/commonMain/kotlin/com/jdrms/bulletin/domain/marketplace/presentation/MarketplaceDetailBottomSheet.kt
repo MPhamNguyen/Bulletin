@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Warning
@@ -40,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
@@ -53,7 +56,8 @@ fun MarketplaceDetailBottomSheet(
     isSaved: Boolean,
     onDismiss: () -> Unit,
     onRetry: () -> Unit,
-    onToggleSave: () -> Unit
+    onToggleSave: () -> Unit,
+    onSellerClick: (sellerId: String) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -191,7 +195,14 @@ fun MarketplaceDetailBottomSheet(
                     // Seller Information & Reputation Score Card
                     SellerInfoCard(
                         sellerName = listing.sellerName,
-                        reputationScore = listing.sellerReputationScore
+                        sellerSchool = listing.sellerSchool,
+                        sellerAvatarUrl = listing.sellerAvatarUrl,
+                        reputationScore = listing.sellerReputationScore,
+                        sellerMajor = listing.sellerMajor,
+                        sellerGraduationDate = listing.sellerGraduationDate,
+                        sellerReviewCount = listing.sellerReviewCount,
+                        sellerIsVerified = listing.sellerIsVerified,
+                        onClick = { onSellerClick(listing.sellerId) }
                     )
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -317,75 +328,129 @@ private fun ListingPhotosSection(photos: List<String>) {
 @Composable
 private fun SellerInfoCard(
     sellerName: String,
-    reputationScore: Double?
+    sellerSchool: String,
+    sellerAvatarUrl: String?,
+    reputationScore: Double?,
+    sellerMajor: String,
+    sellerGraduationDate: String,
+    sellerReviewCount: Int,
+    sellerIsVerified: Boolean,
+    onClick: () -> Unit = {}
 ) {
     Surface(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                if (sellerAvatarUrl != null) {
+                    AsyncImage(
+                        model = sellerAvatarUrl,
+                        contentDescription = "$sellerName profile photo",
+                        modifier = Modifier
+                            .size(84.dp)
+                            .clip(CircleShape),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(84.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = "Seller Avatar",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Person,
-                        contentDescription = "Seller Avatar",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = sellerName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
+                        )
+                        if (sellerIsVerified) {
+                            Icon(
+                                imageVector = Icons.Filled.Verified,
+                                contentDescription = "Verified profile",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                     Text(
-                        text = sellerName,
-                        style = MaterialTheme.typography.titleMedium,
+                        text = formatAcademicLine(sellerMajor, sellerGraduationDate, sellerSchool),
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1
                     )
-                    Text(
-                        text = "Verified CSULB Student",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "Seller rating",
+                            tint = BulletinExtras.colors.star,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = formatReputationScore(reputationScore),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "($sellerReviewCount reviews)",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
-            // Reputation Score Badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = "Reputation Score",
-                    tint = BulletinExtras.colors.star,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = formatReputationScore(reputationScore),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = "View seller profile",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
+}
+
+private fun formatAcademicLine(major: String, graduationDate: String, school: String): String {
+    val details = listOf(major, graduationDate).filter(String::isNotBlank)
+    return details.joinToString(" ").ifBlank { "$school student" }
 }
 
 internal fun formatReputationScore(reputationScore: Double?): String {

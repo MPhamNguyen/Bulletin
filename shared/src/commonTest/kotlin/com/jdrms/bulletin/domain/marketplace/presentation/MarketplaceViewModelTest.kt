@@ -142,6 +142,40 @@ class MarketplaceViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun returningFromSellerProfileReopensTheViewedListing() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository()
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository),
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            advanceUntilIdle()
+
+            viewModel.onListingClicked("mkt_1")
+            advanceUntilIdle()
+            val viewedListingId = viewModel.uiState.value.selectedListing?.id?.value
+
+            viewModel.onSellerClicked("seller_101")
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.isSellerProfileOpen)
+            assertFalse(viewModel.uiState.value.isDetailSheetOpen)
+            assertEquals(viewedListingId, viewModel.uiState.value.selectedListing?.id?.value)
+
+            viewModel.dismissSellerProfile()
+
+            assertFalse(viewModel.uiState.value.isSellerProfileOpen)
+            assertTrue(viewModel.uiState.value.isDetailSheetOpen)
+            assertEquals(viewedListingId, viewModel.uiState.value.selectedListing?.id?.value)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun loadNextPageAppendsListingsAndStopsAtTheEnd() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
