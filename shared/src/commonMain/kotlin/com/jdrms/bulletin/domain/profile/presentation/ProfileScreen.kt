@@ -96,12 +96,13 @@ private fun ProfileSubscreenHost(
     onSignOut: () -> Unit,
     landingActions: ProfileLandingActions
 ) {
+    val profilePhotoPicker = rememberProfilePhotoPicker(
+        onPhotoSelected = viewModel::uploadProfilePhoto,
+        onError = viewModel::onProfilePhotoSelectionError
+    )
+
     when {
         uiState.activeSubscreen == ProfileSubscreen.EDIT_ACCOUNT || uiState.isEditingProfile -> {
-            val profilePhotoPicker = rememberProfilePhotoPicker(
-                onPhotoSelected = viewModel::uploadProfilePhoto,
-                onError = viewModel::onProfilePhotoSelectionError
-            )
             EditProfileView(
                 uiState = uiState,
                 onBack = handleBack,
@@ -152,6 +153,7 @@ private fun ProfileSubscreenHost(
                 uiState = uiState,
                 onSettingsClick = landingActions.onSettings,
                 onEditProfileClick = landingActions.onEditProfile,
+                onChangePhotoClick = profilePhotoPicker,
                 onMyListingsClick = landingActions.onMyListings,
                 onBookmarkedListingsClick = landingActions.onBookmarkedListings,
                 onCreateListingClick = landingActions.onCreateListing

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Settings
@@ -80,6 +81,7 @@ internal fun ProfileHero(
     graduationDate: String,
     isVerified: Boolean,
     onEditProfileClick: () -> Unit,
+    onChangePhotoClick: () -> Unit,
     avatarUrl: String? = null
 ) {
     Column(
@@ -89,10 +91,13 @@ internal fun ProfileHero(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(modifier = Modifier.size(110.dp)) {
-            Box(
+            Surface(
+                onClick = onChangePhotoClick,
                 modifier = Modifier
                     .size(104.dp)
-                    .align(Alignment.TopCenter)
+                    .align(Alignment.TopCenter),
+                shape = CircleShape,
+                color = Color.Transparent
             ) {
                 ProfileAvatarImage(
                     avatarUrl = avatarUrl,
@@ -103,7 +108,7 @@ internal fun ProfileHero(
                 )
             }
             Surface(
-                onClick = onEditProfileClick,
+                onClick = onChangePhotoClick,
                 modifier = Modifier
                     .size(34.dp)
                     .align(Alignment.BottomEnd)
@@ -115,8 +120,8 @@ internal fun ProfileHero(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Edit profile",
+                        imageVector = Icons.Outlined.CameraAlt,
+                        contentDescription = "Change profile photo",
                         modifier = Modifier.size(15.dp)
                     )
                 }
