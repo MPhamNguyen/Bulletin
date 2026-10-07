@@ -71,7 +71,8 @@ class ConversationTest {
         assertEquals(recent, conversation.reconcileMessages(listOf(older)).getOrThrow().lastMessage)
         assertEquals(recent, conversation.reconcileMessages(emptyList()).getOrThrow().lastMessage)
         assertTrue(conversation.reconcileMessages(listOf(older.copy(senderId = SenderId("outsider")))).isError())
-        assertTrue(conversation.reconcileMessages(listOf(older.copy(conversationId = ConversationId("other")))).isError())
+        val otherConversation = older.copy(conversationId = ConversationId("other"))
+        assertTrue(conversation.reconcileMessages(listOf(otherConversation)).isError())
     }
 
     @Test
