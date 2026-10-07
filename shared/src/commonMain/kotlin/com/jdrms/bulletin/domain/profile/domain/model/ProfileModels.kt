@@ -48,13 +48,40 @@ class ProfilePhoto private constructor(
                 ?: return Result.Error(
                     IllegalArgumentException("Choose a JPEG, PNG, or WebP image.")
                 )
-            if (bytes.isEmpty()) {
-                return Result.Error(IllegalArgumentException("The selected image is empty."))
+            val validationError = when {
+                bytes.isEmpty() -> "The selected image is empty."
+                bytes.size > MAX_SIZE_BYTES -> "Profile photos must be 5 MB or smaller."
+                !resolvedMediaType.matchesSignature(bytes) ->
+                    "The selected file is not a valid ${resolvedMediaType.displayName} image."
+                else -> null
             }
-            if (bytes.size > MAX_SIZE_BYTES) {
-                return Result.Error(IllegalArgumentException("Profile photos must be 5 MB or smaller."))
+            if (validationError != null) {
+                return Result.Error(IllegalArgumentException(validationError))
             }
             return Result.Success(ProfilePhoto(bytes, resolvedMediaType))
+        }
+
+        private val ProfilePhotoMediaType.displayName: String
+            get() = when (this) {
+                ProfilePhotoMediaType.JPEG -> "JPEG"
+                ProfilePhotoMediaType.PNG -> "PNG"
+                ProfilePhotoMediaType.WEBP -> "WebP"
+            }
+
+        private fun ProfilePhotoMediaType.matchesSignature(bytes: ByteArray): Boolean = when (this) {
+            ProfilePhotoMediaType.JPEG -> bytes.startsWith(0xff, 0xd8, 0xff)
+            ProfilePhotoMediaType.PNG -> bytes.startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+            ProfilePhotoMediaType.WEBP ->
+                bytes.startsWith(0x52, 0x49, 0x46, 0x46) &&
+                    bytes.hasBytesAt(8, 0x57, 0x45, 0x42, 0x50)
+        }
+
+        private fun ByteArray.startsWith(vararg signature: Int): Boolean = hasBytesAt(0, *signature)
+
+        private fun ByteArray.hasBytesAt(offset: Int, vararg signature: Int): Boolean {
+            return size >= offset + signature.size && signature.indices.all { index ->
+                this[offset + index].toInt() and 0xff == signature[index]
+            }
         }
     }
 }

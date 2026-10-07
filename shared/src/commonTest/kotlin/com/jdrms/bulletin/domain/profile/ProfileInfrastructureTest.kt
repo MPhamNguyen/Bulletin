@@ -33,7 +33,7 @@ class ProfileInfrastructureTest {
     @Test
     fun supabasePhotoRepositoryUsesOwnedStablePathAndPublicCacheBustedUrl() = runTest {
         val storage = FakeProfilePhotoStorage()
-        val photo = (ProfilePhoto.create(byteArrayOf(1, 2), "image/png") as Result.Success).data
+        val photo = (ProfilePhoto.create(pngBytes(), "image/png") as Result.Success).data
 
         val result = SupabaseProfilePhotoRepository(storage) { "version-1" }
             .upload(UserId("student-123"), photo)
@@ -47,7 +47,7 @@ class ProfileInfrastructureTest {
     @Test
     fun supabasePhotoRepositoryMapsStorageFailures() = runTest {
         val storage = FakeProfilePhotoStorage(IllegalStateException("row-level security denied"))
-        val photo = (ProfilePhoto.create(byteArrayOf(1), "image/jpeg") as Result.Success).data
+        val photo = (ProfilePhoto.create(jpegBytes(), "image/jpeg") as Result.Success).data
 
         val result = SupabaseProfilePhotoRepository(storage).upload(UserId("student-123"), photo)
 
@@ -56,6 +56,18 @@ class ProfileInfrastructureTest {
             "You do not have permission to upload this profile photo.",
             result.exception.message
         )
+    }
+
+    @Test
+    fun supabasePhotoRepositoryDoesNotUploadToAnotherUsersPath() = runTest {
+        val storage = FakeProfilePhotoStorage(authenticatedUserId = "student-456")
+        val photo = (ProfilePhoto.create(jpegBytes(), "image/jpeg") as Result.Success).data
+
+        val result = SupabaseProfilePhotoRepository(storage).upload(UserId("student-123"), photo)
+
+        assertTrue(result is Result.Error)
+        assertEquals("You do not have permission to upload this profile photo.", result.exception.message)
+        assertNull(storage.path)
     }
 
     @Test
@@ -409,10 +421,13 @@ class ProfileInfrastructureTest {
     }
 
     private class FakeProfilePhotoStorage(
-        private val failure: Throwable? = null
+        private val failure: Throwable? = null,
+        private val authenticatedUserId: String? = "student-123"
     ) : ProfilePhotoStorage {
         var path: String? = null
         var mediaType: String? = null
+
+        override fun authenticatedUserId(): String? = authenticatedUserId
 
         override suspend fun upload(path: String, bytes: ByteArray, mediaType: String) {
             failure?.let { throw it }
@@ -422,4 +437,18 @@ class ProfileInfrastructureTest {
 
         override fun publicUrl(path: String): String = "https://cdn.example/pfp/$path"
     }
+
+    private fun jpegBytes(): ByteArray = byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0x01)
+
+    private fun pngBytes(): ByteArray = byteArrayOf(
+        0x89.toByte(),
+        0x50,
+        0x4e,
+        0x47,
+        0x0d,
+        0x0a,
+        0x1a,
+        0x0a,
+        0x01
+    )
 }

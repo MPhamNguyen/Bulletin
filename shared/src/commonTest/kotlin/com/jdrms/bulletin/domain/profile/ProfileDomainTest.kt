@@ -24,14 +24,15 @@ class ProfileDomainTest {
 
     @Test
     fun profilePhotoAcceptsSupportedImagesAndDefensivelyCopiesBytes() {
-        val source = byteArrayOf(1, 2, 3)
+        val source = pngBytes()
         val result = ProfilePhoto.create(source, "image/png")
 
         assertTrue(result is Result.Success)
         source[0] = 9
         val returned = result.data.bytes
         returned[1] = 9
-        assertEquals(listOf<Byte>(1, 2, 3), result.data.bytes.toList())
+        assertEquals(0x89.toByte(), result.data.bytes[0])
+        assertEquals(0x50.toByte(), result.data.bytes[1])
     }
 
     @Test
@@ -39,6 +40,35 @@ class ProfileDomainTest {
         assertTrue(ProfilePhoto.create(byteArrayOf(), "image/jpeg") is Result.Error)
         assertTrue(ProfilePhoto.create(ByteArray(ProfilePhoto.MAX_SIZE_BYTES + 1), "image/webp") is Result.Error)
         assertTrue(ProfilePhoto.create(byteArrayOf(1), "image/gif") is Result.Error)
+    }
+
+    @Test
+    fun profilePhotoRejectsSpoofedAndMismatchedImageContent() {
+        assertTrue(ProfilePhoto.create(byteArrayOf(1, 2, 3), "image/jpeg") is Result.Error)
+        assertTrue(ProfilePhoto.create(pngBytes(), "image/jpeg") is Result.Error)
+    }
+
+    @Test
+    fun profilePhotoRecognizesEverySupportedImageSignature() {
+        val jpeg = byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0x01)
+        val webp = byteArrayOf(
+            0x52,
+            0x49,
+            0x46,
+            0x46,
+            0x04,
+            0x00,
+            0x00,
+            0x00,
+            0x57,
+            0x45,
+            0x42,
+            0x50
+        )
+
+        assertTrue(ProfilePhoto.create(jpeg, "image/jpeg") is Result.Success)
+        assertTrue(ProfilePhoto.create(pngBytes(), "image/png") is Result.Success)
+        assertTrue(ProfilePhoto.create(webp, "image/webp") is Result.Success)
     }
 
     @Test
@@ -364,4 +394,16 @@ class ProfileDomainTest {
         assertTrue(regLastNameResult.isError())
         assertEquals("Last name is required.", (regLastNameResult as Result.Error).exception.message)
     }
+
+    private fun pngBytes(): ByteArray = byteArrayOf(
+        0x89.toByte(),
+        0x50,
+        0x4e,
+        0x47,
+        0x0d,
+        0x0a,
+        0x1a,
+        0x0a,
+        0x01
+    )
 }

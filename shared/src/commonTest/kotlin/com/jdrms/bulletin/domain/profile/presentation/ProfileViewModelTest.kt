@@ -61,7 +61,10 @@ class ProfileViewModelTest {
             )
             advanceUntilIdle()
 
-            viewModel.uploadProfilePhoto(byteArrayOf(1, 2, 3), "image/jpeg")
+            viewModel.uploadProfilePhoto(
+                byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0x01),
+                "image/jpeg"
+            )
             assertTrue(viewModel.uiState.value.isPhotoUploading)
             runCurrent()
 

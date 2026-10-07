@@ -43,10 +43,10 @@ class ProfileApplicationTest {
             }
         }
 
-        val result = UploadProfilePhoto(photos, profiles)(profile, byteArrayOf(1, 2), "image/jpeg")
+        val result = UploadProfilePhoto(photos, profiles)(profile, jpegBytes(), "image/jpeg")
 
         assertTrue(result is Result.Success)
-        assertEquals(2, uploadedPhoto?.sizeBytes)
+        assertEquals(4, uploadedPhoto?.sizeBytes)
         assertEquals(result.data.avatarUrl, (profiles.getProfile(profile.id) as Result.Success).data?.avatarUrl)
     }
 
@@ -176,4 +176,6 @@ class ProfileApplicationTest {
         assertTrue(signOutUser() is Result.Success)
         assertNull((restoreAuthenticatedProfile() as Result.Success).data)
     }
+
+    private fun jpegBytes(): ByteArray = byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0x01)
 }

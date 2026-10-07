@@ -7,11 +7,13 @@ import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhotoUrl
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
 import kotlinx.coroutines.CancellationException
 
 internal interface ProfilePhotoStorage {
+    fun authenticatedUserId(): String?
     suspend fun upload(path: String, bytes: ByteArray, mediaType: String)
     fun publicUrl(path: String): String
 }
@@ -24,6 +26,9 @@ class SupabaseProfilePhotoRepository internal constructor(
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun upload(userId: UserId, photo: ProfilePhoto): Result<ProfilePhotoUrl> {
+        if (storage.authenticatedUserId() != userId.value) {
+            return Result.Error(Exception("You do not have permission to upload this profile photo."))
+        }
         val path = "${userId.value}/avatar"
         return try {
             storage.upload(path, photo.bytes, photo.mediaType.value)
@@ -63,6 +68,8 @@ class SupabaseProfilePhotoRepository internal constructor(
 private class SupabaseProfilePhotoStorage(
     private val supabase: SupabaseClient
 ) : ProfilePhotoStorage {
+    override fun authenticatedUserId(): String? = supabase.auth.currentUserOrNull()?.id
+
     override suspend fun upload(path: String, bytes: ByteArray, mediaType: String) {
         supabase.storage.from(SupabaseProfilePhotoRepository.BUCKET_NAME).upload(path, bytes) {
             upsert = true
