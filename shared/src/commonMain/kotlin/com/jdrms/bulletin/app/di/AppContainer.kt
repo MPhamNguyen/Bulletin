@@ -5,6 +5,7 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -18,6 +19,7 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.MarkListingSold
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
@@ -154,6 +156,7 @@ class AppContainer(
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
+    val markListingSold by lazy { MarkListingSold(listingsRepository) }
     val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
@@ -176,6 +179,7 @@ class AppContainer(
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
+    val profileSoldListingsProvider by lazy { ListingsSoldListingsCountProvider(listingsRepository) }
 
     // ViewModels
     fun createHomeViewModel() = HomeViewModel(
@@ -193,6 +197,7 @@ class AppContainer(
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
+        markListingSold = markListingSold,
         deleteListing = deleteListing,
         getSellerListings = getSellerListings,
         currentSellerProvider = currentListingSellerProvider,
@@ -216,6 +221,7 @@ class AppContainer(
         updateStudentProfile = updateStudentProfile,
         submitStudentReview = submitStudentReview,
         activeListingsProvider = profileActiveListingsProvider,
+        soldListingsProvider = profileSoldListingsProvider,
         listingChangedSignal = listingChangedSignal
     )
 

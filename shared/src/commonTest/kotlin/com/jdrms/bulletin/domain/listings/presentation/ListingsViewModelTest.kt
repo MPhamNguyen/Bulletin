@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.MarkListingSold
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -60,6 +61,7 @@ class ListingsViewModelTest {
             createListing = CreateListing(repository, policy),
             manageListing = ManageListing(repository, policy),
             deleteListing = DeleteListing(repository, policy),
+            markListingSold = MarkListingSold(repository, policy),
             getSellerListings = GetSellerListings(repository),
             currentSellerProvider = sellerProvider
         )
@@ -118,6 +120,7 @@ class ListingsViewModelTest {
         val duplicateSaveViewModel = ListingsViewModel(
             createListing = CreateListing(countingRepository),
             manageListing = ManageListing(countingRepository),
+            markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
             currentSellerProvider = sellerProvider
@@ -172,6 +175,23 @@ class ListingsViewModelTest {
     }
 
     @Test
+    fun testMarkSoldRequiresConfirmationAndUpdatesListing() = runTest {
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        viewModel.requestMarkListingSold(listing)
+        assertEquals(listing, viewModel.uiState.value.pendingSold)
+
+        viewModel.confirmMarkListingSold()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.pendingSold)
+        assertEquals(ListingStatus.SOLD, repository.getListing(listing.id)?.status)
+        assertEquals("Listing marked as sold!", viewModel.uiState.value.successMessage)
+    }
+
+    @Test
     fun testDeleteRejectsNonOwnerAndKeepsListing() = runTest {
         val listing = testListing(SellerId("other_seller"))
         repository.createListing(listing)
@@ -210,6 +230,7 @@ class ListingsViewModelTest {
         val failingViewModel = ListingsViewModel(
             createListing = CreateListing(countingRepository),
             manageListing = ManageListing(countingRepository),
+            markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
             currentSellerProvider = sellerProvider
@@ -236,6 +257,7 @@ class ListingsViewModelTest {
         val failingViewModel = ListingsViewModel(
             createListing = CreateListing(countingRepository),
             manageListing = ManageListing(countingRepository),
+            markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
             currentSellerProvider = sellerProvider
@@ -259,6 +281,7 @@ class ListingsViewModelTest {
         val protectedViewModel = ListingsViewModel(
             createListing = CreateListing(countingRepository),
             manageListing = ManageListing(countingRepository),
+            markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
             currentSellerProvider = sellerProvider
@@ -281,6 +304,7 @@ class ListingsViewModelTest {
         val signaledViewModel = ListingsViewModel(
             createListing = CreateListing(repository),
             manageListing = ManageListing(repository),
+            markListingSold = MarkListingSold(repository),
             deleteListing = DeleteListing(repository),
             getSellerListings = GetSellerListings(repository),
             currentSellerProvider = sellerProvider,
@@ -537,6 +561,7 @@ class ListingsViewModelTest {
         val customViewModel = ListingsViewModel(
             createListing = CreateListing(repository, policy),
             manageListing = ManageListing(repository, policy),
+            markListingSold = MarkListingSold(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
             currentSellerProvider = sellerProvider,
@@ -572,6 +597,7 @@ class ListingsViewModelTest {
         val customViewModel = ListingsViewModel(
             createListing = CreateListing(repository, policy),
             manageListing = ManageListing(repository, policy),
+            markListingSold = MarkListingSold(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
             currentSellerProvider = sellerProvider,

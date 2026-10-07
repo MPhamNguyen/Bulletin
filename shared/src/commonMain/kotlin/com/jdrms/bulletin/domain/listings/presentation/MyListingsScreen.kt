@@ -12,6 +12,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -19,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.zIndex
 
 @Composable
@@ -73,7 +80,8 @@ fun MyListingsScreen(
                     viewModel.startEditing(listing)
                     onEditListing()
                 },
-                onDeleteListing = viewModel::requestDeleteListing
+                onDeleteListing = viewModel::requestDeleteListing,
+                onMarkSoldListing = viewModel::requestMarkListingSold
             )
         }
 
@@ -99,6 +107,35 @@ fun MyListingsScreen(
                 errorMessage = uiState.errorMessage,
                 onDismiss = viewModel::cancelDeleteListing,
                 onConfirm = viewModel::confirmDeleteListing
+            )
+        }
+        uiState.pendingSold?.let { listing ->
+            AlertDialog(
+                onDismissRequest = { if (!uiState.isMarkingSold) viewModel.cancelMarkListingSold() },
+                title = { Text("Mark listing as sold?") },
+                text = { Text("${listing.title} will be removed from marketplace results.") },
+                dismissButton = {
+                    TextButton(
+                        onClick = viewModel::cancelMarkListingSold,
+                        enabled = !uiState.isMarkingSold
+                    ) { Text("Cancel") }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = viewModel::confirmMarkListingSold,
+                        enabled = !uiState.isMarkingSold,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        if (uiState.isMarkingSold) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                        } else {
+                            Text("Mark as sold")
+                        }
+                    }
+                }
             )
         }
     }

@@ -71,6 +71,12 @@ data class Listing(
 
     fun isOwnedBy(sellerId: SellerId): Boolean = this.sellerId == sellerId
 
+    fun markSold(sellerId: SellerId): Listing {
+        require(isOwnedBy(sellerId)) { "Only the owner can mark this listing as sold." }
+        require(status == ListingStatus.AVAILABLE) { "Only available listings can be marked as sold." }
+        return copy(status = ListingStatus.SOLD)
+    }
+
     fun updateDetails(
         editorSellerId: SellerId,
         title: String = this.title,

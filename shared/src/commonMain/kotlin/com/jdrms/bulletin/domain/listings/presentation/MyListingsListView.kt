@@ -30,6 +30,7 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -38,11 +39,12 @@ fun MyListingsListView(
     onBack: () -> Unit,
     onEditListing: (Listing) -> Unit,
     onDeleteListing: (Listing) -> Unit,
+    onMarkSoldListing: (Listing) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         MyListingsTopBar(
-            activeCount = uiState.myListings.size,
+            activeCount = uiState.myListings.count { it.status == ListingStatus.AVAILABLE },
             onBack = onBack
         )
 
@@ -85,7 +87,8 @@ fun MyListingsListView(
                         MyListingItemCard(
                             listing = listing,
                             onEdit = { onEditListing(listing) },
-                            onDelete = { onDeleteListing(listing) }
+                            onDelete = { onDeleteListing(listing) },
+                            onMarkSold = { onMarkSoldListing(listing) }
                         )
                     }
                     item {

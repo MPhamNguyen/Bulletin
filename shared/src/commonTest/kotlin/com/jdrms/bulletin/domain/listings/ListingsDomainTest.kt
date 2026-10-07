@@ -87,6 +87,52 @@ class ListingsDomainTest {
     }
 
     @Test
+    fun ownerCanMarkAvailableListingSold() {
+        val listing = testListing(SellerId("owner_1"))
+
+        val sold = listing.markSold(SellerId("owner_1"))
+
+        assertEquals(ListingStatus.SOLD, sold.status)
+        assertEquals(listing.title, sold.title)
+    }
+
+    @Test
+    fun nonOwnerCannotMarkListingSold() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            testListing(SellerId("owner_1")).markSold(SellerId("stranger"))
+        }
+
+        assertEquals("Only the owner can mark this listing as sold.", exception.message)
+    }
+
+    @Test
+    fun soldListingCannotBeMarkedSoldAgain() {
+        val soldListing = testListing(SellerId("owner_1")).markSold(SellerId("owner_1"))
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            soldListing.markSold(SellerId("owner_1"))
+        }
+
+        assertEquals("Only available listings can be marked as sold.", exception.message)
+    }
+
+    @Test
+    fun markListingSoldUseCaseRequiresOwnershipAndPersistsTransition() = runTest {
+        val repository = InMemoryListingsRepository(initialListings = emptyList())
+        val listing = testListing(SellerId("owner_1"))
+        repository.createListing(listing)
+        val markListingSold = com.jdrms.bulletin.domain.listings.application.MarkListingSold(repository, policy)
+
+        val unauthorized = markListingSold(listing.id, SellerId("stranger"))
+        assertTrue(unauthorized.isError())
+        assertEquals(ListingStatus.AVAILABLE, repository.getListing(listing.id)?.status)
+
+        val success = markListingSold(listing.id, SellerId("owner_1"))
+        assertTrue(success.isSuccess())
+        assertEquals(ListingStatus.SOLD, repository.getListing(listing.id)?.status)
+    }
+
+    @Test
     fun testOwnerCanUpdateListingDetailsAndImages() {
         val listing = testListing(SellerId("owner_1"))
         val updated = listing.updateDetails(

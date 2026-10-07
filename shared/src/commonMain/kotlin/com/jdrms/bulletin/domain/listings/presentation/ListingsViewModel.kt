@@ -14,6 +14,7 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.MarkListingSold
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 class ListingsViewModel(
     private val createListing: CreateListing,
     private val manageListing: ManageListing,
+    private val markListingSold: MarkListingSold,
     private val deleteListing: DeleteListing,
     private val getSellerListings: GetSellerListings,
     private val currentSellerProvider: CurrentListingSellerProvider,
@@ -184,6 +186,53 @@ class ListingsViewModel(
 
     fun cancelDeleteListing() {
         _uiState.update { it.copy(pendingDeletion = null) }
+    }
+
+    fun requestMarkListingSold(listing: Listing) {
+        _uiState.update { it.copy(pendingSold = listing, errorMessage = null) }
+    }
+
+    fun cancelMarkListingSold() {
+        _uiState.update { it.copy(pendingSold = null) }
+    }
+
+    fun confirmMarkListingSold() {
+        var pendingListing: Listing? = null
+        while (pendingListing == null) {
+            val state = _uiState.value
+            val listing = state.pendingSold ?: return
+            if (state.isMarkingSold) return
+            if (_uiState.compareAndSet(state, state.copy(isMarkingSold = true, errorMessage = null))) {
+                pendingListing = listing
+            }
+        }
+        val listing = checkNotNull(pendingListing)
+        viewModelScope.launch {
+            when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
+                is Result.Success -> {
+                    when (val result = markListingSold(listing.id, sellerResult.data.id)) {
+                        is Result.Success -> {
+                            _uiState.update { it.copy(pendingSold = null, isMarkingSold = false) }
+                            showFlashNotification("Listing marked as sold!")
+                            loadMyListings(sellerResult.data)
+                            listingChangedSignal?.emit()
+                        }
+                        is Result.Error -> _uiState.update {
+                            it.copy(
+                                isMarkingSold = false,
+                                errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
+                            )
+                        }
+                    }
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(
+                        isMarkingSold = false,
+                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                    )
+                }
+            }
+        }
     }
 
     fun confirmDeleteListing() {

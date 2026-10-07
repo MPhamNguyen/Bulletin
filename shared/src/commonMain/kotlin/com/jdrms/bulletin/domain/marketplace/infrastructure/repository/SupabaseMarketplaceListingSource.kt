@@ -48,6 +48,7 @@ private class PostgrestMarketplaceListingTable(
         return supabase.from(LISTINGS_TABLE).select {
             filter {
                 applyMarketplaceSearch(request)
+                eq("is_sold", false)
 
                 request.cursor?.let { cursor ->
                     val cursorTimestamp = cursor.createdAt.toString()

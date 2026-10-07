@@ -5,6 +5,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
+import com.jdrms.bulletin.domain.profile.application.ProfileSoldListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
@@ -168,6 +169,7 @@ class ProfileViewModelTest {
         authRepository: AuthRepository,
         profileRepository: InMemoryProfileRepository,
         activeListingsProvider: ProfileActiveListingsProvider? = null,
+        soldListingsProvider: ProfileSoldListingsProvider? = null,
         listingChangedSignal: RefreshSignal? = null
     ): ProfileViewModel {
         return ProfileViewModel(
@@ -180,6 +182,7 @@ class ProfileViewModelTest {
             updateStudentProfile = UpdateStudentProfile(profileRepository),
             submitStudentReview = SubmitStudentReview(profileRepository, policy),
             activeListingsProvider = activeListingsProvider,
+            soldListingsProvider = soldListingsProvider,
             listingChangedSignal = listingChangedSignal
         )
     }
@@ -592,7 +595,7 @@ class ProfileViewModelTest {
             assertEquals(ProfileSubscreen.SETTINGS, viewModel.uiState.value.activeSubscreen)
 
             assertEquals(0, viewModel.uiState.value.activeListingsCount)
-            assertEquals(18, viewModel.uiState.value.itemsSoldCount)
+            assertEquals(0, viewModel.uiState.value.itemsSoldCount)
         } finally {
             Dispatchers.resetMain()
         }
@@ -608,10 +611,12 @@ class ProfileViewModelTest {
             val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
             var countToReturn = 7
             val fakeProvider = ProfileActiveListingsProvider { countToReturn }
+            val fakeSoldProvider = ProfileSoldListingsProvider { 4 }
             val viewModel = createProfileViewModel(
                 authRepository = authRepo,
                 profileRepository = profileRepo,
-                activeListingsProvider = fakeProvider
+                activeListingsProvider = fakeProvider,
+                soldListingsProvider = fakeSoldProvider
             )
             advanceUntilIdle()
 
@@ -621,6 +626,7 @@ class ProfileViewModelTest {
             advanceUntilIdle()
 
             assertEquals(7, viewModel.uiState.value.activeListingsCount)
+            assertEquals(4, viewModel.uiState.value.itemsSoldCount)
         } finally {
             Dispatchers.resetMain()
         }

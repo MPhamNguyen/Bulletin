@@ -43,6 +43,21 @@ class ListingsInfrastructureTest {
     }
 
     @Test
+    fun mapsSoldSupabaseListingToSoldDomainStatus() {
+        val listing = SupabaseListingMapper.toDomain(
+            SupabaseListingDto(
+                id = "listing-sold",
+                name = "Desk Lamp",
+                userId = "seller-42",
+                price = 18.5,
+                isSold = true
+            )
+        )
+
+        assertEquals(com.jdrms.bulletin.domain.listings.domain.model.ListingStatus.SOLD, listing?.status)
+    }
+
+    @Test
     fun ignoresRowsWithoutRequiredListingFields() {
         assertNull(
             SupabaseListingMapper.toDomain(
@@ -87,5 +102,6 @@ class ListingsInfrastructureTest {
         assertEquals("ELECTRONICS", dto.category)
         assertEquals("LIKE_NEW", dto.condition)
         assertEquals(18.5, dto.price)
+        assertEquals(false, dto.isSold)
     }
 }

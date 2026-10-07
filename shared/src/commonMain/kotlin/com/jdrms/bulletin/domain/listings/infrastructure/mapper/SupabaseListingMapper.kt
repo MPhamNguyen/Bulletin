@@ -28,8 +28,7 @@ object SupabaseListingMapper {
                 .getOrDefault(ListingCategory.OTHER),
             condition = runCatching { ListingCondition.valueOf(dto.condition.orEmpty().uppercase()) }
                 .getOrDefault(ListingCondition.GOOD),
-            status = runCatching { ListingStatus.valueOf(dto.status.orEmpty().uppercase()) }
-                .getOrDefault(ListingStatus.AVAILABLE),
+            status = if (dto.isSold) ListingStatus.SOLD else ListingStatus.AVAILABLE,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
         )
     }
@@ -42,7 +41,8 @@ object SupabaseListingMapper {
             category = listing.category.name,
             condition = listing.condition.name,
             price = listing.price.amount,
-            description = listing.description
+            description = listing.description,
+            isSold = listing.status == ListingStatus.SOLD
         )
     }
 

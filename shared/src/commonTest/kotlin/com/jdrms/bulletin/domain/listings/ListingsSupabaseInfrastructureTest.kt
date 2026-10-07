@@ -34,6 +34,7 @@ class ListingsSupabaseInfrastructureTest {
         assertEquals(listing.id.value, table.inserted?.id)
         assertEquals(listing.sellerId.value, table.inserted?.userId)
         assertEquals(listing.title, table.inserted?.name)
+        assertEquals(false, table.inserted?.isSold)
     }
 
     @Test
@@ -66,7 +67,8 @@ class ListingsSupabaseInfrastructureTest {
         val listing = testListing().copy(
             title = "Updated Title",
             description = "Updated Description",
-            price = ListingPrice(45.0)
+            price = ListingPrice(45.0),
+            status = ListingStatus.SOLD
         )
 
         val result = repository.updateListing(listing)
@@ -76,6 +78,7 @@ class ListingsSupabaseInfrastructureTest {
         assertEquals("Updated Title", table.updated?.name)
         assertEquals("Updated Description", table.updated?.description)
         assertEquals(45.0, table.updated?.price)
+        assertEquals(true, table.updated?.isSold)
     }
 
     @Test

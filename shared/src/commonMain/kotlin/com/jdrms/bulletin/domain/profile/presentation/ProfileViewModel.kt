@@ -9,6 +9,7 @@ import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
+import com.jdrms.bulletin.domain.profile.application.ProfileSoldListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
@@ -46,6 +47,7 @@ class ProfileViewModel(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student"),
     private val activeListingsProvider: ProfileActiveListingsProvider? = null,
+    private val soldListingsProvider: ProfileSoldListingsProvider? = null,
     private val listingChangedSignal: RefreshSignal? = null
 ) : ViewModel() {
 
@@ -70,8 +72,10 @@ class ProfileViewModel(
                     is Result.Error -> null
                 }
                 ?: return@launch
-            val activeCount = fetchActiveListingsCount(currentUserId)
-            _uiState.update { it.copy(activeListingsCount = activeCount) }
+            val (activeCount, soldCount) = fetchListingCounts(currentUserId)
+            _uiState.update {
+                it.copy(activeListingsCount = activeCount, itemsSoldCount = soldCount)
+            }
         }
     }
 
@@ -80,18 +84,28 @@ class ProfileViewModel(
         return activeListingsProvider?.getActiveListingsCount(userId) ?: 0
     }
 
+    private suspend fun fetchSoldListingsCount(userId: UserId?): Int {
+        if (userId == null) return 0
+        return soldListingsProvider?.getSoldListingsCount(userId) ?: 0
+    }
+
+    private suspend fun fetchListingCounts(userId: UserId?): Pair<Int, Int> {
+        return fetchActiveListingsCount(userId) to fetchSoldListingsCount(userId)
+    }
+
     private fun restoreSession() {
         viewModelScope.launch {
             when (val result = restoreAuthenticatedProfile()) {
                 is Result.Success -> {
                     val profile = result.data
                     val rep = profile?.let { manageProfile.getReputation(it.id) }
-                    val activeCount = fetchActiveListingsCount(profile?.id)
+                    val (activeCount, soldCount) = fetchListingCounts(profile?.id)
                     _uiState.update {
                         it.copy(
                             profile = profile,
                             reputation = rep ?: it.reputation,
                             activeListingsCount = activeCount,
+                            itemsSoldCount = soldCount,
                             profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
                             activeSubscreen = ProfileSubscreen.PROFILE,
                             authSessionState = if (profile == null) {
@@ -107,6 +121,7 @@ class ProfileViewModel(
                         it.copy(
                             authSessionState = AuthSessionState.UNAUTHENTICATED,
                             activeListingsCount = 0,
+                            itemsSoldCount = 0,
                             errorMessage = null
                         )
                     }
@@ -123,13 +138,14 @@ class ProfileViewModel(
                 is Result.Success -> {
                     val studentProfile = profileResult.data
                     val rep = manageProfile.getReputation(userId)
-                    val activeCount = fetchActiveListingsCount(userId)
+                    val (activeCount, soldCount) = fetchListingCounts(userId)
                     _uiState.update {
                         it.copy(
                             profile = studentProfile,
                             profileDraft = studentProfile?.let(ProfileDraft::from) ?: ProfileDraft(),
                             reputation = rep,
                             activeListingsCount = activeCount,
+                            itemsSoldCount = soldCount,
                             isLoading = false
                         )
                     }
@@ -226,13 +242,14 @@ class ProfileViewModel(
 
     private suspend fun completeVerifiedRegistration(profile: StudentProfile) {
         val rep = manageProfile.getReputation(profile.id)
-        val activeCount = fetchActiveListingsCount(profile.id)
+        val (activeCount, soldCount) = fetchListingCounts(profile.id)
         _uiState.update {
             it.copy(
                 isLoading = false,
                 profile = profile,
                 reputation = rep,
                 activeListingsCount = activeCount,
+                itemsSoldCount = soldCount,
                 profileDraft = ProfileDraft.from(profile),
                 isAccountCreated = true,
                 pendingRegistration = null,
@@ -518,13 +535,14 @@ class ProfileViewModel(
             when (result) {
                 is Result.Success -> {
                     val rep = manageProfile.getReputation(result.data.id)
-                    val activeCount = fetchActiveListingsCount(result.data.id)
+                    val (activeCount, soldCount) = fetchListingCounts(result.data.id)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             profile = result.data,
                             reputation = rep,
                             activeListingsCount = activeCount,
+                            itemsSoldCount = soldCount,
                             profileDraft = ProfileDraft.from(result.data),
                             errorMessage = null,
                             isAccountCreated = false,

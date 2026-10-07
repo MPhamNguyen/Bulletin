@@ -30,7 +30,7 @@ data class ProfileUiState(
     val profileDraft: ProfileDraft = ProfileDraft(),
     val reputation: StudentReputation? = null,
     val activeListingsCount: Int = 0,
-    val itemsSoldCount: Int = 18,
+    val itemsSoldCount: Int = 0,
     val showReviewDialog: Boolean = false,
     val newScore: Int = 5,
     val newComment: String = "",
