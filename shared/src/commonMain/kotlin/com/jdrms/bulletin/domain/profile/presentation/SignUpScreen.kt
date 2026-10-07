@@ -188,7 +188,7 @@ private fun SignUpLogoHeader(verticalPadding: Dp) {
 
     Box(
         modifier = Modifier
-            .size(64.dp)
+            .size(96.dp)
             .background(
                 color = MaterialTheme.colorScheme.primary,
                 shape = CircleShape
@@ -199,7 +199,7 @@ private fun SignUpLogoHeader(verticalPadding: Dp) {
             painter = painterResource(Res.drawable.ic_graduation_cap),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(54.dp)
         )
     }
 
@@ -375,7 +375,7 @@ private fun SignUpFormContent(
         }
     )
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(40.dp))
 
     Button(
         onClick = { onCreateAccount(firstName, lastName, email, password) },
@@ -403,7 +403,7 @@ private fun SignUpFormContent(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp, bottom = 24.dp),
+            .padding(top = 160.dp, bottom = 24.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
