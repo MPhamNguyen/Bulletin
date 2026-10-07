@@ -49,6 +49,11 @@ fun ProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) { viewModel.refreshActiveListings() }
+    LaunchedEffect(destination) {
+        if (destination == ProfileDestination.BOOKMARKED_LISTINGS) {
+            viewModel.loadBookmarkedListings()
+        }
+    }
     LaunchedEffect(flows.messenger) {
         flows.messenger.messages.collect { snackbarHostState.showSnackbar(it) }
     }
@@ -57,6 +62,7 @@ fun ProfileScreen(
         ProfileDestinationContent(
             destination,
             ProfileDestinationStates(profileState, editState),
+            viewModel,
             flows,
             callbacks,
             themeViewModel
@@ -69,6 +75,7 @@ fun ProfileScreen(
 private fun ProfileDestinationContent(
     destination: ProfileDestination,
     states: ProfileDestinationStates,
+    viewModel: ProfileViewModel,
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
     themeViewModel: ThemeViewModel?
@@ -77,7 +84,32 @@ private fun ProfileDestinationContent(
         ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, flows.editing, callbacks)
         ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
         ProfileDestination.SETTINGS -> ProfileSettingsDestination(states.profile, flows, callbacks, themeViewModel)
-        ProfileDestination.BOOKMARKED_LISTINGS -> BookmarkedListingsView(callbacks.onBack)
+        ProfileDestination.BOOKMARKED_LISTINGS -> {
+            BookmarkedListingsView(
+                listings = states.profile.bookmarkedListings,
+                isLoading = states.profile.isLoadingBookmarkedListings,
+                isLoadingMore = states.profile.isLoadingMoreBookmarkedListings,
+                hasMore = states.profile.bookmarkedListingsNextCursor != null,
+                errorMessage = states.profile.errorMessage,
+                removingListingId = states.profile.removingBookmarkedListingId,
+                actions = BookmarkedListingsActions(
+                    onListingClick = viewModel::viewBookmarkedListing,
+                    onRemoveBookmark = viewModel::removeBookmarkedListing,
+                    onRefresh = viewModel::loadBookmarkedListings,
+                    onLoadMore = viewModel::loadMoreBookmarkedListings,
+                    onBack = callbacks.onBack
+                )
+            )
+            states.profile.selectedBookmarkedListing?.let { listing ->
+                BookmarkedListingDetailSheet(
+                    listing = listing,
+                    isRemovingBookmark = states.profile.removingBookmarkedListingId == listing.id,
+                    errorMessage = states.profile.errorMessage,
+                    onDismiss = viewModel::dismissBookmarkedListing,
+                    onRemoveBookmark = { viewModel.removeBookmarkedListing(listing.id) }
+                )
+            }
+        }
         ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
         ProfileDestination.PRIVACY -> PrivacyView(callbacks.onBack)
         ProfileDestination.HELP_AND_SUPPORT -> HelpAndSupportView(callbacks.onBack)

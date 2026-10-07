@@ -6,6 +6,7 @@ import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
+import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -49,6 +50,8 @@ import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
 import com.jdrms.bulletin.domain.profile.application.PublishStudentReview
 import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignInUser
@@ -229,6 +232,15 @@ class AppContainer(
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
     val getProfileOverview by lazy { GetProfileOverview(profileRepository, profileActiveListingsProvider) }
     val getProfileActivity by lazy { GetProfileActivity(profileActiveListingsProvider) }
+    private val marketplaceProfileBookmarks by lazy {
+        MarketplaceProfileBookmarkedListingsProvider(
+            getMarketplaceListingBookmarks,
+            removeMarketplaceListingBookmark,
+            listingsRepository
+        )
+    }
+    val profileBookmarkedListingsProvider: ProfileBookmarkedListingsProvider by lazy { marketplaceProfileBookmarks }
+    val profileBookmarkedListingRemover: ProfileBookmarkedListingRemover by lazy { marketplaceProfileBookmarks }
 
     // ViewModels
     fun createHomeViewModel() = HomeViewModel(
@@ -244,7 +256,7 @@ class AppContainer(
         viewMarketplaceListing = viewMarketplaceListing,
         listingChangedSignal = listingChangedSignal,
         currentUserIdProvider = {
-            when (val result = getAuthenticatedUserId()) {
+            when (val result = authRepository.getCurrentUserId()) {
                 is com.jdrms.bulletin.core.common.Result.Success -> result.data?.value
                 is com.jdrms.bulletin.core.common.Result.Error -> null
             }
@@ -277,10 +289,12 @@ class AppContainer(
     )
 
     fun createProfileViewModel() = ProfileViewModel(
-        sessionRepository,
-        getProfileOverview,
-        getProfileActivity,
-        listingChangedSignal
+        sessionRepository = sessionRepository,
+        getProfileOverview = getProfileOverview,
+        getProfileActivity = getProfileActivity,
+        listingChangedSignal = listingChangedSignal,
+        bookmarkedListingsProvider = profileBookmarkedListingsProvider,
+        bookmarkedListingRemover = profileBookmarkedListingRemover
     )
 
     fun createEditProfileViewModel() = EditProfileViewModel(

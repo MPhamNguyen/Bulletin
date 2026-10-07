@@ -584,19 +584,6 @@ class MarketplaceViewModelTestPart1 {
         }
     }
 
-    private fun uploadedListing(): MarketplaceListingSnapshot {
-        return MarketplaceListingSnapshot(
-            id = "listing:new",
-            sellerId = "seller_new",
-            sellerName = "New Seller",
-            title = "Graphing Calculator",
-            description = "Calculator for math courses",
-            priceAmount = 60.0,
-            priceCurrency = "USD",
-            category = MarketplaceCategory.ELECTRONICS,
-            createdAtMillis = 100L
-        )
-    }
 }
 
 internal object FailingListingSource : MarketplaceListingSource {
