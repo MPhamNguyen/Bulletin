@@ -3,8 +3,10 @@ package com.jdrms.bulletin.domain.messages.presentation
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 data class MessagesUiState(
+    val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
     val selectedConversationId: ConversationId? = null,
     val currentMessages: List<Message> = emptyList(),

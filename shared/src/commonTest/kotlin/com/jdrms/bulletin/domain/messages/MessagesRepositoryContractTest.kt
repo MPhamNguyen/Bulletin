@@ -110,4 +110,13 @@ abstract class MessagesRepositoryContractTest {
 class InMemoryMessagesRepositoryTest : MessagesRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository =
         messagesRepository(conversations, messages)
+
+    @Test
+    fun fetchedMessagesAreOrderedOldestToNewestWithStableTimestampTies() = runTest {
+        val later = message(id = MessageId("later")).copy(timestampMillis = 100L)
+        val tiedB = message(id = MessageId("b")).copy(timestampMillis = 42L)
+        val tiedA = message(id = MessageId("a")).copy(timestampMillis = 42L)
+        val repository = createRepository(listOf(conversation()), listOf(later, tiedB, tiedA))
+        assertEquals(listOf(tiedA, tiedB, later), repository.getMessages(alice.id, conversationId).getOrThrow())
+    }
 }

@@ -9,11 +9,13 @@ import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
+import com.jdrms.bulletin.domain.messages.presentation.conversationTitle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -48,6 +50,13 @@ class MessagesViewModelTest {
     }
 
     @Test
+    fun previewTitleShowsOnlyOtherParticipantAndHasSafeEmptyFallback() {
+        assertEquals("Carol", conversationTitle(conversation(), alice.id))
+        assertEquals("Conversation", conversationTitle(conversation(), null))
+        assertEquals("Conversation", conversationTitle(conversation(senders = listOf(alice)), alice.id))
+    }
+
+    @Test
     fun loadsOnlyAuthenticatedParticipantsConversationsAndMessages() = runTest {
         val repository = messagesRepository(
             listOf(conversation(), conversation(ConversationId("other"), listOf(bob, carol))),
@@ -58,6 +67,11 @@ class MessagesViewModelTest {
         advanceUntilIdle()
         val state = viewModel.uiState.value
         assertEquals(listOf(conversationId), state.conversations.map { it.id })
+        assertEquals(alice.id, state.viewerId)
+        assertEquals(
+            listOf(carol.displayName),
+            state.conversations.single().otherParticipantNames(assertNotNull(state.viewerId))
+        )
         assertEquals(listOf(message()), state.currentMessages)
         assertEquals(conversationId, state.selectedConversationId)
         assertFalse(state.isLoading)
@@ -197,6 +211,67 @@ class MessagesViewModelTest {
             "Unable to complete the messaging request. Please try again.",
             viewModel.uiState.value.errorMessage
         )
+    }
+
+    @Test
+    fun sendKeepsThreadVisibleAndAppendsOnlyTheNewMessage() = runTest {
+        val existing = message(id = MessageId("existing"))
+        val backing = messagesRepository(messages = listOf(existing))
+        val repository = object : MessagesRepository by backing {
+            override suspend fun sendMessage(message: Message): Result<Message> {
+                delay(1000)
+                return backing.sendMessage(message)
+            }
+        }
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.onMessageInputChanged("New reply")
+        viewModel.sendCurrentMessage()
+        runCurrent()
+        assertEquals(listOf(existing), viewModel.uiState.value.currentMessages)
+        assertEquals("New reply", viewModel.uiState.value.messageInput)
+        assertFalse(viewModel.uiState.value.isLoading)
+        advanceUntilIdle()
+        val messages = viewModel.uiState.value.currentMessages
+        assertEquals(listOf(existing.id, MessageId("new-message")), messages.map { it.id })
+        assertEquals("New reply", viewModel.uiState.value.conversations.single().lastMessage?.content)
+        assertFalse(viewModel.uiState.value.isLoadingMessages)
+    }
+
+    @Test
+    fun fetchedIncomingMessageUpdatesPreviewRegardlessOfSender() = runTest {
+        val own = message(id = MessageId("own"))
+        val incoming = Message(
+            MessageId("incoming"),
+            conversationId,
+            carol.id,
+            carol.displayName,
+            "Later reply",
+            100L
+        )
+        val stale = Conversation(
+            conversationId,
+            listOf(
+                ConversationParticipant(alice.id, alice.displayName),
+                ConversationParticipant(carol.id, carol.displayName)
+            ),
+            own,
+            own.timestampMillis
+        )
+        val backing = messagesRepository(listOf(stale), listOf(own))
+        var fetchedMessages = listOf(own)
+        val repository = object : MessagesRepository by backing {
+            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> =
+                Result.Success(fetchedMessages)
+        }
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        assertEquals(own, viewModel.uiState.value.conversations.single().lastMessage)
+        fetchedMessages = listOf(own, incoming)
+        viewModel.selectConversation(conversationId)
+        advanceUntilIdle()
+        assertEquals(incoming, viewModel.uiState.value.conversations.single().lastMessage)
+        assertEquals(listOf(own, incoming), viewModel.uiState.value.currentMessages)
     }
 
     @Test

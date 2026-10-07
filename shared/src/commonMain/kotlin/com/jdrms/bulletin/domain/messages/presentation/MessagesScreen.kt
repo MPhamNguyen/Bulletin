@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -22,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -32,7 +34,9 @@ import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
 fun MessagesScreen(viewModel: MessagesViewModel) {
@@ -66,7 +70,7 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
                     modifier = Modifier.weight(0.4f).padding(end = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(state.conversations) { conv ->
+                    items(state.conversations, key = { it.id.value }) { conv ->
                         val isSelected = conv.id == state.selectedConversationId
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable { viewModel.selectConversation(conv.id) },
@@ -85,7 +89,7 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
                         ) {
                             Column(modifier = Modifier.padding(8.dp)) {
                                 Text(
-                                    text = conv.participantNames.joinToString(", "),
+                                    text = conversationTitle(conv, state.viewerId),
                                     fontWeight = FontWeight.Bold,
                                     color = if (isSelected) {
                                         MaterialTheme.colorScheme.onPrimaryContainer
@@ -110,15 +114,26 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
 
                 // Messages view column
                 Column(modifier = Modifier.weight(0.6f)) {
+                    val messageListState = rememberLazyListState()
                     if (state.isLoadingMessages) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text("Loading messages...", style = MaterialTheme.typography.bodyMedium)
                     } else {
+                        LaunchedEffect(
+                            state.selectedConversationId,
+                            state.currentMessages.lastOrNull()?.id,
+                            state.currentMessages.size
+                        ) {
+                            if (state.currentMessages.isNotEmpty()) {
+                                messageListState.scrollToItem(state.currentMessages.lastIndex)
+                            }
+                        }
                         LazyColumn(
                             modifier = Modifier.weight(1f).padding(4.dp),
+                            state = messageListState,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(state.currentMessages) { msg ->
+                            items(state.currentMessages, key = { it.id.value }) { msg ->
                                 MessageItemCard(
                                     message = msg,
                                     canReport = !state.isReporting,
@@ -154,6 +169,11 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
             }
         }
     }
+}
+
+internal fun conversationTitle(conversation: Conversation, viewerId: SenderId?): String {
+    val otherNames = viewerId?.let(conversation::otherParticipantNames).orEmpty()
+    return otherNames.joinToString(", ").ifBlank { "Conversation" }
 }
 
 @Composable
