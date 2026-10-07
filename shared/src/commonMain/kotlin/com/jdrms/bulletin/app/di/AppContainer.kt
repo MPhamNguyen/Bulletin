@@ -5,6 +5,7 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -43,12 +44,15 @@ import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
+import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
+import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
@@ -169,7 +173,12 @@ class AppContainer(
     // Use Cases - Marketplace
     val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
-    val viewMarketplaceListing by lazy { ViewMarketplaceListing(marketplaceRepository) }
+    val viewMarketplaceListing by lazy {
+        ViewMarketplaceListing(
+            repository = marketplaceRepository,
+            sellerProfileProvider = ProfileMarketplaceSellerNameProvider(profileRepository)
+        )
+    }
 
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
@@ -192,6 +201,9 @@ class AppContainer(
     val signOutUser by lazy { SignOutUser(authRepository) }
     val resendVerificationCode by lazy { ResendVerificationCode(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
+    val requestPasswordReset by lazy { RequestPasswordReset(authRepository) }
+    val verifyPasswordResetCode by lazy { VerifyPasswordResetCode(authRepository) }
+    val updatePassword by lazy { UpdatePassword(authRepository) }
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val uploadProfilePhoto by lazy { UploadProfilePhoto(profilePhotoRepository, profileRepository) }
@@ -232,6 +244,9 @@ class AppContainer(
         restoreAuthenticatedProfile = restoreAuthenticatedProfile,
         signOutUser = signOutUser,
         verifyStudentEmail = verifyStudentEmail,
+        requestPasswordReset = requestPasswordReset,
+        verifyPasswordResetCode = verifyPasswordResetCode,
+        updatePassword = updatePassword,
         resendVerificationCode = resendVerificationCode,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,

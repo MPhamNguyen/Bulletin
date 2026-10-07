@@ -63,13 +63,21 @@ data class Listing(
     val photos: List<String> = emptyList(),
     val sellerReputationScore: Double? = null,
     val isSaved: Boolean = false,
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val sellerSchool: String = "CSU Long Beach",
+    val sellerAvatarUrl: String? = null,
+    val sellerMajor: String = "",
+    val sellerGraduationDate: String = "",
+    val sellerReviewCount: Int = 0,
+    val sellerIsVerified: Boolean = false
 ) {
     init {
         require(title.isNotBlank()) { "Listing title cannot be blank." }
         require(title.trim().length >= 3) { "Listing title must be at least 3 characters." }
         require(description.isNotBlank()) { "Listing description cannot be blank." }
         require(sellerName.isNotBlank()) { "Seller name cannot be blank." }
+        require(sellerSchool.isNotBlank()) { "Seller school cannot be blank." }
+        require(sellerReviewCount >= 0) { "Seller review count cannot be negative." }
         sellerReputationScore?.let {
             require(it in 0.0..5.0) { "Reputation score must be between 0.0 and 5.0." }
         }

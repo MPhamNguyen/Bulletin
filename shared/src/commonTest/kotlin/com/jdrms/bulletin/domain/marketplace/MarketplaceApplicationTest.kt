@@ -5,6 +5,8 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfileProvider
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.pageFor
@@ -48,6 +50,36 @@ class MarketplaceApplicationTest {
         val listing = (result as Result.Success).data
         assertEquals("mkt_2", listing.id.value)
         assertEquals("Sony WH-1000XM4 Noise Canceling Headphones", listing.title)
+    }
+
+    @Test
+    fun viewListingUsesTheSellerProfileNameWhenItIsAvailable() = runTest {
+        val listingViewer = ViewMarketplaceListing(
+            repository = repository,
+            sellerProfileProvider = MarketplaceSellerProfileProvider { sellerId ->
+                if (sellerId == "seller_101") {
+                    MarketplaceSellerProfile(
+                        name = "Alex Johnson",
+                        school = "Example University",
+                        avatarUrl = "https://example.com/alex.jpg",
+                        major = "Computer Science",
+                        graduationDate = "'25",
+                        reviewCount = 24
+                    )
+                } else {
+                    null
+                }
+            }
+        )
+
+        val listing = listingViewer.viewListing("mkt_1")
+
+        assertEquals("Alex Johnson", listing.sellerName)
+        assertEquals("Example University", listing.sellerSchool)
+        assertEquals("https://example.com/alex.jpg", listing.sellerAvatarUrl)
+        assertEquals("Computer Science", listing.sellerMajor)
+        assertEquals("'25", listing.sellerGraduationDate)
+        assertEquals(24, listing.sellerReviewCount)
     }
 
     @Test

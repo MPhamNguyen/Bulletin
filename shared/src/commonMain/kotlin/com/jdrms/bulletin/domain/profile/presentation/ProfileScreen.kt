@@ -146,7 +146,10 @@ private fun ProfileSubscreenHost(
             TermsAndConditionsView(onBack = handleBack)
         }
         uiState.activeSubscreen == ProfileSubscreen.PUBLIC_PROFILE -> {
-            PublicProfileView(onBack = handleBack)
+            PublicProfileView(
+                profile = uiState.profile,
+                onBack = handleBack
+            )
         }
         else -> {
             MarketplaceProfileView(

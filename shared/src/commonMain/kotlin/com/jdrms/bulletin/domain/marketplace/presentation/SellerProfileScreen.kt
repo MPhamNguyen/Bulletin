@@ -1,4 +1,4 @@
-package com.jdrms.bulletin.domain.profile.presentation
+package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +20,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.School
-import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,11 +36,13 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 
 @Composable
-internal fun PublicProfileView(
-    profile: StudentProfile? = null,
+fun SellerProfileScreen(
+    profile: MarketplaceSellerProfile?,
+    isLoading: Boolean,
+    errorMessage: String?,
     onBack: () -> Unit
 ) {
     Column(
@@ -48,28 +50,55 @@ internal fun PublicProfileView(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        PublicProfileTopBar(onBackClick = onBack)
+        // Top Bar
+        SellerProfileTopBar(onBack = onBack)
 
-        if (profile != null) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (errorMessage != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                BulletinCard {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        } else if (profile != null) {
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                BulletinCard(modifier = Modifier.fillMaxWidth()) {
+                // Seller Hero Card
+                BulletinCard {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Avatar
                         if (profile.avatarUrl != null) {
                             AsyncImage(
                                 model = profile.avatarUrl,
-                                contentDescription = "${profile.fullName} avatar",
+                                contentDescription = "${profile.name} avatar",
                                 modifier = Modifier
                                     .size(88.dp)
                                     .clip(CircleShape),
@@ -80,31 +109,32 @@ internal fun PublicProfileView(
                                 modifier = Modifier
                                     .size(88.dp)
                                     .background(
-                                        color = MaterialTheme.colorScheme.primary,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                         shape = CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = profileInitials(profile.fullName),
+                                    text = profileInitials(profile.name ?: "Student"),
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
 
+                        // Name & Verified Badge
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = profile.fullName,
+                                text = profile.name ?: "Student Seller",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            if (profile.isVerified || profile.email.isUniversityEmail) {
+                            if (profile.isVerified) {
                                 Surface(
                                     shape = CircleShape,
                                     color = BulletinExtras.colors.successContainer,
@@ -130,14 +160,15 @@ internal fun PublicProfileView(
                             }
                         }
 
-                        val academicInfo = listOfNotNull(
-                            profile.major.takeIf(String::isNotBlank),
-                            profile.university.takeIf(String::isNotBlank)
+                        // School & Major Subtitle
+                        val schoolInfo = listOfNotNull(
+                            profile.major?.takeIf(String::isNotBlank),
+                            profile.school?.takeIf(String::isNotBlank)
                         ).joinToString(" • ")
 
-                        if (academicInfo.isNotBlank()) {
+                        if (schoolInfo.isNotBlank()) {
                             Text(
-                                text = academicInfo,
+                                text = schoolInfo,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -145,73 +176,73 @@ internal fun PublicProfileView(
                     }
                 }
 
-                profile.reputation?.let { rep ->
-                    BulletinCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Reputation Score",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Star,
-                                        contentDescription = "Rating",
-                                        tint = BulletinExtras.colors.star,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        text = "${(rep.averageRating * 10).toInt() / 10.0} / 5.0",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                // Reputation Card
+                BulletinCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Reputation Score",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = "Reputation",
+                                    tint = BulletinExtras.colors.star,
+                                    modifier = Modifier.size(20.dp)
+                                )
                                 Text(
-                                    text = "${rep.totalReviews} reviews",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    text = formatReputationScore(profile.reputationScore),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
-                    }
-                }
 
-                if (profile.bio.isNotBlank()) {
-                    BulletinCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
                             Text(
-                                text = "About",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = profile.bio,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Campus Seller",
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             )
                         }
                     }
                 }
 
-                BulletinCard(modifier = Modifier.fillMaxWidth()) {
+                // About / Bio Card
+                BulletinCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "About the Seller",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = profile.bio?.takeIf(String::isNotBlank)
+                                ?: "This seller hasn't added a bio yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Campus Verification Trust Card
+                BulletinCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -233,66 +264,17 @@ internal fun PublicProfileView(
                         }
                         Column {
                             Text(
-                                text = profile.university,
+                                text = profile.school?.takeIf(String::isNotBlank) ?: "CSU Long Beach",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Verified student with campus email",
+                                text = "Verified student with official campus email",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-                }
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                BulletinCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp, horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Visibility,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Public Profile Preview",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Preview of how your profile and listings appear to others will appear here.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             }
@@ -301,7 +283,7 @@ internal fun PublicProfileView(
 }
 
 @Composable
-private fun PublicProfileTopBar(onBackClick: () -> Unit) {
+private fun SellerProfileTopBar(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -309,21 +291,29 @@ private fun PublicProfileTopBar(onBackClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
-            onClick = onBackClick,
+            onClick = onBack,
             modifier = Modifier.size(40.dp)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back to Settings",
+                contentDescription = "Back to listing",
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Public Profile",
+            text = "Seller Profile",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
     }
+}
+
+private fun profileInitials(fullName: String): String {
+    val nameParts = fullName.trim().split(Regex("\\s+")).filter(String::isNotBlank)
+    if (nameParts.isEmpty()) return "ST"
+    val firstInitial = nameParts.first().first().uppercaseChar()
+    val lastInitial = nameParts.takeIf { it.size > 1 }?.last()?.first()?.uppercaseChar()
+    return if (lastInitial == null) firstInitial.toString() else "$firstInitial$lastInitial"
 }
