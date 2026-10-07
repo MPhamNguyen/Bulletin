@@ -15,6 +15,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -214,6 +215,32 @@ class ProfileApplicationTest {
     }
 
     @Test
+    fun testSoftDeleteProfileSucceedsWhenSignOutCleanupFails() = runTest {
+        val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(profileRepo)
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Student Name"
+        )
+        profileRepo.updateProfile(profile)
+
+        val softDeleteProfile = SoftDeleteProfile(
+            profileRepository = profileRepo,
+            signOutUser = SignOutUser(FailingSignOutAuthRepository(authRepo)),
+            nowTimestamp = { "2026-10-06T19:00:00Z" }
+        )
+
+        val result = softDeleteProfile(profile)
+
+        assertTrue(result is Result.Success)
+        assertTrue(result.data.isDeleted)
+        val persisted = profileRepo.getProfile(profile.id)
+        assertTrue(persisted is Result.Success)
+        assertEquals("2026-10-06T19:00:00Z", persisted.data?.deletedAt)
+    }
+
+    @Test
     fun testSoftDeleteProfileFailsOnAlreadyDeletedProfile() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
         val authRepo = InMemoryAuthRepository(profileRepo)
@@ -230,5 +257,13 @@ class ProfileApplicationTest {
         val result = softDeleteProfile(alreadyDeleted)
         assertTrue(result is Result.Error)
         assertEquals("Profile is already deleted.", result.exception.message)
+    }
+}
+
+private class FailingSignOutAuthRepository(
+    private val delegate: AuthRepository
+) : AuthRepository by delegate {
+    override suspend fun signOut(): Result<Unit> {
+        return Result.Error(IllegalStateException("Sign-out cleanup unavailable"))
     }
 }

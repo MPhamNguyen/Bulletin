@@ -201,7 +201,14 @@ class SupabaseAuthRepository(
     override suspend fun getCurrentUserId(): Result<UserId?> {
         return runCatching {
             supabase.auth.awaitInitialization()
-            supabase.auth.currentUserOrNull()?.takeIf { it.emailConfirmedAt != null }?.id?.let(::UserId)
+            val currentUser = supabase.auth.currentUserOrNull()
+                ?.takeIf { it.emailConfirmedAt != null } ?: return@runCatching null
+            val userId = UserId(currentUser.id)
+
+            when (val profileResult = profileRepository.getProfile(userId)) {
+                is Result.Success -> if (profileResult.data?.isDeleted == true) null else userId
+                is Result.Error -> throw profileResult.exception
+            }
         }.fold(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
