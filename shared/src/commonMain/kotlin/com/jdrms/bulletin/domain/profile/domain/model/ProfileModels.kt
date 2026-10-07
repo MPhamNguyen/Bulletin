@@ -151,11 +151,25 @@ data class StudentProfile(
     val bio: String = "",
     val avatarUrl: String? = null,
     val isVerified: Boolean = false,
-    val reputation: StudentReputation? = null
+    val reputation: StudentReputation? = null,
+    val deletedAt: String? = null
 ) {
+    val isDeleted: Boolean
+        get() = deletedAt != null
+
     fun confirmEmail(): StudentProfile = if (isVerified) this else copy(isVerified = true)
 
     fun changeProfilePhoto(photoUrl: ProfilePhotoUrl): StudentProfile = copy(avatarUrl = photoUrl.value)
+    fun softDelete(timestamp: String): Result<StudentProfile> {
+        if (isDeleted) {
+            return Result.Error(IllegalStateException("Profile is already deleted."))
+        }
+        val trimmedTimestamp = timestamp.trim()
+        if (trimmedTimestamp.isBlank()) {
+            return Result.Error(IllegalArgumentException("Deletion timestamp cannot be blank."))
+        }
+        return Result.Success(copy(deletedAt = trimmedTimestamp))
+    }
 
     fun updateDetails(
         fullName: String,
@@ -165,6 +179,9 @@ data class StudentProfile(
         graduationDate: String = this.graduationDate,
         avatarUrl: String? = this.avatarUrl
     ): Result<StudentProfile> {
+        if (isDeleted) {
+            return Result.Error(IllegalStateException("Cannot update a deleted profile."))
+        }
         val normalizedName = fullName.trim()
         val normalizedUniversity = university.trim()
         val normalizedBio = bio.trim()

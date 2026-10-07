@@ -72,6 +72,25 @@ class SupabaseProfileRepository(
         )
     }
 
+    override suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit> {
+        return runCatching {
+            val resolvedId = resolveUserId(userId) ?: userId.value
+            supabase.from(PROFILES_TABLE).update(
+                buildJsonObject {
+                    put("deleted_at", JsonPrimitive(deletedAt))
+                }
+            ) {
+                filter {
+                    eq("id", resolvedId)
+                }
+            }
+            Unit
+        }.fold(
+            onSuccess = { Result.Success(it) },
+            onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+        )
+    }
+
     override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
         return runCatching {
             val currentUserId = supabase.auth.currentUserOrNull()?.id
@@ -196,10 +215,11 @@ class SupabaseAuthRepository(
                 ?.takeIf { it.emailConfirmedAt != null } ?: return@runCatching null
             val userId = UserId(currentUser.id)
 
-            when (val profileResult = profileRepository.getProfile(userId)) {
+            val profile = when (val profileResult = profileRepository.getProfile(userId)) {
                 is Result.Success -> profileResult.data ?: createProfileFromAuthUser(currentUser)
                 is Result.Error -> throw profileResult.exception
             }
+            if (profile.isDeleted) null else profile
         }.fold(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
@@ -251,6 +271,9 @@ class SupabaseAuthRepository(
             val profile = when (profileResult) {
                 is Result.Success -> {
                     if (profileResult.data != null) {
+                        if (profileResult.data.isDeleted) {
+                            rejectSession("Account not found. Please check your email or create an account.")
+                        }
                         profileResult.data
                     } else {
                         createProfileFromAuthUser(currentUser, email)

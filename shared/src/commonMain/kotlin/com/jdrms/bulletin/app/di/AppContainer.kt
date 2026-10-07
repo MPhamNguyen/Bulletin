@@ -48,6 +48,7 @@ import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
+import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
@@ -207,6 +208,7 @@ class AppContainer(
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val uploadProfilePhoto by lazy { UploadProfilePhoto(profilePhotoRepository, profileRepository) }
+    val softDeleteProfile by lazy { SoftDeleteProfile(profileRepository, signOutUser) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
 
@@ -253,7 +255,8 @@ class AppContainer(
         uploadProfilePhoto = uploadProfilePhoto,
         submitStudentReview = submitStudentReview,
         activeListingsProvider = profileActiveListingsProvider,
-        listingChangedSignal = listingChangedSignal
+        listingChangedSignal = listingChangedSignal,
+        softDeleteProfile = softDeleteProfile
     )
 
     fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)

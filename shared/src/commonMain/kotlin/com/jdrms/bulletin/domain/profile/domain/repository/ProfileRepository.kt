@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 interface ProfileRepository {
     suspend fun getProfile(userId: UserId): Result<StudentProfile?>
     suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile>
+    suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit>
     suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit>
     suspend fun getReputation(userId: UserId): StudentReputation
 }

@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.application
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
@@ -15,6 +16,7 @@ import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepositor
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
+import kotlin.time.Instant
 
 class AuthenticateUser(
     private val authRepository: AuthRepository,
@@ -123,7 +125,7 @@ class ResendVerificationCode(private val authRepository: AuthRepository) {
 }
 
 class ManageProfile(
-    private val profileRepository: ProfileRepository
+    val profileRepository: ProfileRepository
 ) {
     suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
         return profileRepository.getProfile(userId)
@@ -181,6 +183,29 @@ class UploadProfilePhoto(
         return when (val uploadResult = profilePhotoRepository.upload(profile.id, photo)) {
             is Result.Success -> profileRepository.updateProfile(profile.changeProfilePhoto(uploadResult.data))
             is Result.Error -> uploadResult
+        }
+    }
+}
+
+class SoftDeleteProfile(
+    private val profileRepository: ProfileRepository,
+    private val signOutUser: SignOutUser,
+    private val nowTimestamp: () -> String = {
+        Instant.fromEpochMilliseconds(currentTimeMillis()).toString()
+    }
+) {
+    suspend operator fun invoke(profile: StudentProfile): Result<StudentProfile> {
+        val timestamp = nowTimestamp()
+        val deleteResult = profile.softDelete(timestamp)
+        if (deleteResult is Result.Error) return deleteResult
+        val deletedProfile = (deleteResult as Result.Success).data
+
+        return when (val repoResult = profileRepository.softDelete(deletedProfile.id, timestamp)) {
+            is Result.Success -> {
+                signOutUser()
+                Result.Success(deletedProfile)
+            }
+            is Result.Error -> repoResult
         }
     }
 }

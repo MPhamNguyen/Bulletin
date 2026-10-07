@@ -8,10 +8,12 @@ import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvid
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
+import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
@@ -32,6 +34,7 @@ import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -226,7 +229,8 @@ class ProfileViewModelTest {
         profileRepository: InMemoryProfileRepository,
         activeListingsProvider: ProfileActiveListingsProvider? = null,
         listingChangedSignal: RefreshSignal? = null,
-        profilePhotoRepository: ProfilePhotoRepository? = null
+        profilePhotoRepository: ProfilePhotoRepository? = null,
+        softDeleteProfile: SoftDeleteProfile? = null
     ): ProfileViewModel {
         return ProfileViewModel(
             authenticateUser = AuthenticateUser(authRepository, policy),
@@ -241,7 +245,8 @@ class ProfileViewModelTest {
                 UploadProfilePhoto(it, profileRepository)
             },
             activeListingsProvider = activeListingsProvider,
-            listingChangedSignal = listingChangedSignal
+            listingChangedSignal = listingChangedSignal,
+            softDeleteProfile = softDeleteProfile
         )
     }
 
@@ -789,6 +794,63 @@ class ProfileViewModelTest {
 
             handleSubscreenBack(ProfileSubscreen.PROFILE, viewModel, onBack)
             assertTrue(onBackCalled)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testProfileViewModelDeleteProfileSoftDeletesAndSignsOut() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val profileRepo = InMemoryProfileRepository(
+                initialProfiles = emptyMap(),
+                initialReviews = emptyMap()
+            )
+            val authRepo = InMemoryAuthRepository(
+                profileRepository = profileRepo,
+                testVerificationCode = "123456"
+            )
+            val registered = authRepo.register(
+                email = StudentEmail("student@example.com"),
+                password = "validPassword123",
+                fullName = "Dominic Alfonso"
+            )
+            assertTrue(registered is Result.Success)
+            val verifyResult = VerifyStudentEmail(authRepo)(registered.data.email, "123456")
+            assertTrue(verifyResult is Result.Success)
+            val profile = assertIs<EmailVerificationOutcome.ProfileAvailable>(verifyResult.data).profile
+
+            val fixedTimestamp = "2026-10-06T19:00:00Z"
+            val softDeleteProfile = SoftDeleteProfile(
+                profileRepository = profileRepo,
+                signOutUser = SignOutUser(authRepo),
+                nowTimestamp = { fixedTimestamp }
+            )
+            val viewModel = createProfileViewModel(
+                authRepository = authRepo,
+                profileRepository = profileRepo,
+                softDeleteProfile = softDeleteProfile
+            )
+            advanceUntilIdle()
+
+            assertEquals(AuthSessionState.AUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertNotNull(viewModel.uiState.value.profile)
+
+            var successCallbackCalled = false
+            viewModel.deleteProfile(onSuccess = { successCallbackCalled = true })
+            advanceUntilIdle()
+
+            assertTrue(successCallbackCalled)
+            assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
+            assertNull(viewModel.uiState.value.profile)
+
+            val persisted = profileRepo.getProfile(profile.id)
+            assertTrue(persisted is Result.Success)
+            assertEquals(fixedTimestamp, persisted.data?.deletedAt)
+            assertTrue(persisted.data?.isDeleted == true)
         } finally {
             Dispatchers.resetMain()
         }
