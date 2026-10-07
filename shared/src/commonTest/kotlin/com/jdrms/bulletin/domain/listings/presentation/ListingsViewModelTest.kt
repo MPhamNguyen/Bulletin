@@ -83,7 +83,7 @@ class ListingsViewModelTest {
         assertEquals(listing, state.editingListing)
         assertEquals(listing.title, state.editTitle)
         assertEquals(listing.description, state.editDescription)
-        assertEquals("40", state.editPrice)
+        assertEquals("4000", state.editPrice)
         assertEquals(listing.category, state.editCategory)
         assertEquals(listing.condition, state.editCondition)
         assertNull(state.errorMessage)
@@ -330,7 +330,7 @@ class ListingsViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("Updated Title", state.editTitle)
         assertEquals("Updated Description", state.editDescription)
-        assertEquals("55.50", state.editPrice)
+        assertEquals("5550", state.editPrice)
         assertEquals(ListingCategory.CLOTHING, state.editCategory)
         assertEquals(ListingCondition.NEW, state.editCondition)
     }
@@ -344,7 +344,7 @@ class ListingsViewModelTest {
         viewModel.startEditing(listing)
         advanceUntilIdle()
 
-        viewModel.onEditPriceChanged("-5")
+        viewModel.onEditPriceChanged("")
         viewModel.saveListingChanges()
         assertEquals("Please enter a valid price ($ >= 0)", viewModel.uiState.value.errorMessage)
 
@@ -352,9 +352,8 @@ class ListingsViewModelTest {
         viewModel.saveListingChanges()
         assertEquals("Please enter a valid price ($ >= 0)", viewModel.uiState.value.errorMessage)
 
-        viewModel.onEditPriceChanged("40.555")
-        viewModel.saveListingChanges()
-        assertEquals("Price cannot have more than 2 decimal places", viewModel.uiState.value.errorMessage)
+        viewModel.onEditPriceChanged("40555")
+        assertEquals("40555", viewModel.uiState.value.editPrice)
 
         viewModel.onEditPriceChanged("25.0")
         viewModel.onEditTitleChanged("No")
@@ -378,7 +377,7 @@ class ListingsViewModelTest {
 
         viewModel.onEditTitleChanged("New Desk Lamp")
         viewModel.onEditDescriptionChanged("Brand new LED desk lamp with USB charging")
-        viewModel.onEditPriceChanged("35")
+        viewModel.onEditPriceChanged("3500")
         viewModel.onEditCategorySelected(ListingCategory.ELECTRONICS)
 
         viewModel.saveListingChanges()
@@ -465,15 +464,17 @@ class ListingsViewModelTest {
     }
 
     @Test
-    fun testSubmitNewListingRejectsPriceWithMoreThanTwoDecimalPlaces() = runTest {
+    fun testSubmitNewListingTreatsEveryPriceDigitAsCents() = runTest {
         viewModel.onTitleChanged("Brand New Textbook")
         viewModel.onDescriptionChanged("Used for CS 101, excellent condition")
-        viewModel.onPriceChanged("45.555")
+        viewModel.onPriceChanged("45555")
 
         viewModel.submitNewListing()
 
-        assertEquals("Price cannot have more than 2 decimal places", viewModel.uiState.value.errorMessage)
-        assertFalse(viewModel.uiState.value.isSubmitting)
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.errorMessage)
+        assertEquals(455.55, repository.getAllListings().single().price.amount)
     }
 
     @Test

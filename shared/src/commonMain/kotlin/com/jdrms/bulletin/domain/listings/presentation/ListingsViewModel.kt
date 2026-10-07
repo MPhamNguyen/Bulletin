@@ -6,7 +6,6 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.generateUuid
-import com.jdrms.bulletin.core.common.hasAtMostTwoDecimalPlaces
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -74,7 +73,9 @@ class ListingsViewModel(
     }
 
     fun onPriceChanged(price: String) {
-        _uiState.update { it.copy(newPrice = price, errorMessage = null, successMessage = null) }
+        _uiState.update {
+            it.copy(newPrice = normalizeCurrencyDigits(price), errorMessage = null, successMessage = null)
+        }
     }
 
     fun onCategorySelected(category: ListingCategory) {
@@ -97,19 +98,10 @@ class ListingsViewModel(
 
     private fun buildListingDraft(): NewListingDraft? {
         val state = _uiState.value
-        val parsedPrice = state.newPrice.toDoubleOrNull()
-        val priceValidationError = when {
-            parsedPrice == null || !parsedPrice.isFinite() || parsedPrice < 0.0 ->
-                "Please enter a valid price ($ >= 0)"
-            !hasAtMostTwoDecimalPlaces(parsedPrice) ->
-                "Price cannot have more than 2 decimal places"
-            else -> null
-        }
-        if (priceValidationError != null) {
-            _uiState.update { it.copy(errorMessage = priceValidationError) }
+        if (state.newPrice.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Please enter a valid price ($ >= 0)") }
             return null
         }
-
         val title = state.newTitle.trim()
         if (title.length < 3) {
             _uiState.update { it.copy(errorMessage = "Title must be at least 3 characters") }
@@ -125,7 +117,7 @@ class ListingsViewModel(
         return NewListingDraft(
             title,
             description,
-            checkNotNull(parsedPrice),
+            currencyDigitsToAmount(state.newPrice),
             state.newCategory,
             state.newCondition
         )
@@ -237,17 +229,12 @@ class ListingsViewModel(
                         }
                         return@launch
                     }
-                    val formattedPrice = if (listing.price.amount % 1.0 == 0.0) {
-                        listing.price.amount.toInt().toString()
-                    } else {
-                        listing.price.amount.toString()
-                    }
                     _uiState.update {
                         it.copy(
                             editingListing = listing,
                             editTitle = listing.title,
                             editDescription = listing.description,
-                            editPrice = formattedPrice,
+                            editPrice = amountToCurrencyDigits(listing.price.amount),
                             editCategory = listing.category,
                             editCondition = listing.condition,
                             errorMessage = null,
@@ -288,7 +275,9 @@ class ListingsViewModel(
     }
 
     fun onEditPriceChanged(price: String) {
-        _uiState.update { it.copy(editPrice = price, errorMessage = null, successMessage = null) }
+        _uiState.update {
+            it.copy(editPrice = normalizeCurrencyDigits(price), errorMessage = null, successMessage = null)
+        }
     }
 
     fun onEditCategorySelected(category: ListingCategory) {
@@ -312,13 +301,9 @@ class ListingsViewModel(
     private fun validateEditDraft(): ValidatedEditDraft? {
         val currentListing = _uiState.value.editingListing ?: return null
         val state = _uiState.value
-        val parsedPrice = state.editPrice.toDoubleOrNull()
-
         val validationError = when {
-            parsedPrice == null || !parsedPrice.isFinite() || parsedPrice < 0.0 ->
+            state.editPrice.isEmpty() ->
                 "Please enter a valid price ($ >= 0)"
-            !hasAtMostTwoDecimalPlaces(parsedPrice) ->
-                "Price cannot have more than 2 decimal places"
             state.editTitle.trim().length < 3 ->
                 "Title must be at least 3 characters"
             state.editDescription.trim().isBlank() ->
@@ -334,7 +319,7 @@ class ListingsViewModel(
                 currentListing = currentListing,
                 title = state.editTitle.trim(),
                 description = state.editDescription.trim(),
-                price = checkNotNull(parsedPrice),
+                price = currencyDigitsToAmount(state.editPrice),
                 category = state.editCategory,
                 condition = state.editCondition
             )
