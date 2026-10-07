@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,30 +51,35 @@ import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
+import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import kotlinx.coroutines.delay
 
 private const val CODE_LENGTH = 6
-private const val RESEND_FEEDBACK_MS = 3_000L
+private const val RESEND_COOLDOWN_SECONDS = 30
 
 @Composable
 internal fun EmailVerificationContent(
-    uiState: ProfileUiState,
+    uiState: RegistrationUiState,
+    pending: PendingRegistration,
     onVerify: (String) -> Unit,
     onResend: () -> Unit,
     onChangeEmail: () -> Unit
 ) {
     var code by remember(pending) { mutableStateOf("") }
-    var resendTick by remember { mutableStateOf(0) }
-    val resendSent = resendTick > 0
+    var secondsLeft by remember(pending) { mutableStateOf(RESEND_COOLDOWN_SECONDS) }
+    var cooldownRun by remember { mutableStateOf(0) }
     val colors = MaterialTheme.colorScheme
     val canVerify = code.length == CODE_LENGTH && !uiState.isLoading
 
-    LaunchedEffect(resendTick) {
-        if (resendTick > 0) {
-            delay(RESEND_FEEDBACK_MS)
-            resendTick = 0
+    LaunchedEffect(pending, cooldownRun) {
+        secondsLeft = RESEND_COOLDOWN_SECONDS
+        while (secondsLeft > 0) {
+            delay(1_000L)
+            secondsLeft--
         }
     }
+    val resendLocked = secondsLeft > 0
 
     Column(
         modifier = Modifier
@@ -189,6 +195,7 @@ internal fun EmailVerificationContent(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(top = 16.dp)
                     .height(60.dp)
             )
 
@@ -231,14 +238,18 @@ internal fun EmailVerificationContent(
                 TextButton(
                     onClick = {
                         onResend()
-                        resendTick++
+                        cooldownRun++
                     },
-                    enabled = !uiState.isLoading && !resendSent,
+                    enabled = !uiState.isLoading && !resendLocked,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = colors.primary,
+                        disabledContentColor = colors.onSurfaceVariant
+                    ),
                     modifier = Modifier.height(44.dp)
                 ) {
                     Text(
-                        text = if (resendSent) {
-                            "Verification email sent"
+                        text = if (resendLocked) {
+                            "Didn’t get a code? Resend in ${secondsLeft}s"
                         } else {
                             "Didn’t get a code? Resend verification email"
                         },
@@ -259,13 +270,14 @@ internal fun EmailVerificationContent(
 
 @Composable
 internal fun EmailVerificationRecoveryContent(
-    uiState: ProfileUiState,
+    uiState: RegistrationUiState,
+    email: StudentEmail,
     onRetry: () -> Unit,
     onSignIn: () -> Unit
 ) {
     BulletinCard {
         Column {
-            SectionHeader("Email verified", uiState.verifiedEmailAwaitingProfile?.value)
+            SectionHeader("Email verified", email.value)
             Text(
                 "Your code was accepted, but Bulletin could not finish loading your profile.",
                 style = MaterialTheme.typography.bodyMedium
