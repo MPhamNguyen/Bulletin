@@ -76,7 +76,7 @@ fun PasswordConfirmationCodeScreen(
         description = "Enter the confirmation code sent to $email.",
         errorMessage = errorMessage,
         content = {
-            RecoveryField(label = "Confirmation code", value = code, placeholder = "123456") {
+            RecoveryField(label = "Confirmation code", value = code, placeholder = "6-digit code") {
                 code = it
             }
             Spacer(Modifier.height(20.dp))

@@ -15,7 +15,6 @@ import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
-import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -35,6 +34,10 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PasswordResetTest {
+    private companion object {
+        const val TEST_CONFIRMATION_CODE = "123456"
+    }
+
     private val email = StudentEmail("reset@student.csulb.edu")
     private val policy = ProfileValidationPolicy()
 
@@ -43,7 +46,7 @@ class PasswordResetTest {
         val profileRepository = InMemoryProfileRepository()
         val authRepository = InMemoryAuthRepository(
             profileRepository = profileRepository,
-            testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+            testVerificationCode = TEST_CONFIRMATION_CODE
         )
         authRepository.register(email, "oldPassword", "Reset Student")
         authRepository.verifyEmail(email, testEmailVerificationCode())
@@ -52,7 +55,7 @@ class PasswordResetTest {
         assertTrue(authRepository.requestPasswordReset(email).isSuccess())
         assertTrue(authRepository.verifyPasswordResetCode(email, "wrong").isError())
         assertTrue(
-            authRepository.verifyPasswordResetCode(email, PasswordResetPolicy.TEST_CONFIRMATION_CODE).isSuccess()
+            authRepository.verifyPasswordResetCode(email, TEST_CONFIRMATION_CODE).isSuccess()
         )
         assertTrue(authRepository.updatePassword("newPassword").isSuccess())
 
@@ -70,7 +73,7 @@ class PasswordResetTest {
             val authRepository = RecordingSignOutAuthRepository(
                 InMemoryAuthRepository(
                     profileRepository = profileRepository,
-                    testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+                    testVerificationCode = TEST_CONFIRMATION_CODE
                 )
             )
             authRepository.register(email, "oldPassword", "Reset Student")
@@ -97,7 +100,7 @@ class PasswordResetTest {
             advanceUntilIdle()
             assertEquals(PasswordRecoveryStage.ENTER_CODE, viewModel.uiState.value.passwordRecoveryStage)
 
-            viewModel.verifyPasswordResetCode(PasswordResetPolicy.TEST_CONFIRMATION_CODE)
+            viewModel.verifyPasswordResetCode(TEST_CONFIRMATION_CODE)
             advanceUntilIdle()
             assertEquals(PasswordRecoveryStage.CHANGE_PASSWORD, viewModel.uiState.value.passwordRecoveryStage)
 
@@ -118,7 +121,7 @@ class PasswordResetTest {
         val profileRepository = InMemoryProfileRepository()
         val authRepository = InMemoryAuthRepository(
             profileRepository = profileRepository,
-            testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+            testVerificationCode = TEST_CONFIRMATION_CODE
         )
         val request = RequestPasswordReset(authRepository, policy)
         val update = UpdatePassword(authRepository, policy)
@@ -146,7 +149,7 @@ class PasswordResetTest {
             val profileRepository = InMemoryProfileRepository()
             val authRepository = InMemoryAuthRepository(
                 profileRepository = profileRepository,
-                testVerificationCode = PasswordResetPolicy.TEST_CONFIRMATION_CODE
+                testVerificationCode = TEST_CONFIRMATION_CODE
             )
             authRepository.register(email, "oldPassword", "Reset Student")
             authRepository.verifyEmail(email, testEmailVerificationCode())
@@ -174,7 +177,7 @@ class PasswordResetTest {
             assertEquals(PasswordRecoveryStage.ENTER_CODE, viewModel.uiState.value.passwordRecoveryStage)
             assertTrue(viewModel.uiState.value.errorMessage != null)
 
-            viewModel.verifyPasswordResetCode(PasswordResetPolicy.TEST_CONFIRMATION_CODE)
+            viewModel.verifyPasswordResetCode(TEST_CONFIRMATION_CODE)
             advanceUntilIdle()
             viewModel.updatePassword("newPassword", "differentPassword")
             advanceUntilIdle()
@@ -219,7 +222,7 @@ class PasswordResetTest {
     }
 
     private fun testEmailVerificationCode(): EmailVerificationCode {
-        return when (val result = EmailVerificationCode.parse(PasswordResetPolicy.TEST_CONFIRMATION_CODE)) {
+        return when (val result = EmailVerificationCode.parse(TEST_CONFIRMATION_CODE)) {
             is Result.Success -> result.data
             is Result.Error -> error("Test verification code should be valid.")
         }
