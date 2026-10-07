@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
@@ -20,5 +21,9 @@ data class MarketplaceUiState(
     val selectedListing: Listing? = null,
     val isDetailLoading: Boolean = false,
     val detailErrorMessage: String? = null,
-    val isDetailSheetOpen: Boolean = false
+    val isDetailSheetOpen: Boolean = false,
+    val isSellerProfileOpen: Boolean = false,
+    val isSellerProfileLoading: Boolean = false,
+    val sellerProfileErrorMessage: String? = null,
+    val selectedSellerProfile: MarketplaceSellerProfile? = null
 )

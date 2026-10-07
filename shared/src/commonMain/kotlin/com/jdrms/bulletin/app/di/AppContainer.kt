@@ -5,6 +5,7 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -165,7 +166,12 @@ class AppContainer(
     // Use Cases - Marketplace
     val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
-    val viewMarketplaceListing by lazy { ViewMarketplaceListing(marketplaceRepository) }
+    val viewMarketplaceListing by lazy {
+        ViewMarketplaceListing(
+            repository = marketplaceRepository,
+            sellerProfileProvider = ProfileMarketplaceSellerNameProvider(profileRepository)
+        )
+    }
 
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
