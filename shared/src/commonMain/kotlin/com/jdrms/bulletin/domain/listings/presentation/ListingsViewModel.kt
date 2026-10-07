@@ -74,7 +74,11 @@ class ListingsViewModel(
 
     fun onPriceChanged(price: String) {
         _uiState.update {
-            it.copy(newPrice = normalizeCurrencyDigits(price), errorMessage = null, successMessage = null)
+            it.copy(
+                newPriceCents = normalizeCurrencyReplacement(price),
+                errorMessage = null,
+                successMessage = null
+            )
         }
     }
 
@@ -98,8 +102,8 @@ class ListingsViewModel(
 
     private fun buildListingDraft(): NewListingDraft? {
         val state = _uiState.value
-        if (state.newPrice.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "Please enter a valid price ($ >= 0)") }
+        if (state.newPriceCents.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Please enter a price") }
             return null
         }
         val title = state.newTitle.trim()
@@ -117,7 +121,7 @@ class ListingsViewModel(
         return NewListingDraft(
             title,
             description,
-            currencyDigitsToAmount(state.newPrice),
+            currencyDigitsToAmount(state.newPriceCents),
             state.newCategory,
             state.newCondition
         )
@@ -145,7 +149,7 @@ class ListingsViewModel(
                             it.copy(
                                 newTitle = "",
                                 newDescription = "",
-                                newPrice = "",
+                                newPriceCents = "",
                                 isSubmitting = false
                             )
                         }
@@ -234,7 +238,7 @@ class ListingsViewModel(
                             editingListing = listing,
                             editTitle = listing.title,
                             editDescription = listing.description,
-                            editPrice = amountToCurrencyDigits(listing.price.amount),
+                            editPriceCents = amountToCurrencyDigits(listing.price.amount),
                             editCategory = listing.category,
                             editCondition = listing.condition,
                             errorMessage = null,
@@ -258,7 +262,7 @@ class ListingsViewModel(
                 editingListing = null,
                 editTitle = "",
                 editDescription = "",
-                editPrice = "",
+                editPriceCents = "",
                 isUpdating = false,
                 errorMessage = null,
                 successMessage = null
@@ -276,7 +280,11 @@ class ListingsViewModel(
 
     fun onEditPriceChanged(price: String) {
         _uiState.update {
-            it.copy(editPrice = normalizeCurrencyDigits(price), errorMessage = null, successMessage = null)
+            it.copy(
+                editPriceCents = normalizeCurrencyReplacement(price),
+                errorMessage = null,
+                successMessage = null
+            )
         }
     }
 
@@ -302,8 +310,8 @@ class ListingsViewModel(
         val currentListing = _uiState.value.editingListing ?: return null
         val state = _uiState.value
         val validationError = when {
-            state.editPrice.isEmpty() ->
-                "Please enter a valid price ($ >= 0)"
+            state.editPriceCents.isEmpty() ->
+                "Please enter a price"
             state.editTitle.trim().length < 3 ->
                 "Title must be at least 3 characters"
             state.editDescription.trim().isBlank() ->
@@ -319,7 +327,7 @@ class ListingsViewModel(
                 currentListing = currentListing,
                 title = state.editTitle.trim(),
                 description = state.editDescription.trim(),
-                price = currencyDigitsToAmount(state.editPrice),
+                price = currencyDigitsToAmount(state.editPriceCents),
                 category = state.editCategory,
                 condition = state.editCondition
             )

@@ -83,7 +83,7 @@ class ListingsViewModelTest {
         assertEquals(listing, state.editingListing)
         assertEquals(listing.title, state.editTitle)
         assertEquals(listing.description, state.editDescription)
-        assertEquals("4000", state.editPrice)
+        assertEquals("4000", state.editPriceCents)
         assertEquals(listing.category, state.editCategory)
         assertEquals(listing.condition, state.editCondition)
         assertNull(state.errorMessage)
@@ -316,7 +316,7 @@ class ListingsViewModelTest {
         assertNull(state.editingListing)
         assertEquals("", state.editTitle)
         assertEquals("", state.editDescription)
-        assertEquals("", state.editPrice)
+        assertEquals("", state.editPriceCents)
     }
 
     @Test
@@ -330,7 +330,7 @@ class ListingsViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("Updated Title", state.editTitle)
         assertEquals("Updated Description", state.editDescription)
-        assertEquals("5550", state.editPrice)
+        assertEquals("5550", state.editPriceCents)
         assertEquals(ListingCategory.CLOTHING, state.editCategory)
         assertEquals(ListingCondition.NEW, state.editCondition)
     }
@@ -346,16 +346,16 @@ class ListingsViewModelTest {
 
         viewModel.onEditPriceChanged("")
         viewModel.saveListingChanges()
-        assertEquals("Please enter a valid price ($ >= 0)", viewModel.uiState.value.errorMessage)
+        assertEquals("Please enter a price", viewModel.uiState.value.errorMessage)
 
         viewModel.onEditPriceChanged("abc")
         viewModel.saveListingChanges()
-        assertEquals("Please enter a valid price ($ >= 0)", viewModel.uiState.value.errorMessage)
+        assertEquals("Please enter a price", viewModel.uiState.value.errorMessage)
 
         viewModel.onEditPriceChanged("40555")
-        assertEquals("40555", viewModel.uiState.value.editPrice)
+        assertEquals("40555", viewModel.uiState.value.editPriceCents)
 
-        viewModel.onEditPriceChanged("25.0")
+        viewModel.onEditPriceChanged("2500")
         viewModel.onEditTitleChanged("No")
         viewModel.saveListingChanges()
         assertEquals("Title must be at least 3 characters", viewModel.uiState.value.errorMessage)

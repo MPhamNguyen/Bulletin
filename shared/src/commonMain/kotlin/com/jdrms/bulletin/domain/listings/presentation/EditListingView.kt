@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
@@ -88,12 +86,9 @@ fun EditListingView(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = formatCurrencyDigits(uiState.editPrice),
-                    onValueChange = actions.onPriceChange,
-                    label = { Text("Price (USD)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                CurrencyTextField(
+                    digits = uiState.editPriceCents,
+                    onDigitsChange = actions.onPriceChange,
                     colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
