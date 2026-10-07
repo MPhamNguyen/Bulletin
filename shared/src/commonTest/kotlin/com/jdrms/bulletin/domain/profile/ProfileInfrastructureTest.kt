@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
+import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhoto
 import com.jdrms.bulletin.domain.profile.domain.model.Rating
 import com.jdrms.bulletin.domain.profile.domain.model.ReviewId
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
@@ -14,7 +15,9 @@ import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.ProfilePhotoStorage
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -26,6 +29,46 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ProfileInfrastructureTest {
+
+    @Test
+    fun supabasePhotoRepositoryUsesOwnedStablePathAndPublicCacheBustedUrl() = runTest {
+        val storage = FakeProfilePhotoStorage()
+        val photo = (ProfilePhoto.create(pngBytes(), "image/png") as Result.Success).data
+
+        val result = SupabaseProfilePhotoRepository(storage) { "version-1" }
+            .upload(UserId("student-123"), photo)
+
+        assertTrue(result is Result.Success)
+        assertEquals("student-123/avatar", storage.path)
+        assertEquals("image/png", storage.mediaType)
+        assertEquals("https://cdn.example/pfp/student-123/avatar?v=version-1", result.data.value)
+    }
+
+    @Test
+    fun supabasePhotoRepositoryMapsStorageFailures() = runTest {
+        val storage = FakeProfilePhotoStorage(IllegalStateException("row-level security denied"))
+        val photo = (ProfilePhoto.create(jpegBytes(), "image/jpeg") as Result.Success).data
+
+        val result = SupabaseProfilePhotoRepository(storage).upload(UserId("student-123"), photo)
+
+        assertTrue(result is Result.Error)
+        assertEquals(
+            "You do not have permission to upload this profile photo.",
+            result.exception.message
+        )
+    }
+
+    @Test
+    fun supabasePhotoRepositoryDoesNotUploadToAnotherUsersPath() = runTest {
+        val storage = FakeProfilePhotoStorage(authenticatedUserId = "student-456")
+        val photo = (ProfilePhoto.create(jpegBytes(), "image/jpeg") as Result.Success).data
+
+        val result = SupabaseProfilePhotoRepository(storage).upload(UserId("student-123"), photo)
+
+        assertTrue(result is Result.Error)
+        assertEquals("You do not have permission to upload this profile photo.", result.exception.message)
+        assertNull(storage.path)
+    }
 
     @Test
     fun testMapperScoreClamping() {
@@ -376,4 +419,36 @@ class ProfileInfrastructureTest {
         assertFalse(SupabaseProfileRepository.isValidUuid(""))
         assertFalse(SupabaseProfileRepository.isValidUuid("not-a-uuid-at-all"))
     }
+
+    private class FakeProfilePhotoStorage(
+        private val failure: Throwable? = null,
+        private val authenticatedUserId: String? = "student-123"
+    ) : ProfilePhotoStorage {
+        var path: String? = null
+        var mediaType: String? = null
+
+        override fun authenticatedUserId(): String? = authenticatedUserId
+
+        override suspend fun upload(path: String, bytes: ByteArray, mediaType: String) {
+            failure?.let { throw it }
+            this.path = path
+            this.mediaType = mediaType
+        }
+
+        override fun publicUrl(path: String): String = "https://cdn.example/pfp/$path"
+    }
+
+    private fun jpegBytes(): ByteArray = byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0x01)
+
+    private fun pngBytes(): ByteArray = byteArrayOf(
+        0x89.toByte(),
+        0x50,
+        0x4e,
+        0x47,
+        0x0d,
+        0x0a,
+        0x1a,
+        0x0a,
+        0x01
+    )
 }
