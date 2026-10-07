@@ -176,6 +176,35 @@ class MarketplaceViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun unavailableSellerProfileExposesErrorWithoutFabricatingProfileData() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository()
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository),
+                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                viewMarketplaceListing = ViewMarketplaceListing(
+                    repository,
+                    sellerProfileProvider = { null }
+                )
+            )
+            advanceUntilIdle()
+
+            viewModel.onListingClicked("mkt_1")
+            advanceUntilIdle()
+            viewModel.onSellerClicked("seller_101")
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isSellerProfileLoading)
+            assertEquals("Seller profile is currently unavailable.", viewModel.uiState.value.sellerProfileErrorMessage)
+            assertEquals(null, viewModel.uiState.value.selectedSellerProfile)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun loadNextPageAppendsListingsAndStopsAtTheEnd() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {

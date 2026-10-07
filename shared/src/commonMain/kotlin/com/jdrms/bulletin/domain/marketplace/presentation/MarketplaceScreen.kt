@@ -28,6 +28,7 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
         SellerProfileScreen(
             profile = state.selectedSellerProfile,
             isLoading = state.isSellerProfileLoading,
+            errorMessage = state.sellerProfileErrorMessage,
             onBack = { viewModel.dismissSellerProfile() }
         )
     } else {

@@ -42,6 +42,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfil
 fun SellerProfileScreen(
     profile: MarketplaceSellerProfile?,
     isLoading: Boolean,
+    errorMessage: String?,
     onBack: () -> Unit
 ) {
     Column(
@@ -60,6 +61,22 @@ fun SellerProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (errorMessage != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                BulletinCard {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         } else if (profile != null) {
             Column(

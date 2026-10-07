@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
@@ -238,32 +237,38 @@ class MarketplaceViewModel(
     }
 
     fun onSellerClicked(sellerId: String) {
-        val currentListing = _uiState.value.selectedListing
         _uiState.update {
             it.copy(
                 isDetailSheetOpen = false,
                 isSellerProfileOpen = true,
                 isSellerProfileLoading = true,
+                sellerProfileErrorMessage = null,
                 selectedSellerProfile = null
             )
         }
         viewModelScope.launch {
-            val profile = runCatching { viewMarketplaceListing.getSellerProfile(sellerId) }.getOrNull()
-            val fallbackProfile = MarketplaceSellerProfile(
-                sellerId = sellerId,
-                name = currentListing?.sellerName?.takeIf(String::isNotBlank) ?: "Student Seller",
-                school = currentListing?.sellerSchool?.takeIf(String::isNotBlank) ?: "CSU Long Beach",
-                major = "Student",
-                bio = "Student at ${currentListing?.sellerSchool ?: "CSU Long Beach"}. Buying and selling on campus.",
-                avatarUrl = currentListing?.sellerAvatarUrl,
-                reputationScore = currentListing?.sellerReputationScore,
-                isVerified = true
-            )
-            _uiState.update {
-                it.copy(
-                    isSellerProfileLoading = false,
-                    selectedSellerProfile = profile ?: fallbackProfile
-                )
+            try {
+                val profile = viewMarketplaceListing.getSellerProfile(sellerId)
+                _uiState.update {
+                    it.copy(
+                        isSellerProfileLoading = false,
+                        sellerProfileErrorMessage = if (profile == null) {
+                            "Seller profile is currently unavailable."
+                        } else {
+                            null
+                        },
+                        selectedSellerProfile = profile
+                    )
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSellerProfileLoading = false,
+                        sellerProfileErrorMessage = "Unable to load the seller profile. Please try again."
+                    )
+                }
             }
         }
     }
@@ -273,6 +278,7 @@ class MarketplaceViewModel(
             it.copy(
                 isSellerProfileOpen = false,
                 selectedSellerProfile = null,
+                sellerProfileErrorMessage = null,
                 isDetailSheetOpen = it.selectedListing != null
             )
         }
