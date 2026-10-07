@@ -33,6 +33,7 @@ class ProfileViewModelTest {
     private val policy = ProfileValidationPolicy()
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Suppress("LongMethod")
     @Test
     fun testProfileViewModelCreateAccountAndValidation() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
@@ -113,6 +114,7 @@ class ProfileViewModelTest {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Suppress("LongMethod")
     @Test
     fun testProfileViewModelUpdatesAndResetsProfileDraft() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)

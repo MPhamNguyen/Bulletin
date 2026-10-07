@@ -73,7 +73,6 @@ internal fun SettingsView(
 
     if (isDeleteDialogOpen) {
         DeleteProfileConfirmationDialog(
-            activeListingsCount = uiState.activeListingsCount,
             onDismiss = {
                 localShowDeleteConfirmationDialog = false
             },

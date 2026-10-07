@@ -55,9 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 
-internal fun formatListingsConsequence(activeListingsCount: Int): String {
-    return "Your profile is marked for soft-delete"
-}
+private const val PROFILE_SOFT_DELETE_CONSEQUENCE = "Your profile is marked for soft-delete"
 
 internal fun formatHoldHint(holdDurationMillis: Int): String {
     val seconds = (holdDurationMillis / 1000.0).let {
@@ -76,8 +74,7 @@ private fun isWithinBounds(position: Offset, size: IntSize): Boolean {
 internal fun DeleteProfileConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    modifier: Modifier = Modifier,
-    activeListingsCount: Int = 0
+    modifier: Modifier = Modifier
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -141,7 +138,7 @@ internal fun DeleteProfileConfirmationDialog(
                     ) {
                         ConsequenceRow(
                             icon = Icons.Outlined.LocalOffer,
-                            text = formatListingsConsequence(activeListingsCount)
+                            text = PROFILE_SOFT_DELETE_CONSEQUENCE
                         )
                         HorizontalDivider(
                             thickness = 0.5.dp,

@@ -75,12 +75,6 @@ class ProfilePresentationTest {
     }
 
     @Test
-    fun formatListingsConsequenceDescribesSoftDeleteWithoutClaimingSideEffects() {
-        assertEquals("Your profile is marked for soft-delete", formatListingsConsequence(3))
-        assertEquals("Your profile is marked for soft-delete", formatListingsConsequence(0))
-    }
-
-    @Test
     fun formatHoldHintFormatsSecondsCorrectly() {
         assertEquals("Press and hold for 1.5 seconds", formatHoldHint(1500))
         assertEquals("Press and hold for 2 seconds", formatHoldHint(2000))
