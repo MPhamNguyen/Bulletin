@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,14 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
@@ -64,71 +63,83 @@ fun SignUpScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
-        SignUpTopBar(
-            title = if (uiState.isAccountCreated) "Account Created" else "Sign Up",
-            showBackButton = !uiState.isAccountCreated,
-            onBackClick = {
-                viewModel.clearMessages()
-                onBack()
-            }
-        )
+        val horizontalPadding = when {
+            maxWidth >= 600.dp -> 40.dp
+            maxWidth >= 480.dp -> 32.dp
+            else -> 20.dp
+        }
+        val verticalPadding = if (maxHeight < 700.dp) 12.dp else 24.dp
 
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .widthIn(max = 480.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SignUpLogoHeader()
+            SignUpTopBar(
+                title = if (uiState.isAccountCreated) "Account Created" else "Sign up",
+                showBackButton = !uiState.isAccountCreated,
+                horizontalPadding = horizontalPadding,
+                onBackClick = {
+                    viewModel.clearMessages()
+                    onBack()
+                }
+            )
 
-            val createdProfile = uiState.profile
-            val pendingRegistration = uiState.pendingRegistration
-            val verifiedEmailAwaitingProfile = uiState.verifiedEmailAwaitingProfile
-            if (uiState.isAccountCreated && createdProfile != null) {
-                SignUpSuccessContent(
-                    profile = createdProfile,
-                    successMessage = uiState.successMessage,
-                    onContinueToApp = onContinueToApp,
-                    onNavigateToSignIn = onNavigateToSignIn
-                )
-            } else if (verifiedEmailAwaitingProfile != null) {
-                EmailVerificationRecoveryContent(
-                    uiState = uiState,
-                    onRetry = viewModel::retryVerifiedProfile,
-                    onSignIn = {
-                        viewModel.resetRegistration()
-                        onNavigateToSignIn()
-                    }
-                )
-            } else if (pendingRegistration != null) {
-                EmailVerificationContent(
-                    uiState = uiState,
-                    onVerify = { viewModel.verifyEmail(pendingRegistration.email.value, it) },
-                    onResend = { viewModel.resendEmailCode(pendingRegistration.email.value) },
-                    onChangeEmail = { viewModel.resetRegistration() }
-                )
-            } else {
-                SignUpFormContent(
-                    uiState = uiState,
-                    onClearMessages = { viewModel.clearMessages() },
-                    onResumeVerification = { viewModel.resendEmailCode(it) },
-                    onCreateAccount = { first, last, mail, pass ->
-                        viewModel.createAccount(first, last, mail, pass)
-                    },
-                    onNavigateToSignIn = {
-                        viewModel.clearMessages()
-                        onNavigateToSignIn()
-                    }
-                )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                SignUpLogoHeader(verticalPadding)
+
+                val createdProfile = uiState.profile
+                val pendingRegistration = uiState.pendingRegistration
+                val verifiedEmailAwaitingProfile = uiState.verifiedEmailAwaitingProfile
+                if (uiState.isAccountCreated && createdProfile != null) {
+                    SignUpSuccessContent(
+                        profile = createdProfile,
+                        successMessage = uiState.successMessage,
+                        onContinueToApp = onContinueToApp,
+                        onNavigateToSignIn = onNavigateToSignIn
+                    )
+                } else if (verifiedEmailAwaitingProfile != null) {
+                    EmailVerificationRecoveryContent(
+                        uiState = uiState,
+                        onRetry = viewModel::retryVerifiedProfile,
+                        onSignIn = {
+                            viewModel.resetRegistration()
+                            onNavigateToSignIn()
+                        }
+                    )
+                } else if (pendingRegistration != null) {
+                    EmailVerificationContent(
+                        uiState = uiState,
+                        onVerify = { viewModel.verifyEmail(pendingRegistration.email.value, it) },
+                        onResend = { viewModel.resendEmailCode(pendingRegistration.email.value) },
+                        onChangeEmail = { viewModel.resetRegistration() }
+                    )
+                } else {
+                    SignUpFormContent(
+                        uiState = uiState,
+                        onClearMessages = { viewModel.clearMessages() },
+                        onCreateAccount = { first, last, mail, pass ->
+                            viewModel.createAccount(first, last, mail, pass)
+                        },
+                        onNavigateToSignIn = {
+                            viewModel.clearMessages()
+                            onNavigateToSignIn()
+                        }
+                    )
+                }
             }
         }
     }
@@ -138,12 +149,15 @@ fun SignUpScreen(
 private fun SignUpTopBar(
     title: String,
     showBackButton: Boolean = true,
+    horizontalPadding: Dp,
     onBackClick: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
+            .widthIn(max = 560.dp)
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+            .height(48.dp)
+            .padding(horizontal = horizontalPadding),
         contentAlignment = Alignment.Center
     ) {
         if (showBackButton) {
@@ -160,20 +174,21 @@ private fun SignUpTopBar(
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
-private fun SignUpLogoHeader() {
-    Spacer(modifier = Modifier.height(16.dp))
+private fun SignUpLogoHeader(verticalPadding: Dp) {
+    Spacer(modifier = Modifier.height(verticalPadding))
 
     Box(
         modifier = Modifier
-            .size(96.dp)
+            .size(64.dp)
             .background(
                 color = MaterialTheme.colorScheme.primary,
                 shape = CircleShape
@@ -184,11 +199,11 @@ private fun SignUpLogoHeader() {
             painter = painterResource(Res.drawable.ic_graduation_cap),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(54.dp)
+            modifier = Modifier.size(32.dp)
         )
     }
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(verticalPadding * 0.75f))
 }
 
 @Composable
@@ -281,7 +296,6 @@ private fun SignUpSuccessContent(
 private fun SignUpFormContent(
     uiState: ProfileUiState,
     onClearMessages: () -> Unit,
-    onResumeVerification: (String) -> Unit,
     onCreateAccount: (String, String, String, String) -> Unit,
     onNavigateToSignIn: () -> Unit
 ) {
@@ -294,19 +308,20 @@ private fun SignUpFormContent(
         text = "Get started on Bulletin",
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
 
-    Spacer(modifier = Modifier.height(10.dp))
+    Spacer(modifier = Modifier.height(8.dp))
 
     Text(
         text = "Sign up to access your campus marketplace and connect with peers safely.",
-        style = MaterialTheme.typography.bodyLarge,
+        style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center
     )
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(28.dp))
 
     uiState.errorMessage?.let { error ->
         Box(
@@ -352,10 +367,6 @@ private fun SignUpFormContent(
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    TextButton(onClick = { onResumeVerification(email) }, enabled = !uiState.isLoading) {
-        Text("Already registered? Resend verification code")
-    }
-
     PasswordInputField(
         password = password,
         onPasswordChange = {
@@ -364,11 +375,7 @@ private fun SignUpFormContent(
         }
     )
 
-    Spacer(modifier = Modifier.height(16.dp))
-
-    LegalDisclosureText()
-
-    Spacer(modifier = Modifier.height(20.dp))
+    Spacer(modifier = Modifier.height(8.dp))
 
     Button(
         onClick = { onCreateAccount(firstName, lastName, email, password) },
@@ -387,30 +394,32 @@ private fun SignUpFormContent(
             )
         } else {
             Text(
-                text = "Create Account",
+                text = "Create account",
                 style = MaterialTheme.typography.titleMedium
             )
         }
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
-
-    OutlinedButton(
-        onClick = onNavigateToSignIn,
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        border = BulletinButtonDefaults.outlinedButtonBorder(),
-        colors = BulletinButtonDefaults.outlinedButtonColors()
+            .padding(top = 24.dp, bottom = 24.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Log In",
-            style = MaterialTheme.typography.titleMedium
+            text = "Already have an account?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        TextButton(onClick = onNavigateToSignIn) {
+            Text(
+                text = "Log in",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
-
-    Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Composable
@@ -427,30 +436,34 @@ private fun NameInputRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            RequiredFieldLabel(text = "First Name")
+            RequiredFieldLabel(text = "First name")
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = firstName,
                 onValueChange = onFirstNameChange,
-                placeholder = { Text(text = "First Name") },
+                placeholder = { Text(text = "First name") },
                 singleLine = true,
-                shape = MaterialTheme.shapes.medium,
+                shape = RoundedCornerShape(14.dp),
                 colors = inputFieldColors,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
             )
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            RequiredFieldLabel(text = "Last Name")
+            RequiredFieldLabel(text = "Last name")
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = lastName,
                 onValueChange = onLastNameChange,
-                placeholder = { Text(text = "Last Name") },
+                placeholder = { Text(text = "Last name") },
                 singleLine = true,
-                shape = MaterialTheme.shapes.medium,
+                shape = RoundedCornerShape(14.dp),
                 colors = inputFieldColors,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
             )
         }
     }
@@ -464,16 +477,18 @@ private fun EmailInputField(
     val inputFieldColors = BulletinTextFieldDefaults.colors()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        RequiredFieldLabel(text = "Email")
+        RequiredFieldLabel(text = "School email")
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = email,
             onValueChange = onEmailChange,
-            placeholder = { Text(text = "Email") },
+            placeholder = { Text(text = "you@student.school.edu") },
             singleLine = true,
-            shape = MaterialTheme.shapes.medium,
+            shape = RoundedCornerShape(14.dp),
             colors = inputFieldColors,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
         )
     }
 }
@@ -492,7 +507,7 @@ private fun PasswordInputField(
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
-            placeholder = { Text(text = "Password") },
+            placeholder = { Text(text = "Create a password") },
             singleLine = true,
             visualTransformation = if (isPasswordVisible) {
                 VisualTransformation.None
@@ -513,55 +528,13 @@ private fun PasswordInputField(
                     )
                 }
             },
-            shape = MaterialTheme.shapes.medium,
+            shape = RoundedCornerShape(14.dp),
             colors = inputFieldColors,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
         )
     }
-}
-
-@Composable
-private fun LegalDisclosureText() {
-    val legalAnnotatedText = buildAnnotatedString {
-        append("By tapping Create Account, you agree to create an account and to Bulletin's ")
-        withStyle(
-            SpanStyle(
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                textDecoration = TextDecoration.Underline
-            )
-        ) {
-            append("Terms")
-        }
-        append(", ")
-        withStyle(
-            SpanStyle(
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                textDecoration = TextDecoration.Underline
-            )
-        ) {
-            append("Privacy Policy")
-        }
-        append(" and ")
-        withStyle(
-            SpanStyle(
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                textDecoration = TextDecoration.Underline
-            )
-        ) {
-            append("Cookies Policy")
-        }
-        append(".")
-    }
-
-    Text(
-        text = legalAnnotatedText,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center
-    )
 }
 
 @Composable
