@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.profile
 
-
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
