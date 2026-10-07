@@ -51,6 +51,13 @@ class ListingsDomainTest {
     }
 
     @Test
+    fun testPriceAboveMarketplaceLimitThrowsException() {
+        assertFailsWith<IllegalArgumentException> {
+            ListingPrice(10_000_000.0)
+        }
+    }
+
+    @Test
     fun testShortTitleThrowsException() {
         assertFailsWith<IllegalArgumentException> {
             Listing(
