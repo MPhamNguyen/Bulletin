@@ -194,14 +194,16 @@ fun MarketplaceDetailBottomSheet(
 
                     // Seller Information & Reputation Score Card
                     SellerInfoCard(
-                        sellerName = listing.sellerName,
-                        sellerSchool = listing.sellerSchool,
-                        sellerAvatarUrl = listing.sellerAvatarUrl,
-                        reputationScore = listing.sellerReputationScore,
-                        sellerMajor = listing.sellerMajor,
-                        sellerGraduationDate = listing.sellerGraduationDate,
-                        sellerReviewCount = listing.sellerReviewCount,
-                        sellerIsVerified = listing.sellerIsVerified,
+                        seller = SellerInfoCardState(
+                            name = listing.sellerName,
+                            school = listing.sellerSchool,
+                            avatarUrl = listing.sellerAvatarUrl,
+                            reputationScore = listing.sellerReputationScore,
+                            major = listing.sellerMajor,
+                            graduationDate = listing.sellerGraduationDate,
+                            reviewCount = listing.sellerReviewCount,
+                            isVerified = listing.sellerIsVerified
+                        ),
                         onClick = { onSellerClick(listing.sellerId) }
                     )
 
@@ -325,16 +327,20 @@ private fun ListingPhotosSection(photos: List<String>) {
     }
 }
 
+private data class SellerInfoCardState(
+    val name: String,
+    val school: String,
+    val avatarUrl: String?,
+    val reputationScore: Double?,
+    val major: String,
+    val graduationDate: String,
+    val reviewCount: Int,
+    val isVerified: Boolean
+)
+
 @Composable
 private fun SellerInfoCard(
-    sellerName: String,
-    sellerSchool: String,
-    sellerAvatarUrl: String?,
-    reputationScore: Double?,
-    sellerMajor: String,
-    sellerGraduationDate: String,
-    sellerReviewCount: Int,
-    sellerIsVerified: Boolean,
+    seller: SellerInfoCardState,
     onClick: () -> Unit = {}
 ) {
     Surface(
@@ -356,10 +362,10 @@ private fun SellerInfoCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (sellerAvatarUrl != null) {
+                if (seller.avatarUrl != null) {
                     AsyncImage(
-                        model = sellerAvatarUrl,
-                        contentDescription = "$sellerName profile photo",
+                        model = seller.avatarUrl,
+                        contentDescription = "${seller.name} profile photo",
                         modifier = Modifier
                             .size(84.dp)
                             .clip(CircleShape),
@@ -390,13 +396,13 @@ private fun SellerInfoCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = sellerName,
+                            text = seller.name,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1
                         )
-                        if (sellerIsVerified) {
+                        if (seller.isVerified) {
                             Icon(
                                 imageVector = Icons.Filled.Verified,
                                 contentDescription = "Verified profile",
@@ -406,7 +412,7 @@ private fun SellerInfoCard(
                         }
                     }
                     Text(
-                        text = formatAcademicLine(sellerMajor, sellerGraduationDate, sellerSchool),
+                        text = formatAcademicLine(seller.major, seller.graduationDate, seller.school),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,
@@ -423,13 +429,13 @@ private fun SellerInfoCard(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = formatReputationScore(reputationScore),
+                            text = formatReputationScore(seller.reputationScore),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "($sellerReviewCount reviews)",
+                            text = "(${seller.reviewCount} reviews)",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
