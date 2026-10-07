@@ -9,7 +9,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 
 data class MarketplaceUiState(
     val items: List<MarketplaceItem> = emptyList(),
-    val savedItemIds: Set<MarketplaceItemId> = emptySet(),
+    val bookmarkedItemIds: Set<MarketplaceItemId> = emptySet(),
     val searchQuery: String = "",
     val selectedCategory: MarketplaceCategory? = null,
     val isLoading: Boolean = false,
@@ -17,6 +17,7 @@ data class MarketplaceUiState(
     val nextCursor: MarketplacePageCursor? = null,
     val endReached: Boolean = false,
     val errorMessage: String? = null,
+    val bookmarkErrorMessage: String? = null,
     val selectedListingId: String? = null,
     val selectedListing: Listing? = null,
     val isDetailLoading: Boolean = false,

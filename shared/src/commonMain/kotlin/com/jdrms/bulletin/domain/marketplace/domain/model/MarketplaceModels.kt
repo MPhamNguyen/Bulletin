@@ -39,7 +39,7 @@ data class MarketplaceItem(
     val description: String,
     val price: MarketplacePrice,
     val category: MarketplaceCategory,
-    val isSaved: Boolean = false,
+    val isBookmarked: Boolean = false,
     val createdAtMillis: Long = 0L
 ) {
     init {
@@ -62,7 +62,7 @@ data class Listing(
     val status: String = "AVAILABLE",
     val photos: List<String> = emptyList(),
     val sellerReputationScore: Double? = null,
-    val isSaved: Boolean = false,
+    val isBookmarked: Boolean = false,
     val createdAtMillis: Long = 0L,
     val sellerSchool: String = "CSU Long Beach",
     val sellerAvatarUrl: String? = null,

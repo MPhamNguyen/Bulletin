@@ -110,20 +110,34 @@ class MarketplaceDomainTest {
     }
 
     @Test
-    fun testToggleSavedItem() = runTest {
+    fun bookmarkingAndRemovingAreIdempotent() = runTest {
         val repo = InMemoryMarketplaceRepository()
         val itemId = MarketplaceItemId("mkt_1")
 
-        val saveResult = repo.toggleSaved("student_user", itemId)
+        val saveResult = repo.bookmarkListing("student_user", itemId)
         assertTrue(saveResult.isSuccess())
-        assertTrue((saveResult as com.jdrms.bulletin.core.common.Result.Success).data)
 
-        val savedIds = repo.getSavedItemIds("student_user")
-        assertTrue(savedIds.contains(itemId))
+        val savedAgainResult = repo.bookmarkListing("student_user", itemId)
+        assertTrue(savedAgainResult.isSuccess())
+        assertEquals(setOf(itemId), repo.getBookmarkedItemIds("student_user"))
 
-        val unsaveResult = repo.toggleSaved("student_user", itemId)
-        assertTrue(unsaveResult.isSuccess())
-        assertEquals(false, (unsaveResult as com.jdrms.bulletin.core.common.Result.Success).data)
+        assertTrue(repo.removeListingBookmark("student_user", itemId).isSuccess())
+        assertTrue(repo.removeListingBookmark("student_user", itemId).isSuccess())
+        assertEquals(emptySet(), repo.getBookmarkedItemIds("student_user"))
+    }
+
+    @Test
+    fun removingBookmarkIsIdempotentAndDoesNotAffectOtherListings() = runTest {
+        val repository = InMemoryMarketplaceRepository()
+        val first = MarketplaceItemId("mkt_1")
+        val second = MarketplaceItemId("mkt_2")
+        repository.bookmarkListing("student_user", first)
+        repository.bookmarkListing("student_user", second)
+
+        repository.removeListingBookmark("student_user", first)
+        repository.removeListingBookmark("student_user", first)
+
+        assertEquals(setOf(second), repository.getBookmarkedItemIds("student_user"))
     }
 
     @Test
@@ -137,8 +151,8 @@ class MarketplaceDomainTest {
             price = 150.0,
             category = "ELECTRONICS"
         )
-        val domain = MarketplaceMapper.toDomain(dto, isSaved = true)
-        assertEquals(true, domain.isSaved)
+        val domain = MarketplaceMapper.toDomain(dto, isBookmarked = true)
+        assertEquals(true, domain.isBookmarked)
         assertEquals(MarketplaceCategory.ELECTRONICS, domain.category)
 
         val backToDto = MarketplaceMapper.toDto(domain)

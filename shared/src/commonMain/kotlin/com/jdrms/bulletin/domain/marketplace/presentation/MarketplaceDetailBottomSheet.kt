@@ -15,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,15 +38,17 @@ import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList")
 @Composable
 fun MarketplaceDetailBottomSheet(
     listing: Listing?,
     isLoading: Boolean,
     errorMessage: String?,
-    isSaved: Boolean,
+    bookmarkErrorMessage: String?,
+    isBookmarked: Boolean,
     onDismiss: () -> Unit,
     onRetry: () -> Unit,
-    onToggleSave: () -> Unit,
+    onToggleBookmark: () -> Unit,
     onSellerClick: (sellerId: String) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -213,18 +217,35 @@ fun MarketplaceDetailBottomSheet(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Action Buttons: Save & Close
+                    // Action Buttons: Bookmark & Close
+                    bookmarkErrorMessage?.let { message ->
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
-                            onClick = onToggleSave,
+                            onClick = onToggleBookmark,
                             modifier = Modifier.weight(1f),
                             colors = BulletinButtonDefaults.outlinedButtonColors(),
                             border = BulletinButtonDefaults.outlinedButtonBorder()
                         ) {
-                            Text(if (isSaved) "★ Saved" else "☆ Save Item")
+                            Icon(
+                                imageVector = if (isBookmarked) {
+                                    Icons.Filled.Bookmark
+                                } else {
+                                    Icons.Outlined.BookmarkBorder
+                                },
+                                contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isBookmarked) "Bookmarked" else "Bookmark")
                         }
 
                         Button(

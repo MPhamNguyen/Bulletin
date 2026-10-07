@@ -24,10 +24,12 @@ import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
+import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
+import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
@@ -185,7 +187,9 @@ class AppContainer(
 
     // Use Cases - Marketplace
     val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
-    val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
+    val bookmarkMarketplaceListing by lazy { BookmarkMarketplaceListing(marketplaceRepository) }
+    val getMarketplaceListingBookmarks by lazy { GetMarketplaceListingBookmarks(marketplaceRepository) }
+    val removeMarketplaceListingBookmark by lazy { RemoveMarketplaceListingBookmark(marketplaceRepository) }
     val viewMarketplaceListing by lazy {
         ViewMarketplaceListing(
             repository = marketplaceRepository,
@@ -234,9 +238,17 @@ class AppContainer(
 
     fun createMarketplaceViewModel() = MarketplaceViewModel(
         searchMarketplace = searchMarketplace,
-        toggleSaveItem = toggleSaveMarketplaceItem,
+        bookmarkListing = bookmarkMarketplaceListing,
+        removeListingBookmark = removeMarketplaceListingBookmark,
+        getListingBookmarks = getMarketplaceListingBookmarks,
         viewMarketplaceListing = viewMarketplaceListing,
-        listingChangedSignal = listingChangedSignal
+        listingChangedSignal = listingChangedSignal,
+        currentUserIdProvider = {
+            when (val result = getAuthenticatedUserId()) {
+                is com.jdrms.bulletin.core.common.Result.Success -> result.data?.value
+                is com.jdrms.bulletin.core.common.Result.Error -> null
+            }
+        }
     )
 
     fun createListingsViewModel() = ListingsViewModel(

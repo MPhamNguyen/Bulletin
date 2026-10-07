@@ -1,7 +1,9 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
+import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -23,7 +25,7 @@ class SupabaseMarketplaceRepository(
     private val fallbackRepository: InMemoryMarketplaceRepository = InMemoryMarketplaceRepository()
 ) : MarketplaceRepository {
 
-    private val savedItemIdsByUser = mutableMapOf<String, MutableSet<MarketplaceItemId>>()
+    private val bookmarks = SupabaseListingBookmarks(supabase)
 
     override suspend fun getCatalog(): List<MarketplaceItem> {
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
@@ -55,8 +57,8 @@ class SupabaseMarketplaceRepository(
                     filter {
                         eq("id", databaseListingId)
                     }
-                }.decodeSingleOrNull<MarketplaceItemDto>()
-                dto?.let { MarketplaceMapper.toDomain(it) }
+                }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
+                dto?.let { SupabaseMarketplaceListingMapper.toItem(it) }
             }.getOrElse { error ->
                 error.rethrowIfCancellation()
                 null
@@ -124,20 +126,36 @@ class SupabaseMarketplaceRepository(
         return timedResult ?: Result.Error(Exception("Request timed out. Unable to load listing within 2 seconds."))
     }
 
-    override suspend fun toggleSaved(userId: String, itemId: MarketplaceItemId): Result<Boolean> {
-        val userSaved = savedItemIdsByUser.getOrPut(userId) { mutableSetOf() }
-        val isSaved = if (userSaved.contains(itemId)) {
-            userSaved.remove(itemId)
-            false
-        } else {
-            userSaved.add(itemId)
-            true
-        }
-        return Result.Success(isSaved)
+    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        return runCatching { bookmarks.bookmark(userId, itemId) }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { error ->
+                error.rethrowIfCancellation()
+                Result.Error(error)
+            }
+        )
     }
 
-    override suspend fun getSavedItemIds(userId: String): Set<MarketplaceItemId> {
-        return savedItemIdsByUser[userId]?.toSet() ?: emptySet()
+    override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        return runCatching { bookmarks.remove(userId, itemId) }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { error ->
+                error.rethrowIfCancellation()
+                Result.Error(error)
+            }
+        )
+    }
+
+    override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> {
+        return bookmarks.get(userId).ids
+    }
+
+    override suspend fun getBookmarkedListingsPage(
+        userId: String,
+        cursor: ListingBookmarksPageCursor?,
+        pageSize: Int
+    ): BookmarkedListingsPage {
+        return bookmarks.getPage(userId, cursor, pageSize)
     }
 
     companion object {
