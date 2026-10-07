@@ -98,7 +98,7 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
                                     }
                                 )
                                 Text(
-                                    text = conv.lastMessage?.content ?: "No messages yet",
+                                    text = conversationPreviewText(conv),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (isSelected) {
                                         MaterialTheme.colorScheme.onPrimaryContainer
@@ -136,8 +136,10 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
                             items(state.currentMessages, key = { it.id.value }) { msg ->
                                 MessageItemCard(
                                     message = msg,
+                                    isRevealed = msg.id in state.revealedReportedMessageIds,
                                     canReport = !state.isReporting,
-                                    onReport = { viewModel.report(msg.id, "Inappropriate content") }
+                                    onReport = { viewModel.report(msg.id, "Inappropriate content") },
+                                    onToggleVisibility = { viewModel.toggleReportedMessageVisibility(msg.id) }
                                 )
                             }
                         }
@@ -176,6 +178,12 @@ internal fun conversationTitle(conversation: Conversation, viewerId: SenderId?):
     return otherNames.joinToString(", ").ifBlank { "Conversation" }
 }
 
+internal fun conversationPreviewText(conversation: Conversation): String =
+    conversation.lastMessage?.let { messageBodyText(it, isRevealed = false) } ?: "No messages yet"
+
+internal fun messageBodyText(message: Message, isRevealed: Boolean): String =
+    if (message.isReported && !isRevealed) "Reported message hidden" else message.content
+
 @Composable
 private fun MessagesFeedback(state: MessagesUiState, onRetry: () -> Unit) {
     state.errorMessage?.let { error ->
@@ -195,8 +203,10 @@ private fun MessagesFeedback(state: MessagesUiState, onRetry: () -> Unit) {
 @Composable
 private fun MessageItemCard(
     message: Message,
+    isRevealed: Boolean,
     canReport: Boolean,
-    onReport: () -> Unit
+    onReport: () -> Unit,
+    onToggleVisibility: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -225,7 +235,7 @@ private fun MessageItemCard(
                 }
             )
             Text(
-                text = message.content,
+                text = messageBodyText(message, isRevealed),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (message.isReported) {
                     MaterialTheme.colorScheme.onErrorContainer
@@ -239,6 +249,9 @@ private fun MessageItemCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error
                 )
+                TextButton(onClick = onToggleVisibility) {
+                    Text(if (isRevealed) "Hide message" else "Show message")
+                }
             } else {
                 TextButton(
                     onClick = onReport,

@@ -68,6 +68,7 @@ class MessagesViewModel(
             it.copy(
                 selectedConversationId = conversationId,
                 currentMessages = emptyList(),
+                revealedReportedMessageIds = emptySet(),
                 isLoadingMessages = true,
                 errorMessage = null,
                 statusMessage = null
@@ -100,6 +101,18 @@ class MessagesViewModel(
 
     fun onMessageInputChanged(input: String) {
         _uiState.update { it.copy(messageInput = input, errorMessage = null, statusMessage = null) }
+    }
+
+    fun toggleReportedMessageVisibility(messageId: MessageId) {
+        _uiState.update { state ->
+            if (state.currentMessages.none { it.id == messageId && it.isReported }) {
+                state
+            } else {
+                val revealed = state.revealedReportedMessageIds
+                val nextRevealed = if (messageId in revealed) revealed - messageId else revealed + messageId
+                state.copy(revealedReportedMessageIds = nextRevealed)
+            }
+        }
     }
 
     fun sendCurrentMessage() {

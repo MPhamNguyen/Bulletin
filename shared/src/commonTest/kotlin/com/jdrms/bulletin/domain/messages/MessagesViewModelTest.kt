@@ -167,6 +167,46 @@ class MessagesViewModelTest {
         assertEquals("Unsent draft", viewModel.uiState.value.messageInput)
         assertEquals("Message reported.", viewModel.uiState.value.statusMessage)
         assertFalse(viewModel.uiState.value.isReporting)
+        assertEquals(emptySet(), viewModel.uiState.value.revealedReportedMessageIds)
+    }
+
+    @Test
+    fun reportedMessagesCanBeShownAndHiddenIndividually() = runTest {
+        val first = message(id = MessageId("first")).report()
+        val second = message(id = MessageId("second")).report()
+        val ordinary = message(id = MessageId("ordinary"))
+        val viewModel = viewModel(messagesRepository(messages = listOf(first, second, ordinary)))
+        advanceUntilIdle()
+        assertEquals(emptySet(), viewModel.uiState.value.revealedReportedMessageIds)
+        viewModel.toggleReportedMessageVisibility(first.id)
+        assertEquals(setOf(first.id), viewModel.uiState.value.revealedReportedMessageIds)
+        viewModel.toggleReportedMessageVisibility(second.id)
+        assertEquals(setOf(first.id, second.id), viewModel.uiState.value.revealedReportedMessageIds)
+        viewModel.toggleReportedMessageVisibility(first.id)
+        assertEquals(setOf(second.id), viewModel.uiState.value.revealedReportedMessageIds)
+        viewModel.toggleReportedMessageVisibility(ordinary.id)
+        viewModel.toggleReportedMessageVisibility(MessageId("missing"))
+        assertEquals(setOf(second.id), viewModel.uiState.value.revealedReportedMessageIds)
+    }
+
+    @Test
+    fun revealingReportedMessageResetsWhenThreadIsReopened() = runTest {
+        val reported = message().report()
+        val viewModel = viewModel(
+            messagesRepository(
+                conversations = listOf(conversation(), conversation(ConversationId("other"))),
+                messages = listOf(reported)
+            )
+        )
+        advanceUntilIdle()
+        viewModel.toggleReportedMessageVisibility(reported.id)
+        assertEquals(setOf(reported.id), viewModel.uiState.value.revealedReportedMessageIds)
+        viewModel.selectConversation(ConversationId("other"))
+        assertEquals(emptySet(), viewModel.uiState.value.revealedReportedMessageIds)
+        advanceUntilIdle()
+        viewModel.selectConversation(conversationId)
+        advanceUntilIdle()
+        assertEquals(emptySet(), viewModel.uiState.value.revealedReportedMessageIds)
     }
 
     @Test
