@@ -83,6 +83,10 @@ internal fun ProfileHero(
     onChangePhotoClick: () -> Unit,
     avatarUrl: String? = null
 ) {
+    val academicDetails = listOf(major, university)
+        .filter(String::isNotBlank)
+        .joinToString(" @ ")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -142,13 +146,15 @@ internal fun ProfileHero(
             if (isVerified) VerifiedBadge()
         }
         Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "$major @ $university",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        if (academicDetails.isNotBlank()) {
+            Text(
+                text = academicDetails,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
         Spacer(modifier = Modifier.height(18.dp))
         Button(
             onClick = onEditProfileClick,

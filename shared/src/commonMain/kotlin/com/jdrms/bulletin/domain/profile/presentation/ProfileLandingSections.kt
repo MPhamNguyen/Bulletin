@@ -68,7 +68,9 @@ internal fun ProfileAboutCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ProfileInformationChip(Icons.Outlined.School, major)
+            if (major.isNotBlank()) {
+                ProfileInformationChip(Icons.Outlined.School, major)
+            }
             if (university.isNotBlank()) {
                 ProfileInformationChip(Icons.Outlined.LocationOn, university)
             }
