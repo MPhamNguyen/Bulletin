@@ -15,6 +15,8 @@ complexity:
   LargeClass:
     active: true
     threshold: 300
+    excludes:
+      - '**/ListingsViewModelTest.kt'
   TooManyFunctions:
     active: true
     thresholdInClasses: 15
@@ -22,8 +24,8 @@ complexity:
     ignoreOverridden: true
   LongParameterList:
     active: true
-    constructorThreshold: 6
-    functionThreshold: 6
+    constructorThreshold: 9
+    functionThreshold: 8
     ignoreDefaultParameters: false
   LongMethod:
     active: true

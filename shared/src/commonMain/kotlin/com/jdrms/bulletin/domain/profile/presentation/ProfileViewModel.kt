@@ -6,29 +6,21 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
 import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
+import com.jdrms.bulletin.domain.profile.application.ProfileSoldListingsProvider
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionState
-import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
-import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class ProfileUiState(
-    val profile: StudentProfile? = null,
-    val reputation: StudentReputation? = null,
-    val activeListingsCount: Int = 0,
-    val itemsSoldCount: Int? = null,
-    val errorMessage: String? = null
-)
 
 /** Read model for the profile landing destination. */
 class ProfileViewModel(
     private val sessionRepository: SessionRepository,
     private val getProfileOverview: GetProfileOverview,
     private val getProfileActivity: GetProfileActivity,
-    listingChangedSignal: RefreshSignal
+    listingChangedSignal: RefreshSignal,
+    private val soldListingsProvider: ProfileSoldListingsProvider? = null
 ) : ViewModel() {
     private val state = MutableStateFlow(ProfileUiState())
     val uiState = state.asStateFlow()
@@ -52,8 +44,9 @@ class ProfileViewModel(
     fun refreshActiveListings() {
         val profile = state.value.profile ?: return
         viewModelScope.launch {
-            val count = getProfileActivity(profile.id)
-            state.update { it.copy(activeListingsCount = count) }
+            val activeCount = getProfileActivity(profile.id)
+            val soldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
+            state.update { it.copy(activeListingsCount = activeCount, itemsSoldCount = soldCount) }
         }
     }
 
@@ -65,7 +58,8 @@ class ProfileViewModel(
                     it.copy(
                         profile = overview.profile,
                         reputation = overview.reputation,
-                        activeListingsCount = overview.activeListingsCount
+                        activeListingsCount = overview.activeListingsCount,
+                        itemsSoldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
                     )
                 }
             }

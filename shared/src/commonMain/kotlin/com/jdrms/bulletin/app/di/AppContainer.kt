@@ -5,6 +5,7 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
@@ -20,6 +21,8 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.MarkListingSold
+import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
@@ -196,6 +199,8 @@ class AppContainer(
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
+    val markListingSold by lazy { MarkListingSold(listingsRepository) }
+    val restoreListingToMarketplace by lazy { RestoreListingToMarketplace(listingsRepository) }
     val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
@@ -223,6 +228,7 @@ class AppContainer(
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
     val publishStudentReview by lazy { PublishStudentReview(submitStudentReview) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
+    val profileSoldListingsProvider by lazy { ListingsSoldListingsCountProvider(listingsRepository) }
     val getProfileOverview by lazy { GetProfileOverview(profileRepository, profileActiveListingsProvider) }
     val getProfileActivity by lazy { GetProfileActivity(profileActiveListingsProvider) }
 
@@ -242,6 +248,8 @@ class AppContainer(
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
+        markListingSold = markListingSold,
+        restoreListingToMarketplace = restoreListingToMarketplace,
         deleteListing = deleteListing,
         getSellerListings = getSellerListings,
         currentSellerProvider = currentListingSellerProvider,
@@ -268,7 +276,8 @@ class AppContainer(
         sessionRepository,
         getProfileOverview,
         getProfileActivity,
-        listingChangedSignal
+        listingChangedSignal,
+        profileSoldListingsProvider
     )
 
     fun createEditProfileViewModel() = EditProfileViewModel(

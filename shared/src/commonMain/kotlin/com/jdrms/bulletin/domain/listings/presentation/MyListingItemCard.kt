@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ModeEdit
+import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -29,12 +30,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 
 @Composable
 fun MyListingItemCard(
     listing: Listing,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onMarkSold: () -> Unit,
+    onRestore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BulletinCard(modifier = modifier) {
@@ -99,6 +103,21 @@ fun MyListingItemCard(
             overflow = TextOverflow.Ellipsis
         )
 
+        if (listing.status == ListingStatus.SOLD) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                shape = MaterialTheme.shapes.extraSmall,
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Text(
+                    text = "SOLD",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+
         if (listing.images.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -122,6 +141,36 @@ fun MyListingItemCard(
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         Spacer(modifier = Modifier.height(8.dp))
+
+        if (listing.status == ListingStatus.AVAILABLE) {
+            FilledTonalButton(
+                onClick = onMarkSold,
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Icon(Icons.Outlined.Sell, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Mark as sold")
+            }
+        }
+
+        if (listing.status == ListingStatus.SOLD) {
+            FilledTonalButton(
+                onClick = onRestore,
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Icon(Icons.Outlined.Sell, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Restore to marketplace")
+            }
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),

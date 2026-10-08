@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
 enum class AuthSessionState {
     CHECKING,
@@ -18,6 +19,14 @@ enum class PasswordRecoveryStage {
 data class ProfileFormErrors(val school: String? = null, val major: String? = null) {
     val isValid: Boolean get() = school == null && major == null
 }
+
+data class ProfileUiState(
+    val profile: StudentProfile? = null,
+    val reputation: StudentReputation? = null,
+    val activeListingsCount: Int = 0,
+    val itemsSoldCount: Int? = null,
+    val errorMessage: String? = null,
+)
 
 fun validateProfileDraft(draft: ProfileDraft): ProfileFormErrors = ProfileFormErrors(
     school = if (draft.university.isBlank()) "Enter or select your school." else null,
