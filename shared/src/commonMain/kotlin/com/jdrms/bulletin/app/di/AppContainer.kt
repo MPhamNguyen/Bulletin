@@ -64,6 +64,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfi
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
+import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import io.github.jan.supabase.SupabaseClient
 
@@ -246,9 +247,6 @@ class AppContainer(
         restoreAuthenticatedProfile = restoreAuthenticatedProfile,
         signOutUser = signOutUser,
         verifyStudentEmail = verifyStudentEmail,
-        requestPasswordReset = requestPasswordReset,
-        verifyPasswordResetCode = verifyPasswordResetCode,
-        updatePassword = updatePassword,
         resendVerificationCode = resendVerificationCode,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,
@@ -257,6 +255,13 @@ class AppContainer(
         activeListingsProvider = profileActiveListingsProvider,
         listingChangedSignal = listingChangedSignal,
         softDeleteProfile = softDeleteProfile
+    )
+
+    fun createPasswordRecoveryViewModel() = PasswordRecoveryViewModel(
+        requestPasswordResetUseCase = requestPasswordReset,
+        verifyPasswordResetCodeUseCase = verifyPasswordResetCode,
+        updatePasswordUseCase = updatePassword,
+        signOutUser = signOutUser
     )
 
     fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)

@@ -9,16 +9,13 @@ import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
-import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
-import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
-import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
@@ -49,9 +46,6 @@ class ProfileViewModel(
     private val updateStudentProfile: UpdateStudentProfile,
     private val submitStudentReview: SubmitStudentReview,
     private val uploadProfilePhoto: UploadProfilePhoto? = null,
-    private val requestPasswordReset: RequestPasswordReset? = null,
-    private val verifyPasswordResetCode: VerifyPasswordResetCode? = null,
-    private val updatePassword: UpdatePassword? = null,
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student"),
     private val activeListingsProvider: ProfileActiveListingsProvider? = null,
@@ -280,147 +274,12 @@ class ProfileViewModel(
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 
-    fun beginPasswordReset() {
-        flashNotificationJob?.cancel()
-        if (_uiState.value.passwordRecoveryStage.hasRecoverySession()) {
-            invalidatePasswordRecoverySession()
-        }
-        _uiState.update {
-            it.copy(
-                passwordRecoveryStage = PasswordRecoveryStage.ENTER_EMAIL,
-                passwordRecoveryEmail = "",
-                errorMessage = null,
-                successMessage = null
-            )
-        }
-    }
-
     fun openSettings() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.SETTINGS,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
-    }
-
-    fun cancelPasswordReset() {
-        if (_uiState.value.passwordRecoveryStage.hasRecoverySession()) {
-            invalidatePasswordRecoverySession()
-        }
-        _uiState.update {
-            it.copy(
-                passwordRecoveryStage = PasswordRecoveryStage.NONE,
-                passwordRecoveryEmail = "",
-                errorMessage = null,
-                successMessage = null
-            )
-        }
+        navigateTo(ProfileSubscreen.SETTINGS)
     }
 
     fun openProfile() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.PROFILE,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
-    }
-
-    fun requestPasswordReset(emailStr: String) {
-        val trimmedEmail = emailStr.trim()
-        if (!StudentEmail.isValid(trimmedEmail)) {
-            _uiState.update { it.copy(errorMessage = "Enter a valid email address.") }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
-            val resetRequest = requireNotNull(requestPasswordReset) {
-                "Password reset is not configured."
-            }
-            when (val result = resetRequest(StudentEmail(trimmedEmail))) {
-                is Result.Success -> _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        passwordRecoveryStage = PasswordRecoveryStage.ENTER_CODE,
-                        passwordRecoveryEmail = trimmedEmail,
-                        successMessage = "Enter the confirmation code to continue."
-                    )
-                }
-                is Result.Error -> _uiState.update {
-                    it.copy(isLoading = false, errorMessage = result.exception.message)
-                }
-            }
-        }
-    }
-
-    fun verifyPasswordResetCode(code: String) {
-        val email = _uiState.value.passwordRecoveryEmail
-        if (email.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Start a password reset before entering a code.") }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
-            val codeVerification = requireNotNull(verifyPasswordResetCode) {
-                "Password reset is not configured."
-            }
-            when (val result = codeVerification(StudentEmail(email), code)) {
-                is Result.Success -> _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        passwordRecoveryStage = PasswordRecoveryStage.CHANGE_PASSWORD,
-                        successMessage = null
-                    )
-                }
-                is Result.Error -> _uiState.update {
-                    it.copy(isLoading = false, errorMessage = result.exception.message)
-                }
-            }
-        }
-    }
-
-    fun updatePassword(password: String, confirmation: String, onSuccess: () -> Unit = {}) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
-            val passwordUpdate = requireNotNull(updatePassword) {
-                "Password reset is not configured."
-            }
-            when (val result = passwordUpdate(password, confirmation)) {
-                is Result.Success -> {
-                    invalidatePasswordRecoverySession()
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            passwordRecoveryStage = PasswordRecoveryStage.NONE,
-                            passwordRecoveryEmail = "",
-                            errorMessage = null,
-                            successMessage = null
-                        )
-                    }
-                    onSuccess()
-                }
-                is Result.Error -> _uiState.update {
-                    it.copy(isLoading = false, errorMessage = result.exception.message)
-                }
-            }
-        }
-    }
-
-    private fun invalidatePasswordRecoverySession() {
-        viewModelScope.launch {
-            signOutUser()
-        }
-    }
-
-    private fun PasswordRecoveryStage.hasRecoverySession(): Boolean {
-        return this == PasswordRecoveryStage.ENTER_CODE || this == PasswordRecoveryStage.CHANGE_PASSWORD
+        navigateTo(ProfileSubscreen.PROFILE)
     }
 
     fun closeSettings() {
@@ -428,14 +287,7 @@ class ProfileViewModel(
     }
 
     fun openBookmarkedListings() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.BOOKMARKED_LISTINGS,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
+        navigateTo(ProfileSubscreen.BOOKMARKED_LISTINGS)
     }
 
     fun closeBookmarkedListings() {
@@ -443,14 +295,7 @@ class ProfileViewModel(
     }
 
     fun openNotifications() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.NOTIFICATIONS,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
+        navigateTo(ProfileSubscreen.NOTIFICATIONS)
     }
 
     fun closeNotifications() {
@@ -458,14 +303,7 @@ class ProfileViewModel(
     }
 
     fun openPrivacy() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.PRIVACY,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
+        navigateTo(ProfileSubscreen.PRIVACY)
     }
 
     fun closePrivacy() {
@@ -473,14 +311,7 @@ class ProfileViewModel(
     }
 
     fun openHelpAndSupport() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.HELP_AND_SUPPORT,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
+        navigateTo(ProfileSubscreen.HELP_AND_SUPPORT)
     }
 
     fun closeHelpAndSupport() {
@@ -488,14 +319,7 @@ class ProfileViewModel(
     }
 
     fun openTermsAndConditions() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.TERMS_AND_CONDITIONS,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
+        navigateTo(ProfileSubscreen.TERMS_AND_CONDITIONS)
     }
 
     fun closeTermsAndConditions() {
@@ -503,18 +327,18 @@ class ProfileViewModel(
     }
 
     fun openPublicProfile() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                activeSubscreen = ProfileSubscreen.PUBLIC_PROFILE,
-                isEditingProfile = false,
-                errorMessage = null
-            )
-        }
+        navigateTo(ProfileSubscreen.PUBLIC_PROFILE)
     }
 
     fun closePublicProfile() {
         openSettings()
+    }
+
+    private fun navigateTo(screen: ProfileSubscreen) {
+        flashNotificationJob?.cancel()
+        _uiState.update {
+            it.copy(activeSubscreen = screen, isEditingProfile = false, errorMessage = null)
+        }
     }
 
     fun openEditAccount() {

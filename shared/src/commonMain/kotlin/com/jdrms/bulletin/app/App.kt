@@ -79,6 +79,8 @@ fun App(appContainer: AppContainer? = null) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
         val profileViewModel = remember { container.createProfileViewModel() }
         val profileUiState by profileViewModel.uiState.collectAsState()
+        val passwordRecoveryViewModel = remember { container.createPasswordRecoveryViewModel() }
+        val passwordRecoveryUiState by passwordRecoveryViewModel.uiState.collectAsState()
         val effectiveRootScreen = resolveRootScreen(currentRootScreen, profileUiState.authSessionState)
 
         LaunchedEffect(profileUiState.authSessionState) {
@@ -110,7 +112,7 @@ fun App(appContainer: AppContainer? = null) {
         } else {
             when (effectiveRootScreen) {
                 AppRootScreen.SIGN_IN -> {
-                    when (profileUiState.passwordRecoveryStage) {
+                    when (passwordRecoveryUiState.stage) {
                         PasswordRecoveryStage.NONE -> SignInScreen(
                             errorMessage = profileUiState.errorMessage,
                             isLoading = profileUiState.isLoading,
@@ -120,30 +122,30 @@ fun App(appContainer: AppContainer? = null) {
                                     currentRootScreen = AppRootScreen.MAIN
                                 }
                             },
-                            onForgotPassword = { profileViewModel.beginPasswordReset() },
+                            onForgotPassword = { passwordRecoveryViewModel.beginPasswordReset() },
                             onCreateAccount = {
                                 profileViewModel.resetRegistration()
                                 currentRootScreen = AppRootScreen.CREATE_PROFILE
                             }
                         )
                         PasswordRecoveryStage.ENTER_EMAIL -> ForgotPasswordScreen(
-                            errorMessage = profileUiState.errorMessage,
-                            isLoading = profileUiState.isLoading,
-                            onSubmit = profileViewModel::requestPasswordReset,
-                            onBack = profileViewModel::cancelPasswordReset
+                            errorMessage = passwordRecoveryUiState.errorMessage,
+                            isLoading = passwordRecoveryUiState.isLoading,
+                            onSubmit = passwordRecoveryViewModel::requestPasswordReset,
+                            onBack = passwordRecoveryViewModel::cancelPasswordReset
                         )
                         PasswordRecoveryStage.ENTER_CODE -> PasswordConfirmationCodeScreen(
-                            email = profileUiState.passwordRecoveryEmail,
-                            errorMessage = profileUiState.errorMessage,
-                            isLoading = profileUiState.isLoading,
-                            onSubmit = profileViewModel::verifyPasswordResetCode,
-                            onBack = profileViewModel::beginPasswordReset
+                            email = passwordRecoveryUiState.email,
+                            errorMessage = passwordRecoveryUiState.errorMessage,
+                            isLoading = passwordRecoveryUiState.isLoading,
+                            onSubmit = passwordRecoveryViewModel::verifyPasswordResetCode,
+                            onBack = passwordRecoveryViewModel::beginPasswordReset
                         )
                         PasswordRecoveryStage.CHANGE_PASSWORD -> ChangePasswordScreen(
-                            errorMessage = profileUiState.errorMessage,
-                            isLoading = profileUiState.isLoading,
-                            onSubmit = profileViewModel::updatePassword,
-                            onBack = profileViewModel::cancelPasswordReset
+                            errorMessage = passwordRecoveryUiState.errorMessage,
+                            isLoading = passwordRecoveryUiState.isLoading,
+                            onSubmit = passwordRecoveryViewModel::updatePassword,
+                            onBack = passwordRecoveryViewModel::cancelPasswordReset
                         )
                     }
                 }

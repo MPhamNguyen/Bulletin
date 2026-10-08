@@ -50,9 +50,7 @@ data class ProfileUiState(
     val profileFormErrors: ProfileFormErrors = ProfileFormErrors(),
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false,
-    val authSessionState: AuthSessionState = AuthSessionState.CHECKING,
-    val passwordRecoveryStage: PasswordRecoveryStage = PasswordRecoveryStage.NONE,
-    val passwordRecoveryEmail: String = ""
+    val authSessionState: AuthSessionState = AuthSessionState.CHECKING
 ) {
     val isProfileModified: Boolean
         get() = profile != null && ProfileDraft.from(profile) != profileDraft
