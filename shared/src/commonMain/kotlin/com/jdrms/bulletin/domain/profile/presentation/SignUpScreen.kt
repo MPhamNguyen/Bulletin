@@ -52,7 +52,7 @@ fun SignUpScreen(
                 showBackButton = !uiState.isAccountCreated,
                 horizontalPadding = horizontalPadding,
                 onBackClick = {
-                    viewModel.clearMessages()
+                    viewModel.actions.notifications.clear()
                     onBack()
                 }
             )
@@ -81,26 +81,47 @@ fun SignUpScreen(
 
                     verifiedEmailAwaitingProfile != null -> EmailVerificationRecoveryContent(
                         uiState = uiState,
-                        onRetry = viewModel::retryVerifiedProfile,
+                        onRetry = viewModel.actions.authentication::retryVerifiedProfile,
                         onSignIn = {
-                            viewModel.resetRegistration()
+                            viewModel.actions.authentication.resetRegistration(viewModel.actions.notifications::cancel)
                             onNavigateToSignIn()
                         }
                     )
 
                     pendingRegistration != null -> EmailVerificationContent(
                         uiState = uiState,
-                        onVerify = { code -> viewModel.verifyEmail(pendingRegistration.email.value, code) },
-                        onResend = { viewModel.resendEmailCode(pendingRegistration.email.value) },
-                        onChangeEmail = viewModel::resetRegistration
+                        onVerify = { code ->
+                            viewModel.actions.authentication.verifyEmail(
+                                pendingRegistration.email.value,
+                                code
+                            )
+                        },
+                        onResend = {
+                            viewModel.actions.authentication.resendEmailCode(
+                                pendingRegistration.email.value
+                            )
+                        },
+                        onChangeEmail = {
+                            viewModel.actions.authentication.resetRegistration(
+                                viewModel.actions.notifications::cancel
+                            )
+                        }
                     )
 
                     else -> SignUpFormContent(
                         uiState = uiState,
-                        onClearMessages = viewModel::clearMessages,
-                        onCreateAccount = viewModel::createAccount,
+                        onClearMessages = viewModel.actions.notifications::clear,
+                        onCreateAccount = { firstName, lastName, email, password ->
+                            viewModel.actions.authentication.createAccount(
+                                firstName,
+                                lastName,
+                                email,
+                                password,
+                                ""
+                            )
+                        },
                         onNavigateToSignIn = {
-                            viewModel.clearMessages()
+                            viewModel.actions.notifications.clear()
                             onNavigateToSignIn()
                         }
                     )

@@ -42,7 +42,7 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.refreshActiveListings()
+        viewModel.actions.overview.refreshActiveListings()
     }
 
     Box(
@@ -59,12 +59,12 @@ fun ProfileScreen(
             handleBack = handleBack,
             onSignOut = onSignOut,
             landingActions = ProfileLandingActions(
-                onSettings = viewModel::openSettings,
-                onEditProfile = viewModel::startEditingProfile,
+                onSettings = viewModel.actions.navigation::openSettings,
+                onEditProfile = viewModel.actions.navigation::startEditingProfile,
                 onMyListings = onMyListingsClick,
                 onBookmarkedListings = {
                     onBookmarkedListingsClick()
-                    viewModel.openBookmarkedListings()
+                    viewModel.actions.navigation.openBookmarkedListings()
                 },
                 onCreateListing = onCreateListingClick
             )
@@ -97,17 +97,17 @@ private fun ProfileSubscreenHost(
     landingActions: ProfileLandingActions
 ) {
     val profilePhotoPicker = rememberProfilePhotoPicker(
-        onPhotoSelected = viewModel::uploadProfilePhoto,
-        onError = viewModel::onProfilePhotoSelectionError
+        onPhotoSelected = viewModel.actions.editing::uploadPhoto,
+        onError = viewModel.actions.editing::onPhotoSelectionError
     )
 
     when {
         uiState.activeSubscreen == ProfileSubscreen.EDIT_ACCOUNT || uiState.isEditingProfile -> {
             EditProfileView(
                 uiState = uiState,
-                onCancel = viewModel::cancelEditingProfile,
-                onDraftChanged = viewModel::onProfileDraftChanged,
-                onUpdate = viewModel::updateProfileDetails,
+                onCancel = viewModel.actions.navigation::cancelEditingProfile,
+                onDraftChanged = viewModel.actions.editing::onDraftChanged,
+                onUpdate = viewModel.actions.editing::updateDetails,
                 onChangePhoto = profilePhotoPicker,
                 onSignOut = onSignOut
             )
@@ -117,15 +117,15 @@ private fun ProfileSubscreenHost(
                 uiState = uiState,
                 onBack = handleBack,
                 actions = SettingsActions(
-                    onEditAccount = viewModel::openEditAccount,
-                    onViewPublicProfile = viewModel::openPublicProfile,
-                    onNotifications = viewModel::openNotifications,
-                    onPrivacy = viewModel::openPrivacy,
-                    onHelpSupport = viewModel::openHelpAndSupport,
-                    onTermsConditions = viewModel::openTermsAndConditions,
+                    onEditAccount = viewModel.actions.navigation::startEditingProfile,
+                    onViewPublicProfile = viewModel.actions.navigation::openPublicProfile,
+                    onNotifications = viewModel.actions.navigation::openNotifications,
+                    onPrivacy = viewModel.actions.navigation::openPrivacy,
+                    onHelpSupport = viewModel.actions.navigation::openHelpAndSupport,
+                    onTermsConditions = viewModel.actions.navigation::openTermsAndConditions,
                     onSignOut = onSignOut,
                     onConfirmDeleteProfile = {
-                        viewModel.deleteProfile(onSuccess = onSignOut)
+                        viewModel.actions.account.deleteProfile(onSuccess = onSignOut)
                     }
                 ),
                 themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
@@ -181,14 +181,14 @@ internal fun handleSubscreenBack(
     onBack: () -> Unit
 ) {
     when (activeSubscreen) {
-        ProfileSubscreen.EDIT_ACCOUNT -> viewModel.closeEditAccount()
-        ProfileSubscreen.SETTINGS -> viewModel.closeSettings()
-        ProfileSubscreen.BOOKMARKED_LISTINGS -> viewModel.closeBookmarkedListings()
-        ProfileSubscreen.NOTIFICATIONS -> viewModel.closeNotifications()
-        ProfileSubscreen.PRIVACY -> viewModel.closePrivacy()
-        ProfileSubscreen.HELP_AND_SUPPORT -> viewModel.closeHelpAndSupport()
-        ProfileSubscreen.TERMS_AND_CONDITIONS -> viewModel.closeTermsAndConditions()
-        ProfileSubscreen.PUBLIC_PROFILE -> viewModel.closePublicProfile()
+        ProfileSubscreen.EDIT_ACCOUNT -> viewModel.actions.navigation.cancelEditingProfile()
+        ProfileSubscreen.SETTINGS -> viewModel.actions.navigation.openProfile()
+        ProfileSubscreen.BOOKMARKED_LISTINGS -> viewModel.actions.navigation.openProfile()
+        ProfileSubscreen.NOTIFICATIONS -> viewModel.actions.navigation.openSettings()
+        ProfileSubscreen.PRIVACY -> viewModel.actions.navigation.openSettings()
+        ProfileSubscreen.HELP_AND_SUPPORT -> viewModel.actions.navigation.openSettings()
+        ProfileSubscreen.TERMS_AND_CONDITIONS -> viewModel.actions.navigation.openSettings()
+        ProfileSubscreen.PUBLIC_PROFILE -> viewModel.actions.navigation.openSettings()
         ProfileSubscreen.PROFILE -> onBack()
     }
 }

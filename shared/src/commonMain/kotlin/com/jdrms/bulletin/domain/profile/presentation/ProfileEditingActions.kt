@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-internal class ProfileEditingActions(
+class ProfileEditingActions internal constructor(
     private val uiState: MutableStateFlow<ProfileUiState>,
     private val scope: CoroutineScope,
     private val updateStudentProfile: UpdateStudentProfile,

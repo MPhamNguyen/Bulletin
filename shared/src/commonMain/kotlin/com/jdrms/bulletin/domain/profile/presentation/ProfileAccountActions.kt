@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-internal class ProfileAccountActions(
+class ProfileAccountActions internal constructor(
     private val uiState: MutableStateFlow<ProfileUiState>,
     private val scope: CoroutineScope,
     private val signOutUser: SignOutUser,

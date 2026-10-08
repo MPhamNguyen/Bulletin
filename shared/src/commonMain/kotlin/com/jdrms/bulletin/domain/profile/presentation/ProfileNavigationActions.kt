@@ -3,7 +3,7 @@ package com.jdrms.bulletin.domain.profile.presentation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
-internal class ProfileNavigationActions(
+class ProfileNavigationActions internal constructor(
     private val uiState: MutableStateFlow<ProfileUiState>,
     private val cancelFlashNotification: () -> Unit
 ) {

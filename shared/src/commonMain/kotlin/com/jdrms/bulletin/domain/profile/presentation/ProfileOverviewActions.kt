@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-internal class ProfileOverviewActions(
+class ProfileOverviewActions internal constructor(
     private val uiState: MutableStateFlow<ProfileUiState>,
     private val scope: CoroutineScope,
     private val manageProfile: ManageProfile,

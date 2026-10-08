@@ -116,15 +116,17 @@ fun App(appContainer: AppContainer? = null) {
                         PasswordRecoveryStage.NONE -> SignInScreen(
                             errorMessage = profileUiState.errorMessage,
                             isLoading = profileUiState.isLoading,
-                            onClearMessages = { profileViewModel.clearMessages() },
+                            onClearMessages = profileViewModel.actions.notifications::clear,
                             onSignIn = { email, password ->
-                                profileViewModel.login(emailStr = email, pass = password) {
+                                profileViewModel.actions.authentication.login(email, password) {
                                     currentRootScreen = AppRootScreen.MAIN
                                 }
                             },
                             onForgotPassword = { passwordRecoveryViewModel.beginPasswordReset() },
                             onCreateAccount = {
-                                profileViewModel.resetRegistration()
+                                profileViewModel.actions.authentication.resetRegistration(
+                                    profileViewModel.actions.notifications::cancel
+                                )
                                 currentRootScreen = AppRootScreen.CREATE_PROFILE
                             }
                         )
@@ -153,15 +155,15 @@ fun App(appContainer: AppContainer? = null) {
                     SignUpScreen(
                         viewModel = profileViewModel,
                         onBack = {
-                            profileViewModel.clearMessages()
+                            profileViewModel.actions.notifications.clear()
                             currentRootScreen = AppRootScreen.SIGN_IN
                         },
                         onNavigateToSignIn = {
-                            profileViewModel.clearMessages()
+                            profileViewModel.actions.notifications.clear()
                             currentRootScreen = AppRootScreen.SIGN_IN
                         },
                         onContinueToApp = {
-                            profileViewModel.clearMessages()
+                            profileViewModel.actions.notifications.clear()
                             currentRootScreen = AppRootScreen.MAIN
                         }
                     )
@@ -173,7 +175,7 @@ fun App(appContainer: AppContainer? = null) {
                         themeViewModel = themeViewModel,
                         darkTheme = isDarkTheme,
                         onSignOut = {
-                            profileViewModel.signOut {
+                            profileViewModel.actions.account.signOut {
                                 currentRootScreen = AppRootScreen.SIGN_IN
                             }
                         }
