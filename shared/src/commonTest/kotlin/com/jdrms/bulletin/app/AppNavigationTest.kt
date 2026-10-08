@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
+import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.app.navigation.explicitProfileBack
 import com.jdrms.bulletin.app.navigation.systemProfileBack
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
@@ -25,6 +26,26 @@ class AppNavigationTest {
         assertEquals(
             AppRootScreen.CREATE_PROFILE,
             resolveRootScreen(AppRootScreen.CREATE_PROFILE, AuthSessionState.UNAUTHENTICATED)
+        )
+    }
+
+    @Test
+    fun authenticatedRegistrationKeepsTheSuccessScreenOpen() {
+        assertEquals(
+            AppRootScreen.CREATE_PROFILE,
+            resolveRootScreen(AppRootScreen.CREATE_PROFILE, AuthSessionState.AUTHENTICATED)
+        )
+    }
+
+    @Test
+    fun profileSubscreenBackRoutesAreOwnedByNavigation() {
+        assertEquals(ProfileDestination.PROFILE, backFromProfile(ProfileDestination.SETTINGS))
+        assertEquals(ProfileDestination.PROFILE, backFromProfile(ProfileDestination.BOOKMARKED_LISTINGS))
+        assertEquals(ProfileDestination.SETTINGS, backFromProfile(ProfileDestination.NOTIFICATIONS))
+        assertEquals(ProfileDestination.SETTINGS, backFromProfile(ProfileDestination.PUBLIC_PROFILE))
+        assertEquals(
+            ProfileDestination.SETTINGS,
+            backFromProfileDestination(ProfileDestination.EDIT_ACCOUNT, ProfileDestination.SETTINGS)
         )
     }
 

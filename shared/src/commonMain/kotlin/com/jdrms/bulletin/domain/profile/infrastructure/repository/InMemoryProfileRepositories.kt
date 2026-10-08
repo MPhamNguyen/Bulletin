@@ -186,12 +186,14 @@ class InMemoryProfileRepository(
 class InMemoryAuthRepository(
     private val profileRepository: ProfileRepository = InMemoryProfileRepository(),
     initialCredentials: Map<String, String> = defaultSeedCredentials,
+    initialSeedUserIds: Map<String, UserId> = defaultSeedUserIds,
     // Deterministic test seam only: no email delivery, expiry, or rate-limit simulation.
     private val testVerificationCode: String? = null
 ) : AuthRepository {
 
     // Development/test adapter only. Production authentication must never retain raw passwords in application memory.
     private val credentials = initialCredentials.mapKeys { it.key.lowercase() }.toMutableMap()
+    private val seedUserIds = initialSeedUserIds.mapKeys { it.key.lowercase() }
     private val profilesByEmail = mutableMapOf<String, StudentProfile>()
     private var currentUser: StudentProfile? = null
     private var pendingPasswordResetEmail: String? = null
@@ -214,9 +216,11 @@ class InMemoryAuthRepository(
         if (loginError != null) return Result.Error(IllegalArgumentException(loginError))
 
         val userProfile = profilesByEmail[normalizedEmail]
-            ?: when (val res = profileRepository.getProfile(UserId("current_student"))) {
-                is Result.Success -> res.data
-                is Result.Error -> null
+            ?: seedUserIds[normalizedEmail]?.let { userId ->
+                when (val result = profileRepository.getProfile(userId)) {
+                    is Result.Success -> result.data?.takeIf { it.email == email }
+                    is Result.Error -> null
+                }
             }
         if (userProfile != null) {
             if (userProfile.isDeleted) {
@@ -335,6 +339,9 @@ class InMemoryAuthRepository(
     companion object {
         val defaultSeedCredentials = mapOf(
             "dominic.alfonso@student.csulb.edu" to "password123"
+        )
+        val defaultSeedUserIds = mapOf(
+            "dominic.alfonso@student.csulb.edu" to UserId("current_student")
         )
     }
 }

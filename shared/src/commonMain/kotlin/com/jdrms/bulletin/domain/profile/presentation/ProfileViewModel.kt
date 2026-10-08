@@ -2,68 +2,76 @@ package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
+import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
+import com.jdrms.bulletin.domain.profile.application.SessionRepository
+import com.jdrms.bulletin.domain.profile.application.SessionState
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-/** Holds profile state and composes the focused collaborators used by profile destinations. */
+data class ProfileUiState(
+    val profile: StudentProfile? = null,
+    val reputation: StudentReputation? = null,
+    val activeListingsCount: Int = 0,
+    val itemsSoldCount: Int? = null,
+    val errorMessage: String? = null
+)
+
+/** Read model for the profile landing destination. */
 class ProfileViewModel(
-    dependencies: ProfileViewModelDependencies
+    private val sessionRepository: SessionRepository,
+    private val getProfileOverview: GetProfileOverview,
+    private val getProfileActivity: GetProfileActivity,
+    listingChangedSignal: RefreshSignal
 ) : ViewModel() {
     private val state = MutableStateFlow(ProfileUiState())
-    val uiState: StateFlow<ProfileUiState> = state.asStateFlow()
-    val actions: ProfileViewModelActions
+    val uiState = state.asStateFlow()
 
     init {
-        val notifications = ProfileNotificationActions(state, viewModelScope)
-        val navigation = ProfileNavigationActions(state, notifications::cancel)
-        val overview = ProfileOverviewActions(
-            state,
-            viewModelScope,
-            dependencies.manageProfile,
-            dependencies.activeListingsProvider,
-            dependencies.listingChangedSignal
-        )
-        val authentication = ProfileAuthenticationActions(
-            state,
-            viewModelScope,
-            dependencies.authenticateUser,
-            dependencies.restoreAuthenticatedProfile,
-            dependencies.verifyStudentEmail,
-            dependencies.resendVerificationCode,
-            dependencies.manageProfile,
-            dependencies.activeListingsProvider,
-            dependencies.policy,
-            notifications::show
-        )
-        val editing = ProfileEditingActions(
-            state,
-            viewModelScope,
-            dependencies.updateStudentProfile,
-            dependencies.uploadProfilePhoto,
-            notifications::cancel,
-            notifications::show
-        )
-        val account = ProfileAccountActions(
-            state,
-            viewModelScope,
-            dependencies.signOutUser,
-            dependencies.softDeleteProfile,
-            dependencies.submitStudentReview,
-            overview::loadProfile,
-            notifications::cancel
-        )
-        actions = ProfileViewModelActions(
-            navigation,
-            ProfileWorkflowActions(authentication, editing, overview, account),
-            notifications
-        )
-        authentication.restoreSession()
+        viewModelScope.launch {
+            sessionRepository.state.collect { session ->
+                when (session) {
+                    is SessionState.Authenticated -> {
+                        state.update { it.copy(profile = session.profile) }
+                        refreshProfileDetails()
+                    }
+                    SessionState.Checking -> Unit
+                    SessionState.Unauthenticated -> state.value = ProfileUiState()
+                }
+            }
+        }
+        viewModelScope.launch { listingChangedSignal.events.collect { refreshActiveListings() } }
     }
 
-    companion object {
-        const val FLASH_NOTIFICATION_DURATION_MILLIS = 3_000L
-        val DEFAULT_USER_ID = UserId("current_student")
+    fun refreshActiveListings() {
+        val profile = state.value.profile ?: return
+        viewModelScope.launch {
+            val count = getProfileActivity(profile.id)
+            state.update { it.copy(activeListingsCount = count) }
+        }
+    }
+
+    private suspend fun refreshProfileDetails() {
+        val profile = state.value.profile ?: return
+        when (val result = getProfileOverview(profile.id)) {
+            is Result.Success -> result.data?.let { overview ->
+                state.update {
+                    it.copy(
+                        profile = overview.profile,
+                        reputation = overview.reputation,
+                        activeListingsCount = overview.activeListingsCount
+                    )
+                }
+            }
+            is Result.Error -> state.update {
+                it.copy(errorMessage = result.exception.message ?: "Failed to load profile")
+            }
+        }
     }
 }

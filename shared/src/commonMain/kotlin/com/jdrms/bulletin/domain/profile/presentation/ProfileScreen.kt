@@ -1,220 +1,156 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
+import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.common.UserMessenger
+
+data class ProfileScreenFlows(
+    val editing: EditProfileViewModel,
+    val account: AccountViewModel,
+    val messenger: UserMessenger
+)
+
+data class ProfileScreenCallbacks(
+    val onNavigate: (ProfileDestination) -> Unit,
+    val onBack: () -> Unit,
+    val onSignOut: () -> Unit,
+    val onMyListingsClick: () -> Unit,
+    val onCreateListingClick: () -> Unit
+)
+
+private data class ProfileDestinationStates(
+    val profile: ProfileUiState,
+    val edit: EditProfileUiState
+)
 
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    themeViewModel: ThemeViewModel? = null,
-    onBack: () -> Unit = {},
-    onSignOut: () -> Unit = {},
-    onMyListingsClick: () -> Unit = {},
-    onBookmarkedListingsClick: () -> Unit = {},
-    onCreateListingClick: () -> Unit = {}
+    flows: ProfileScreenFlows,
+    destination: ProfileDestination,
+    callbacks: ProfileScreenCallbacks,
+    themeViewModel: ThemeViewModel? = null
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val profileState by viewModel.uiState.collectAsState()
+    val editState by flows.editing.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(Unit) {
-        viewModel.actions.overview.refreshActiveListings()
+    LaunchedEffect(Unit) { viewModel.refreshActiveListings() }
+    LaunchedEffect(flows.messenger) {
+        flows.messenger.messages.collect { snackbarHostState.showSnackbar(it) }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        val handleBack = { handleSubscreenBack(uiState.activeSubscreen, viewModel, onBack) }
-
-        ProfileSubscreenHost(
-            uiState = uiState,
-            viewModel = viewModel,
-            themeViewModel = themeViewModel,
-            handleBack = handleBack,
-            onSignOut = onSignOut,
-            landingActions = ProfileLandingActions(
-                onSettings = viewModel.actions.navigation::openSettings,
-                onEditProfile = viewModel.actions.navigation::startEditingProfile,
-                onMyListings = onMyListingsClick,
-                onBookmarkedListings = {
-                    onBookmarkedListingsClick()
-                    viewModel.actions.navigation.openBookmarkedListings()
-                },
-                onCreateListing = onCreateListingClick
-            )
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        ProfileDestinationContent(
+            destination,
+            ProfileDestinationStates(profileState, editState),
+            flows,
+            callbacks,
+            themeViewModel
         )
-
-        AnimatedContent(
-            targetState = uiState.successMessage,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 72.dp, start = 24.dp, end = 24.dp)
-                .zIndex(1f),
-            transitionSpec = {
-                (slideInVertically(initialOffsetY = { -it }) + fadeIn()) togetherWith
-                    (slideOutVertically(targetOffsetY = { -it }) + fadeOut())
-            },
-            label = "Profile flash notification"
-        ) { message ->
-            if (message != null) ProfileUpdateMessage(message)
-        }
+        SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
     }
 }
 
 @Composable
-private fun ProfileSubscreenHost(
-    uiState: ProfileUiState,
-    viewModel: ProfileViewModel,
-    themeViewModel: ThemeViewModel?,
-    handleBack: () -> Unit,
-    onSignOut: () -> Unit,
-    landingActions: ProfileLandingActions
+private fun ProfileDestinationContent(
+    destination: ProfileDestination,
+    states: ProfileDestinationStates,
+    flows: ProfileScreenFlows,
+    callbacks: ProfileScreenCallbacks,
+    themeViewModel: ThemeViewModel?
 ) {
-    val profilePhotoPicker = rememberProfilePhotoPicker(
-        onPhotoSelected = viewModel.actions.editing::uploadPhoto,
-        onError = viewModel.actions.editing::onPhotoSelectionError
+    when (destination) {
+        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, flows.editing, callbacks)
+        ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
+        ProfileDestination.SETTINGS -> ProfileSettingsDestination(states.profile, flows, callbacks, themeViewModel)
+        ProfileDestination.BOOKMARKED_LISTINGS -> BookmarkedListingsView(callbacks.onBack)
+        ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
+        ProfileDestination.PRIVACY -> PrivacyView(callbacks.onBack)
+        ProfileDestination.HELP_AND_SUPPORT -> HelpAndSupportView(callbacks.onBack)
+        ProfileDestination.TERMS_AND_CONDITIONS -> TermsAndConditionsView(callbacks.onBack)
+        ProfileDestination.PUBLIC_PROFILE -> PublicProfileView(states.profile.profile, callbacks.onBack)
+        ProfileDestination.MY_LISTINGS, ProfileDestination.EDIT_LISTING -> Unit
+    }
+}
+
+@Composable
+private fun ProfileLandingDestination(
+    state: ProfileUiState,
+    editing: EditProfileViewModel,
+    callbacks: ProfileScreenCallbacks
+) {
+    val photoPicker = rememberProfilePhotoPicker(
+        onPhotoSelected = editing::uploadPhoto,
+        onError = editing::onPhotoSelectionError
     )
-
-    when {
-        uiState.activeSubscreen == ProfileSubscreen.EDIT_ACCOUNT || uiState.isEditingProfile -> {
-            EditProfileView(
-                uiState = uiState,
-                onCancel = viewModel.actions.navigation::cancelEditingProfile,
-                onDraftChanged = viewModel.actions.editing::onDraftChanged,
-                onUpdate = viewModel.actions.editing::updateDetails,
-                onChangePhoto = profilePhotoPicker,
-                onSignOut = onSignOut
-            )
-        }
-        uiState.activeSubscreen == ProfileSubscreen.SETTINGS -> {
-            SettingsView(
-                uiState = uiState,
-                onBack = handleBack,
-                actions = SettingsActions(
-                    onEditAccount = viewModel.actions.navigation::startEditingProfile,
-                    onViewPublicProfile = viewModel.actions.navigation::openPublicProfile,
-                    onNotifications = viewModel.actions.navigation::openNotifications,
-                    onPrivacy = viewModel.actions.navigation::openPrivacy,
-                    onHelpSupport = viewModel.actions.navigation::openHelpAndSupport,
-                    onTermsConditions = viewModel.actions.navigation::openTermsAndConditions,
-                    onSignOut = onSignOut,
-                    onConfirmDeleteProfile = {
-                        viewModel.actions.account.deleteProfile(onSuccess = onSignOut)
-                    }
-                ),
-                themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
-                onThemePreferenceChanged = themeViewModel?.let { vm -> vm::setThemePreference }
-            )
-        }
-        uiState.activeSubscreen == ProfileSubscreen.BOOKMARKED_LISTINGS -> {
-            BookmarkedListingsView(onBack = handleBack)
-        }
-        uiState.activeSubscreen == ProfileSubscreen.NOTIFICATIONS -> {
-            NotificationsView(onBack = handleBack)
-        }
-        uiState.activeSubscreen == ProfileSubscreen.PRIVACY -> {
-            PrivacyView(onBack = handleBack)
-        }
-        uiState.activeSubscreen == ProfileSubscreen.HELP_AND_SUPPORT -> {
-            HelpAndSupportView(onBack = handleBack)
-        }
-        uiState.activeSubscreen == ProfileSubscreen.TERMS_AND_CONDITIONS -> {
-            TermsAndConditionsView(onBack = handleBack)
-        }
-        uiState.activeSubscreen == ProfileSubscreen.PUBLIC_PROFILE -> {
-            PublicProfileView(
-                profile = uiState.profile,
-                onBack = handleBack
-            )
-        }
-        else -> {
-            MarketplaceProfileView(
-                uiState = uiState,
-                onSettingsClick = landingActions.onSettings,
-                onEditProfileClick = landingActions.onEditProfile,
-                onChangePhotoClick = profilePhotoPicker,
-                onMyListingsClick = landingActions.onMyListings,
-                onBookmarkedListingsClick = landingActions.onBookmarkedListings,
-                onCreateListingClick = landingActions.onCreateListing
-            )
-        }
-    }
-}
-
-private data class ProfileLandingActions(
-    val onSettings: () -> Unit,
-    val onEditProfile: () -> Unit,
-    val onMyListings: () -> Unit,
-    val onBookmarkedListings: () -> Unit,
-    val onCreateListing: () -> Unit
-)
-
-internal fun handleSubscreenBack(
-    activeSubscreen: ProfileSubscreen,
-    viewModel: ProfileViewModel,
-    onBack: () -> Unit
-) {
-    when (activeSubscreen) {
-        ProfileSubscreen.EDIT_ACCOUNT -> viewModel.actions.navigation.cancelEditingProfile()
-        ProfileSubscreen.SETTINGS -> viewModel.actions.navigation.openProfile()
-        ProfileSubscreen.BOOKMARKED_LISTINGS -> viewModel.actions.navigation.openProfile()
-        ProfileSubscreen.NOTIFICATIONS -> viewModel.actions.navigation.openSettings()
-        ProfileSubscreen.PRIVACY -> viewModel.actions.navigation.openSettings()
-        ProfileSubscreen.HELP_AND_SUPPORT -> viewModel.actions.navigation.openSettings()
-        ProfileSubscreen.TERMS_AND_CONDITIONS -> viewModel.actions.navigation.openSettings()
-        ProfileSubscreen.PUBLIC_PROFILE -> viewModel.actions.navigation.openSettings()
-        ProfileSubscreen.PROFILE -> onBack()
-    }
+    MarketplaceProfileView(
+        uiState = state,
+        onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
+        onEditProfileClick = { callbacks.onNavigate(ProfileDestination.EDIT_ACCOUNT) },
+        onChangePhotoClick = photoPicker,
+        onMyListingsClick = callbacks.onMyListingsClick,
+        onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) },
+        onCreateListingClick = callbacks.onCreateListingClick
+    )
 }
 
 @Composable
-private fun ProfileUpdateMessage(message: String) {
-    Row(
-        modifier = Modifier
-            .shadow(6.dp, MaterialTheme.shapes.large)
-            .background(
-                color = BulletinExtras.colors.successContainer,
-                shape = MaterialTheme.shapes.large
-            )
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.CheckCircle,
-            contentDescription = null,
-            tint = BulletinExtras.colors.success
+private fun ProfileEditDestination(
+    state: EditProfileUiState,
+    flows: ProfileScreenFlows,
+    callbacks: ProfileScreenCallbacks
+) {
+    val photoPicker = rememberProfilePhotoPicker(
+        onPhotoSelected = flows.editing::uploadPhoto,
+        onError = flows.editing::onPhotoSelectionError
+    )
+    EditProfileView(
+        uiState = state,
+        actions = EditProfileActions(
+            onCancel = callbacks.onBack,
+            onDraftChanged = flows.editing::onDraftChanged,
+            onUpdate = { flows.editing.save { callbacks.onNavigate(ProfileDestination.PROFILE) } },
+            onChangePhoto = photoPicker,
+            onSignOut = { flows.account.signOut(callbacks.onSignOut) }
         )
-        Text(
-            text = message,
-            style = MaterialTheme.typography.titleMedium,
-            color = BulletinExtras.colors.onSuccessContainer
-        )
-    }
+    )
+}
+
+@Composable
+private fun ProfileSettingsDestination(
+    state: ProfileUiState,
+    flows: ProfileScreenFlows,
+    callbacks: ProfileScreenCallbacks,
+    themeViewModel: ThemeViewModel?
+) {
+    SettingsView(
+        uiState = state,
+        onBack = callbacks.onBack,
+        actions = SettingsActions(
+            onEditAccount = { callbacks.onNavigate(ProfileDestination.EDIT_ACCOUNT) },
+            onViewPublicProfile = { callbacks.onNavigate(ProfileDestination.PUBLIC_PROFILE) },
+            onNotifications = { callbacks.onNavigate(ProfileDestination.NOTIFICATIONS) },
+            onPrivacy = { callbacks.onNavigate(ProfileDestination.PRIVACY) },
+            onHelpSupport = { callbacks.onNavigate(ProfileDestination.HELP_AND_SUPPORT) },
+            onTermsConditions = { callbacks.onNavigate(ProfileDestination.TERMS_AND_CONDITIONS) },
+            onSignOut = { flows.account.signOut(callbacks.onSignOut) },
+            onConfirmDeleteProfile = { flows.account.deleteProfile(callbacks.onSignOut) }
+        ),
+        themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
+        onThemePreferenceChanged = themeViewModel?.let { it::setThemePreference }
+    )
 }

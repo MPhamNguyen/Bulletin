@@ -53,14 +53,18 @@ internal const val BIO_MAX_LENGTH = 160
 internal const val BIO_WARN_LENGTH = 150
 internal const val OTHER_LABEL = "Other"
 
+internal data class EditProfileActions(
+    val onCancel: () -> Unit,
+    val onDraftChanged: (ProfileDraft) -> Unit,
+    val onUpdate: () -> Unit,
+    val onChangePhoto: () -> Unit,
+    val onSignOut: () -> Unit
+)
+
 @Composable
 internal fun EditProfileView(
-    uiState: ProfileUiState,
-    onCancel: () -> Unit,
-    onDraftChanged: (ProfileDraft) -> Unit,
-    onUpdate: () -> Unit,
-    onChangePhoto: () -> Unit,
-    onSignOut: () -> Unit
+    uiState: EditProfileUiState,
+    actions: EditProfileActions
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -71,7 +75,7 @@ internal fun EditProfileView(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterStart
             ) {
-                TextButton(onClick = onCancel) {
+                TextButton(onClick = actions.onCancel) {
                     Text(
                         "Cancel",
                         style = MaterialTheme.typography.labelLarge,
@@ -100,10 +104,7 @@ internal fun EditProfileView(
         ) {
             EditProfileBody(
                 uiState = uiState,
-                onDraftChanged = onDraftChanged,
-                onSave = onUpdate,
-                onChangePhoto = onChangePhoto,
-                onSignOut = onSignOut
+                actions = actions
             )
         }
     }
@@ -111,19 +112,17 @@ internal fun EditProfileView(
 
 @Composable
 private fun EditProfileBody(
-    uiState: ProfileUiState,
-    onDraftChanged: (ProfileDraft) -> Unit,
-    onSave: () -> Unit,
-    onChangePhoto: () -> Unit,
-    onSignOut: () -> Unit
+    uiState: EditProfileUiState,
+    actions: EditProfileActions
 ) {
+    val onDraftChanged = actions.onDraftChanged
     val draft = uiState.profileDraft
 
     EditProfilePhoto(
         avatarUrl = uiState.profile?.avatarUrl,
         fullName = uiState.profile?.fullName.orEmpty(),
         isUploading = uiState.isPhotoUploading,
-        onChangePhoto = onChangePhoto
+        onChangePhoto = actions.onChangePhoto
     )
     Spacer(Modifier.height(20.dp))
 
@@ -215,7 +214,7 @@ private fun EditProfileBody(
     }
     Spacer(Modifier.height(16.dp))
     Button(
-        onClick = onSave,
+        onClick = actions.onUpdate,
         enabled = uiState.isProfileModified && !uiState.isLoading,
         modifier = Modifier.fillMaxWidth().height(50.dp),
         shape = MaterialTheme.shapes.medium,
@@ -226,7 +225,7 @@ private fun EditProfileBody(
     Spacer(Modifier.height(16.dp))
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     Spacer(Modifier.height(16.dp))
-    SignOutButton(onClick = onSignOut)
+    SignOutButton(onClick = actions.onSignOut)
     Spacer(Modifier.height(24.dp))
 }
 

@@ -1,9 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
-import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
-import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
 enum class AuthSessionState {
     CHECKING,
@@ -18,50 +15,8 @@ enum class PasswordRecoveryStage {
     CHANGE_PASSWORD
 }
 
-enum class ProfileSubscreen {
-    PROFILE,
-    SETTINGS,
-    EDIT_ACCOUNT,
-    BOOKMARKED_LISTINGS,
-    NOTIFICATIONS,
-    PRIVACY,
-    HELP_AND_SUPPORT,
-    TERMS_AND_CONDITIONS,
-    PUBLIC_PROFILE
-}
-
-data class ProfileUiState(
-    val profile: StudentProfile? = null,
-    val pendingRegistration: PendingRegistration? = null,
-    val verifiedEmailAwaitingProfile: StudentEmail? = null,
-    val profileDraft: ProfileDraft = ProfileDraft(),
-    val reputation: StudentReputation? = null,
-    val activeListingsCount: Int = 0,
-    val itemsSoldCount: Int = 18,
-    val showReviewDialog: Boolean = false,
-    val newScore: Int = 5,
-    val newComment: String = "",
-    val isLoading: Boolean = false,
-    val isPhotoUploading: Boolean = false,
-    val isEditingProfile: Boolean = false,
-    val activeSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
-    val editReturnSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
-    val errorMessage: String? = null,
-    val profileFormErrors: ProfileFormErrors = ProfileFormErrors(),
-    val successMessage: String? = null,
-    val isAccountCreated: Boolean = false,
-    val authSessionState: AuthSessionState = AuthSessionState.CHECKING
-) {
-    val isProfileModified: Boolean
-        get() = profile != null && ProfileDraft.from(profile) != profileDraft
-}
-
-data class ProfileFormErrors(
-    val school: String? = null,
-    val major: String? = null
-) {
-    val isValid: Boolean
-        get() = school == null && major == null
+data class ProfileFormErrors(val school: String? = null, val major: String? = null) {
+    val isValid: Boolean get() = school == null && major == null
 }
 
 fun validateProfileDraft(draft: ProfileDraft): ProfileFormErrors = ProfileFormErrors(
@@ -78,13 +33,11 @@ data class ProfileDraft(
     val majorIsCustom: Boolean = false
 ) {
     companion object {
-        fun from(profile: StudentProfile): ProfileDraft {
-            return ProfileDraft(
-                fullName = profile.fullName,
-                major = profile.major,
-                university = profile.university,
-                bio = profile.bio
-            )
-        }
+        fun from(profile: StudentProfile): ProfileDraft = ProfileDraft(
+            fullName = profile.fullName,
+            major = profile.major,
+            university = profile.university,
+            bio = profile.bio
+        )
     }
 }

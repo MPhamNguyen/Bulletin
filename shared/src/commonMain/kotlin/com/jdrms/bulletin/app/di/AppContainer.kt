@@ -9,6 +9,7 @@ import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.core.common.FlowUserMessenger
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
@@ -41,12 +42,14 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
-import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
-import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
-import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
+import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
+import com.jdrms.bulletin.domain.profile.application.PublishStudentReview
+import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignInUser
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
@@ -58,15 +61,20 @@ import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.AuthSessionRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
+import com.jdrms.bulletin.domain.profile.presentation.AccountViewModel
+import com.jdrms.bulletin.domain.profile.presentation.EditProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
-import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModelDependencies
+import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
+import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
+import com.jdrms.bulletin.domain.profile.presentation.SignInViewModel
 import io.github.jan.supabase.SupabaseClient
 
 class AppContainer(
@@ -168,6 +176,8 @@ class AppContainer(
             InMemoryAuthRepository(profileRepository)
         }
     }
+    val sessionRepository by lazy { AuthSessionRepository(authRepository) }
+    val userMessenger by lazy { FlowUserMessenger() }
 
     // Use Cases - Home
     val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }
@@ -198,8 +208,8 @@ class AppContainer(
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
 
     // Use Cases - Profile
-    val authenticateUser by lazy { AuthenticateUser(authRepository) }
-    val getAuthenticatedUserId by lazy { GetAuthenticatedUserId(authRepository) }
+    val signInUser by lazy { SignInUser(authRepository) }
+    val registerStudent by lazy { RegisterStudent(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
     val signOutUser by lazy { SignOutUser(authRepository) }
     val resendVerificationCode by lazy { ResendVerificationCode(authRepository) }
@@ -207,12 +217,14 @@ class AppContainer(
     val requestPasswordReset by lazy { RequestPasswordReset(authRepository) }
     val verifyPasswordResetCode by lazy { VerifyPasswordResetCode(authRepository) }
     val updatePassword by lazy { UpdatePassword(authRepository) }
-    val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val uploadProfilePhoto by lazy { UploadProfilePhoto(profilePhotoRepository, profileRepository) }
     val softDeleteProfile by lazy { SoftDeleteProfile(profileRepository, signOutUser) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
+    val publishStudentReview by lazy { PublishStudentReview(submitStudentReview) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
+    val getProfileOverview by lazy { GetProfileOverview(profileRepository, profileActiveListingsProvider) }
+    val getProfileActivity by lazy { GetProfileActivity(profileActiveListingsProvider) }
 
     // ViewModels
     fun createHomeViewModel() = HomeViewModel(
@@ -243,22 +255,32 @@ class AppContainer(
         reportMessage = reportMessage
     )
 
-    fun createProfileViewModel() = ProfileViewModel(
-        ProfileViewModelDependencies(
-            authenticateUser = authenticateUser,
-            restoreAuthenticatedProfile = restoreAuthenticatedProfile,
-            signOutUser = signOutUser,
-            verifyStudentEmail = verifyStudentEmail,
-            resendVerificationCode = resendVerificationCode,
-            manageProfile = manageProfile,
-            updateStudentProfile = updateStudentProfile,
-            uploadProfilePhoto = uploadProfilePhoto,
-            submitStudentReview = submitStudentReview,
-            activeListingsProvider = profileActiveListingsProvider,
-            listingChangedSignal = listingChangedSignal,
-            softDeleteProfile = softDeleteProfile
-        )
+    fun createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)
+
+    fun createRegistrationViewModel() = RegistrationViewModel(
+        registerStudent,
+        verifyStudentEmail,
+        resendVerificationCode,
+        sessionRepository
     )
+
+    fun createProfileViewModel() = ProfileViewModel(
+        sessionRepository,
+        getProfileOverview,
+        getProfileActivity,
+        listingChangedSignal
+    )
+
+    fun createEditProfileViewModel() = EditProfileViewModel(
+        sessionRepository,
+        updateStudentProfile,
+        uploadProfilePhoto,
+        userMessenger
+    )
+
+    fun createReviewViewModel() = ReviewViewModel(sessionRepository, publishStudentReview)
+
+    fun createAccountViewModel() = AccountViewModel(sessionRepository, signOutUser, softDeleteProfile, userMessenger)
 
     fun createPasswordRecoveryViewModel() = PasswordRecoveryViewModel(
         requestPasswordResetUseCase = requestPasswordReset,

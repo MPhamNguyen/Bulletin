@@ -25,7 +25,7 @@ internal fun MarketplaceProfileView(
     onCreateListingClick: () -> Unit
 ) {
     val profile = uiState.profile
-    val fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso"
+    val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
     val university = profile?.university.orEmpty()
     val major = profile?.major.orEmpty()
 
@@ -53,7 +53,7 @@ internal fun MarketplaceProfileView(
             MarketplaceActivityStatsCard(
                 activeListings = uiState.activeListingsCount,
                 itemsSold = uiState.itemsSoldCount,
-                rating = uiState.reputation?.averageRating ?: 4.8
+                rating = uiState.reputation?.averageRating
             )
 
             ProfileAboutCard(

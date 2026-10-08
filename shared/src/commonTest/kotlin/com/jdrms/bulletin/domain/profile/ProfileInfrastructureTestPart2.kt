@@ -310,7 +310,8 @@ class ProfileInfrastructureTestPart2 {
         val repo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
         val authRepo = InMemoryAuthRepository(
             profileRepository = repo,
-            initialCredentials = mapOf("student@school.edu" to "pass123")
+            initialCredentials = mapOf("student@school.edu" to "pass123"),
+            initialSeedUserIds = mapOf("student@school.edu" to UserId("current_student"))
         )
         val profile = StudentProfile(
             id = UserId("current_student"),

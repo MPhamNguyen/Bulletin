@@ -115,8 +115,8 @@ private fun ProfileInformationChip(icon: ImageVector, text: String) {
 @Composable
 internal fun MarketplaceActivityStatsCard(
     activeListings: Int,
-    itemsSold: Int,
-    rating: Double,
+    itemsSold: Int?,
+    rating: Double?,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -139,14 +139,14 @@ internal fun MarketplaceActivityStatsCard(
             )
             ActivityDivider()
             ActivityStat(
-                value = itemsSold.toString(),
+                value = formatProfileStat(itemsSold),
                 label = "Items sold",
                 icon = Icons.Outlined.CheckCircle,
                 modifier = Modifier.weight(1f)
             )
             ActivityDivider()
             ActivityStat(
-                value = rating.toString(),
+                value = formatProfileStat(rating),
                 label = "Reputation",
                 icon = Icons.Filled.Star,
                 iconTint = BulletinExtras.colors.star,
@@ -155,6 +155,8 @@ internal fun MarketplaceActivityStatsCard(
         }
     }
 }
+
+internal fun formatProfileStat(value: Number?): String = value?.toString() ?: "—"
 
 @Composable
 private fun ActivityStat(
