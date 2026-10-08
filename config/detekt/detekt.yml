@@ -12,18 +12,42 @@ config:
   warningsAsErrors: false
 
 complexity:
+  LargeClass:
+    active: true
+    threshold: 300
+    excludes:
+      - '**/ListingsViewModelTest.kt'
+  TooManyFunctions:
+    active: true
+    thresholdInClasses: 15
+    thresholdInFiles: 15
+    ignoreOverridden: true
+  LongParameterList:
+    active: true
+    constructorThreshold: 9
+    functionThreshold: 8
+    ignoreDefaultParameters: false
   LongMethod:
+    active: true
+    threshold: 40
     # @Composable screen functions are declaratively long by nature.
     ignoreAnnotated: ["Composable"]
-  LongParameterList:
-    # DI use-case constructors and ViewModels legitimately take several deps.
-    functionThreshold: 8
-    constructorThreshold: 8
-    ignoreDefaultParameters: true
-  TooManyFunctions:
-    active: false
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 15
+  NestedBlockDepth:
+    active: true
+    threshold: 4
 
 style:
+  ForbiddenSuppress:
+    active: true
+    rules:
+      - 'LargeClass'
+      - 'LongParameterList'
+      - 'TooManyFunctions'
+      - 'LongMethod'
+      - 'CyclomaticComplexMethod'
   ForbiddenComment:
     # This is an in-progress skeleton; TODO/FIXME markers are expected scaffolding.
     active: false

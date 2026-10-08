@@ -23,15 +23,16 @@ import com.jdrms.bulletin.core.designsystem.SectionHeader
 
 @Composable
 internal fun EmailVerificationContent(
-    uiState: ProfileUiState,
+    uiState: RegistrationUiState,
+    pending: com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration,
     onVerify: (String) -> Unit,
     onResend: () -> Unit,
     onChangeEmail: () -> Unit
 ) {
-    var code by remember(uiState.pendingRegistration) { mutableStateOf("") }
+    var code by remember(pending) { mutableStateOf("") }
     BulletinCard {
         Column {
-            SectionHeader("Verify your email", uiState.pendingRegistration?.email?.value)
+            SectionHeader("Verify your email", pending.email.value)
             Text(
                 "Check your inbox and spam folder for your code. Enter it below to finish creating your account.",
                 style = MaterialTheme.typography.bodyMedium
@@ -48,7 +49,7 @@ internal fun EmailVerificationContent(
                 modifier = Modifier.fillMaxWidth()
             )
             uiState.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            uiState.successMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            uiState.informationMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             if (uiState.isLoading) CircularProgressIndicator()
             Button(
                 onClick = { onVerify(code) },
@@ -64,19 +65,20 @@ internal fun EmailVerificationContent(
 
 @Composable
 internal fun EmailVerificationRecoveryContent(
-    uiState: ProfileUiState,
+    uiState: RegistrationUiState,
+    email: com.jdrms.bulletin.domain.profile.domain.model.StudentEmail,
     onRetry: () -> Unit,
     onSignIn: () -> Unit
 ) {
     BulletinCard {
         Column {
-            SectionHeader("Email verified", uiState.verifiedEmailAwaitingProfile?.value)
+            SectionHeader("Email verified", email.value)
             Text(
                 "Your code was accepted, but Bulletin could not finish loading your profile.",
                 style = MaterialTheme.typography.bodyMedium
             )
             uiState.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            uiState.successMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            uiState.informationMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             if (uiState.isLoading) CircularProgressIndicator()
             Button(
                 onClick = onRetry,

@@ -1,13 +1,12 @@
 package com.jdrms.bulletin.domain.profile.application
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
-import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhoto
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
-import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
@@ -15,32 +14,7 @@ import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepositor
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
-
-class AuthenticateUser(
-    private val authRepository: AuthRepository,
-    private val policy: ProfileValidationPolicy = ProfileValidationPolicy()
-) {
-    suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
-        return authRepository.login(email, password)
-    }
-
-    suspend fun register(
-        email: StudentEmail,
-        password: String,
-        fullName: String,
-        university: String = "CSU Long Beach"
-    ): Result<PendingRegistration> {
-        val validation = policy.validateRegistration(
-            emailStr = email.value,
-            password = password,
-            fullName = fullName
-        )
-        if (validation.isError()) {
-            return Result.Error((validation as Result.Error).exception)
-        }
-        return authRepository.register(email, password, fullName, university)
-    }
-}
+import kotlin.time.Instant
 
 class RequestPasswordReset(
     private val authRepository: AuthRepository,
@@ -91,14 +65,6 @@ class RestoreAuthenticatedProfile(
     }
 }
 
-class GetAuthenticatedUserId(
-    private val authRepository: AuthRepository
-) {
-    suspend operator fun invoke(): Result<UserId?> {
-        return authRepository.getCurrentUserId()
-    }
-}
-
 class SignOutUser(
     private val authRepository: AuthRepository
 ) {
@@ -122,22 +88,6 @@ class ResendVerificationCode(private val authRepository: AuthRepository) {
     suspend operator fun invoke(email: StudentEmail): Result<Unit> = authRepository.resendVerificationCode(email)
 }
 
-class ManageProfile(
-    private val profileRepository: ProfileRepository
-) {
-    suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
-        return profileRepository.getProfile(userId)
-    }
-
-    suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
-        return profileRepository.updateProfile(profile)
-    }
-
-    suspend fun getReputation(userId: UserId): StudentReputation {
-        return profileRepository.getReputation(userId)
-    }
-}
-
 class UpdateStudentProfile(
     private val profileRepository: ProfileRepository
 ) {
@@ -147,7 +97,6 @@ class UpdateStudentProfile(
         major: String,
         university: String,
         bio: String,
-        graduationDate: String = profile.graduationDate,
         avatarUrl: String? = profile.avatarUrl
     ): Result<StudentProfile> {
         val updateResult = profile.updateDetails(
@@ -155,7 +104,6 @@ class UpdateStudentProfile(
             major = major,
             university = university,
             bio = bio,
-            graduationDate = graduationDate,
             avatarUrl = avatarUrl
         )
         return when (updateResult) {
@@ -181,6 +129,31 @@ class UploadProfilePhoto(
         return when (val uploadResult = profilePhotoRepository.upload(profile.id, photo)) {
             is Result.Success -> profileRepository.updateProfile(profile.changeProfilePhoto(uploadResult.data))
             is Result.Error -> uploadResult
+        }
+    }
+}
+
+class SoftDeleteProfile(
+    private val profileRepository: ProfileRepository,
+    private val signOutUser: SignOutUser,
+    private val nowTimestamp: () -> String = {
+        Instant.fromEpochMilliseconds(currentTimeMillis()).toString()
+    }
+) {
+    suspend operator fun invoke(profile: StudentProfile): Result<StudentProfile> {
+        val timestamp = nowTimestamp()
+        val deleteResult = profile.softDelete(timestamp)
+        if (deleteResult is Result.Error) return deleteResult
+        val deletedProfile = (deleteResult as Result.Success).data
+
+        return when (val repoResult = profileRepository.softDelete(deletedProfile.id, timestamp)) {
+            is Result.Success -> {
+                when (val signOutResult = signOutUser()) {
+                    is Result.Success -> Result.Success(deletedProfile)
+                    is Result.Error -> signOutResult
+                }
+            }
+            is Result.Error -> repoResult
         }
     }
 }

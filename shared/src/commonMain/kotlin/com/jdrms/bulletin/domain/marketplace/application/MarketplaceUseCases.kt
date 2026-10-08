@@ -125,8 +125,6 @@ class ViewMarketplaceListing(
                 sellerSchool = profile.school?.takeIf(String::isNotBlank) ?: sellerSchool,
                 sellerAvatarUrl = profile.avatarUrl?.takeIf(String::isNotBlank) ?: sellerAvatarUrl,
                 sellerMajor = profile.major?.takeIf(String::isNotBlank) ?: sellerMajor,
-                sellerGraduationDate = profile.graduationDate?.takeIf(String::isNotBlank)
-                    ?: sellerGraduationDate,
                 sellerReputationScore = profile.reputationScore ?: sellerReputationScore,
                 sellerReviewCount = profile.reviewCount ?: sellerReviewCount,
                 sellerIsVerified = profile.isVerified
@@ -142,7 +140,6 @@ data class MarketplaceSellerProfile(
     val name: String?,
     val school: String?,
     val major: String? = null,
-    val graduationDate: String? = null,
     val bio: String? = null,
     val avatarUrl: String? = null,
     val reputationScore: Double? = null,

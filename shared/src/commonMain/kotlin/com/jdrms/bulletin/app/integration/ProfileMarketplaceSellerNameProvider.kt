@@ -16,7 +16,6 @@ class ProfileMarketplaceSellerNameProvider(
                     name = it.fullName,
                     school = it.university,
                     major = it.major,
-                    graduationDate = it.graduationDate,
                     bio = it.bio,
                     avatarUrl = it.avatarUrl,
                     reputationScore = it.reputation?.averageRating,

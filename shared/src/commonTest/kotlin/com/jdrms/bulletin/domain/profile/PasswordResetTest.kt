@@ -1,26 +1,18 @@
 package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
-import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
-import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
-import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
-import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdatePassword
-import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
-import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
-import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
-import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
+import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -79,36 +71,28 @@ class PasswordResetTest {
             authRepository.register(email, "oldPassword", "Reset Student")
             authRepository.verifyEmail(email, testEmailVerificationCode())
             authRepository.signOut()
-            val viewModel = ProfileViewModel(
-                authenticateUser = AuthenticateUser(authRepository, policy),
-                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepository),
-                signOutUser = SignOutUser(authRepository),
-                verifyStudentEmail = VerifyStudentEmail(authRepository),
-                resendVerificationCode = ResendVerificationCode(authRepository),
-                requestPasswordReset = RequestPasswordReset(authRepository, policy),
-                verifyPasswordResetCode = VerifyPasswordResetCode(authRepository),
-                updatePassword = UpdatePassword(authRepository, policy),
-                manageProfile = ManageProfile(profileRepository),
-                updateStudentProfile = UpdateStudentProfile(profileRepository),
-                submitStudentReview = SubmitStudentReview(profileRepository, policy)
+            val viewModel = PasswordRecoveryViewModel(
+                requestPasswordResetUseCase = RequestPasswordReset(authRepository, policy),
+                verifyPasswordResetCodeUseCase = VerifyPasswordResetCode(authRepository),
+                updatePasswordUseCase = UpdatePassword(authRepository, policy),
+                signOutUser = SignOutUser(authRepository)
             )
             advanceUntilIdle()
-            assertEquals(AuthSessionState.UNAUTHENTICATED, viewModel.uiState.value.authSessionState)
 
             viewModel.beginPasswordReset()
             viewModel.requestPasswordReset(email.value)
             advanceUntilIdle()
-            assertEquals(PasswordRecoveryStage.ENTER_CODE, viewModel.uiState.value.passwordRecoveryStage)
+            assertEquals(PasswordRecoveryStage.ENTER_CODE, viewModel.uiState.value.stage)
 
             viewModel.verifyPasswordResetCode(TEST_CONFIRMATION_CODE)
             advanceUntilIdle()
-            assertEquals(PasswordRecoveryStage.CHANGE_PASSWORD, viewModel.uiState.value.passwordRecoveryStage)
+            assertEquals(PasswordRecoveryStage.CHANGE_PASSWORD, viewModel.uiState.value.stage)
 
             var completed = false
             viewModel.updatePassword("newPassword", "newPassword") { completed = true }
             advanceUntilIdle()
             assertTrue(completed)
-            assertEquals(PasswordRecoveryStage.NONE, viewModel.uiState.value.passwordRecoveryStage)
+            assertEquals(PasswordRecoveryStage.NONE, viewModel.uiState.value.stage)
             assertEquals(2, authRepository.signOutCalls)
             assertTrue(authRepository.login(email, "newPassword").isSuccess())
         } finally {
@@ -154,18 +138,11 @@ class PasswordResetTest {
             authRepository.register(email, "oldPassword", "Reset Student")
             authRepository.verifyEmail(email, testEmailVerificationCode())
             authRepository.signOut()
-            val viewModel = ProfileViewModel(
-                authenticateUser = AuthenticateUser(authRepository, policy),
-                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepository),
-                signOutUser = SignOutUser(authRepository),
-                verifyStudentEmail = VerifyStudentEmail(authRepository),
-                resendVerificationCode = ResendVerificationCode(authRepository),
-                requestPasswordReset = RequestPasswordReset(authRepository, policy),
-                verifyPasswordResetCode = VerifyPasswordResetCode(authRepository),
-                updatePassword = UpdatePassword(authRepository, policy),
-                manageProfile = ManageProfile(profileRepository),
-                updateStudentProfile = UpdateStudentProfile(profileRepository),
-                submitStudentReview = SubmitStudentReview(profileRepository, policy)
+            val viewModel = PasswordRecoveryViewModel(
+                requestPasswordResetUseCase = RequestPasswordReset(authRepository, policy),
+                verifyPasswordResetCodeUseCase = VerifyPasswordResetCode(authRepository),
+                updatePasswordUseCase = UpdatePassword(authRepository, policy),
+                signOutUser = SignOutUser(authRepository)
             )
 
             viewModel.beginPasswordReset()
@@ -174,7 +151,7 @@ class PasswordResetTest {
             viewModel.verifyPasswordResetCode("000000")
             advanceUntilIdle()
 
-            assertEquals(PasswordRecoveryStage.ENTER_CODE, viewModel.uiState.value.passwordRecoveryStage)
+            assertEquals(PasswordRecoveryStage.ENTER_CODE, viewModel.uiState.value.stage)
             assertTrue(viewModel.uiState.value.errorMessage != null)
 
             viewModel.verifyPasswordResetCode(TEST_CONFIRMATION_CODE)
@@ -182,7 +159,7 @@ class PasswordResetTest {
             viewModel.updatePassword("newPassword", "differentPassword")
             advanceUntilIdle()
 
-            assertEquals(PasswordRecoveryStage.CHANGE_PASSWORD, viewModel.uiState.value.passwordRecoveryStage)
+            assertEquals(PasswordRecoveryStage.CHANGE_PASSWORD, viewModel.uiState.value.stage)
             assertTrue(viewModel.uiState.value.errorMessage != null)
         } finally {
             Dispatchers.resetMain()
