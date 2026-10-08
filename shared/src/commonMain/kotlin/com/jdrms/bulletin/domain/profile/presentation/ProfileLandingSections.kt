@@ -287,7 +287,7 @@ private fun MarketplaceActionRow(
                 ) {
                     Text(
                         text = badge,
-                            modifier = Modifier
+                        modifier = Modifier
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                             .widthIn(min = 12.dp),
                         style = MaterialTheme.typography.labelMedium,

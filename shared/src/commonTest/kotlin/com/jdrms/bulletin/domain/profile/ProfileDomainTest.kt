@@ -391,7 +391,6 @@ class ProfileDomainTest {
         )
         assertTrue(longBio is Result.Error)
         assertEquals("Bio must be 500 characters or fewer.", longBio.exception.message)
-
     }
 
     @Test
