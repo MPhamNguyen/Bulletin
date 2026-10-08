@@ -54,7 +54,7 @@ fun ListingSoldConfirmationDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = !isMarkingSold) {
-                Text(if (isMarkingSold) "Marking as sold…" else "Mark as sold")
+                Text(if (isMarkingSold) "Marking as sold..." else "Mark as sold")
             }
         }
     )
