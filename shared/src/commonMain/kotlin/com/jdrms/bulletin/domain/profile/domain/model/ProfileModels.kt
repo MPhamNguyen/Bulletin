@@ -189,7 +189,6 @@ data class StudentProfile(
 
         val validationError = when {
             normalizedName.isBlank() -> "Full name is required."
-            normalizedUniversity.isBlank() -> "School is required."
             normalizedBio.length > MAX_BIO_LENGTH -> "Bio must be $MAX_BIO_LENGTH characters or fewer."
             normalizedGradDate.length > MAX_GRAD_DATE_LENGTH ->
                 "Graduation date must be $MAX_GRAD_DATE_LENGTH characters or fewer."

@@ -380,8 +380,8 @@ class ProfileDomainTest {
         assertEquals("Full name is required.", blankName.exception.message)
 
         val blankSchool = profile.updateDetails("John Doe", "Computer Science", " ", "Bio")
-        assertTrue(blankSchool is Result.Error)
-        assertEquals("School is required.", blankSchool.exception.message)
+        assertTrue(blankSchool is Result.Success)
+        assertEquals("", blankSchool.data.university)
 
         val longBio = profile.updateDetails(
             "John Doe",
