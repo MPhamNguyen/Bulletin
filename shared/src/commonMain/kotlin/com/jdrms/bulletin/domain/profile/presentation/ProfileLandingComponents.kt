@@ -78,7 +78,6 @@ internal fun ProfileHero(
     fullName: String,
     major: String,
     university: String,
-    graduationDate: String,
     isVerified: Boolean,
     onEditProfileClick: () -> Unit,
     onChangePhotoClick: () -> Unit,
@@ -144,7 +143,7 @@ internal fun ProfileHero(
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "$major @ $university\n$graduationDate",
+            text = "$major @ $university",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

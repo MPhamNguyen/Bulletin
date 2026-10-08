@@ -105,7 +105,6 @@ private fun ProfileSubscreenHost(
         uiState.activeSubscreen == ProfileSubscreen.EDIT_ACCOUNT || uiState.isEditingProfile -> {
             EditProfileView(
                 uiState = uiState,
-                onBack = handleBack,
                 onCancel = viewModel::cancelEditingProfile,
                 onDraftChanged = viewModel::onProfileDraftChanged,
                 onUpdate = viewModel::updateProfileDetails,

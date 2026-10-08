@@ -183,7 +183,7 @@ data class StudentProfile(
             return Result.Error(IllegalStateException("Cannot update a deleted profile."))
         }
         val normalizedName = fullName.trim()
-        val normalizedUniversity = university.trim()
+        val normalizedUniversity = university.trim().withoutTrailingAcronym()
         val normalizedBio = bio.trim()
         val normalizedGradDate = graduationDate.trim()
 
@@ -202,7 +202,7 @@ data class StudentProfile(
         return Result.Success(
             copy(
                 fullName = normalizedName,
-                major = major.trim(),
+                major = major.trim().withoutTrailingAcronym(),
                 graduationDate = normalizedGradDate,
                 university = normalizedUniversity,
                 bio = normalizedBio,
@@ -214,5 +214,19 @@ data class StudentProfile(
     companion object {
         const val MAX_BIO_LENGTH = 500
         const val MAX_GRAD_DATE_LENGTH = 50
+    }
+}
+
+private fun String.withoutTrailingAcronym(): String {
+    if (!endsWith(")")) return this
+
+    val acronymStart = lastIndexOf(" (")
+    if (acronymStart < 0) return this
+
+    val acronym = substring(acronymStart + 2, lastIndex)
+    return if (acronym.isNotEmpty() && acronym.all { it in 'A'..'Z' || it.isDigit() }) {
+        substring(0, acronymStart).trimEnd()
+    } else {
+        this
     }
 }

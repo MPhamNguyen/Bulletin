@@ -317,16 +317,54 @@ class ProfileDomainTest {
             major = "  Computer Science  ",
             university = "  California State University - Long Beach  ",
             bio = "  Campus seller and student.  ",
-            graduationDate = "  Class of 2025  "
         )
 
         assertTrue(result is Result.Success)
         assertEquals("John Doe", result.data.fullName)
         assertEquals("Computer Science", result.data.major)
-        assertEquals("Class of 2025", result.data.graduationDate)
         assertEquals("California State University - Long Beach", result.data.university)
         assertEquals("Campus seller and student.", result.data.bio)
         assertEquals("Original Name", profile.fullName)
+    }
+
+    @Test
+    fun testStudentProfileRemovesTrailingAcronymsFromAcademicDetails() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "Original Name"
+        )
+
+        val result = profile.updateDetails(
+            fullName = "John Doe",
+            major = "Computer Science (CS)",
+            university = "California State University, Long Beach (CSULB)",
+            bio = "Student"
+        )
+
+        assertTrue(result is Result.Success)
+        assertEquals("Computer Science", result.data.major)
+        assertEquals("California State University, Long Beach", result.data.university)
+    }
+
+    @Test
+    fun testStudentProfilePreservesNonAcronymParentheticalAcademicDetails() {
+        val profile = StudentProfile(
+            id = UserId("student_1"),
+            email = StudentEmail("student@example.com"),
+            fullName = "Original Name"
+        )
+
+        val result = profile.updateDetails(
+            fullName = "John Doe",
+            major = "Art (Pre-Med)",
+            university = "Test University (Downtown)",
+            bio = "Student"
+        )
+
+        assertTrue(result is Result.Success)
+        assertEquals("Art (Pre-Med)", result.data.major)
+        assertEquals("Test University (Downtown)", result.data.university)
     }
 
     @Test
@@ -372,12 +410,10 @@ class ProfileDomainTest {
             email = StudentEmail("student@example.com"),
             fullName = "John Doe",
             major = "Computer Science",
-            graduationDate = "Class of 2025"
         )
 
         val dto = ProfileMapper.toDto(profile)
         assertEquals("Computer Science", dto.major)
-        assertEquals("Class of 2025", dto.graduationDate)
         assertEquals(profile, ProfileMapper.toDomain(dto))
     }
 

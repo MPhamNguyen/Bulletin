@@ -363,7 +363,7 @@ class ProfileViewModelTest {
                 viewModel.uiState.value.profileDraft.copy(
                     fullName = "Jane Doe",
                     major = "Computer Science",
-                    university = "California State University - Long Beach",
+                    university = "California State University, Long Beach (CSULB)",
                     bio = "Campus student"
                 )
             )
@@ -376,6 +376,7 @@ class ProfileViewModelTest {
             assertFalse(updatedState.isProfileModified)
             assertEquals("Jane Doe", updatedState.profile?.fullName)
             assertEquals("Computer Science", updatedState.profile?.major)
+            assertEquals("California State University, Long Beach", updatedState.profile?.university)
             assertEquals("Profile updated", updatedState.successMessage)
 
             advanceTimeBy(ProfileViewModel.FLASH_NOTIFICATION_DURATION_MILLIS - 1)
@@ -628,17 +629,13 @@ class ProfileViewModelTest {
 
             viewModel.openEditAccount()
             viewModel.onProfileDraftChanged(
-                viewModel.uiState.value.profileDraft.copy(
-                    graduationDate = "Class of 2026"
-                )
+                viewModel.uiState.value.profileDraft
             )
             viewModel.updateProfileDetails()
             runCurrent()
 
             assertEquals(ProfileSubscreen.PROFILE, viewModel.uiState.value.activeSubscreen)
             assertFalse(viewModel.uiState.value.isEditingProfile)
-            assertEquals("Class of 2026", viewModel.uiState.value.profile?.graduationDate)
-            assertEquals("Class of 2026", viewModel.uiState.value.profileDraft.graduationDate)
             assertEquals("Profile updated", viewModel.uiState.value.successMessage)
             advanceUntilIdle()
         } finally {

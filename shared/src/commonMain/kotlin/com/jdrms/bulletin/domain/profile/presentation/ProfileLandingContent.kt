@@ -28,7 +28,6 @@ internal fun MarketplaceProfileView(
     val fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso"
     val university = profile?.university?.ifBlank { null } ?: "CSU Long Beach"
     val major = profile?.major?.ifBlank { null } ?: "Computer Science"
-    val graduationDate = profile?.graduationDate?.ifBlank { null } ?: "Class of 2025"
 
     Column(modifier = Modifier.fillMaxSize()) {
         MarketplaceProfileTopBar(onSettingsClick = onSettingsClick)
@@ -45,7 +44,6 @@ internal fun MarketplaceProfileView(
                 fullName = fullName,
                 major = major,
                 university = university,
-                graduationDate = graduationDate,
                 isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
                 onEditProfileClick = onEditProfileClick,
                 onChangePhotoClick = onChangePhotoClick,
@@ -60,7 +58,6 @@ internal fun MarketplaceProfileView(
 
             ProfileAboutCard(
                 major = major,
-                graduationDate = graduationDate,
                 university = university,
                 bio = profile?.bio,
                 onEditProfileClick = onEditProfileClick
