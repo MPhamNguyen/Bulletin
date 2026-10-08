@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.GridView
@@ -45,6 +46,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinExtras
 @Composable
 internal fun ProfileAboutCard(
     major: String,
+    graduationDate: String,
     university: String,
     bio: String?,
     onEditProfileClick: () -> Unit
@@ -69,12 +71,13 @@ internal fun ProfileAboutCard(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ProfileInformationChip(Icons.Outlined.School, major)
+            ProfileInformationChip(Icons.Outlined.CalendarToday, graduationDate)
             ProfileInformationChip(Icons.Outlined.LocationOn, university)
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = bio?.ifBlank { null }
-                ?: "",
+                ?: "Senior student buying & selling tech, textbooks, and campus essentials.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -283,7 +286,7 @@ private fun MarketplaceActionRow(
                 ) {
                     Text(
                         text = badge,
-                        modifier = Modifier
+                            modifier = Modifier
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                             .widthIn(min = 12.dp),
                         style = MaterialTheme.typography.labelMedium,
