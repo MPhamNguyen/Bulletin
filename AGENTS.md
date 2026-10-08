@@ -289,15 +289,13 @@ as directed there.
 Review size and suppression limits before handoff:
 
 ```bash
-# Kotlin files over 400 lines
-find shared/src androidApp/src -name '*.kt' -print0 | xargs -0 wc -l | awk '$1 > 400 && $2 != "total"'
-# Size-rule suppressions
-rg -n '@Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod|CyclomaticComplexMethod|ComplexCondition)' \
-  shared/src androidApp/src
+# Any Kotlin file over 400 lines (must only list known legacy files)
+find shared/src -name '*.kt' -print0 | xargs -0 wc -l | awk '$1 > 400 && $2 != "total"'
+# Size-rule suppressions (must return nothing)
+rg -n '@Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src
 ```
 
-The first command may list only files named under "Known legacy debt" (and you must not have grown them). The second
-must return no results for code you added or changed; report any pre-existing hits as legacy debt.
+The first command may list only files named under Known legacy debt. The second must return nothing.
 
 ## Change hygiene
 
