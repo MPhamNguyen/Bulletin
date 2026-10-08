@@ -2,28 +2,53 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ArgumentListWrapping:Res.kt$Res$("composeResources/bulletin.shared.generated.resources/" + path)</ID>
-    <ID>FunctionNaming:Drawable0.commonMain.kt$@InternalResourceApi internal fun _collectCommonMainDrawable0Resources(map: MutableMap&lt;String, DrawableResource&gt;)</ID>
-    <ID>ImportOrdering:ActualResourceCollectors.kt$import kotlin.OptIn import kotlin.String import kotlin.collections.Map import org.jetbrains.compose.resources.DrawableResource import org.jetbrains.compose.resources.FontResource import org.jetbrains.compose.resources.PluralStringResource import org.jetbrains.compose.resources.StringArrayResource import org.jetbrains.compose.resources.StringResource</ID>
-    <ID>ImportOrdering:Drawable0.commonMain.kt$import kotlin.OptIn import kotlin.String import kotlin.collections.MutableMap import org.jetbrains.compose.resources.DrawableResource import org.jetbrains.compose.resources.InternalResourceApi import org.jetbrains.compose.resources.ResourceContentHash import org.jetbrains.compose.resources.ResourceItem</ID>
-    <ID>ImportOrdering:ExpectResourceCollectors.kt$import kotlin.String import kotlin.collections.Map import org.jetbrains.compose.resources.DrawableResource import org.jetbrains.compose.resources.FontResource import org.jetbrains.compose.resources.PluralStringResource import org.jetbrains.compose.resources.StringArrayResource import org.jetbrains.compose.resources.StringResource</ID>
-    <ID>ImportOrdering:Res.kt$import kotlin.ByteArray import kotlin.OptIn import kotlin.String import kotlin.Suppress import org.jetbrains.compose.resources.InternalResourceApi import org.jetbrains.compose.resources.getResourceUri import org.jetbrains.compose.resources.readResourceBytes</ID>
-    <ID>Indentation:ActualResourceCollectors.kt$ </ID>
-    <ID>Indentation:Drawable0.commonMain.kt$ </ID>
-    <ID>Indentation:Res.kt$ </ID>
-    <ID>Indentation:Res.kt$Res$ </ID>
-    <ID>MaxLineLength:BULLETIN-81-decompose-MyListingsScreen.kt$0</ID>
-    <ID>MaxLineLength:Res.kt$Res$public</ID>
-    <ID>MaxLineLength:Res.kt$Res$public suspend</ID>
-    <ID>MaximumLineLength:BULLETIN-81-decompose-MyListingsScreen.kt$0</ID>
-    <ID>MaximumLineLength:Res.kt$Res$ </ID>
-    <ID>ParameterListWrapping:Res.kt$Res$(path: String)</ID>
-    <ID>SpacingAroundOperators:BULLETIN-81-decompose-MyListingsScreen.kt$-</ID>
-    <ID>Wrapping:Drawable0.commonMain.kt$(</ID>
-    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:compose_multiplatform", setOf( ResourceItem(setOf(), "${MD}drawable/compose-multiplatform.xml", -1, -1), ))</ID>
-    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_arrow_back", setOf( ResourceItem(setOf(), "${MD}drawable/ic_arrow_back.xml", -1, -1), ))</ID>
-    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_graduation_cap", setOf( ResourceItem(setOf(), "${MD}drawable/ic_graduation_cap.xml", -1, -1), ))</ID>
-    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_visibility", setOf( ResourceItem(setOf(), "${MD}drawable/ic_visibility.xml", -1, -1), ))</ID>
-    <ID>Wrapping:Drawable0.commonMain.kt$("drawable:ic_visibility_off", setOf( ResourceItem(setOf(), "${MD}drawable/ic_visibility_off.xml", -1, -1), ))</ID>
+    <ID>LargeClass:ListingsViewModel.kt$ListingsViewModel : ViewModel</ID>
+    <ID>LargeClass:SupabaseEmailVerificationTest.kt$SupabaseEmailVerificationTest</ID>
+    <ID>LongMethod:ListingsViewModel.kt$ListingsViewModel$private suspend fun executeListingUpdate(draft: ValidatedEditDraft, seller: ListingSeller)</ID>
+    <ID>LongMethod:ListingsViewModel.kt$ListingsViewModel$private suspend fun submitListing(draft: NewListingDraft)</ID>
+    <ID>LongMethod:MarketplaceDomainTest.kt$MarketplaceDomainTest$@Test fun testSearchPolicyFiltering()</ID>
+    <ID>LongMethod:MarketplaceViewModel.kt$MarketplaceViewModel$fun loadNextPage()</ID>
+    <ID>LongMethod:MarketplaceViewModel.kt$MarketplaceViewModel$private fun loadFirstPage(userId: String, debounceMillis: Long)</ID>
+    <ID>LongMethod:MarketplaceViewModelTestPart2.kt$MarketplaceViewModelTestPart2$@OptIn(ExperimentalCoroutinesApi::class) @Test fun categoryAndKeywordsRemainAppliedAcrossEveryPage()</ID>
+    <ID>LongMethod:MarketplaceViewModelTestPart2.kt$MarketplaceViewModelTestPart2$@OptIn(ExperimentalCoroutinesApi::class) @Test fun everyCategoryPaginatesWithTheSameAppendBehaviorAsAll()</ID>
+    <ID>LongMethod:ProfileEditingActions.kt$ProfileEditingActions$fun updateDetails()</ID>
+    <ID>LongMethod:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$@Test fun testSupabaseProfileRepositoryErrorMapping()</ID>
+    <ID>LongMethod:ProfileRepositoryTest.kt$ProfileRepositoryTest$@Test fun testSupabaseProfileRepositoryErrorMapping()</ID>
+    <ID>LongMethod:ProfileViewModelTest.kt$ProfileViewModelTest$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelCreateAccountAndValidation()</ID>
+    <ID>LongMethod:ProfileViewModelTest.kt$ProfileViewModelTest$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelUpdatesAndResetsProfileDraft()</ID>
+    <ID>LongMethod:ProfileViewModelTest.kt$ProfileViewModelTestPart1$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelCreateAccountAndValidation()</ID>
+    <ID>LongMethod:ProfileViewModelTest.kt$ProfileViewModelTestPart1$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelRestoresAndClearsAuthenticatedSession()</ID>
+    <ID>LongMethod:ProfileViewModelTestPart2.kt$ProfileViewModelTestPart2$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelSubscreenNavigation()</ID>
+    <ID>LongMethod:ProfileViewModelTestPart2Part4.kt$ProfileViewModelTestPart4$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelDeleteProfileSoftDeletesAndSignsOut()</ID>
+    <ID>LongMethod:ProfileViewModelTestPart3.kt$ProfileViewModelTestPart3$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelEditingFlow()</ID>
+    <ID>LongMethod:ProfileViewModelTestPart3.kt$ProfileViewModelTestPart3$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelLoginValidation()</ID>
+    <ID>LongMethod:ProfileViewModelTestPart3.kt$ProfileViewModelTestPart3$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelUpdatesAndResetsProfileDraft()</ID>
+    <ID>LongMethod:SupabaseMarketplaceRepository.kt$SupabaseMarketplaceRepository$override suspend fun viewListing(listingID: String): Result&lt;Listing&gt;</ID>
+    <ID>LongParameterList:ListingModels.kt$Listing$( editorSellerId: SellerId, title: String = this.title, description: String = this.description, price: ListingPrice = this.price, category: ListingCategory = this.category, condition: ListingCondition = this.condition, images: List&lt;String&gt; = this.images )</ID>
+    <ID>LongParameterList:ListingsViewModel.kt$ListingsViewModel$( private val createListing: CreateListing, private val manageListing: ManageListing, private val deleteListing: DeleteListing, private val getSellerListings: GetSellerListings, private val currentSellerProvider: CurrentListingSellerProvider, private val listingChangedSignal: RefreshSignal? = null )</ID>
+    <ID>LongParameterList:MarketplaceDetailBottomSheet.kt$( listing: Listing?, isLoading: Boolean, errorMessage: String?, isSaved: Boolean, onDismiss: () -&gt; Unit, onRetry: () -&gt; Unit, onToggleSave: () -&gt; Unit, onSellerClick: (sellerId: String) -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:ProfileAccountActions.kt$ProfileAccountActions$( private val uiState: MutableStateFlow&lt;ProfileUiState&gt;, private val scope: CoroutineScope, private val signOutUser: SignOutUser, private val softDeleteProfile: SoftDeleteProfile, private val submitStudentReview: SubmitStudentReview, private val loadProfile: (UserId) -&gt; Unit, private val cancelFlashNotification: () -&gt; Unit )</ID>
+    <ID>LongParameterList:ProfileAuthenticationActions.kt$ProfileAuthenticationActions$( private val uiState: MutableStateFlow&lt;ProfileUiState&gt;, private val scope: CoroutineScope, private val authenticateUser: AuthenticateUser, private val restoreAuthenticatedProfile: RestoreAuthenticatedProfile, private val verifyStudentEmail: VerifyStudentEmail, private val resendVerificationCode: ResendVerificationCode, private val manageProfile: ManageProfile, private val activeListingsProvider: ProfileActiveListingsProvider?, private val policy: ProfileValidationPolicy, private val showFlashNotification: (String) -&gt; Unit )</ID>
+    <ID>LongParameterList:ProfileEditContent.kt$( label: String, value: String, leadingIcon: ImageVector, placeholder: String = "", trailingAction: (@Composable () -&gt; Unit)? = null, onValueChange: (String) -&gt; Unit )</ID>
+    <ID>LongParameterList:ProfileEditContent.kt$( uiState: ProfileUiState, onCancel: () -&gt; Unit, onDraftChanged: (ProfileDraft) -&gt; Unit, onUpdate: () -&gt; Unit, onChangePhoto: () -&gt; Unit, onSignOut: () -&gt; Unit )</ID>
+    <ID>LongParameterList:ProfileEditingActions.kt$ProfileEditingActions$( private val uiState: MutableStateFlow&lt;ProfileUiState&gt;, private val scope: CoroutineScope, private val updateStudentProfile: UpdateStudentProfile, private val uploadProfilePhoto: UploadProfilePhoto?, private val cancelFlashNotification: () -&gt; Unit, private val showFlashNotification: (String) -&gt; Unit )</ID>
+    <ID>LongParameterList:ProfileLandingComponents.kt$( avatarUrl: String?, fullName: String, size: Dp, borderWidth: Dp = 0.dp, backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer, contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer )</ID>
+    <ID>LongParameterList:ProfileLandingComponents.kt$( fullName: String, major: String, university: String, isVerified: Boolean, onEditProfileClick: () -&gt; Unit, onChangePhotoClick: () -&gt; Unit, avatarUrl: String? = null )</ID>
+    <ID>LongParameterList:ProfileLandingContent.kt$( uiState: ProfileUiState, onSettingsClick: () -&gt; Unit, onEditProfileClick: () -&gt; Unit, onChangePhotoClick: () -&gt; Unit, onMyListingsClick: () -&gt; Unit, onBookmarkedListingsClick: () -&gt; Unit, onCreateListingClick: () -&gt; Unit )</ID>
+    <ID>LongParameterList:ProfileScreen.kt$( uiState: ProfileUiState, viewModel: ProfileViewModel, themeViewModel: ThemeViewModel?, handleBack: () -&gt; Unit, onSignOut: () -&gt; Unit, landingActions: ProfileLandingActions )</ID>
+    <ID>LongParameterList:ProfileScreen.kt$( viewModel: ProfileViewModel, themeViewModel: ThemeViewModel? = null, onBack: () -&gt; Unit = {}, onSignOut: () -&gt; Unit = {}, onMyListingsClick: () -&gt; Unit = {}, onBookmarkedListingsClick: () -&gt; Unit = {}, onCreateListingClick: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:ProfileUseCases.kt$UpdateStudentProfile$( profile: StudentProfile, fullName: String, major: String, university: String, bio: String, avatarUrl: String? = profile.avatarUrl )</ID>
+    <ID>LongParameterList:ProfileViewModelTest.kt$ProfileViewModelTestPart1$( authRepository: AuthRepository, profileRepository: InMemoryProfileRepository, activeListingsProvider: ProfileActiveListingsProvider? = null, listingChangedSignal: RefreshSignal? = null, profilePhotoRepository: ProfilePhotoRepository? = null, softDeleteProfile: SoftDeleteProfile = SoftDeleteProfile(profileRepository, SignOutUser(authRepository)) )</ID>
+    <ID>LongParameterList:ProfileViewModelTestPart2.kt$ProfileViewModelTestPart2$( authRepository: AuthRepository, profileRepository: InMemoryProfileRepository, activeListingsProvider: ProfileActiveListingsProvider? = null, listingChangedSignal: RefreshSignal? = null, profilePhotoRepository: ProfilePhotoRepository? = null, softDeleteProfile: SoftDeleteProfile = SoftDeleteProfile(profileRepository, SignOutUser(authRepository)) )</ID>
+    <ID>LongParameterList:SettingsContent.kt$( uiState: ProfileUiState, onBack: () -&gt; Unit, actions: SettingsActions, themePreference: ThemePreference? = null, onThemePreferenceChanged: ((ThemePreference) -&gt; Unit)? = null, showDeleteConfirmation: Boolean? = null )</ID>
+    <ID>LongParameterList:SignInScreen.kt$( email: String? = null, password: String? = null, errorMessage: String? = null, isLoading: Boolean = false, onEmailChange: ((String) -&gt; Unit)? = null, onPasswordChange: ((String) -&gt; Unit)? = null, onClearMessages: () -&gt; Unit = {}, onSignIn: (String, String) -&gt; Unit = { _, _ -&gt; }, onForgotPassword: () -&gt; Unit = {}, onCreateAccount: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:SupabaseMarketplaceListingSourceTest.kt$SupabaseMarketplaceListingSourceTest$( id: String, userId: String? = "seller_1", name: String? = "Supabase Calculator", category: String? = "TEXTBOOKS", price: Double? = 25.0, description: String? = "Seeded database listing", createdAt: String? = null )</ID>
+    <ID>TooManyFunctions:ListingsViewModel.kt$ListingsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ProfileViewModel.kt$ProfileViewModel : ViewModel</ID>
+    <ID>UnusedPrivateClass:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$FakeProfilePhotoStorage : ProfilePhotoStorage</ID>
+    <ID>UnusedPrivateMember:ProfileDomainTestPart2.kt$ProfileDomainTestPart2$private fun pngBytes(): ByteArray</ID>
+    <ID>UnusedPrivateMember:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$private fun jpegBytes(): ByteArray</ID>
+    <ID>UnusedPrivateMember:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$private fun pngBytes(): ByteArray</ID>
+    <ID>VariableNaming:ListingsViewModel.kt$ListingsViewModel$internal val _uiState = MutableStateFlow(ListingsUiState())</ID>
   </CurrentIssues>
 </SmellBaseline>

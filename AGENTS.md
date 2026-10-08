@@ -80,6 +80,8 @@ task explicitly requests one.
 3. The command/query or use case that initiates the behavior.
 4. The repository ports or domain events required.
 5. Every bounded-context crossing and the translation mechanism used.
+6. The ViewModel(s) and use case(s) that will own the behavior, and their current size against the limits in
+   "Cohesion and size limits".
 
 Then implement from the domain outward: domain model and tests, application use case, infrastructure adapter, presentation state/UI, and finally composition. If a requested design violates a boundary, stop and propose a domain-safe alternative instead of implementing the violation.
 
@@ -98,7 +100,9 @@ When adding a feature or vertical slice:
 2. Prove its invariants and state transitions with domain tests.
 3. Add a focused application command/query use case.
 4. Implement the adapter, DTO, and anti-corruption mapper in `infrastructure` when I/O is involved.
-5. Model screen state explicitly and expose it from a ViewModel as read-only `StateFlow`.
+5. Model screen state explicitly and expose it from a focused ViewModel as read-only `StateFlow`. Check the
+   "Cohesion and size limits" section first. If the feature does not fit an existing ViewModel within its limits,
+   create a new one rather than extending it.
 6. Wire dependencies in `AppContainer`; update `AppDestination` and the root `App` only for top-level navigation.
 
 The project intentionally uses manual dependency injection. Do not introduce a DI framework for a local change. Repository implementations should be replaceable through their domain interfaces so the current in-memory implementations can later be exchanged for real services.
@@ -114,6 +118,69 @@ The project intentionally uses manual dependency injection. Do not introduce a D
 - Keep composables state-driven. Put business decisions in policies/use cases and state transitions in ViewModels, not in screen functions.
 - Follow the mandatory design-system workflow below before creating or changing visual UI.
 - Add dependencies and versions through `gradle/libs.versions.toml`; do not hard-code dependency versions in module build files.
+
+## Cohesion and size limits (mandatory)
+
+A class that grows past these limits is a design defect, not a style nit. Split it before adding to it.
+
+### Hard limits
+
+| Unit | Limit |
+|---|---|
+| ViewModel | ≤ 250 lines, ≤ 6 constructor dependencies, ≤ 15 public functions |
+| UI state class | ≤ 15 properties |
+| Use case | one public `invoke`, one user/business intent |
+| Any Kotlin file | ≤ 400 lines |
+| Composable screen file | ≤ 300 lines; extract stateless sub-composables |
+| Function | ≤ 40 lines, cyclomatic complexity ≤ 15 |
+
+Never use `@Suppress` (or a Detekt baseline entry) for `LargeClass`, `LongParameterList`, `TooManyFunctions`,
+`LongMethod`, `CyclomaticComplexMethod`, or `ComplexCondition`. These rules are fixed by splitting, not silencing.
+The Detekt baseline may only shrink, never grow.
+
+### Ownership rules
+
+- One ViewModel per screen or flow, with one state class. A ViewModel that serves several screens or flows is wrong.
+- Scope ViewModels to the destination they serve (edit screen, registration flow, review dialog), not to the whole
+  feature.
+- A ViewModel orchestrates one flow. It must not hold session logic, a navigation stack, transient message timers,
+  or unrelated flows.
+- **Session** (who is the current user) is a single app-scoped application port that other ViewModels observe. Do not
+  re-derive it per ViewModel. Do not use placeholder fallback IDs such as `UserId("current_student")`.
+- **Navigation** belongs to the navigation layer. Sub-screens are destinations, not fields on UI state, and there are
+  no hand-written `openX`/`closeX` method pairs or `returnTo` state.
+- **Transient messages** (flash/snackbar) are one-shot events through an injected messenger, not state fields cleared
+  by timers. Inline field errors stay in state.
+- **Multi-step workflows** (registration, verification, checkout) are modeled as a sealed state machine, not a set of
+  booleans and nullable fields.
+- Each independent async operation has its own loading state. One shared `isLoading` for unrelated operations is not
+  allowed.
+- Reviewer, actor, and current-user identity come from the session port, never from default arguments.
+- Optional dependencies are not nullable constructor parameters. Require them, or bind a no-op implementation
+  (null object) in `AppContainer`.
+- A constructor property must not share a name with a method on the same class.
+
+### Split triggers (any one means extract before continuing)
+
+1. The same 3+ step orchestration appears in more than two places. Extract an application use case.
+2. Two groups of properties or methods never read each other's state. Extract a second class.
+3. Constructor dependencies cluster into groups that are never used together.
+4. A new feature would add a new `isX`/`showX`/`xError` field to a state class already near its limit.
+5. A class has more than one reason to change (e.g. auth, editing, and reviews all changing in one file).
+
+### Extract before extend
+
+If the file you must change already exceeds a limit above, do not add to it. First extract the part you are about to
+modify into its own class (behavior-preserving, tests moved with it), then make the change in the new class. This
+extraction is in scope and is not a "drive-by refactor" under Change hygiene. Report the extraction in the handoff.
+Pre-existing oversized files you did not need to touch are reported, not fixed (same rule as legacy boundary debt).
+
+### Known legacy debt (do not copy, do not extend)
+
+- `profile/presentation/ProfileViewModel`: combines session, registration, profile read model, editing, reviews,
+  account deletion, sub-screen navigation, and flash messages. Target split: `SessionRepository` port,
+  `RegistrationViewModel` (sealed state), `ProfileViewModel` (read model), `EditProfileViewModel`,
+  `ReviewViewModel`, `AccountViewModel`, nav-layer destinations, and a `UserMessenger`.
 
 ## Design-system source of truth (mandatory)
 
@@ -163,6 +230,11 @@ Run the smallest relevant task while iterating, then run `./gradlew check --no-d
 
 `./gradlew format` is a mutating task: it runs Detekt with auto-correction in subprojects and normalizes final newlines in supported project files. Use it intentionally and inspect the resulting diff. Detekt may warn that version 1.23.8 was built against an older Kotlin compiler; warnings are not permission to ignore reported rule violations.
 
+Detekt enforces the size and complexity limits from "Cohesion and size limits" (`LargeClass`, `TooManyFunctions`,
+`LongParameterList`, `LongMethod`, `CyclomaticComplexMethod`, `NestedBlockDepth`) and forbids suppressing them
+(`ForbiddenSuppress`). Do not loosen these thresholds in `config/detekt/detekt.yml` to make a change pass. Do not add
+entries to the Detekt baseline; it may only shrink as legacy classes are split.
+
 ## Testing expectations
 
 Every change that adds or changes executable logic must add or update unit tests in the same patch. Logic includes validation, branching, calculations, transformations, mapping, filtering, sorting, ranking, state transitions, coroutine behavior, error handling, repository behavior, and ViewModel event handling. A logic change without unit tests is incomplete and must not be handed off.
@@ -173,6 +245,8 @@ Every change that adds or changes executable logic must add or update unit tests
 - Every bug fix requires a regression test that would fail before the fix and pass afterward.
 - A visual-only Compose change may omit a unit test only when it changes no event handling, state transition, semantics, formatting logic, or business behavior. If any of those change, test the ViewModel, use case, formatter, or state reducer that owns the behavior.
 - If logic is difficult to unit test because it is coupled to Android, time, randomness, storage, or networking, introduce an interface or deterministic seam and test through it. Test difficulty is a design signal, not a reason to skip coverage.
+- When splitting a class, move its tests with the behavior and keep each new class testable with 2-3 fakes. If a
+  test needs more than ~6 fakes, the class is still too broad.
 - Put platform-independent tests in the matching package under `shared/src/commonTest`.
 - Put tests that require Android APIs or resources in `shared/src/androidHostTest`.
 - Use `kotlin.test` assertions and `kotlinx.coroutines.test.runTest` for suspend behavior.
@@ -192,6 +266,8 @@ A business change is not complete unless all of the following are true:
 - The canonical rules under “Keep bounded contexts independent” are satisfied; no new cross-context dependency is
   introduced.
 - Names in code and tests use the bounded context's ubiquitous language.
+- No changed class exceeds the limits in "Cohesion and size limits", and no size-related `@Suppress` was added.
+- Any state class touched has no new boolean flag where a sealed state or separate flow state would fit.
 
 Review boundary imports before handoff:
 
@@ -210,10 +286,24 @@ The first three commands must return no violations. Review every result from the
 dependency; follow “Keep bounded contexts independent” when assessing results, and report out-of-scope legacy violations
 as directed there.
 
+Review size and suppression limits before handoff:
+
+```bash
+# Kotlin files over 400 lines
+find shared/src androidApp/src -name '*.kt' -print0 | xargs -0 wc -l | awk '$1 > 400 && $2 != "total"'
+# Size-rule suppressions
+rg -n '@Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod|CyclomaticComplexMethod|ComplexCondition)' \
+  shared/src androidApp/src
+```
+
+The first command may list only files named under "Known legacy debt" (and you must not have grown them). The second
+must return no results for code you added or changed; report any pre-existing hits as legacy debt.
+
 ## Change hygiene
 
 - Inspect `git status` before editing and preserve unrelated user changes.
-- Keep patches scoped; avoid drive-by reformatting or unrelated dependency upgrades.
+- Keep patches scoped; avoid drive-by reformatting or unrelated dependency upgrades. Extracting code out of an
+  oversized class that you must modify is in scope (see "Extract before extend").
 - Never edit generated outputs to fix source behavior.
 - If a new domain or source path should participate in targeted CI, update the path filters in `.github/workflows/ci.yml`.
 - Keep `README.md` architecture or roadmap statements synchronized when a change materially alters the product scope or repository structure.

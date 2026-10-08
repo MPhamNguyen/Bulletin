@@ -66,6 +66,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfi
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
+import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModelDependencies
 import io.github.jan.supabase.SupabaseClient
 
 class AppContainer(
@@ -243,18 +244,20 @@ class AppContainer(
     )
 
     fun createProfileViewModel() = ProfileViewModel(
-        authenticateUser = authenticateUser,
-        restoreAuthenticatedProfile = restoreAuthenticatedProfile,
-        signOutUser = signOutUser,
-        verifyStudentEmail = verifyStudentEmail,
-        resendVerificationCode = resendVerificationCode,
-        manageProfile = manageProfile,
-        updateStudentProfile = updateStudentProfile,
-        uploadProfilePhoto = uploadProfilePhoto,
-        submitStudentReview = submitStudentReview,
-        activeListingsProvider = profileActiveListingsProvider,
-        listingChangedSignal = listingChangedSignal,
-        softDeleteProfile = softDeleteProfile
+        ProfileViewModelDependencies(
+            authenticateUser = authenticateUser,
+            restoreAuthenticatedProfile = restoreAuthenticatedProfile,
+            signOutUser = signOutUser,
+            verifyStudentEmail = verifyStudentEmail,
+            resendVerificationCode = resendVerificationCode,
+            manageProfile = manageProfile,
+            updateStudentProfile = updateStudentProfile,
+            uploadProfilePhoto = uploadProfilePhoto,
+            submitStudentReview = submitStudentReview,
+            activeListingsProvider = profileActiveListingsProvider,
+            listingChangedSignal = listingChangedSignal,
+            softDeleteProfile = softDeleteProfile
+        )
     )
 
     fun createPasswordRecoveryViewModel() = PasswordRecoveryViewModel(

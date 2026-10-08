@@ -72,6 +72,52 @@ jobs:
             "$RUNNER_TEMP/detekt-formatting.jar"
           echo "${DETEKT_FORMATTING_SHA256}  $RUNNER_TEMP/detekt-formatting.jar" | sha256sum --check --strict
 
+      - name: Check file length and size suppressions
+        run: |
+          set -euo pipefail
+
+          # Size-rule suppressions (must return nothing)
+          if command -v rg >/dev/null 2>&1; then
+            if rg -n '@Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
+              echo "Error: Forbidden size-rule suppressions found!" >&2
+              exit 1
+            fi
+          else
+            if grep -rnE '@Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
+              echo "Error: Forbidden size-rule suppressions found!" >&2
+              exit 1
+            fi
+          fi
+
+          # Any Kotlin file over 400 lines (must only list known legacy files)
+          known_legacy=(
+            "shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/home/presentation/HomeScreen.kt"
+            "shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/listings/presentation/ListingsViewModel.kt"
+            "shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/marketplace/presentation/MarketplaceDetailBottomSheet.kt"
+            "shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/profile/infrastructure/repository/SupabaseProfileRepositories.kt"
+            "shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/profile/presentation/ProfileEditContent.kt"
+            "shared/src/commonTest/kotlin/com/jdrms/bulletin/domain/listings/presentation/ListingsViewModelTest.kt"
+            "shared/src/commonTest/kotlin/com/jdrms/bulletin/domain/marketplace/presentation/MarketplaceViewModelTest.kt"
+            "shared/src/commonTest/kotlin/com/jdrms/bulletin/domain/profile/ProfileDomainTest.kt"
+            "shared/src/commonTest/kotlin/com/jdrms/bulletin/domain/profile/ProfileInfrastructureTest.kt"
+            "shared/src/commonTest/kotlin/com/jdrms/bulletin/domain/profile/presentation/ProfileViewModelTest.kt"
+          )
+
+          oversized=$(find shared/src -name '*.kt' -print0 | xargs -0 wc -l | awk '$1 > 400 && $2 != "total" {print $2}')
+          for file in $oversized; do
+            found=false
+            for legacy in "${known_legacy[@]}"; do
+              if [ "$file" = "$legacy" ]; then
+                found=true
+                break
+              fi
+            done
+            if [ "$found" = "false" ]; then
+              echo "Error: $file is over 400 lines and not in known legacy files!" >&2
+              exit 1
+            fi
+          done
+
       - name: Run Detekt
         run: |
           set -euo pipefail

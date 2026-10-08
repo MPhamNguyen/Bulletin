@@ -173,15 +173,17 @@ class EmailVerificationViewModelTest {
                 }
             }
             val viewModel = ProfileViewModel(
-                authenticateUser = AuthenticateUser(auth),
-                restoreAuthenticatedProfile = RestoreAuthenticatedProfile(auth),
-                signOutUser = SignOutUser(auth),
-                verifyStudentEmail = VerifyStudentEmail(auth),
-                resendVerificationCode = ResendVerificationCode(auth),
-                manageProfile = ManageProfile(profiles),
-                updateStudentProfile = UpdateStudentProfile(profiles),
-                submitStudentReview = SubmitStudentReview(profiles),
-                softDeleteProfile = SoftDeleteProfile(profiles, SignOutUser(auth))
+                ProfileViewModelDependencies(
+                    authenticateUser = AuthenticateUser(auth),
+                    restoreAuthenticatedProfile = RestoreAuthenticatedProfile(auth),
+                    signOutUser = SignOutUser(auth),
+                    verifyStudentEmail = VerifyStudentEmail(auth),
+                    resendVerificationCode = ResendVerificationCode(auth),
+                    manageProfile = ManageProfile(profiles),
+                    updateStudentProfile = UpdateStudentProfile(profiles),
+                    submitStudentReview = SubmitStudentReview(profiles),
+                    softDeleteProfile = SoftDeleteProfile(profiles, SignOutUser(auth))
+                )
             )
             advanceUntilIdle()
             block(viewModel)
