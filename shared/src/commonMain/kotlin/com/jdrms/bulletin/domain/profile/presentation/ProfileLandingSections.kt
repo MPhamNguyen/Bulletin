@@ -69,7 +69,9 @@ internal fun ProfileAboutCard(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ProfileInformationChip(Icons.Outlined.School, major)
-            ProfileInformationChip(Icons.Outlined.LocationOn, university)
+            if (university.isNotBlank()) {
+                ProfileInformationChip(Icons.Outlined.LocationOn, university)
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
