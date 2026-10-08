@@ -6,6 +6,7 @@ import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
+import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -41,21 +42,29 @@ import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
 import com.jdrms.bulletin.domain.profile.application.GetAuthenticatedUserId
 import com.jdrms.bulletin.domain.profile.application.ManageProfile
+import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
+import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
+import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
+import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import io.github.jan.supabase.SupabaseClient
@@ -64,12 +73,15 @@ class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
     private val allowInMemoryFallback: Boolean = true,
-    themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore()
+    themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
+    private val providedSupabaseClient: SupabaseClient? = null
 ) {
     private val themePreferenceStore = themePreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     val supabaseClient: SupabaseClient? by lazy {
-        if (!isInspectionMode && supabaseConfig.isConfigured) {
+        if (providedSupabaseClient != null) {
+            providedSupabaseClient
+        } else if (!isInspectionMode && supabaseConfig.isConfigured) {
             runCatching {
                 supabaseConfig.createClient()
             }.fold(
@@ -120,8 +132,17 @@ class AppContainer(
         }
     }
 
-    // BULLETIN-85 will supply the Supabase adapter for this same participant-scoped contract.
-    val messagesRepository: MessagesRepository by lazy { InMemoryMessagesRepository() }
+    val messagesRepository: MessagesRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseMessagesRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryMessagesRepository()
+        }
+    }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -132,6 +153,9 @@ class AppContainer(
             }
             InMemoryProfileRepository()
         }
+    }
+    val profilePhotoRepository: ProfilePhotoRepository by lazy {
+        supabaseClient?.let(::SupabaseProfilePhotoRepository) ?: InMemoryProfilePhotoRepository()
     }
     val authRepository: AuthRepository by lazy {
         val client = supabaseClient
@@ -152,7 +176,12 @@ class AppContainer(
     // Use Cases - Marketplace
     val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
-    val viewMarketplaceListing by lazy { ViewMarketplaceListing(marketplaceRepository) }
+    val viewMarketplaceListing by lazy {
+        ViewMarketplaceListing(
+            repository = marketplaceRepository,
+            sellerProfileProvider = ProfileMarketplaceSellerNameProvider(profileRepository)
+        )
+    }
 
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
@@ -177,8 +206,12 @@ class AppContainer(
     val signOutUser by lazy { SignOutUser(authRepository) }
     val resendVerificationCode by lazy { ResendVerificationCode(authRepository) }
     val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
+    val requestPasswordReset by lazy { RequestPasswordReset(authRepository) }
+    val verifyPasswordResetCode by lazy { VerifyPasswordResetCode(authRepository) }
+    val updatePassword by lazy { UpdatePassword(authRepository) }
     val manageProfile by lazy { ManageProfile(profileRepository) }
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
+    val uploadProfilePhoto by lazy { UploadProfilePhoto(profilePhotoRepository, profileRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
     val profileSoldListingsProvider by lazy { ListingsSoldListingsCountProvider(listingsRepository) }
@@ -219,9 +252,13 @@ class AppContainer(
         restoreAuthenticatedProfile = restoreAuthenticatedProfile,
         signOutUser = signOutUser,
         verifyStudentEmail = verifyStudentEmail,
+        requestPasswordReset = requestPasswordReset,
+        verifyPasswordResetCode = verifyPasswordResetCode,
+        updatePassword = updatePassword,
         resendVerificationCode = resendVerificationCode,
         manageProfile = manageProfile,
         updateStudentProfile = updateStudentProfile,
+        uploadProfilePhoto = uploadProfilePhoto,
         submitStudentReview = submitStudentReview,
         activeListingsProvider = profileActiveListingsProvider,
         soldListingsProvider = profileSoldListingsProvider,

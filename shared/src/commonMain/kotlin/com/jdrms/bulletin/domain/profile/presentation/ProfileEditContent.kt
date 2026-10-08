@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,7 +44,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
-import bulletin.shared.generated.resources.ic_graduation_cap
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinInactiveButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
@@ -56,6 +56,7 @@ internal fun EditProfileView(
     onCancel: () -> Unit,
     onDraftChanged: (ProfileDraft) -> Unit,
     onUpdate: () -> Unit,
+    onChangePhoto: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -78,6 +79,7 @@ internal fun EditProfileView(
                 uiState = uiState,
                 onDraftChanged = onDraftChanged,
                 onUpdate = onUpdate,
+                onChangePhoto = onChangePhoto,
                 onSignOut = onSignOut
             )
         }
@@ -132,9 +134,15 @@ private fun ProfileContent(
     uiState: ProfileUiState,
     onDraftChanged: (ProfileDraft) -> Unit,
     onUpdate: () -> Unit,
+    onChangePhoto: () -> Unit,
     onSignOut: () -> Unit = {}
 ) {
-    EditProfilePhoto()
+    EditProfilePhoto(
+        avatarUrl = uiState.profile?.avatarUrl,
+        fullName = uiState.profile?.fullName.orEmpty(),
+        isUploading = uiState.isPhotoUploading,
+        onChangePhoto = onChangePhoto
+    )
 
     Spacer(modifier = Modifier.height(28.dp))
     ProfileEditField(
@@ -214,24 +222,19 @@ private fun ProfileContent(
 }
 
 @Composable
-private fun EditProfilePhoto() {
+private fun EditProfilePhoto(
+    avatarUrl: String?,
+    fullName: String,
+    isUploading: Boolean,
+    onChangePhoto: () -> Unit
+) {
     Box(
-        modifier = Modifier.size(124.dp),
+        modifier = Modifier
+            .size(124.dp)
+            .clickable(enabled = !isUploading, onClick = onChangePhoto),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .background(MaterialTheme.colorScheme.tertiaryContainer, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_graduation_cap),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp)
-            )
-        }
+        ProfileAvatarImage(avatarUrl = avatarUrl, fullName = fullName, size = 96.dp)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -239,20 +242,36 @@ private fun EditProfilePhoto() {
                 .background(MaterialTheme.colorScheme.primary, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Outlined.CameraAlt,
-                contentDescription = "Change profile photo",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(24.dp)
-            )
+            if (isUploading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Outlined.CameraAlt,
+                    contentDescription = "Change profile photo",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
-    Text(
-        text = "Change Photo",
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary
-    )
+    TextButton(onClick = onChangePhoto, enabled = !isUploading) {
+        Text(
+            text = if (isUploading) "Uploading…" else "Change Photo",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
 }
+
+@Composable
+internal expect fun rememberProfilePhotoPicker(
+    onPhotoSelected: (ByteArray, String) -> Unit,
+    onError: (String) -> Unit
+): () -> Unit
 
 @Composable
 private fun ProfileEditField(

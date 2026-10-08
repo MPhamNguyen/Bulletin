@@ -11,6 +11,13 @@ enum class AuthSessionState {
     UNAUTHENTICATED
 }
 
+enum class PasswordRecoveryStage {
+    NONE,
+    ENTER_EMAIL,
+    ENTER_CODE,
+    CHANGE_PASSWORD
+}
+
 enum class ProfileSubscreen {
     PROFILE,
     SETTINGS,
@@ -35,13 +42,16 @@ data class ProfileUiState(
     val newScore: Int = 5,
     val newComment: String = "",
     val isLoading: Boolean = false,
+    val isPhotoUploading: Boolean = false,
     val isEditingProfile: Boolean = false,
     val activeSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val editReturnSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false,
-    val authSessionState: AuthSessionState = AuthSessionState.CHECKING
+    val authSessionState: AuthSessionState = AuthSessionState.CHECKING,
+    val passwordRecoveryStage: PasswordRecoveryStage = PasswordRecoveryStage.NONE,
+    val passwordRecoveryEmail: String = ""
 ) {
     val isProfileModified: Boolean
         get() = profile != null && ProfileDraft.from(profile) != profileDraft

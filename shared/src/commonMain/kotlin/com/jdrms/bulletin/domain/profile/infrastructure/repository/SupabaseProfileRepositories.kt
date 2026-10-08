@@ -176,6 +176,9 @@ class SupabaseAuthRepository(
     private val profileRepository: ProfileRepository
 ) : AuthRepository {
 
+    private var passwordResetRequested = false
+    private var passwordResetCodeVerified = false
+
     override suspend fun getCurrentUserId(): Result<UserId?> {
         return runCatching {
             supabase.auth.awaitInitialization()
@@ -266,6 +269,51 @@ class SupabaseAuthRepository(
         )
     }
 
+    override suspend fun requestPasswordReset(email: StudentEmail): Result<Unit> {
+        return runCatching {
+            supabase.auth.resetPasswordForEmail(email = email.value)
+            passwordResetRequested = true
+            passwordResetCodeVerified = false
+        }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+        )
+    }
+
+    override suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit> {
+        return if (!passwordResetRequested) {
+            Result.Error(IllegalStateException("Request a new password reset before entering a code."))
+        } else {
+            runCatching {
+                supabase.auth.verifyEmailOtp(
+                    type = OtpType.Email.RECOVERY,
+                    email = email.value,
+                    token = code.trim()
+                )
+                passwordResetCodeVerified = true
+            }.fold(
+                onSuccess = { Result.Success(Unit) },
+                onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+            )
+        }
+    }
+
+    override suspend fun updatePassword(password: String): Result<Unit> {
+        if (!passwordResetCodeVerified) {
+            return Result.Error(IllegalStateException("Verify the confirmation code before choosing a new password."))
+        }
+        return runCatching {
+            supabase.auth.updateUser {
+                this.password = password
+            }
+            passwordResetRequested = false
+            passwordResetCodeVerified = false
+        }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
+        )
+    }
+
     override suspend fun verifyEmail(
         email: StudentEmail,
         code: EmailVerificationCode
@@ -318,7 +366,11 @@ class SupabaseAuthRepository(
 
     override suspend fun signOut(): Result<Unit> {
         return runCatching {
-            supabase.auth.signOut()
+            try {
+                supabase.auth.signOut()
+            } finally {
+                supabase.auth.clearSession()
+            }
         }.fold(
             onSuccess = { Result.Success(Unit) },
             onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }

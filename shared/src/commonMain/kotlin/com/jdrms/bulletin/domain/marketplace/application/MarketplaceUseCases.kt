@@ -95,17 +95,62 @@ class ToggleSaveMarketplaceItem(
 }
 
 class ViewMarketplaceListing(
-    private val repository: MarketplaceRepository
+    private val repository: MarketplaceRepository,
+    private val sellerProfileProvider: MarketplaceSellerProfileProvider? = null
 ) {
     suspend fun viewListing(listingID: String): Listing {
         val result = repository.viewListing(listingID)
         return when (result) {
-            is Result.Success -> result.data
+            is Result.Success -> result.data.withResolvedSellerName()
             is Result.Error -> throw result.exception
         }
     }
 
     suspend operator fun invoke(listingID: String): Result<Listing> {
-        return repository.viewListing(listingID)
+        return when (val result = repository.viewListing(listingID)) {
+            is Result.Success -> Result.Success(result.data.withResolvedSellerName())
+            is Result.Error -> result
+        }
     }
+
+    suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile? {
+        return sellerProfileProvider?.getSellerProfile(sellerId)
+    }
+
+    private suspend fun Listing.withResolvedSellerName(): Listing {
+        val profile = sellerProfileProvider?.getSellerProfile(sellerId)
+        return if (profile != null) {
+            copy(
+                sellerName = profile.name?.takeIf(String::isNotBlank) ?: sellerName,
+                sellerSchool = profile.school?.takeIf(String::isNotBlank) ?: sellerSchool,
+                sellerAvatarUrl = profile.avatarUrl?.takeIf(String::isNotBlank) ?: sellerAvatarUrl,
+                sellerMajor = profile.major?.takeIf(String::isNotBlank) ?: sellerMajor,
+                sellerGraduationDate = profile.graduationDate?.takeIf(String::isNotBlank)
+                    ?: sellerGraduationDate,
+                sellerReputationScore = profile.reputationScore ?: sellerReputationScore,
+                sellerReviewCount = profile.reviewCount ?: sellerReviewCount,
+                sellerIsVerified = profile.isVerified
+            )
+        } else {
+            this
+        }
+    }
+}
+
+data class MarketplaceSellerProfile(
+    val sellerId: String = "",
+    val name: String?,
+    val school: String?,
+    val major: String? = null,
+    val graduationDate: String? = null,
+    val bio: String? = null,
+    val avatarUrl: String? = null,
+    val reputationScore: Double? = null,
+    val reviewCount: Int? = null,
+    val isVerified: Boolean = true
+)
+
+/** Provides seller profile details without coupling marketplace to a profile implementation. */
+fun interface MarketplaceSellerProfileProvider {
+    suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile?
 }

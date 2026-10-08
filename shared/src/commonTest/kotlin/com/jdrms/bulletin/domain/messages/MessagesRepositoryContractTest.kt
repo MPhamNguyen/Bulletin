@@ -80,7 +80,7 @@ abstract class MessagesRepositoryContractTest {
     fun reportUpdatesMessageAndMatchingConversationSummary() = runTest {
         val repository = createRepository(listOf(conversation()))
         repository.sendMessage(message()).getOrThrow()
-        assertTrue(repository.reportMessage(carol.id, conversationId, message().id, "Spam").isSuccess())
+        assertTrue(repository.reportMessage(alice.id, conversationId, message().id, "Spam").isSuccess())
         assertTrue(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
         assertEquals(message().report(), repository.getConversations(alice.id).getOrThrow().single().lastMessage)
     }
@@ -88,7 +88,7 @@ abstract class MessagesRepositoryContractTest {
     @Test
     fun reportingOlderMessageDoesNotReplaceLatestSummary() = runTest {
         val repository = createRepository(listOf(conversation()), listOf(message()))
-        val latest = message(carol, id = MessageId("latest"))
+        val latest = message(alice, id = MessageId("latest")).copy(timestampMillis = 43L)
         repository.sendMessage(latest).getOrThrow()
         repository.reportMessage(alice.id, conversationId, message().id, "Spam").getOrThrow()
         assertEquals(latest, repository.getConversations(alice.id).getOrThrow().single().lastMessage)

@@ -4,13 +4,16 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
+import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhoto
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 
 class AuthenticateUser(
@@ -36,6 +39,47 @@ class AuthenticateUser(
             return Result.Error((validation as Result.Error).exception)
         }
         return authRepository.register(email, password, fullName, university)
+    }
+}
+
+class RequestPasswordReset(
+    private val authRepository: AuthRepository,
+    private val policy: ProfileValidationPolicy = ProfileValidationPolicy()
+) {
+    suspend operator fun invoke(email: StudentEmail): Result<Unit> {
+        val validation = policy.validateEmail(email.value)
+        if (validation.isError()) {
+            return Result.Error((validation as Result.Error).exception)
+        }
+        return authRepository.requestPasswordReset(email)
+    }
+}
+
+class VerifyPasswordResetCode(
+    private val authRepository: AuthRepository
+) {
+    suspend operator fun invoke(email: StudentEmail, code: String): Result<Unit> {
+        val validation = PasswordResetPolicy.validateCodeFormat(code)
+        if (validation.isError()) {
+            return Result.Error((validation as Result.Error).exception)
+        }
+        return authRepository.verifyPasswordResetCode(email, code)
+    }
+}
+
+class UpdatePassword(
+    private val authRepository: AuthRepository,
+    private val policy: ProfileValidationPolicy = ProfileValidationPolicy()
+) {
+    suspend operator fun invoke(password: String, confirmation: String): Result<Unit> {
+        val validation = policy.validatePassword(password)
+        if (validation.isError()) {
+            return Result.Error((validation as Result.Error).exception)
+        }
+        if (password != confirmation) {
+            return Result.Error(IllegalArgumentException("Passwords do not match."))
+        }
+        return authRepository.updatePassword(password)
     }
 }
 
@@ -117,6 +161,26 @@ class UpdateStudentProfile(
         return when (updateResult) {
             is Result.Success -> profileRepository.updateProfile(updateResult.data)
             is Result.Error -> updateResult
+        }
+    }
+}
+
+class UploadProfilePhoto(
+    private val profilePhotoRepository: ProfilePhotoRepository,
+    private val profileRepository: ProfileRepository
+) {
+    suspend operator fun invoke(
+        profile: StudentProfile,
+        bytes: ByteArray,
+        mediaType: String
+    ): Result<StudentProfile> {
+        val photo = when (val result = ProfilePhoto.create(bytes, mediaType)) {
+            is Result.Success -> result.data
+            is Result.Error -> return result
+        }
+        return when (val uploadResult = profilePhotoRepository.upload(profile.id, photo)) {
+            is Result.Success -> profileRepository.updateProfile(profile.changeProfilePhoto(uploadResult.data))
+            is Result.Error -> uploadResult
         }
     }
 }

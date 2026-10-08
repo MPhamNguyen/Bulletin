@@ -19,6 +19,7 @@ internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
     onSettingsClick: () -> Unit,
     onEditProfileClick: () -> Unit,
+    onChangePhotoClick: () -> Unit,
     onMyListingsClick: () -> Unit,
     onBookmarkedListingsClick: () -> Unit,
     onCreateListingClick: () -> Unit
@@ -46,7 +47,9 @@ internal fun MarketplaceProfileView(
                 university = university,
                 graduationDate = graduationDate,
                 isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
-                onEditProfileClick = onEditProfileClick
+                onEditProfileClick = onEditProfileClick,
+                onChangePhotoClick = onChangePhotoClick,
+                avatarUrl = profile?.avatarUrl
             )
 
             MarketplaceActivityStatsCard(

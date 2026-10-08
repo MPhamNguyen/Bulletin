@@ -94,11 +94,9 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
-                    value = state.newPrice,
-                    onValueChange = { viewModel.onPriceChanged(it) },
-                    label = { Text("Price ($ USD)") },
-                    singleLine = true,
+                CurrencyTextField(
+                    digits = state.newPriceCents,
+                    onDigitsChange = viewModel::onPriceChanged,
                     modifier = Modifier.fillMaxWidth()
                 )
 

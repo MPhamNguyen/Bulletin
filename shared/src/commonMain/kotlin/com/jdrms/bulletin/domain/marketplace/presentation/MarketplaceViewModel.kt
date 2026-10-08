@@ -236,6 +236,54 @@ class MarketplaceViewModel(
         }
     }
 
+    fun onSellerClicked(sellerId: String) {
+        _uiState.update {
+            it.copy(
+                isDetailSheetOpen = false,
+                isSellerProfileOpen = true,
+                isSellerProfileLoading = true,
+                sellerProfileErrorMessage = null,
+                selectedSellerProfile = null
+            )
+        }
+        viewModelScope.launch {
+            try {
+                val profile = viewMarketplaceListing.getSellerProfile(sellerId)
+                _uiState.update {
+                    it.copy(
+                        isSellerProfileLoading = false,
+                        sellerProfileErrorMessage = if (profile == null) {
+                            "Seller profile is currently unavailable."
+                        } else {
+                            null
+                        },
+                        selectedSellerProfile = profile
+                    )
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSellerProfileLoading = false,
+                        sellerProfileErrorMessage = "Unable to load the seller profile. Please try again."
+                    )
+                }
+            }
+        }
+    }
+
+    fun dismissSellerProfile() {
+        _uiState.update {
+            it.copy(
+                isSellerProfileOpen = false,
+                selectedSellerProfile = null,
+                sellerProfileErrorMessage = null,
+                isDetailSheetOpen = it.selectedListing != null
+            )
+        }
+    }
+
     fun toggleSaved(itemId: MarketplaceItemId, userId: String = "student_user") {
         viewModelScope.launch {
             val result = toggleSaveItem(userId, itemId)

@@ -4,6 +4,8 @@ import com.jdrms.bulletin.core.common.formatUsdAmount
 import com.jdrms.bulletin.core.common.hasAtMostTwoDecimalPlaces
 import kotlin.jvm.JvmInline
 
+const val MAX_LISTING_PRICE_CENTS = 999_999_999L
+
 @JvmInline
 value class ListingId(val value: String)
 
@@ -40,6 +42,9 @@ data class ListingPrice(
 ) {
     init {
         require(amount >= 0.0) { "Listing price cannot be negative." }
+        require(amount <= MAX_LISTING_PRICE_CENTS / 100.0) {
+            "Listing price cannot exceed $9,999,999.99."
+        }
         require(hasAtMostTwoDecimalPlaces(amount)) {
             "Listing price cannot have more than two decimal places."
         }

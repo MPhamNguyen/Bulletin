@@ -21,7 +21,7 @@ env:
   DETEKT_VERSION: "1.23.8"
   # Compute once locally and paste here (see the commands at the bottom).
   # The check fails closed: a mismatch or a placeholder stops the job.
-  DETEKT_CLI_SHA256: "ff9f9258879ff2ec4349114740221498afec46a85cf6302c9f80b06eb4429501"
+  DETEKT_CLI_SHA256: "2ce2ff952e150baf28a29cda70a363b0340b3e81a55f43e51ec5edffc3d066c1"
   DETEKT_FORMATTING_SHA256: "a18a3f680d232ad746ccec3d5a251776ce39131b395c455b92e1bb0a9e8fb6ba"
 
 jobs:
@@ -63,17 +63,14 @@ jobs:
           }
 
           download \
-            "https://github.com/detekt/detekt/releases/download/v${DETEKT_VERSION}/detekt-cli-${DETEKT_VERSION}.zip" \
-            "$RUNNER_TEMP/detekt-cli.zip"
-          echo "${DETEKT_CLI_SHA256}  $RUNNER_TEMP/detekt-cli.zip" | sha256sum --check --strict
-          unzip -q "$RUNNER_TEMP/detekt-cli.zip" -d "$RUNNER_TEMP"
+            "https://github.com/detekt/detekt/releases/download/v${DETEKT_VERSION}/detekt-cli-${DETEKT_VERSION}-all.jar" \
+            "$RUNNER_TEMP/detekt-cli.jar"
+          echo "${DETEKT_CLI_SHA256}  $RUNNER_TEMP/detekt-cli.jar" | sha256sum --check --strict
 
           download \
             "https://repo1.maven.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/${DETEKT_VERSION}/detekt-formatting-${DETEKT_VERSION}.jar" \
             "$RUNNER_TEMP/detekt-formatting.jar"
           echo "${DETEKT_FORMATTING_SHA256}  $RUNNER_TEMP/detekt-formatting.jar" | sha256sum --check --strict
-
-          echo "$RUNNER_TEMP/detekt-cli-${DETEKT_VERSION}/bin" >> "$GITHUB_PATH"
 
       - name: Run Detekt
         run: |
@@ -82,7 +79,7 @@ jobs:
 
           # Note: the plain CLI has no type resolution, so rules that need
           # type information are skipped.
-          detekt-cli \
+          java -jar "$RUNNER_TEMP/detekt-cli.jar" \
             --input "$GITHUB_WORKSPACE" \
             --config "$GITHUB_WORKSPACE/config/detekt/detekt.yml" \
             --build-upon-default-config \
@@ -114,6 +111,6 @@ jobs:
 # One-time checksum setup (run locally, paste results into the env block above):
 #
 #   v=1.23.8
-#   curl -fsSL -o /tmp/cli.zip https://github.com/detekt/detekt/releases/download/v$v/detekt-cli-$v.zip
+#   curl -fsSL -o /tmp/cli.jar https://github.com/detekt/detekt/releases/download/v$v/detekt-cli-$v-all.jar
 #   curl -fsSL -o /tmp/fmt.jar https://repo1.maven.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/$v/detekt-formatting-$v.jar
-#   sha256sum /tmp/cli.zip /tmp/fmt.jar
+#   sha256sum /tmp/cli.jar /tmp/fmt.jar
