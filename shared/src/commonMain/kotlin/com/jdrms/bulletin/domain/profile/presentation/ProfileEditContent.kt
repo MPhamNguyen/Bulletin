@@ -126,10 +126,14 @@ internal fun EditProfileView(
 
     // If the saved value isn't one of our options, start in "Other" mode so it stays editable.
     var schoolOther by rememberSaveable {
-        mutableStateOf(draft.university.isNotBlank() && draft.university !in SCHOOL_OPTIONS)
+        mutableStateOf(
+            draft.university.isNotBlank() && !SCHOOL_OPTIONS.isKnownOption(draft.university)
+        )
     }
     var majorOther by rememberSaveable {
-        mutableStateOf(draft.major.isNotBlank() && draft.major !in MAJOR_OPTIONS)
+        mutableStateOf(
+            draft.major.isNotBlank() && !MAJOR_OPTIONS.isKnownOption(draft.major)
+        )
     }
     var errors by remember { mutableStateOf(ProfileFormErrors()) }
 
@@ -494,39 +498,49 @@ private fun ProfileEditField(
     }
 }
 
+internal data class ComboOption(
+    val label: String,
+    val keywords: List<String> = emptyList()
+) {
+    fun matches(query: String): Boolean =
+        label.normalized().contains(query) || keywords.any { it.normalized().contains(query) }
+}
+
+internal fun List<ComboOption>.isKnownOption(value: String): Boolean = any { it.label == value }
+
 private val SCHOOL_OPTIONS = listOf(
-    "University of Southern California (USC)",
-    "University of California, Los Angeles (UCLA)",
-    "University of California, Irvine (UCI)",
-    "University of California, Riverside (UCR)",
-    "University of California, San Diego (UCSD)",
+    ComboOption("University of Southern California", listOf("USC")),
+    ComboOption("University of California, Los Angeles", listOf("UCLA", "UC Los Angeles")),
+    ComboOption("University of California, Irvine", listOf("UCI", "UC Irvine")),
+    ComboOption("University of California, Riverside", listOf("UCR", "UC Riverside")),
+    ComboOption("University of California, San Diego", listOf("UCSD", "UC San Diego")),
 
-    "California State University, Los Angeles (CSULA)",
-    "California State University, Long Beach (CSULB)",
-    "California State University, Fullerton (CSUF)",
-    "California State University, Northridge (CSUN)",
-    "California State Polytechnic University, Pomona (Cal Poly Pomona, CPP)",
-    "California State University, Dominguez Hills (CSUDH)",
-    "California State University, San Bernardino (CSUSB)",
-    "California State University, San Marcos (CSUSM)",
+    ComboOption("California State University, Los Angeles", listOf("CSULA", "Cal State LA")),
+    ComboOption("California State University, Long Beach", listOf("CSULB", "Cal State Long Beach")),
+    ComboOption("California State University, Fullerton", listOf("CSUF", "Cal State Fullerton")),
+    ComboOption("California State University, Northridge", listOf("CSUN")),
+    ComboOption("California State Polytechnic University, Pomona", listOf("Cal Poly Pomona", "CPP")),
+    ComboOption("California State University, Dominguez Hills", listOf("CSUDH")),
+    ComboOption("California State University, San Bernardino", listOf("CSUSB")),
+    ComboOption("California State University, San Marcos", listOf("CSUSM")),
 
-    "San Diego State University (SDSU)",
-    "University of San Diego (USD)",
-    "Loyola Marymount University (LMU)",
-    "Pepperdine University",
-    "Chapman University",
-    "Claremont McKenna College (CMC)",
-    "Pomona College",
-    "Scripps College",
-    "Harvey Mudd College (HMC)",
-    "Occidental College (Oxy)",
-    "Biola University",
-    "Azusa Pacific University (APU)",
-    "California Baptist University (CBU)",
-    "University of La Verne (ULV)",
-    "Whittier College",
-    "Mount Saint Mary's University (MSMU)",
-    "Point Loma Nazarene University (PLNU)"
+    ComboOption("San Diego State University", listOf("SDSU")),
+    ComboOption("University of San Diego", listOf("USD")),
+    ComboOption("Loyola Marymount University", listOf("LMU")),
+    ComboOption("Pepperdine University"),
+    ComboOption("Chapman University"),
+    ComboOption("Claremont McKenna College", listOf("CMC")),
+    ComboOption("Pomona College"),
+    ComboOption("Scripps College"),
+    ComboOption("Harvey Mudd College", listOf("HMC")),
+    ComboOption("Occidental College", listOf("Oxy")),
+    ComboOption("Biola University"),
+    ComboOption("Azusa Pacific University", listOf("APU")),
+    ComboOption("California Baptist University", listOf("CBU")),
+    ComboOption("University of La Verne", listOf("ULV")),
+    ComboOption("Whittier College"),
+    ComboOption("Mount Saint Mary's University", listOf("MSMU")),
+    ComboOption("Point Loma Nazarene University", listOf("PLNU"))
 )
 
 private val MAJOR_OPTIONS = listOf(
@@ -565,7 +579,7 @@ private val MAJOR_OPTIONS = listOf(
     "Software Engineering",
     "Theatre Arts",
     "Undeclared"
-)
+).map { ComboOption(it) }
 
 private fun String.normalized() = lowercase().filterNot { it == ',' || it == '.' || it == '&' }
 
@@ -576,7 +590,7 @@ private fun ProfileComboField(
     value: String,
     placeholder: String,
     leadingIcon: ImageVector,
-    items: List<String>,
+    items: List<ComboOption>,
     isOther: Boolean,
     otherLabel: String,
     otherPlaceholder: String,
@@ -596,8 +610,12 @@ private fun ProfileComboField(
     }
 
     // Show the full list when a valid option is already chosen; otherwise filter by what's typed.
-    val query = if (isOther || displayText in items) "" else fieldValue.text.trim().normalized()
-    val filteredItems = items.filter { query.isBlank() || it.normalized().contains(query) }
+    val query = if (isOther || items.any { it.label == displayText }) {
+        ""
+    } else {
+        fieldValue.text.trim().normalized()
+    }
+    val filteredItems = items.filter { query.isBlank() || it.matches(query) }
 
     // Work out how much room there is above and below the field so the menu can pick a side
     // and cap its height instead of covering the whole screen.
@@ -678,10 +696,12 @@ private fun ProfileComboField(
                             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                                 filteredItems.forEach { option ->
                                     DropdownMenuItem(
-                                        text = { Text(option, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                        text = {
+                                            Text(option.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        },
                                         onClick = {
-                                            fieldValue = TextFieldValue(option, TextRange(option.length))
-                                            onValueChange(option)
+                                            fieldValue = TextFieldValue(option.label, TextRange(option.label.length))
+                                            onValueChange(option.label)
                                             expanded = false
                                         }
                                     )
