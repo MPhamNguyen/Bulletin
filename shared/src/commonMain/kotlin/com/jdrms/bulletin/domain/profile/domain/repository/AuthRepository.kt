@@ -23,7 +23,7 @@ interface AuthRepository {
         email: StudentEmail,
         password: String,
         fullName: String,
-        university: String = "CSU Long Beach"
+        university: String = ""
     ): Result<PendingRegistration>
 
     /** Exchanges a valid code for a confirmed session, even when profile loading needs a separate retry. */

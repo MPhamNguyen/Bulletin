@@ -20,7 +20,7 @@ object ProfileMapper {
             fullName = dto.fullName?.trim()?.takeIf(String::isNotBlank) ?: "Student",
             major = dto.major?.trim().orEmpty(),
             graduationDate = dto.graduationDate?.trim().orEmpty(),
-            university = dto.university?.trim()?.takeIf(String::isNotBlank) ?: "CSU Long Beach",
+            university = dto.university?.trim().orEmpty(),
             bio = dto.bio?.trim().orEmpty(),
             avatarUrl = dto.avatarUrl?.trim()?.takeIf(String::isNotBlank),
             isVerified = dto.isVerified ?: false,

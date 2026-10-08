@@ -161,7 +161,7 @@ class ProfileViewModel(
         lastName: String,
         emailStr: String,
         passwordStr: String,
-        university: String = "CSU Long Beach"
+        university: String = ""
     ) {
         if (_uiState.value.isLoading) return
         val trimmedFirst = firstName.trim()
@@ -530,6 +530,7 @@ class ProfileViewModel(
         _uiState.update {
             it.copy(
                 profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
+                profileFormErrors = ProfileFormErrors(),
                 isEditingProfile = true,
                 activeSubscreen = ProfileSubscreen.EDIT_ACCOUNT,
                 editReturnSubscreen = it.activeSubscreen,
@@ -545,6 +546,7 @@ class ProfileViewModel(
         _uiState.update {
             it.copy(
                 profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft(),
+                profileFormErrors = ProfileFormErrors(),
                 isEditingProfile = false,
                 activeSubscreen = it.editReturnSubscreen,
                 errorMessage = null,
@@ -555,7 +557,21 @@ class ProfileViewModel(
 
     fun onProfileDraftChanged(profileDraft: ProfileDraft) {
         flashNotificationJob?.cancel()
-        _uiState.update { it.copy(profileDraft = profileDraft, errorMessage = null, successMessage = null) }
+        _uiState.update { current ->
+            current.copy(
+                profileDraft = profileDraft,
+                profileFormErrors = current.profileFormErrors.copy(
+                    school = current.profileFormErrors.school.takeUnless {
+                        profileDraft.university != current.profileDraft.university
+                    },
+                    major = current.profileFormErrors.major.takeUnless {
+                        profileDraft.major != current.profileDraft.major
+                    }
+                ),
+                errorMessage = null,
+                successMessage = null
+            )
+        }
     }
 
     fun resetProfileDraft() {
@@ -564,6 +580,7 @@ class ProfileViewModel(
         _uiState.update {
             it.copy(
                 profileDraft = ProfileDraft.from(profile),
+                profileFormErrors = ProfileFormErrors(),
                 errorMessage = null,
                 successMessage = null
             )
@@ -578,9 +595,21 @@ class ProfileViewModel(
             return
         }
         val draft = state.profileDraft
+        val validation = validateProfileDraftForUpdate(draft, ProfileDraft.from(profile))
+        if (!validation.isValid) {
+            _uiState.update { it.copy(profileFormErrors = validation) }
+            return
+        }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    profileFormErrors = ProfileFormErrors(),
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
             when (
                 val result = updateStudentProfile(
                     profile = profile,
@@ -596,6 +625,7 @@ class ProfileViewModel(
                         it.copy(
                             profile = result.data,
                             profileDraft = ProfileDraft.from(result.data),
+                            profileFormErrors = ProfileFormErrors(),
                             isEditingProfile = false,
                             activeSubscreen = ProfileSubscreen.PROFILE,
                             isLoading = false,
@@ -614,6 +644,21 @@ class ProfileViewModel(
                 }
             }
         }
+    }
+
+    private fun validateProfileDraftForUpdate(
+        draft: ProfileDraft,
+        savedDraft: ProfileDraft
+    ): ProfileFormErrors {
+        val validation = validateProfileDraft(draft)
+        return validation.copy(
+            school = validation.school.takeIf {
+                draft.universityIsCustom || savedDraft.university != draft.university
+            },
+            major = validation.major.takeIf {
+                draft.majorIsCustom || savedDraft.major != draft.major
+            }
+        )
     }
 
     fun uploadProfilePhoto(bytes: ByteArray, mediaType: String) {

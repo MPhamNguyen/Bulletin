@@ -26,7 +26,7 @@ internal fun MarketplaceProfileView(
 ) {
     val profile = uiState.profile
     val fullName = profile?.fullName?.ifBlank { null } ?: "Dominic Alfonso"
-    val university = profile?.university?.ifBlank { null } ?: "CSU Long Beach"
+    val university = profile?.university.orEmpty()
     val major = profile?.major?.ifBlank { null } ?: "Computer Science"
 
     Column(modifier = Modifier.fillMaxSize()) {

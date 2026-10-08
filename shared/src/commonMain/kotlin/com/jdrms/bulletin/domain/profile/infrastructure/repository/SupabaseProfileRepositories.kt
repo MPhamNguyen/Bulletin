@@ -423,7 +423,7 @@ class SupabaseAuthRepository(
             id = UserId(authUser.id),
             email = email,
             fullName = metadataName ?: "Student",
-            university = metadataUniversity ?: "CSU Long Beach",
+            university = metadataUniversity.orEmpty(),
             isVerified = authUser.emailConfirmedAt != null
         )
         when (val saveResult = profileRepository.updateProfile(profile)) {

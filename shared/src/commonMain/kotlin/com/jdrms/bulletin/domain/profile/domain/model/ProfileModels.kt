@@ -147,7 +147,7 @@ data class StudentProfile(
     val fullName: String,
     val major: String = "",
     val graduationDate: String = "",
-    val university: String = "CSU Long Beach",
+    val university: String = "",
     val bio: String = "",
     val avatarUrl: String? = null,
     val isVerified: Boolean = false,

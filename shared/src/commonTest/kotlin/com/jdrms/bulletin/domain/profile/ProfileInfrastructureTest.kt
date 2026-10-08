@@ -118,7 +118,7 @@ class ProfileInfrastructureTest {
 
         assertEquals("Student", profile.fullName)
         assertEquals("", profile.major)
-        assertEquals("CSU Long Beach", profile.university)
+        assertEquals("", profile.university)
         assertEquals("", profile.bio)
         assertFalse(profile.isVerified)
     }

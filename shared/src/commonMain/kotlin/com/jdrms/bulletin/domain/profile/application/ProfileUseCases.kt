@@ -30,7 +30,7 @@ class AuthenticateUser(
         email: StudentEmail,
         password: String,
         fullName: String,
-        university: String = "CSU Long Beach"
+        university: String = ""
     ): Result<PendingRegistration> {
         val validation = policy.validateRegistration(
             emailStr = email.value,

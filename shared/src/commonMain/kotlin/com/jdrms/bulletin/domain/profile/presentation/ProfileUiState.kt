@@ -47,6 +47,7 @@ data class ProfileUiState(
     val activeSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val editReturnSubscreen: ProfileSubscreen = ProfileSubscreen.PROFILE,
     val errorMessage: String? = null,
+    val profileFormErrors: ProfileFormErrors = ProfileFormErrors(),
     val successMessage: String? = null,
     val isAccountCreated: Boolean = false,
     val authSessionState: AuthSessionState = AuthSessionState.CHECKING,
@@ -57,12 +58,27 @@ data class ProfileUiState(
         get() = profile != null && ProfileDraft.from(profile) != profileDraft
 }
 
+data class ProfileFormErrors(
+    val school: String? = null,
+    val major: String? = null
+) {
+    val isValid: Boolean
+        get() = school == null && major == null
+}
+
+fun validateProfileDraft(draft: ProfileDraft): ProfileFormErrors = ProfileFormErrors(
+    school = if (draft.university.isBlank()) "Enter or select your school." else null,
+    major = if (draft.major.isBlank()) "Enter or select your major." else null
+)
+
 data class ProfileDraft(
     val fullName: String = "",
     val major: String = "",
     val graduationDate: String = "",
     val university: String = "",
-    val bio: String = ""
+    val bio: String = "",
+    val universityIsCustom: Boolean = false,
+    val majorIsCustom: Boolean = false
 ) {
     companion object {
         fun from(profile: StudentProfile): ProfileDraft {

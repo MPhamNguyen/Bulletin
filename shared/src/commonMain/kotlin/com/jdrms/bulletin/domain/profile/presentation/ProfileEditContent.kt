@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,109 +7,62 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.outlined.AddAPhoto
-import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.compose.ui.window.PopupProperties
-import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 
 private const val BIO_MAX_LENGTH = 160
 private const val BIO_WARN_LENGTH = 150
 private const val OTHER_LABEL = "Other"
-private val MENU_MAX_HEIGHT = 260.dp
-private val MENU_ITEM_HEIGHT = 48.dp
-private val MENU_GAP = 4.dp
-private val MENU_SCREEN_MARGIN = 8.dp
-
-private data class ProfileFormErrors(
-    val school: String? = null,
-    val schoolOther: String? = null,
-    val major: String? = null,
-    val majorOther: String? = null
-) {
-    val isValid: Boolean
-        get() = school == null && schoolOther == null && major == null && majorOther == null
-}
-
-private fun validateProfile(
-    draft: ProfileDraft,
-    schoolOther: Boolean,
-    majorOther: Boolean
-): ProfileFormErrors = ProfileFormErrors(
-    school = if (!schoolOther && draft.university.isBlank()) {
-        "Enter or select your school."
-    } else {
-        null
-    },
-    schoolOther = if (schoolOther && draft.university.isBlank()) "Enter your school to continue." else null,
-    major = if (!majorOther && draft.major.isBlank()) {
-        "Enter or select your major."
-    } else {
-        null
-    },
-    majorOther = if (majorOther && draft.major.isBlank()) "Enter your major to continue." else null
-)
 
 @Composable
 internal fun EditProfileView(
@@ -121,39 +73,6 @@ internal fun EditProfileView(
     onChangePhoto: () -> Unit,
     onSignOut: () -> Unit
 ) {
-    val draft = uiState.profileDraft
-    val saveEnabled = uiState.isProfileModified && !uiState.isLoading
-
-    // If the saved value isn't one of our options, start in "Other" mode so it stays editable.
-    var schoolOther by rememberSaveable {
-        mutableStateOf(
-            draft.university.isNotBlank() && !SCHOOL_OPTIONS.isKnownOption(draft.university)
-        )
-    }
-    var majorOther by rememberSaveable {
-        mutableStateOf(
-            draft.major.isNotBlank() && !MAJOR_OPTIONS.isKnownOption(draft.major)
-        )
-    }
-    var errors by remember { mutableStateOf(ProfileFormErrors()) }
-
-    // Clear a field's error as soon as that field changes.
-    val handleDraftChanged: (ProfileDraft) -> Unit = { new ->
-        errors = errors.copy(
-            school = if (new.university != draft.university) null else errors.school,
-            schoolOther = if (new.university != draft.university) null else errors.schoolOther,
-            major = if (new.major != draft.major) null else errors.major,
-            majorOther = if (new.major != draft.major) null else errors.majorOther
-        )
-        onDraftChanged(new)
-    }
-
-    val handleSave: () -> Unit = {
-        val result = validateProfile(draft, schoolOther, majorOther)
-        errors = result
-        if (result.isValid) onUpdate()
-    }
-
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
@@ -175,42 +94,20 @@ internal fun EditProfileView(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Button(
-                onClick = handleSave,
-                enabled = saveEnabled,
-                shape = MaterialTheme.shapes.extraLarge,
-                modifier = Modifier.height(32.dp),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                colors = BulletinButtonDefaults.buttonColors()
-            ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Save", style = MaterialTheme.typography.labelLarge)
-                }
-            }
         }
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             EditProfileBody(
                 uiState = uiState,
-                errors = errors,
-                schoolOther = schoolOther,
-                majorOther = majorOther,
-                onSchoolOtherChange = { schoolOther = it },
-                onMajorOtherChange = { majorOther = it },
-                onDraftChanged = handleDraftChanged,
-                onSave = handleSave,
+                onDraftChanged = onDraftChanged,
+                onSave = onUpdate,
                 onChangePhoto = onChangePhoto,
                 onSignOut = onSignOut
             )
@@ -222,11 +119,6 @@ internal fun EditProfileView(
 @Suppress("LongParameterList", "LongMethod")
 private fun EditProfileBody(
     uiState: ProfileUiState,
-    errors: ProfileFormErrors,
-    schoolOther: Boolean,
-    majorOther: Boolean,
-    onSchoolOtherChange: (Boolean) -> Unit,
-    onMajorOtherChange: (Boolean) -> Unit,
     onDraftChanged: (ProfileDraft) -> Unit,
     onSave: () -> Unit,
     onChangePhoto: () -> Unit,
@@ -242,20 +134,24 @@ private fun EditProfileBody(
     )
     Spacer(Modifier.height(20.dp))
 
-    ProfileEditCard("Personal Info", "Public Profile") {
+    ProfileEditCard("Personal Info") {
         ProfileEditField(
             label = "Full Name",
             value = draft.fullName,
             leadingIcon = Icons.Outlined.Person,
-            trailingAction = {
-                IconButton(onClick = { onDraftChanged(draft.copy(fullName = "")) }) {
-                    Icon(
-                        Icons.Filled.Cancel,
-                        contentDescription = "Clear name",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            trailingAction = if (draft.fullName.isNotEmpty()) {
+                {
+                    IconButton(onClick = { onDraftChanged(draft.copy(fullName = "")) }) {
+                        Icon(
+                            Icons.Filled.Cancel,
+                            contentDescription = "Clear name",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+            } else {
+                null
             },
             onValueChange = { onDraftChanged(draft.copy(fullName = it)) }
         )
@@ -276,47 +172,47 @@ private fun EditProfileBody(
         }
     ) {
         ProfileComboField(
-            label = "School",
-            value = draft.university,
-            placeholder = "Search or select your school",
-            leadingIcon = Icons.Outlined.School,
-            items = SCHOOL_OPTIONS,
-            isOther = schoolOther,
-            otherLabel = "Your school's full name",
-            otherPlaceholder = "e.g. Lincoln University",
-            errorMessage = errors.school,
-            otherErrorMessage = errors.schoolOther,
+            spec = ComboFieldSpec(
+                label = "School",
+                value = draft.university,
+                placeholder = "Search or select your school",
+                leadingIcon = Icons.Outlined.School,
+                items = SCHOOL_OPTIONS,
+                isOther = draft.universityIsCustom ||
+                    (draft.university.isNotBlank() && !SCHOOL_OPTIONS.isKnownOption(draft.university)),
+                otherLabel = "Your school's full name",
+                otherPlaceholder = "e.g. Lincoln University",
+                errorMessage = uiState.profileFormErrors.school
+            ),
             onValueChange = {
-                onSchoolOtherChange(false)
-                onDraftChanged(draft.copy(university = it))
+                onDraftChanged(draft.copy(university = it, universityIsCustom = false))
             },
             onOtherSelected = {
-                onSchoolOtherChange(true)
-                onDraftChanged(draft.copy(university = ""))
+                onDraftChanged(draft.copy(university = "", universityIsCustom = true))
             },
-            onOtherValueChange = { onDraftChanged(draft.copy(university = it)) }
+            onOtherValueChange = { onDraftChanged(draft.copy(university = it, universityIsCustom = true)) }
         )
         Spacer(Modifier.height(14.dp))
         ProfileComboField(
-            label = "Major / Department",
-            value = draft.major,
-            placeholder = "Search or select your major",
-            leadingIcon = Icons.AutoMirrored.Outlined.MenuBook,
-            items = MAJOR_OPTIONS,
-            isOther = majorOther,
-            otherLabel = "Your major or department",
-            otherPlaceholder = "e.g. Marine Biology",
-            errorMessage = errors.major,
-            otherErrorMessage = errors.majorOther,
+            spec = ComboFieldSpec(
+                label = "Major / Department",
+                value = draft.major,
+                placeholder = "Search or select your major",
+                leadingIcon = Icons.AutoMirrored.Outlined.MenuBook,
+                items = MAJOR_OPTIONS,
+                isOther = draft.majorIsCustom ||
+                    (draft.major.isNotBlank() && !MAJOR_OPTIONS.isKnownOption(draft.major)),
+                otherLabel = "Your major or department",
+                otherPlaceholder = "e.g. Marine Biology",
+                errorMessage = uiState.profileFormErrors.major
+            ),
             onValueChange = {
-                onMajorOtherChange(false)
-                onDraftChanged(draft.copy(major = it))
+                onDraftChanged(draft.copy(major = it, majorIsCustom = false))
             },
             onOtherSelected = {
-                onMajorOtherChange(true)
-                onDraftChanged(draft.copy(major = ""))
+                onDraftChanged(draft.copy(major = "", majorIsCustom = true))
             },
-            onOtherValueChange = { onDraftChanged(draft.copy(major = it)) }
+            onOtherValueChange = { onDraftChanged(draft.copy(major = it, majorIsCustom = true)) }
         )
     }
 
@@ -344,7 +240,6 @@ private fun EditProfileBody(
 @Composable
 private fun ProfileEditCard(
     title: String,
-    trailing: String? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -362,13 +257,6 @@ private fun ProfileEditCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
             trailingContent?.invoke()
-                ?: trailing?.let {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
         }
         Spacer(Modifier.height(8.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -404,7 +292,12 @@ private fun EditProfilePhoto(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier.size(104.dp).clickable(enabled = !isUploading, onClick = onChangePhoto),
+            modifier = Modifier.size(104.dp).clickable(
+                enabled = !isUploading,
+                role = Role.Button,
+                onClickLabel = "Change profile photo",
+                onClick = onChangePhoto
+            ),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -463,17 +356,6 @@ private fun FieldLabel(text: String) {
 }
 
 @Composable
-private fun FieldError(message: String?) {
-    if (message != null) {
-        Text(
-            message,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.error
-        )
-    }
-}
-
-@Composable
 private fun ProfileEditField(
     label: String,
     value: String,
@@ -491,6 +373,10 @@ private fun ProfileEditField(
             leadingIcon = { Icon(leadingIcon, contentDescription = null) },
             trailingIcon = trailingAction,
             singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
+            ),
             shape = MaterialTheme.shapes.medium,
             colors = BulletinTextFieldDefaults.colors(),
             modifier = Modifier.fillMaxWidth()
@@ -502,8 +388,11 @@ internal data class ComboOption(
     val label: String,
     val keywords: List<String> = emptyList()
 ) {
+    private val normalizedLabel = label.normalized()
+    private val normalizedKeywords = keywords.map(String::normalized)
+
     fun matches(query: String): Boolean =
-        label.normalized().contains(query) || keywords.any { it.normalized().contains(query) }
+        normalizedLabel.contains(query) || normalizedKeywords.any { it.contains(query) }
 }
 
 internal fun List<ComboOption>.isKnownOption(value: String): Boolean = any { it.label == value }
@@ -581,167 +470,106 @@ private val MAJOR_OPTIONS = listOf(
     "Undeclared"
 ).map { ComboOption(it) }
 
-private fun String.normalized() = lowercase().filterNot { it == ',' || it == '.' || it == '&' }
+private fun String.normalized() = lowercase().trim().filterNot { it == ',' || it == '.' || it == '&' }
 
+private data class ComboFieldSpec(
+    val label: String,
+    val value: String,
+    val placeholder: String,
+    val leadingIcon: ImageVector,
+    val items: List<ComboOption>,
+    val isOther: Boolean,
+    val otherLabel: String,
+    val otherPlaceholder: String,
+    val errorMessage: String?
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("LongParameterList", "LongMethod")
 private fun ProfileComboField(
-    label: String,
-    value: String,
-    placeholder: String,
-    leadingIcon: ImageVector,
-    items: List<ComboOption>,
-    isOther: Boolean,
-    otherLabel: String,
-    otherPlaceholder: String,
-    errorMessage: String?,
-    otherErrorMessage: String?,
+    spec: ComboFieldSpec,
     onValueChange: (String) -> Unit,
     onOtherSelected: () -> Unit,
     onOtherValueChange: (String) -> Unit
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val displayText = if (isOther) OTHER_LABEL else value
-    var fieldValue by remember { mutableStateOf(TextFieldValue(displayText)) }
-
-    // Keep the field in sync when the draft changes from outside (e.g. picking "Other").
-    LaunchedEffect(displayText) {
-        if (fieldValue.text != displayText) fieldValue = TextFieldValue(displayText)
+    var query by rememberSaveable(spec.value, spec.isOther) {
+        mutableStateOf(if (spec.isOther) OTHER_LABEL else spec.value)
     }
-
-    // Show the full list when a valid option is already chosen; otherwise filter by what's typed.
-    val query = if (isOther || items.any { it.label == displayText }) {
-        ""
-    } else {
-        fieldValue.text.trim().normalized()
-    }
-    val filteredItems = items.filter { query.isBlank() || it.matches(query) }
-
-    // Work out how much room there is above and below the field so the menu can pick a side
-    // and cap its height instead of covering the whole screen.
-    val density = LocalDensity.current
-    val windowHeight = LocalWindowInfo.current.containerSize.height
-    val imeBottom = WindowInsets.ime.getBottom(density)
-    val statusBarTop = WindowInsets.statusBars.getTop(density)
-    var anchor by remember { mutableStateOf<Rect?>(null) }
-
-    val gapPx = with(density) { MENU_GAP.toPx() }
-    val marginPx = with(density) { MENU_SCREEN_MARGIN.toPx() }
-    val preferredPx = with(density) {
-        minOf(MENU_MAX_HEIGHT, MENU_ITEM_HEIGHT * (filteredItems.size + 1)).toPx()
-    }
-    val spaceBelow = anchor?.let { windowHeight - imeBottom - it.bottom - gapPx - marginPx } ?: 0f
-    val spaceAbove = anchor?.let { it.top - statusBarTop - gapPx - marginPx } ?: 0f
-    // Open below by default; flip above only when below is too tight and above has more room.
-    val showAbove = spaceBelow < preferredPx && spaceAbove > spaceBelow
-    val menuMaxHeight = with(density) {
-        minOf(preferredPx, if (showAbove) spaceAbove else spaceBelow).coerceAtLeast(0f).toDp()
-    }
-    val menuWidth = with(density) { (anchor?.width ?: 0f).toDp() }
-    val positionProvider = remember(showAbove, gapPx) {
-        object : PopupPositionProvider {
-            override fun calculatePosition(
-                anchorBounds: IntRect,
-                windowSize: IntSize,
-                layoutDirection: LayoutDirection,
-                popupContentSize: IntSize
-            ): IntOffset {
-                val y = if (showAbove) {
-                    anchorBounds.top - popupContentSize.height - gapPx.toInt()
-                } else {
-                    anchorBounds.bottom + gapPx.toInt()
-                }
-                return IntOffset(anchorBounds.left, y)
-            }
+    val filteredItems = remember(query, spec.items) {
+        val normalizedQuery = query.normalized()
+        if (spec.items.any { it.label == query }) {
+            spec.items
+        } else {
+            spec.items.filter { it.matches(normalizedQuery) }
         }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        FieldLabel(label)
-        Box(modifier = Modifier.onGloballyPositioned { anchor = it.boundsInWindow() }) {
+        FieldLabel(spec.label)
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
             OutlinedTextField(
-                value = fieldValue,
+                value = query,
                 onValueChange = {
-                    fieldValue = it
-                    onValueChange(it.text)
+                    query = it
                     expanded = true
                 },
-                placeholder = { Text(placeholder) },
-                leadingIcon = { Icon(leadingIcon, contentDescription = null) },
-                trailingIcon = {
-                    Icon(Icons.Outlined.ExpandMore, contentDescription = "Show $label options")
-                },
+                placeholder = { Text(spec.placeholder) },
+                leadingIcon = { Icon(spec.leadingIcon, contentDescription = null) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                 singleLine = true,
-                isError = errorMessage != null,
+                isError = spec.errorMessage != null,
+                supportingText = spec.errorMessage?.let { { Text(it) } },
                 shape = MaterialTheme.shapes.medium,
                 colors = BulletinTextFieldDefaults.colors(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .onFocusChanged { expanded = it.isFocused }
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
             )
-            if (expanded && anchor != null) {
-                // Non-focusable so the text field keeps focus and the keyboard stays up while typing.
-                Popup(
-                    popupPositionProvider = positionProvider,
-                    onDismissRequest = { expanded = false },
-                    properties = PopupProperties(focusable = false)
-                ) {
-                    Surface(
-                        modifier = Modifier.width(menuWidth).heightIn(max = menuMaxHeight),
-                        shape = MaterialTheme.shapes.medium,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Column {
-                            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                                filteredItems.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(option.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        },
-                                        onClick = {
-                                            fieldValue = TextFieldValue(option.label, TextRange(option.label.length))
-                                            onValueChange(option.label)
-                                            expanded = false
-                                        }
-                                    )
-                                }
-                            }
-                            // "Other" stays pinned at the bottom so it's always reachable.
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        "Other (type it in)",
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                },
-                                onClick = {
-                                    expanded = false
-                                    onOtherSelected()
-                                }
-                            )
-                        }
-                    }
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = {
+                    expanded = false
+                    query = if (spec.isOther) OTHER_LABEL else spec.value
                 }
+            ) {
+                filteredItems.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        onClick = {
+                            query = option.label
+                            onValueChange(option.label)
+                            expanded = false
+                        }
+                    )
+                }
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text("Other (type it in)", color = MaterialTheme.colorScheme.primary) },
+                    onClick = {
+                        query = OTHER_LABEL
+                        expanded = false
+                        onOtherSelected()
+                    }
+                )
             }
         }
-        FieldError(errorMessage)
 
-        if (isOther) {
+        if (spec.isOther) {
             Spacer(Modifier.height(2.dp))
-            FieldLabel(otherLabel)
+            FieldLabel(spec.otherLabel)
             OutlinedTextField(
-                value = value,
+                value = spec.value,
                 onValueChange = onOtherValueChange,
-                placeholder = { Text(otherPlaceholder) },
+                placeholder = { Text(spec.otherPlaceholder) },
                 singleLine = true,
-                isError = otherErrorMessage != null,
                 shape = MaterialTheme.shapes.medium,
                 colors = BulletinTextFieldDefaults.colors(),
                 modifier = Modifier.fillMaxWidth()
             )
-            FieldError(otherErrorMessage)
         }
     }
 }
@@ -752,10 +580,14 @@ private fun BioField(value: String, onValueChange: (String) -> Unit) {
         FieldLabel("Bio")
         OutlinedTextField(
             value = value,
-            onValueChange = { if (it.length <= BIO_MAX_LENGTH) onValueChange(it) },
+            onValueChange = { onValueChange(it.take(BIO_MAX_LENGTH)) },
             placeholder = { Text("Introduce yourself to buyers and sellers on campus…") },
             minLines = 3,
             maxLines = 3,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Default
+            ),
             shape = MaterialTheme.shapes.medium,
             colors = BulletinTextFieldDefaults.colors(),
             modifier = Modifier.fillMaxWidth()
