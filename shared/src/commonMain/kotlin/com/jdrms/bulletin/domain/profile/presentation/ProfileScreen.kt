@@ -33,7 +33,8 @@ data class ProfileScreenCallbacks(
 
 private data class ProfileDestinationStates(
     val profile: ProfileUiState,
-    val edit: EditProfileUiState
+    val edit: EditProfileUiState,
+    val viewModel: ProfileViewModel
 )
 
 @Composable
@@ -61,8 +62,7 @@ fun ProfileScreen(
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         ProfileDestinationContent(
             destination,
-            ProfileDestinationStates(profileState, editState),
-            viewModel,
+            ProfileDestinationStates(profileState, editState, viewModel),
             flows,
             callbacks,
             themeViewModel
@@ -75,7 +75,6 @@ fun ProfileScreen(
 private fun ProfileDestinationContent(
     destination: ProfileDestination,
     states: ProfileDestinationStates,
-    viewModel: ProfileViewModel,
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
     themeViewModel: ThemeViewModel?
@@ -86,17 +85,19 @@ private fun ProfileDestinationContent(
         ProfileDestination.SETTINGS -> ProfileSettingsDestination(states.profile, flows, callbacks, themeViewModel)
         ProfileDestination.BOOKMARKED_LISTINGS -> {
             BookmarkedListingsView(
-                listings = states.profile.bookmarkedListings,
-                isLoading = states.profile.isLoadingBookmarkedListings,
-                isLoadingMore = states.profile.isLoadingMoreBookmarkedListings,
-                hasMore = states.profile.bookmarkedListingsNextCursor != null,
-                errorMessage = states.profile.errorMessage,
-                removingListingId = states.profile.removingBookmarkedListingId,
+                state = BookmarkedListingsViewState(
+                    listings = states.profile.bookmarkedListings,
+                    isLoading = states.profile.isLoadingBookmarkedListings,
+                    isLoadingMore = states.profile.isLoadingMoreBookmarkedListings,
+                    hasMore = states.profile.bookmarkedListingsNextCursor != null,
+                    errorMessage = states.profile.errorMessage,
+                    removingListingId = states.profile.removingBookmarkedListingId
+                ),
                 actions = BookmarkedListingsActions(
-                    onListingClick = viewModel::viewBookmarkedListing,
-                    onRemoveBookmark = viewModel::removeBookmarkedListing,
-                    onRefresh = viewModel::loadBookmarkedListings,
-                    onLoadMore = viewModel::loadMoreBookmarkedListings,
+                    onListingClick = states.viewModel::viewBookmarkedListing,
+                    onRemoveBookmark = states.viewModel::removeBookmarkedListing,
+                    onRefresh = states.viewModel::loadBookmarkedListings,
+                    onLoadMore = states.viewModel::loadMoreBookmarkedListings,
                     onBack = callbacks.onBack
                 )
             )
@@ -105,8 +106,8 @@ private fun ProfileDestinationContent(
                     listing = listing,
                     isRemovingBookmark = states.profile.removingBookmarkedListingId == listing.id,
                     errorMessage = states.profile.errorMessage,
-                    onDismiss = viewModel::dismissBookmarkedListing,
-                    onRemoveBookmark = { viewModel.removeBookmarkedListing(listing.id) }
+                    onDismiss = states.viewModel::dismissBookmarkedListing,
+                    onRemoveBookmark = { states.viewModel.removeBookmarkedListing(listing.id) }
                 )
             }
         }

@@ -40,14 +40,18 @@ data class ProfileUiState(
         get() = bookmarkedListings.firstOrNull { it.id == selectedBookmarkedListingId }
 }
 
+data class ProfileBookmarksDependencies(
+    val provider: ProfileBookmarkedListingsProvider? = null,
+    val remover: ProfileBookmarkedListingRemover? = null
+)
+
 /** Read model for the profile landing destination and its bookmarked-listings child destination. */
 class ProfileViewModel(
     private val sessionRepository: SessionRepository,
     private val getProfileOverview: GetProfileOverview,
     private val getProfileActivity: GetProfileActivity,
     listingChangedSignal: RefreshSignal,
-    private val bookmarkedListingsProvider: ProfileBookmarkedListingsProvider? = null,
-    private val bookmarkedListingRemover: ProfileBookmarkedListingRemover? = null
+    private val bookmarks: ProfileBookmarksDependencies = ProfileBookmarksDependencies()
 ) : ViewModel() {
     private val state = MutableStateFlow(ProfileUiState())
     val uiState = state.asStateFlow()
@@ -100,27 +104,31 @@ class ProfileViewModel(
                 }
                 return@launch
             }
-            try {
-                val page = getBookmarkedListingsPage(userId, null)
-                state.update {
-                    it.copy(
-                        bookmarkedListings = page.listings,
-                        isLoadingBookmarkedListings = false,
-                        bookmarkedListingsNextCursor = page.nextCursor,
-                        selectedBookmarkedListingId = null,
-                        errorMessage = null
-                    )
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                state.update {
-                    it.copy(
-                        isLoadingBookmarkedListings = false,
-                        bookmarkedListingsNextCursor = null,
-                        errorMessage = "Unable to load bookmarked listings. Please try again."
-                    )
-                }
+            loadInitialBookmarks(userId)
+        }
+    }
+
+    private suspend fun loadInitialBookmarks(userId: UserId) {
+        try {
+            val page = getBookmarkedListingsPage(userId, null)
+            state.update {
+                it.copy(
+                    bookmarkedListings = page.listings,
+                    isLoadingBookmarkedListings = false,
+                    bookmarkedListingsNextCursor = page.nextCursor,
+                    selectedBookmarkedListingId = null,
+                    errorMessage = null
+                )
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            state.update {
+                it.copy(
+                    isLoadingBookmarkedListings = false,
+                    bookmarkedListingsNextCursor = null,
+                    errorMessage = "Unable to load bookmarked listings. Please try again."
+                )
             }
         }
     }
@@ -136,7 +144,9 @@ class ProfileViewModel(
                 val page = getBookmarkedListingsPage(userId, cursor)
                 state.update {
                     it.copy(
-                        bookmarkedListings = (it.bookmarkedListings + page.listings).distinctBy { listing -> listing.id },
+                        bookmarkedListings = (it.bookmarkedListings + page.listings).distinctBy { listing ->
+                            listing.id
+                        },
                         isLoadingMoreBookmarkedListings = false,
                         bookmarkedListingsNextCursor = page.nextCursor
                     )
@@ -166,52 +176,54 @@ class ProfileViewModel(
     fun removeBookmarkedListing(listingId: String) {
         val current = state.value
         val userId = current.profile?.id ?: return
-        if (current.removingBookmarkedListingId != null || current.bookmarkedListings.none { it.id == listingId }) return
+        val removalUnavailable = current.removingBookmarkedListingId != null ||
+            current.bookmarkedListings.none { it.id == listingId }
+        if (removalUnavailable) return
         bookmarkRemovalJob?.cancel()
         bookmarkedListingsJob?.cancel()
         bookmarkRemovalJob = viewModelScope.launch {
             state.update { it.copy(removingBookmarkedListingId = listingId, errorMessage = null) }
-            var removed = false
-            try {
-                val remover = bookmarkedListingRemover ?: error("Bookmark removal is unavailable.")
-                remover.removeBookmark(userId, listingId)
-                removed = true
-                state.update {
-                    it.copy(
-                        bookmarkedListings = it.bookmarkedListings.filterNot { listing -> listing.id == listingId },
-                        selectedBookmarkedListingId = null
-                    )
-                }
-                val page = getBookmarkedListingsPage(userId, null)
-                state.update {
-                    it.copy(
-                        bookmarkedListings = page.listings,
-                        bookmarkedListingsNextCursor = page.nextCursor,
-                        removingBookmarkedListingId = null,
-                        errorMessage = null
-                    )
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                state.update {
-                    it.copy(
-                        removingBookmarkedListingId = null,
-                        errorMessage = if (removed) {
-                            "Bookmark removed, but the list could not be refreshed."
-                        } else {
-                            "Unable to remove bookmark. Please try again."
-                        }
-                    )
-                }
+            performBookmarkRemoval(userId, listingId)
+        }
+    }
+
+    private suspend fun performBookmarkRemoval(userId: UserId, listingId: String) {
+        var removed = false
+        try {
+            val remover = bookmarks.remover ?: error("Bookmark removal is unavailable.")
+            remover.removeBookmark(userId, listingId)
+            removed = true
+            state.update {
+                it.copy(
+                    bookmarkedListings = it.bookmarkedListings.filterNot { listing -> listing.id == listingId },
+                    selectedBookmarkedListingId = null
+                )
             }
+            val page = getBookmarkedListingsPage(userId, null)
+            state.update {
+                it.copy(
+                    bookmarkedListings = page.listings,
+                    bookmarkedListingsNextCursor = page.nextCursor,
+                    removingBookmarkedListingId = null,
+                    errorMessage = null
+                )
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            val message = if (removed) {
+                "Bookmark removed, but the list could not be refreshed."
+            } else {
+                "Unable to remove bookmark. Please try again."
+            }
+            state.update { it.copy(removingBookmarkedListingId = null, errorMessage = message) }
         }
     }
 
     private suspend fun getBookmarkedListingsPage(
         userId: UserId,
         cursor: ProfileBookmarksPageCursor?
-    ): ProfileBookmarkedListingsPage = bookmarkedListingsProvider?.getBookmarkedListings(
+    ): ProfileBookmarkedListingsPage = bookmarks.provider?.getBookmarkedListings(
         userId,
         cursor,
         BOOKMARKS_PAGE_SIZE

@@ -37,20 +37,36 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
+data class MarketplaceDetailSheetState(
+    val listing: Listing?,
+    val isLoading: Boolean,
+    val errorMessage: String?,
+    val bookmarkErrorMessage: String?,
+    val isBookmarked: Boolean
+)
+
+data class MarketplaceDetailSheetActions(
+    val onDismiss: () -> Unit,
+    val onRetry: () -> Unit,
+    val onToggleBookmark: () -> Unit,
+    val onSellerClick: (sellerId: String) -> Unit = {}
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList")
 @Composable
 fun MarketplaceDetailBottomSheet(
-    listing: Listing?,
-    isLoading: Boolean,
-    errorMessage: String?,
-    bookmarkErrorMessage: String?,
-    isBookmarked: Boolean,
-    onDismiss: () -> Unit,
-    onRetry: () -> Unit,
-    onToggleBookmark: () -> Unit,
-    onSellerClick: (sellerId: String) -> Unit = {}
+    state: MarketplaceDetailSheetState,
+    actions: MarketplaceDetailSheetActions
 ) {
+    val listing = state.listing
+    val isLoading = state.isLoading
+    val errorMessage = state.errorMessage
+    val bookmarkErrorMessage = state.bookmarkErrorMessage
+    val isBookmarked = state.isBookmarked
+    val onDismiss = actions.onDismiss
+    val onRetry = actions.onRetry
+    val onToggleBookmark = actions.onToggleBookmark
+    val onSellerClick = actions.onSellerClick
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(

@@ -138,19 +138,23 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
 
             if (state.isDetailSheetOpen) {
                 MarketplaceDetailBottomSheet(
-                    listing = state.selectedListing,
-                    isLoading = state.isDetailLoading,
-                    errorMessage = state.detailErrorMessage,
-                    bookmarkErrorMessage = state.bookmarkErrorMessage,
-                    isBookmarked = state.selectedListing?.let {
-                        it.id in state.bookmarkedItemIds
-                    } ?: false,
-                    onDismiss = viewModel::dismissListingDetail,
-                    onRetry = viewModel::retryLoadListingDetail,
-                    onToggleBookmark = {
-                        state.selectedListing?.let { viewModel.toggleBookmark(it.id) }
-                    },
-                    onSellerClick = viewModel::onSellerClicked
+                    state = MarketplaceDetailSheetState(
+                        listing = state.selectedListing,
+                        isLoading = state.isDetailLoading,
+                        errorMessage = state.detailErrorMessage,
+                        bookmarkErrorMessage = state.bookmarkErrorMessage,
+                        isBookmarked = state.selectedListing?.let {
+                            it.id in state.bookmarkedItemIds
+                        } ?: false
+                    ),
+                    actions = MarketplaceDetailSheetActions(
+                        onDismiss = viewModel::dismissListingDetail,
+                        onRetry = viewModel::retryLoadListingDetail,
+                        onToggleBookmark = {
+                            state.selectedListing?.let { viewModel.toggleBookmark(it.id) }
+                        },
+                        onSellerClick = viewModel::onSellerClicked
+                    )
                 )
             }
         }

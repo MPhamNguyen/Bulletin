@@ -65,8 +65,7 @@ class ProfileViewModelTest {
             getProfileOverview = GetProfileOverview(fixture.profiles, listingsProvider),
             getProfileActivity = GetProfileActivity(listingsProvider),
             listingChangedSignal = RefreshSignal(),
-            bookmarkedListingsProvider = bookmarksProvider,
-            bookmarkedListingRemover = bookmarkRemover
+            bookmarks = ProfileBookmarksDependencies(bookmarksProvider, bookmarkRemover)
         )
         advanceUntilIdle()
 

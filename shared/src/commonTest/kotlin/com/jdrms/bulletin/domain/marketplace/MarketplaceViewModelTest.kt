@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListin
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,9 +46,11 @@ class MarketplaceViewModelTest {
         viewMarketplaceListing = ViewMarketplaceListing(repository)
         viewModel = MarketplaceViewModel(
             searchMarketplace = searchMarketplace,
-            bookmarkListing = bookmarkListing,
-            removeListingBookmark = removeListingBookmark,
-            getListingBookmarks = getListingBookmarks,
+            bookmarks = MarketplaceBookmarkDependencies(
+                add = bookmarkListing,
+                remove = removeListingBookmark,
+                get = getListingBookmarks
+            ),
             viewMarketplaceListing = viewMarketplaceListing
         )
         testDispatcher.scheduler.advanceUntilIdle()

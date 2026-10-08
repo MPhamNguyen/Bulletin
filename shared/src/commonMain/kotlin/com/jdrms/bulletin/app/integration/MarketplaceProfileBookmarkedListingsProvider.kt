@@ -29,38 +29,10 @@ class MarketplaceProfileBookmarkedListingsProvider(
         )
         val marketplaceListings = page.listings.associateBy { listing -> listing.id }
         val missingListingIds = page.listingIds.filterNot(marketplaceListings::containsKey).toSet()
-        val listingsContextListings = if (missingListingIds.isEmpty()) {
-            emptyMap()
-        } else {
-            listingsRepository?.getAllListings().orEmpty().associateBy { listing ->
-                MarketplaceItemId("listing:${listing.id.value}")
-            }
-        }
+        val listingsContextListings = loadMissingListings(missingListingIds)
         val translatedListings = page.listingIds.mapNotNull { itemId ->
-            marketplaceListings[itemId]?.let { listing ->
-                ProfileBookmarkedListing(
-                    id = itemId.value,
-                    title = listing.title,
-                    sellerName = listing.sellerName,
-                    price = listing.price.formatted,
-                    category = listing.category.name,
-                    description = listing.description,
-                    condition = listing.condition,
-                    photos = listing.photos,
-                    sellerReputationScore = listing.sellerReputationScore
-                )
-            } ?: listingsContextListings[itemId]?.let { listing ->
-                ProfileBookmarkedListing(
-                    id = itemId.value,
-                    title = listing.title,
-                    sellerName = listing.sellerName,
-                    price = listing.price.formatted,
-                    category = listing.category.name,
-                    description = listing.description,
-                    condition = listing.condition.name,
-                    photos = listing.images
-                )
-            }
+            marketplaceListings[itemId]?.let { listing -> listing.toProfileBookmark(itemId) }
+                ?: listingsContextListings[itemId]?.let { listing -> listing.toProfileBookmark(itemId) }
         }
         return ProfileBookmarkedListingsPage(
             listings = translatedListings,
@@ -71,4 +43,40 @@ class MarketplaceProfileBookmarkedListingsProvider(
     override suspend fun removeBookmark(userId: UserId, listingId: String) {
         removeMarketplaceListingBookmark(userId.value, MarketplaceItemId(listingId)).getOrThrow()
     }
+
+    private suspend fun loadMissingListings(missingIds: Set<MarketplaceItemId>) =
+        if (missingIds.isEmpty()) {
+            emptyMap()
+        } else {
+            listingsRepository?.getAllListings().orEmpty().associateBy { listing ->
+                MarketplaceItemId("listing:${listing.id.value}")
+            }
+        }
+
+    private fun com.jdrms.bulletin.domain.marketplace.domain.model.Listing.toProfileBookmark(
+        itemId: MarketplaceItemId
+    ) = ProfileBookmarkedListing(
+        id = itemId.value,
+        title = title,
+        sellerName = sellerName,
+        price = price.formatted,
+        category = category.name,
+        description = description,
+        condition = condition,
+        photos = photos,
+        sellerReputationScore = sellerReputationScore
+    )
+
+    private fun com.jdrms.bulletin.domain.listings.domain.model.Listing.toProfileBookmark(
+        itemId: MarketplaceItemId
+    ) = ProfileBookmarkedListing(
+        id = itemId.value,
+        title = title,
+        sellerName = sellerName,
+        price = price.formatted,
+        category = category.name,
+        description = description,
+        condition = condition.name,
+        photos = images
+    )
 }

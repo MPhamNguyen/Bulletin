@@ -3,17 +3,13 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
-import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
-import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
-import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,9 +18,7 @@ import kotlinx.coroutines.launch
 
 class MarketplaceViewModel(
     private val searchMarketplace: SearchMarketplace,
-    private val bookmarkListing: BookmarkMarketplaceListing,
-    private val removeListingBookmark: RemoveMarketplaceListingBookmark,
-    private val getListingBookmarks: GetMarketplaceListingBookmarks,
+    bookmarks: MarketplaceBookmarkDependencies,
     private val viewMarketplaceListing: ViewMarketplaceListing,
     private val listingChangedSignal: RefreshSignal? = null,
     private val currentUserIdProvider: suspend () -> String? = { DEFAULT_USER_ID }
@@ -33,7 +27,18 @@ class MarketplaceViewModel(
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
-    private val pendingBookmarkIds = mutableSetOf<MarketplaceItemId>()
+    private val firstPageLoader = MarketplaceFirstPageLoader(
+        _uiState,
+        searchMarketplace,
+        bookmarks,
+        currentUserIdProvider
+    )
+    private val bookmarkController = MarketplaceBookmarkController(
+        _uiState,
+        viewModelScope,
+        bookmarks,
+        currentUserIdProvider
+    )
 
     init {
         refreshListings()
@@ -52,59 +57,7 @@ class MarketplaceViewModel(
     private fun loadFirstPage(userId: String?, debounceMillis: Long) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    items = emptyList(),
-                    isLoading = true,
-                    isLoadingMore = false,
-                    nextCursor = null,
-                    endReached = false,
-                    errorMessage = null
-                )
-            }
-            if (debounceMillis > 0L) {
-                delay(debounceMillis)
-            }
-            val query = _uiState.value.searchQuery
-            val category = _uiState.value.selectedCategory
-            runCatching {
-                val resolvedUserId = userId ?: currentUserIdProvider()
-                val page = searchMarketplace.getPage(
-                    MarketplacePageRequest(query = query, category = category)
-                )
-                val bookmarkedIds = resolvedUserId?.let { getListingBookmarks.getBookmarkedIds(it) }.orEmpty()
-                page to bookmarkedIds
-            }.fold(
-                onSuccess = { (page, bookmarkedIds) ->
-                    _uiState.update { state ->
-                        if (state.searchQuery == query && state.selectedCategory == category) {
-                            state.copy(
-                                items = page.items,
-                                bookmarkedItemIds = bookmarkedIds,
-                                isLoading = false,
-                                nextCursor = page.nextCursor,
-                                endReached = page.nextCursor == null
-                            )
-                        } else {
-                            state
-                        }
-                    }
-                },
-                onFailure = { error ->
-                    error.rethrowIfCancellation()
-                    _uiState.update { state ->
-                        if (state.searchQuery == query && state.selectedCategory == category) {
-                            state.copy(
-                                isLoading = false,
-                                isLoadingMore = false,
-                                errorMessage = "Unable to load marketplace listings. Please try again."
-                            )
-                        } else {
-                            state
-                        }
-                    }
-                }
-            )
+            firstPageLoader.load(userId, debounceMillis)
         }
     }
 
@@ -156,7 +109,7 @@ class MarketplaceViewModel(
                     }
                 },
                 onFailure = { error ->
-                    error.rethrowIfCancellation()
+                    error.rethrowCancellation()
                     _uiState.update { state ->
                         if (
                             state.searchQuery == query &&
@@ -296,81 +249,11 @@ class MarketplaceViewModel(
     }
 
     fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) {
-        if (!pendingBookmarkIds.add(itemId)) return
-        viewModelScope.launch {
-            try {
-                runCatching {
-                    val resolvedUserId = userId ?: currentUserIdProvider()
-                    if (resolvedUserId == null) {
-                        _uiState.update { it.copy(bookmarkErrorMessage = "Sign in to bookmark listings.") }
-                        return@runCatching
-                    }
-                    val shouldBookmark = itemId !in _uiState.value.bookmarkedItemIds
-                    val result = if (shouldBookmark) {
-                        bookmarkListing(resolvedUserId, itemId)
-                    } else {
-                        removeListingBookmark(resolvedUserId, itemId)
-                    }
-                    when (result) {
-                        is com.jdrms.bulletin.core.common.Result.Success -> {
-                            _uiState.update { state ->
-                                val bookmarkedIds = if (shouldBookmark) {
-                                    state.bookmarkedItemIds + itemId
-                                } else {
-                                    state.bookmarkedItemIds - itemId
-                                }
-                                val updatedListing = if (state.selectedListing?.id == itemId) {
-                                    state.selectedListing.copy(isBookmarked = shouldBookmark)
-                                } else {
-                                    state.selectedListing
-                                }
-                                state.copy(
-                                    bookmarkedItemIds = bookmarkedIds,
-                                    selectedListing = updatedListing,
-                                    bookmarkErrorMessage = null
-                                )
-                            }
-                            refreshBookmarkMembership(resolvedUserId)
-                        }
-                        is com.jdrms.bulletin.core.common.Result.Error -> {
-                            _uiState.update {
-                                it.copy(bookmarkErrorMessage = "Unable to update bookmark. Please try again.")
-                            }
-                        }
-                    }
-                }.onFailure { error ->
-                    error.rethrowIfCancellation()
-                    _uiState.update {
-                        it.copy(bookmarkErrorMessage = "Unable to update bookmark. Please try again.")
-                    }
-                }
-            } finally {
-                pendingBookmarkIds.remove(itemId)
-            }
-        }
-    }
-
-    private suspend fun refreshBookmarkMembership(userId: String) {
-        runCatching { getListingBookmarks.getBookmarkedIds(userId) }
-            .onSuccess { bookmarkedIds ->
-                _uiState.update { state ->
-                    state.copy(
-                        bookmarkedItemIds = bookmarkedIds,
-                        selectedListing = state.selectedListing?.let { listing ->
-                            listing.copy(isBookmarked = listing.id in bookmarkedIds)
-                        }
-                    )
-                }
-            }
-            .onFailure { error -> error.rethrowIfCancellation() }
+        bookmarkController.toggle(itemId, userId)
     }
 
     private companion object {
         const val DEFAULT_USER_ID = "student_user"
         const val SEARCH_DEBOUNCE_MILLIS = 300L
-    }
-
-    private fun Throwable.rethrowIfCancellation() {
-        if (this is CancellationException) throw this
     }
 }

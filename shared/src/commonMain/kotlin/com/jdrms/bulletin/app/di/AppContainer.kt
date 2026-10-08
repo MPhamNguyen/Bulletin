@@ -5,8 +5,8 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
-import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
+import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -36,6 +36,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceReposi
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
@@ -47,11 +48,11 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMess
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
 import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.domain.profile.application.PublishStudentReview
 import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignInUser
@@ -76,6 +77,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfi
 import com.jdrms.bulletin.domain.profile.presentation.AccountViewModel
 import com.jdrms.bulletin.domain.profile.presentation.EditProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
+import com.jdrms.bulletin.domain.profile.presentation.ProfileBookmarksDependencies
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
@@ -250,9 +252,11 @@ class AppContainer(
 
     fun createMarketplaceViewModel() = MarketplaceViewModel(
         searchMarketplace = searchMarketplace,
-        bookmarkListing = bookmarkMarketplaceListing,
-        removeListingBookmark = removeMarketplaceListingBookmark,
-        getListingBookmarks = getMarketplaceListingBookmarks,
+        bookmarks = MarketplaceBookmarkDependencies(
+            add = bookmarkMarketplaceListing,
+            remove = removeMarketplaceListingBookmark,
+            get = getMarketplaceListingBookmarks
+        ),
         viewMarketplaceListing = viewMarketplaceListing,
         listingChangedSignal = listingChangedSignal,
         currentUserIdProvider = {
@@ -293,8 +297,10 @@ class AppContainer(
         getProfileOverview = getProfileOverview,
         getProfileActivity = getProfileActivity,
         listingChangedSignal = listingChangedSignal,
-        bookmarkedListingsProvider = profileBookmarkedListingsProvider,
-        bookmarkedListingRemover = profileBookmarkedListingRemover
+        bookmarks = ProfileBookmarksDependencies(
+            provider = profileBookmarkedListingsProvider,
+            remover = profileBookmarkedListingRemover
+        )
     )
 
     fun createEditProfileViewModel() = EditProfileViewModel(

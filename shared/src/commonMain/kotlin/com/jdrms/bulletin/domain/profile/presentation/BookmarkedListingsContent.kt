@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,22 +39,22 @@ import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
 @Composable
 internal fun BookmarkedListingsView(
-    listings: List<ProfileBookmarkedListing>,
-    isLoading: Boolean,
-    isLoadingMore: Boolean,
-    hasMore: Boolean,
-    errorMessage: String?,
-    removingListingId: String?,
+    state: BookmarkedListingsViewState,
     actions: BookmarkedListingsActions
 ) {
+    val listings = state.listings
+    val isLoading = state.isLoading
+    val isLoadingMore = state.isLoadingMore
+    val hasMore = state.hasMore
+    val errorMessage = state.errorMessage
+    val removingListingId = state.removingListingId
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
         BookmarkedListingsTopBar(
-            onBackClick = actions.onBack,
-            onRefreshClick = actions.onRefresh
+            onBackClick = actions.onBack
         )
 
         LazyColumn(
@@ -123,6 +122,15 @@ internal fun BookmarkedListingsView(
         }
     }
 }
+
+internal data class BookmarkedListingsViewState(
+    val listings: List<ProfileBookmarkedListing>,
+    val isLoading: Boolean,
+    val isLoadingMore: Boolean,
+    val hasMore: Boolean,
+    val errorMessage: String?,
+    val removingListingId: String?
+)
 
 internal data class BookmarkedListingsActions(
     val onListingClick: (String) -> Unit,
@@ -241,8 +249,7 @@ private fun EmptyBookmarksCard() {
 
 @Composable
 private fun BookmarkedListingsTopBar(
-    onBackClick: () -> Unit,
-    onRefreshClick: () -> Unit
+    onBackClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -265,12 +272,5 @@ private fun BookmarkedListingsTopBar(
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.weight(1f)
         )
-        IconButton(onClick = onRefreshClick) {
-            Icon(
-                imageVector = Icons.Outlined.Refresh,
-                contentDescription = "Refresh bookmarked listings",
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
     }
 }
