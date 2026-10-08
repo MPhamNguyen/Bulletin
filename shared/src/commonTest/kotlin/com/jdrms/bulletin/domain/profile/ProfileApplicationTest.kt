@@ -1,7 +1,7 @@
 package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
@@ -120,31 +120,33 @@ class ProfileApplicationTest {
     }
 
     @Test
-    fun testAuthenticateUserUseCaseRegisterAndLogin() = runTest {
+    fun testRegisterStudentValidatesAndRequestsRegistration() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
         val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
-        val authenticateUser = AuthenticateUser(authRepo, policy)
+        val registerStudent = RegisterStudent(authRepo, policy)
 
-        val email = StudentEmail("student1@school.edu")
-        val registerResult = authenticateUser.register(
-            email = email,
+        val registerResult = registerStudent(
+            firstName = "First",
+            lastName = "Last",
+            email = "student1@school.edu",
             password = "validPassword123",
-            fullName = "First Last"
         )
         assertTrue(registerResult.isSuccess())
 
         // Invalid registration fails in use case
-        val shortPasswordResult = authenticateUser.register(
-            email = StudentEmail("student2@school.edu"),
+        val shortPasswordResult = registerStudent(
+            firstName = "Short",
+            lastName = "Pass",
+            email = "student2@school.edu",
             password = "123",
-            fullName = "Short Pass"
         )
         assertTrue(shortPasswordResult.isError())
 
-        val nonEduResult = authenticateUser.register(
-            email = StudentEmail("student3@example.com"),
+        val nonEduResult = registerStudent(
+            firstName = "No",
+            lastName = "University",
+            email = "student3@example.com",
             password = "validPassword123",
-            fullName = "No University Email"
         )
         assertTrue(nonEduResult.isError())
         assertEquals(
@@ -157,16 +159,17 @@ class ProfileApplicationTest {
     fun testAuthenticatedSessionCanBeRestoredAndSignedOut() = runTest {
         val profileRepo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
         val authRepo = InMemoryAuthRepository(profileRepo, testVerificationCode = "123456")
-        val authenticateUser = AuthenticateUser(authRepo, policy)
+        val registerStudent = RegisterStudent(authRepo, policy)
         val restoreAuthenticatedProfile = RestoreAuthenticatedProfile(authRepo)
         val signOutUser = SignOutUser(authRepo)
 
         assertNull((restoreAuthenticatedProfile() as Result.Success).data)
 
-        val registered = authenticateUser.register(
-            email = StudentEmail("student@school.edu"),
+        val registered = registerStudent(
+            firstName = "Student",
+            lastName = "Name",
+            email = "student@school.edu",
             password = "validPassword123",
-            fullName = "Student Name"
         )
         assertTrue(registered is Result.Success)
         assertNull((restoreAuthenticatedProfile() as Result.Success).data)

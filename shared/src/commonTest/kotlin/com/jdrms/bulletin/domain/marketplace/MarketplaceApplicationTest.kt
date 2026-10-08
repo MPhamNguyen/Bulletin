@@ -63,7 +63,6 @@ class MarketplaceApplicationTest {
                         school = "Example University",
                         avatarUrl = "https://example.com/alex.jpg",
                         major = "Computer Science",
-                        graduationDate = "'25",
                         reviewCount = 24
                     )
                 } else {
@@ -78,7 +77,6 @@ class MarketplaceApplicationTest {
         assertEquals("Example University", listing.sellerSchool)
         assertEquals("https://example.com/alex.jpg", listing.sellerAvatarUrl)
         assertEquals("Computer Science", listing.sellerMajor)
-        assertEquals("'25", listing.sellerGraduationDate)
         assertEquals(24, listing.sellerReviewCount)
     }
 

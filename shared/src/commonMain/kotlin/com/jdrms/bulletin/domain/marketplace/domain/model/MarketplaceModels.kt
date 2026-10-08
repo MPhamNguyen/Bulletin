@@ -67,7 +67,6 @@ data class Listing(
     val sellerSchool: String = "CSU Long Beach",
     val sellerAvatarUrl: String? = null,
     val sellerMajor: String = "",
-    val sellerGraduationDate: String = "",
     val sellerReviewCount: Int = 0,
     val sellerIsVerified: Boolean = false
 ) {

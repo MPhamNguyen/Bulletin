@@ -19,11 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 @Composable
 fun SignUpScreen(
-    viewModel: ProfileViewModel,
+    viewModel: RegistrationViewModel,
     onBack: () -> Unit = {},
     onNavigateToSignIn: () -> Unit = onBack,
     onContinueToApp: () -> Unit = {}
@@ -48,11 +47,11 @@ fun SignUpScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             SignUpTopBar(
-                title = if (uiState.isAccountCreated) "Account Created" else "Sign up",
-                showBackButton = !uiState.isAccountCreated,
+                title = if (uiState.stage is RegistrationStage.Complete) "Account Created" else "Sign up",
+                showBackButton = uiState.stage !is RegistrationStage.Complete,
                 horizontalPadding = horizontalPadding,
                 onBackClick = {
-                    viewModel.clearMessages()
+                    viewModel.clearError()
                     onBack()
                 }
             )
@@ -68,39 +67,40 @@ fun SignUpScreen(
             ) {
                 SignUpLogoHeader(verticalPadding)
 
-                val createdProfile: StudentProfile? = uiState.profile
-                val pendingRegistration = uiState.pendingRegistration
-                val verifiedEmailAwaitingProfile = uiState.verifiedEmailAwaitingProfile
-                when {
-                    uiState.isAccountCreated && createdProfile != null -> SignUpSuccessContent(
-                        profile = createdProfile,
-                        successMessage = uiState.successMessage,
+                when (val stage = uiState.stage) {
+                    is RegistrationStage.Complete -> SignUpSuccessContent(
+                        profile = stage.profile,
+                        successMessage = "Account created successfully!",
                         onContinueToApp = onContinueToApp,
                         onNavigateToSignIn = onNavigateToSignIn
                     )
 
-                    verifiedEmailAwaitingProfile != null -> EmailVerificationRecoveryContent(
+                    is RegistrationStage.Recovery -> EmailVerificationRecoveryContent(
                         uiState = uiState,
-                        onRetry = viewModel::retryVerifiedProfile,
+                        email = stage.email,
+                        onRetry = viewModel::retryProfile,
                         onSignIn = {
-                            viewModel.resetRegistration()
+                            viewModel.reset()
                             onNavigateToSignIn()
                         }
                     )
 
-                    pendingRegistration != null -> EmailVerificationContent(
+                    is RegistrationStage.Verification -> EmailVerificationContent(
                         uiState = uiState,
-                        onVerify = { code -> viewModel.verifyEmail(pendingRegistration.email.value, code) },
-                        onResend = { viewModel.resendEmailCode(pendingRegistration.email.value) },
-                        onChangeEmail = viewModel::resetRegistration
+                        pending = stage.pending,
+                        onVerify = viewModel::verify,
+                        onResend = viewModel::resendCode,
+                        onChangeEmail = viewModel::reset
                     )
 
-                    else -> SignUpFormContent(
+                    RegistrationStage.Form -> SignUpFormContent(
                         uiState = uiState,
-                        onClearMessages = viewModel::clearMessages,
-                        onCreateAccount = viewModel::createAccount,
+                        onClearMessages = viewModel::clearError,
+                        onCreateAccount = { firstName, lastName, email, password ->
+                            viewModel.register(firstName, lastName, email, password)
+                        },
                         onNavigateToSignIn = {
-                            viewModel.clearMessages()
+                            viewModel.clearError()
                             onNavigateToSignIn()
                         }
                     )

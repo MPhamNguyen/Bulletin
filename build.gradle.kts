@@ -17,6 +17,9 @@ subprojects {
         buildUponDefaultConfig = true
         parallel = true
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
+        if (project.name == "shared") {
+            baseline = rootProject.file("detekt-baseline.xml")
+        }
         // KMP + Android source sets. Non-existent dirs are ignored per module.
         source.setFrom(
             "src/commonMain/kotlin",

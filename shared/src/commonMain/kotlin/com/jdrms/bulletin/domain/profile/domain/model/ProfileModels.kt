@@ -146,8 +146,7 @@ data class StudentProfile(
     val email: StudentEmail,
     val fullName: String,
     val major: String = "",
-    val graduationDate: String = "",
-    val university: String = "CSU Long Beach",
+    val university: String = "",
     val bio: String = "",
     val avatarUrl: String? = null,
     val isVerified: Boolean = false,
@@ -176,23 +175,17 @@ data class StudentProfile(
         major: String,
         university: String,
         bio: String,
-        graduationDate: String = this.graduationDate,
         avatarUrl: String? = this.avatarUrl
     ): Result<StudentProfile> {
         if (isDeleted) {
             return Result.Error(IllegalStateException("Cannot update a deleted profile."))
         }
         val normalizedName = fullName.trim()
-        val normalizedUniversity = university.trim()
+        val normalizedUniversity = university.trim().withoutTrailingAcronym()
         val normalizedBio = bio.trim()
-        val normalizedGradDate = graduationDate.trim()
-
         val validationError = when {
             normalizedName.isBlank() -> "Full name is required."
-            normalizedUniversity.isBlank() -> "School is required."
             normalizedBio.length > MAX_BIO_LENGTH -> "Bio must be $MAX_BIO_LENGTH characters or fewer."
-            normalizedGradDate.length > MAX_GRAD_DATE_LENGTH ->
-                "Graduation date must be $MAX_GRAD_DATE_LENGTH characters or fewer."
             else -> null
         }
         if (validationError != null) {
@@ -202,8 +195,7 @@ data class StudentProfile(
         return Result.Success(
             copy(
                 fullName = normalizedName,
-                major = major.trim(),
-                graduationDate = normalizedGradDate,
+                major = major.trim().withoutTrailingAcronym(),
                 university = normalizedUniversity,
                 bio = normalizedBio,
                 avatarUrl = avatarUrl?.trim()?.ifBlank { null }
@@ -213,6 +205,19 @@ data class StudentProfile(
 
     companion object {
         const val MAX_BIO_LENGTH = 500
-        const val MAX_GRAD_DATE_LENGTH = 50
+    }
+}
+
+private fun String.withoutTrailingAcronym(): String {
+    if (!endsWith(")")) return this
+
+    val acronymStart = lastIndexOf(" (")
+    if (acronymStart < 0) return this
+
+    val acronym = substring(acronymStart + 2, lastIndex)
+    return if (acronym.isNotEmpty() && acronym.all { it in 'A'..'Z' || it.isDigit() }) {
+        substring(0, acronymStart).trimEnd()
+    } else {
+        this
     }
 }

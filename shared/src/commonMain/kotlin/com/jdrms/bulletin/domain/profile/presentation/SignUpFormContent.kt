@@ -41,7 +41,7 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 internal fun SignUpFormContent(
-    uiState: ProfileUiState,
+    uiState: RegistrationUiState,
     onClearMessages: () -> Unit,
     onCreateAccount: (String, String, String, String) -> Unit,
     onNavigateToSignIn: () -> Unit
