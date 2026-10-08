@@ -392,19 +392,10 @@ class ProfileDomainTest {
         assertTrue(longBio is Result.Error)
         assertEquals("Bio must be 500 characters or fewer.", longBio.exception.message)
 
-        val longGradDate = profile.updateDetails(
-            fullName = "John Doe",
-            major = "Computer Science",
-            university = "CSULB",
-            bio = "Bio",
-            graduationDate = "x".repeat(StudentProfile.MAX_GRAD_DATE_LENGTH + 1)
-        )
-        assertTrue(longGradDate is Result.Error)
-        assertEquals("Graduation date must be 50 characters or fewer.", longGradDate.exception.message)
     }
 
     @Test
-    fun testProfileMapperPreservesMajorAndGraduationDate() {
+    fun testProfileMapperPreservesMajor() {
         val profile = StudentProfile(
             id = UserId("student_1"),
             email = StudentEmail("student@example.com"),

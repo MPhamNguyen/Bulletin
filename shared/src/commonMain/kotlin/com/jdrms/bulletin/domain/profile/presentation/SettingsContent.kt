@@ -243,7 +243,7 @@ private fun SettingsEditAccountCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Update name, major, graduation date & bio",
+                    text = "Update name, major & bio",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

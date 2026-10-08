@@ -19,7 +19,6 @@ object ProfileMapper {
             email = StudentEmail(dto.email),
             fullName = dto.fullName?.trim()?.takeIf(String::isNotBlank) ?: "Student",
             major = dto.major?.trim().orEmpty(),
-            graduationDate = dto.graduationDate?.trim().orEmpty(),
             university = dto.university?.trim().orEmpty(),
             bio = dto.bio?.trim().orEmpty(),
             avatarUrl = dto.avatarUrl?.trim()?.takeIf(String::isNotBlank),
@@ -35,7 +34,6 @@ object ProfileMapper {
             email = domain.email.value,
             fullName = domain.fullName,
             major = domain.major,
-            graduationDate = domain.graduationDate,
             university = domain.university,
             bio = domain.bio,
             avatarUrl = domain.avatarUrl,
@@ -48,7 +46,6 @@ object ProfileMapper {
         return ProfileUpdateDto(
             fullName = domain.fullName.trim(),
             major = domain.major.trim(),
-            graduationDate = domain.graduationDate.trim(),
             university = domain.university.trim(),
             bio = domain.bio.trim(),
             avatarUrl = domain.avatarUrl?.trim()?.ifBlank { null }

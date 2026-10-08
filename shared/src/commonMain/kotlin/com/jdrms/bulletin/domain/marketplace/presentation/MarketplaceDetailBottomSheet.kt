@@ -200,7 +200,6 @@ fun MarketplaceDetailBottomSheet(
                             avatarUrl = listing.sellerAvatarUrl,
                             reputationScore = listing.sellerReputationScore,
                             major = listing.sellerMajor,
-                            graduationDate = listing.sellerGraduationDate,
                             reviewCount = listing.sellerReviewCount,
                             isVerified = listing.sellerIsVerified
                         ),
@@ -333,7 +332,6 @@ private data class SellerInfoCardState(
     val avatarUrl: String?,
     val reputationScore: Double?,
     val major: String,
-    val graduationDate: String,
     val reviewCount: Int,
     val isVerified: Boolean
 )
@@ -412,7 +410,7 @@ private fun SellerInfoCard(
                         }
                     }
                     Text(
-                        text = formatAcademicLine(seller.major, seller.graduationDate, seller.school),
+                        text = formatAcademicLine(seller.major, seller.school),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,
@@ -454,8 +452,8 @@ private fun SellerInfoCard(
     }
 }
 
-private fun formatAcademicLine(major: String, graduationDate: String, school: String): String {
-    val details = listOf(major, graduationDate).filter(String::isNotBlank)
+private fun formatAcademicLine(major: String, school: String): String {
+    val details = listOf(major).filter(String::isNotBlank)
     return details.joinToString(" ").ifBlank { "$school student" }
 }
 

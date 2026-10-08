@@ -74,7 +74,6 @@ fun validateProfileDraft(draft: ProfileDraft): ProfileFormErrors = ProfileFormEr
 data class ProfileDraft(
     val fullName: String = "",
     val major: String = "",
-    val graduationDate: String = "",
     val university: String = "",
     val bio: String = "",
     val universityIsCustom: Boolean = false,
@@ -85,7 +84,6 @@ data class ProfileDraft(
             return ProfileDraft(
                 fullName = profile.fullName,
                 major = profile.major,
-                graduationDate = profile.graduationDate,
                 university = profile.university,
                 bio = profile.bio
             )

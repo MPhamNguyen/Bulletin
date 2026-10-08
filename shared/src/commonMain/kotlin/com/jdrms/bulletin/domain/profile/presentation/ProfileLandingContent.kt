@@ -58,7 +58,6 @@ internal fun MarketplaceProfileView(
 
             ProfileAboutCard(
                 major = major,
-                graduationDate = profile?.graduationDate.orEmpty(),
                 university = university,
                 bio = profile?.bio,
                 onEditProfileClick = onEditProfileClick

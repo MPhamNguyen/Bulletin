@@ -613,7 +613,7 @@ class ProfileViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun testProfileViewModelGraduationDateUpdate() = runTest {
+    fun testProfileViewModelProfileUpdate() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(testDispatcher)
         try {

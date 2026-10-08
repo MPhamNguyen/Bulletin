@@ -149,7 +149,6 @@ class UpdateStudentProfile(
         major: String,
         university: String,
         bio: String,
-        graduationDate: String = profile.graduationDate,
         avatarUrl: String? = profile.avatarUrl
     ): Result<StudentProfile> {
         val updateResult = profile.updateDetails(
@@ -157,7 +156,6 @@ class UpdateStudentProfile(
             major = major,
             university = university,
             bio = bio,
-            graduationDate = graduationDate,
             avatarUrl = avatarUrl
         )
         return when (updateResult) {

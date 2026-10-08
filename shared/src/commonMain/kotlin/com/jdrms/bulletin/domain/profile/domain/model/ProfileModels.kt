@@ -146,7 +146,6 @@ data class StudentProfile(
     val email: StudentEmail,
     val fullName: String,
     val major: String = "",
-    val graduationDate: String = "",
     val university: String = "",
     val bio: String = "",
     val avatarUrl: String? = null,
@@ -176,7 +175,6 @@ data class StudentProfile(
         major: String,
         university: String,
         bio: String,
-        graduationDate: String = this.graduationDate,
         avatarUrl: String? = this.avatarUrl
     ): Result<StudentProfile> {
         if (isDeleted) {
@@ -185,13 +183,9 @@ data class StudentProfile(
         val normalizedName = fullName.trim()
         val normalizedUniversity = university.trim().withoutTrailingAcronym()
         val normalizedBio = bio.trim()
-        val normalizedGradDate = graduationDate.trim()
-
         val validationError = when {
             normalizedName.isBlank() -> "Full name is required."
             normalizedBio.length > MAX_BIO_LENGTH -> "Bio must be $MAX_BIO_LENGTH characters or fewer."
-            normalizedGradDate.length > MAX_GRAD_DATE_LENGTH ->
-                "Graduation date must be $MAX_GRAD_DATE_LENGTH characters or fewer."
             else -> null
         }
         if (validationError != null) {
@@ -202,7 +196,6 @@ data class StudentProfile(
             copy(
                 fullName = normalizedName,
                 major = major.trim().withoutTrailingAcronym(),
-                graduationDate = normalizedGradDate,
                 university = normalizedUniversity,
                 bio = normalizedBio,
                 avatarUrl = avatarUrl?.trim()?.ifBlank { null }
@@ -212,7 +205,6 @@ data class StudentProfile(
 
     companion object {
         const val MAX_BIO_LENGTH = 500
-        const val MAX_GRAD_DATE_LENGTH = 50
     }
 }
 

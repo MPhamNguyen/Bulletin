@@ -616,8 +616,7 @@ class ProfileViewModel(
                     fullName = draft.fullName,
                     major = draft.major,
                     university = draft.university,
-                    bio = draft.bio,
-                    graduationDate = draft.graduationDate
+                    bio = draft.bio
                 )
             ) {
                 is Result.Success -> {
