@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
+import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
@@ -37,7 +38,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // Manual DI keeps each focused authentication and profile use case explicit.
-@Suppress("LongParameterList", "LargeClass")
+@Suppress("LargeClass", "LongParameterList")
 class ProfileViewModel(
     private val authenticateUser: AuthenticateUser,
     private val restoreAuthenticatedProfile: RestoreAuthenticatedProfile,
@@ -54,7 +55,8 @@ class ProfileViewModel(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     private val defaultUserId: UserId = UserId("current_student"),
     private val activeListingsProvider: ProfileActiveListingsProvider? = null,
-    private val listingChangedSignal: RefreshSignal? = null
+    private val listingChangedSignal: RefreshSignal? = null,
+    private val softDeleteProfile: SoftDeleteProfile
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -735,6 +737,30 @@ class ProfileViewModel(
                         it.copy(
                             isLoading = false,
                             errorMessage = result.exception.message ?: "Failed to sign out"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun deleteProfile(onSuccess: () -> Unit = {}) {
+        val currentProfile = _uiState.value.profile ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = softDeleteProfile(currentProfile)) {
+                is Result.Success -> {
+                    flashNotificationJob?.cancel()
+                    _uiState.update {
+                        ProfileUiState(authSessionState = AuthSessionState.UNAUTHENTICATED)
+                    }
+                    onSuccess()
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = result.exception.message ?: "Failed to delete profile"
                         )
                     }
                 }

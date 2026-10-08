@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.profile.application.ManageProfile
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
+import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
@@ -33,6 +34,7 @@ class ProfileViewModelTest {
     private val policy = ProfileValidationPolicy()
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Suppress("LongMethod")
     @Test
     fun testProfileViewModelCreateAccountAndValidation() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
@@ -54,7 +56,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
 
@@ -112,6 +115,7 @@ class ProfileViewModelTest {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Suppress("LongMethod")
     @Test
     fun testProfileViewModelUpdatesAndResetsProfileDraft() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
@@ -127,7 +131,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = ManageProfile(profileRepo),
                 updateStudentProfile = UpdateStudentProfile(profileRepo),
-                submitStudentReview = SubmitStudentReview(profileRepo, policy)
+                submitStudentReview = SubmitStudentReview(profileRepo, policy),
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
             viewModel.createAccount("John", "Doe", "john.doe@school.edu", "password123")
@@ -202,7 +207,8 @@ class ProfileViewModelTest {
                 resendVerificationCode = ResendVerificationCode(authRepo),
                 manageProfile = manageProfile,
                 updateStudentProfile = updateStudentProfile,
-                submitStudentReview = submitStudentReview
+                submitStudentReview = submitStudentReview,
+                softDeleteProfile = SoftDeleteProfile(profileRepo, SignOutUser(authRepo))
             )
             advanceUntilIdle()
 

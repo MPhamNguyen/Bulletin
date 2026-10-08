@@ -275,6 +275,34 @@ class SupabaseEmailVerificationTest {
     }
 
     @Test
+    fun doesNotRestoreAnIdForADeletedProfile() = runTest {
+        val client = client { _, _ -> session() }
+        val deletedProfile = StudentProfile(
+            id = UserId(USER_ID),
+            email = email,
+            fullName = "Student Name",
+            deletedAt = "2026-10-06T19:00:00Z"
+        )
+        val profiles = object : ProfileRepository by InMemoryProfileRepository(initialProfiles = emptyMap()) {
+            override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+                return Result.Success(deletedProfile.takeIf { it.id == userId })
+            }
+        }
+        try {
+            val repository = SupabaseAuthRepository(client, profiles)
+            client.auth.signInWith(Email) {
+                this.email = "student@example.com"
+                password = "password123"
+            }
+
+            assertNull((repository.getCurrentUserId() as Result.Success).data)
+            assertNull((repository.getCurrentUser() as Result.Success).data)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun profileFailureAfterConfirmationReturnsRecoverableOutcomeAndIdentityRemainsConfirmed() = runTest {
         val client = client { _, _ -> session() }
         val profiles = object : ProfileRepository by InMemoryProfileRepository() {
@@ -288,7 +316,9 @@ class SupabaseEmailVerificationTest {
                 VerifyStudentEmail(repository)(email, "123456")
             )
             assertIs<EmailVerificationOutcome.ProfileRecoveryRequired>(result.data)
-            assertEquals(UserId(USER_ID), (repository.getCurrentUserId() as Result.Success).data)
+            val currentUserId = repository.getCurrentUserId()
+            assertIs<Result.Error>(currentUserId)
+            assertEquals("Profile temporarily unavailable", currentUserId.exception.message)
         } finally {
             client.close()
         }

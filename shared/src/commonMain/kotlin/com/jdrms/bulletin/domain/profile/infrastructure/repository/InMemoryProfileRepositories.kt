@@ -39,6 +39,12 @@ class InMemoryProfileRepository(
         return Result.Success(profile)
     }
 
+    override suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit> {
+        val existing = profiles[userId.value] ?: return Result.Error(IllegalArgumentException("Profile not found."))
+        profiles[userId.value] = existing.copy(deletedAt = deletedAt)
+        return Result.Success(Unit)
+    }
+
     override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
         val list = reviewsByUser.getOrPut(targetUserId.value) { mutableListOf() }
         list.add(review)
@@ -213,6 +219,11 @@ class InMemoryAuthRepository(
                 is Result.Error -> null
             }
         if (userProfile != null) {
+            if (userProfile.isDeleted) {
+                return Result.Error(
+                    IllegalArgumentException("Account not found. Please check your email or create an account.")
+                )
+            }
             currentUser = userProfile
             return Result.Success(userProfile)
         }

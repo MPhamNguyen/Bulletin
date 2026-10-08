@@ -13,7 +13,8 @@ data class ProfileDto(
     @SerialName("university") val university: String? = null,
     @SerialName("bio") val bio: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
-    @SerialName("is_verified") val isVerified: Boolean? = null
+    @SerialName("is_verified") val isVerified: Boolean? = null,
+    @SerialName("deleted_at") val deletedAt: String? = null
 )
 
 @Serializable

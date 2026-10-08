@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
@@ -27,9 +28,14 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -37,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.app.theme.ThemePreference
+import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
@@ -47,7 +54,9 @@ internal data class SettingsActions(
     val onPrivacy: () -> Unit,
     val onHelpSupport: () -> Unit,
     val onTermsConditions: () -> Unit,
-    val onSignOut: () -> Unit
+    val onSignOut: () -> Unit,
+    val onDeleteProfile: () -> Unit = {},
+    val onConfirmDeleteProfile: () -> Unit = {}
 )
 
 @Composable
@@ -56,8 +65,23 @@ internal fun SettingsView(
     onBack: () -> Unit,
     actions: SettingsActions,
     themePreference: ThemePreference? = null,
-    onThemePreferenceChanged: ((ThemePreference) -> Unit)? = null
+    onThemePreferenceChanged: ((ThemePreference) -> Unit)? = null,
+    showDeleteConfirmation: Boolean? = null
 ) {
+    var localShowDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false) }
+    val isDeleteDialogOpen = showDeleteConfirmation ?: localShowDeleteConfirmationDialog
+
+    if (isDeleteDialogOpen) {
+        DeleteProfileConfirmationDialog(
+            onDismiss = {
+                localShowDeleteConfirmationDialog = false
+            },
+            onConfirm = {
+                localShowDeleteConfirmationDialog = false
+                actions.onConfirmDeleteProfile()
+            }
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -128,8 +152,14 @@ internal fun SettingsView(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Sign Out at the bottom of the list, styled as a visually distinct destructive action
+            // Destructive actions at the bottom of the list
             SignOutButton(onClick = actions.onSignOut)
+            DeleteProfileButton(
+                onClick = {
+                    localShowDeleteConfirmationDialog = true
+                    actions.onDeleteProfile()
+                }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -295,6 +325,41 @@ private fun SettingsActionCard(
                     modifier = Modifier.size(20.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+internal fun DeleteProfileButton(
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = MaterialTheme.shapes.large,
+        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
+        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Delete Profile",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
         }
     }
 }

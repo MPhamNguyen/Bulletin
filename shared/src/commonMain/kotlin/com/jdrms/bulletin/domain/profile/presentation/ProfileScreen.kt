@@ -124,7 +124,10 @@ private fun ProfileSubscreenHost(
                     onPrivacy = viewModel::openPrivacy,
                     onHelpSupport = viewModel::openHelpAndSupport,
                     onTermsConditions = viewModel::openTermsAndConditions,
-                    onSignOut = onSignOut
+                    onSignOut = onSignOut,
+                    onConfirmDeleteProfile = {
+                        viewModel.deleteProfile(onSuccess = onSignOut)
+                    }
                 ),
                 themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
                 onThemePreferenceChanged = themeViewModel?.let { vm -> vm::setThemePreference }

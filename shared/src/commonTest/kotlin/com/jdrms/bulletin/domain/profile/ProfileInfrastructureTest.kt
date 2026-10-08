@@ -451,4 +451,66 @@ class ProfileInfrastructureTest {
         0x0a,
         0x01
     )
+
+    @Test
+    fun testProfileDtoDeletedAtSerialization() {
+        val json = """
+            {
+                "id": "u1",
+                "email": "test@csulb.edu",
+                "deleted_at": "2026-10-06T19:00:00Z"
+            }
+        """.trimIndent()
+        val dto = Json.decodeFromString<ProfileDto>(json)
+        assertEquals("2026-10-06T19:00:00Z", dto.deletedAt)
+
+        val domain = ProfileMapper.toDomain(dto)
+        assertTrue(domain.isDeleted)
+        assertEquals("2026-10-06T19:00:00Z", domain.deletedAt)
+
+        val reEncodedDto = ProfileMapper.toDto(domain)
+        assertEquals("2026-10-06T19:00:00Z", reEncodedDto.deletedAt)
+    }
+
+    @Test
+    fun testInMemoryProfileRepositorySoftDelete() = runTest {
+        val repo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val profile = StudentProfile(
+            id = UserId("u1"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Student Name"
+        )
+        repo.updateProfile(profile)
+
+        val result = repo.softDelete(profile.id, "2026-10-06T19:00:00Z")
+        assertTrue(result is Result.Success)
+
+        val fetched = repo.getProfile(profile.id)
+        assertTrue(fetched is Result.Success)
+        assertEquals("2026-10-06T19:00:00Z", fetched.data?.deletedAt)
+        assertTrue(fetched.data?.isDeleted == true)
+    }
+
+    @Test
+    fun testInMemoryAuthRepositoryRejectsLoginForDeletedProfile() = runTest {
+        val repo = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val authRepo = InMemoryAuthRepository(
+            profileRepository = repo,
+            initialCredentials = mapOf("student@school.edu" to "pass123")
+        )
+        val profile = StudentProfile(
+            id = UserId("current_student"),
+            email = StudentEmail("student@school.edu"),
+            fullName = "Student Name",
+            deletedAt = "2026-10-06T19:00:00Z"
+        )
+        repo.updateProfile(profile)
+
+        val loginResult = authRepo.login(profile.email, "pass123")
+        assertTrue(loginResult is Result.Error)
+        assertEquals(
+            "Account not found. Please check your email or create an account.",
+            loginResult.exception.message
+        )
+    }
 }

@@ -24,7 +24,8 @@ object ProfileMapper {
             bio = dto.bio?.trim().orEmpty(),
             avatarUrl = dto.avatarUrl?.trim()?.takeIf(String::isNotBlank),
             isVerified = dto.isVerified ?: false,
-            reputation = reputation
+            reputation = reputation,
+            deletedAt = dto.deletedAt?.trim()?.takeIf(String::isNotBlank)
         )
     }
 
@@ -38,7 +39,8 @@ object ProfileMapper {
             university = domain.university,
             bio = domain.bio,
             avatarUrl = domain.avatarUrl,
-            isVerified = domain.isVerified
+            isVerified = domain.isVerified,
+            deletedAt = domain.deletedAt
         )
     }
 
