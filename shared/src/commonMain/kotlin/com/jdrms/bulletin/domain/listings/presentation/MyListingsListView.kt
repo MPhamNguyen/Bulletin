@@ -40,6 +40,7 @@ fun MyListingsListView(
     onEditListing: (Listing) -> Unit,
     onDeleteListing: (Listing) -> Unit,
     onMarkSoldListing: (Listing) -> Unit,
+    onRestoreListing: (Listing) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -88,7 +89,8 @@ fun MyListingsListView(
                             listing = listing,
                             onEdit = { onEditListing(listing) },
                             onDelete = { onDeleteListing(listing) },
-                            onMarkSold = { onMarkSoldListing(listing) }
+                            onMarkSold = { onMarkSoldListing(listing) },
+                            onRestore = { onRestoreListing(listing) }
                         )
                     }
                     item {

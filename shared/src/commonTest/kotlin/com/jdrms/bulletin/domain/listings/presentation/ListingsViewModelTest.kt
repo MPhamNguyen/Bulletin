@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
+import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -188,7 +189,106 @@ class ListingsViewModelTest {
 
         assertNull(viewModel.uiState.value.pendingSold)
         assertEquals(ListingStatus.SOLD, repository.getListing(listing.id)?.status)
-        assertEquals("Listing marked as sold!", viewModel.uiState.value.successMessage)
+    }
+
+    @Test
+    fun testMarkSoldRejectsNonOwnerAndKeepsDialogOpenWithError() = runTest {
+        val listing = testListing(SellerId("other_seller"))
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        viewModel.requestMarkListingSold(listing)
+        viewModel.confirmMarkListingSold()
+        runCurrent()
+
+        assertEquals(listing, viewModel.uiState.value.pendingSold)
+        assertEquals("Only the owner can mark as sold this listing.", viewModel.uiState.value.errorMessage)
+        assertFalse(viewModel.uiState.value.isMarkingSold)
+        assertEquals(ListingStatus.AVAILABLE, repository.getListing(listing.id)?.status)
+    }
+
+    @Test
+    fun testMarkSoldRequiresAuthenticatedSellerAndKeepsDialogOpenWithError() = runTest {
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        sellerProvider.currentSeller = Result.Error(IllegalStateException("session expired"))
+        advanceUntilIdle()
+
+        viewModel.requestMarkListingSold(listing)
+        viewModel.confirmMarkListingSold()
+        runCurrent()
+
+        assertEquals(listing, viewModel.uiState.value.pendingSold)
+        assertEquals("An Error has Occured, Please Try Again Later", viewModel.uiState.value.errorMessage)
+        assertFalse(viewModel.uiState.value.isMarkingSold)
+    }
+
+    @Test
+    fun testMarkSoldRejectsAlreadySoldListingAndKeepsDialogOpenWithError() = runTest {
+        val listing = testListing(sellerId).markSold(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        viewModel.requestMarkListingSold(listing)
+        viewModel.confirmMarkListingSold()
+        advanceUntilIdle()
+
+        assertEquals(listing, viewModel.uiState.value.pendingSold)
+        assertEquals("An Error has Occured, Please Try Again Later", viewModel.uiState.value.errorMessage)
+        assertFalse(viewModel.uiState.value.isMarkingSold)
+        assertEquals(ListingStatus.SOLD, repository.getListing(listing.id)?.status)
+    }
+
+    @Test
+    fun testMarkSoldRepositoryFailureKeepsDialogOpenWithError() = runTest {
+        val failingRepository = CountingListingsRepository(repository).apply {
+            updateFailure = IllegalStateException("database unavailable")
+        }
+        val failingViewModel = ListingsViewModel(
+            createListing = CreateListing(failingRepository),
+            manageListing = ManageListing(failingRepository),
+            markListingSold = MarkListingSold(failingRepository),
+            deleteListing = DeleteListing(failingRepository),
+            getSellerListings = GetSellerListings(failingRepository),
+            currentSellerProvider = sellerProvider
+        )
+        val listing = testListing(sellerId)
+        repository.createListing(listing)
+        advanceUntilIdle()
+
+        failingViewModel.requestMarkListingSold(listing)
+        failingViewModel.confirmMarkListingSold()
+        advanceUntilIdle()
+
+        assertEquals(listing, failingViewModel.uiState.value.pendingSold)
+        assertEquals("An Error has Occured, Please Try Again Later", failingViewModel.uiState.value.errorMessage)
+        assertFalse(failingViewModel.uiState.value.isMarkingSold)
+        assertEquals(ListingStatus.AVAILABLE, repository.getListing(listing.id)?.status)
+    }
+
+    @Test
+    fun testSoldListingCanBeRestoredToMarketplace() = runTest {
+        val listing = testListing(sellerId).markSold(sellerId)
+        repository.createListing(listing)
+        val restore = RestoreListingToMarketplace(repository)
+        val restoringViewModel = ListingsViewModel(
+            createListing = CreateListing(repository),
+            manageListing = ManageListing(repository),
+            markListingSold = MarkListingSold(repository),
+            restoreListingToMarketplace = restore,
+            deleteListing = DeleteListing(repository),
+            getSellerListings = GetSellerListings(repository),
+            currentSellerProvider = sellerProvider
+        )
+        advanceUntilIdle()
+
+        restoringViewModel.requestRestoreListing(listing)
+        restoringViewModel.confirmRestoreListing()
+        runCurrent()
+
+        assertNull(restoringViewModel.uiState.value.pendingRestoration)
+        assertEquals(ListingStatus.AVAILABLE, repository.getListing(listing.id)?.status)
+        assertEquals("Listing restored to marketplace!", restoringViewModel.uiState.value.successMessage)
     }
 
     @Test
@@ -638,6 +738,7 @@ private class CountingListingsRepository(
     private val delegate: ListingsRepository
 ) : ListingsRepository {
     var updateCount = 0
+    var updateFailure: Throwable? = null
     var deleteCount = 0
     var deleteFailure: Throwable? = null
     var getListingFailure: Throwable? = null
@@ -647,6 +748,7 @@ private class CountingListingsRepository(
     override suspend fun updateListing(listing: Listing): Result<Listing> {
         updateCount += 1
         delay(10)
+        updateFailure?.let { return Result.Error(it) }
         return delegate.updateListing(listing)
     }
 

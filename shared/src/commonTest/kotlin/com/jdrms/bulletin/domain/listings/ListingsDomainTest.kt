@@ -117,6 +117,35 @@ class ListingsDomainTest {
     }
 
     @Test
+    fun ownerCanRestoreSoldListingToMarketplace() {
+        val soldListing = testListing(SellerId("owner_1")).markSold(SellerId("owner_1"))
+
+        val restored = soldListing.restoreToMarketplace(SellerId("owner_1"))
+
+        assertEquals(ListingStatus.AVAILABLE, restored.status)
+    }
+
+    @Test
+    fun onlyOwnerCanRestoreSoldListingToMarketplace() {
+        val soldListing = testListing(SellerId("owner_1")).markSold(SellerId("owner_1"))
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            soldListing.restoreToMarketplace(SellerId("stranger"))
+        }
+
+        assertEquals("Only the owner can restore this listing.", exception.message)
+    }
+
+    @Test
+    fun availableListingCannotBeRestoredToMarketplace() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            testListing(SellerId("owner_1")).restoreToMarketplace(SellerId("owner_1"))
+        }
+
+        assertEquals("Only sold listings can be restored to the marketplace.", exception.message)
+    }
+
+    @Test
     fun markListingSoldUseCaseRequiresOwnershipAndPersistsTransition() = runTest {
         val repository = InMemoryListingsRepository(initialListings = emptyList())
         val listing = testListing(SellerId("owner_1"))

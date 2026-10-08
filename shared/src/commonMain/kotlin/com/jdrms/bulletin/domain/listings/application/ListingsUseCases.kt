@@ -104,6 +104,26 @@ class MarkListingSold(
     }
 }
 
+class RestoreListingToMarketplace(
+    private val listingsRepository: ListingsRepository,
+    private val policy: ListingValidationPolicy = ListingValidationPolicy()
+) {
+    suspend operator fun invoke(id: ListingId, sellerId: SellerId): Result<Listing> {
+        val listing = listingsRepository.getListing(id)
+            ?: return Result.Error(NoSuchElementException("Listing not found with ID: ${id.value}"))
+        val ownershipValidation = policy.validateOwnership(listing, sellerId, action = "restore")
+        if (ownershipValidation.isError()) {
+            return Result.Error((ownershipValidation as Result.Error).exception)
+        }
+        val restoredListing = try {
+            listing.restoreToMarketplace(sellerId)
+        } catch (exception: IllegalArgumentException) {
+            return Result.Error(exception)
+        }
+        return listingsRepository.updateListing(restoredListing)
+    }
+}
+
 class DeleteListing(
     private val listingsRepository: ListingsRepository,
     private val policy: ListingValidationPolicy = ListingValidationPolicy()

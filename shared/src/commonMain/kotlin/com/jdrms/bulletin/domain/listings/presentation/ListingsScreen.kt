@@ -186,22 +186,12 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
         )
     }
     state.pendingSold?.let { listing ->
-        AlertDialog(
-            onDismissRequest = { if (!state.isMarkingSold) viewModel.cancelMarkListingSold() },
-            title = { Text("Mark listing as sold?") },
-            text = { Text("${listing.title} will be removed from marketplace results.") },
-            dismissButton = {
-                TextButton(
-                    onClick = viewModel::cancelMarkListingSold,
-                    enabled = !state.isMarkingSold
-                ) { Text("Cancel") }
-            },
-            confirmButton = {
-                Button(
-                    onClick = viewModel::confirmMarkListingSold,
-                    enabled = !state.isMarkingSold
-                ) { Text("Mark as sold") }
-            }
+        ListingSoldConfirmationDialog(
+            listing = listing,
+            isMarkingSold = state.isMarkingSold,
+            errorMessage = state.errorMessage,
+            onDismiss = viewModel::cancelMarkListingSold,
+            onConfirm = viewModel::confirmMarkListingSold
         )
     }
 }

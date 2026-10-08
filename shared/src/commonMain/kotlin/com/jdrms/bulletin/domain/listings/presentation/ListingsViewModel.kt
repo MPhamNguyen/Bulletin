@@ -15,6 +15,7 @@ import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
+import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -33,6 +34,7 @@ class ListingsViewModel(
     private val createListing: CreateListing,
     private val manageListing: ManageListing,
     private val markListingSold: MarkListingSold,
+    private val restoreListingToMarketplace: RestoreListingToMarketplace? = null,
     private val deleteListing: DeleteListing,
     private val getSellerListings: GetSellerListings,
     private val currentSellerProvider: CurrentListingSellerProvider,
@@ -194,6 +196,54 @@ class ListingsViewModel(
 
     fun cancelMarkListingSold() {
         _uiState.update { it.copy(pendingSold = null) }
+    }
+
+    fun requestRestoreListing(listing: Listing) {
+        _uiState.update { it.copy(pendingRestoration = listing, errorMessage = null) }
+    }
+
+    fun cancelRestoreListing() {
+        _uiState.update { it.copy(pendingRestoration = null) }
+    }
+
+    fun confirmRestoreListing() {
+        val restore = restoreListingToMarketplace ?: return
+        var pendingListing: Listing? = null
+        while (pendingListing == null) {
+            val state = _uiState.value
+            val listing = state.pendingRestoration ?: return
+            if (state.isRestoring) return
+            if (_uiState.compareAndSet(state, state.copy(isRestoring = true, errorMessage = null))) {
+                pendingListing = listing
+            }
+        }
+        val listing = checkNotNull(pendingListing)
+        viewModelScope.launch {
+            when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
+                is Result.Success -> when (
+                    val result = restore(listing.id, sellerResult.data.id)
+                ) {
+                    is Result.Success -> {
+                        _uiState.update { it.copy(pendingRestoration = null, isRestoring = false) }
+                        showFlashNotification("Listing restored to marketplace!")
+                        loadMyListings(sellerResult.data)
+                        listingChangedSignal?.emit()
+                    }
+                    is Result.Error -> _uiState.update {
+                        it.copy(
+                            isRestoring = false,
+                            errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
+                        )
+                    }
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(
+                        isRestoring = false,
+                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                    )
+                }
+            }
+        }
     }
 
     fun confirmMarkListingSold() {

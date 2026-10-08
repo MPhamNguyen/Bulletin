@@ -20,6 +20,7 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
+import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
@@ -157,6 +158,7 @@ class AppContainer(
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
     val markListingSold by lazy { MarkListingSold(listingsRepository) }
+    val restoreListingToMarketplace by lazy { RestoreListingToMarketplace(listingsRepository) }
     val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
@@ -198,6 +200,7 @@ class AppContainer(
         createListing = createListing,
         manageListing = manageListing,
         markListingSold = markListingSold,
+        restoreListingToMarketplace = restoreListingToMarketplace,
         deleteListing = deleteListing,
         getSellerListings = getSellerListings,
         currentSellerProvider = currentListingSellerProvider,

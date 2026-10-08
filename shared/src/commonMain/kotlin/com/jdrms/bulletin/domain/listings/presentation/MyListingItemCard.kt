@@ -38,6 +38,7 @@ fun MyListingItemCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onMarkSold: () -> Unit,
+    onRestore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BulletinCard(modifier = modifier) {
@@ -153,6 +154,21 @@ fun MyListingItemCard(
                 Icon(Icons.Outlined.Sell, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Mark as sold")
+            }
+        }
+
+        if (listing.status == ListingStatus.SOLD) {
+            FilledTonalButton(
+                onClick = onRestore,
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Icon(Icons.Outlined.Sell, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Restore to marketplace")
             }
         }
 
