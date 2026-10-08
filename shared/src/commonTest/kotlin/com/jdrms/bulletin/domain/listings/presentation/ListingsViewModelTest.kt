@@ -25,6 +25,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -731,26 +732,6 @@ class ListingsViewModelTestPart1 {
 
         assertEquals(1, emittedCount)
         job.cancel()
-    }
-
-    private fun testListing(ownerId: SellerId): Listing {
-        return Listing(
-            id = ListingId("list_test_vm"),
-            sellerId = ownerId,
-            sellerName = sellerName,
-            title = "Tactile Keyboard",
-            description = "Quiet tactile switches for studying",
-            price = ListingPrice(40.0),
-            category = ListingCategory.ELECTRONICS,
-            condition = ListingCondition.GOOD,
-            status = ListingStatus.AVAILABLE
-        )
-    }
-
-    private class FakeListingSellerProvider(
-        var currentSeller: Result<ListingSeller>
-    ) : CurrentListingSellerProvider {
-        override suspend fun getCurrentSeller(): Result<ListingSeller> = currentSeller
     }
 }
 
