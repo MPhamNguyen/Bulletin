@@ -23,6 +23,7 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
+import com.jdrms.bulletin.app.navigation.MainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.navigation.backFromProfileDestination
@@ -204,8 +205,7 @@ fun MainAppScaffold(
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
 
     BulletinTheme(darkTheme = darkTheme) {
-        var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
-        var profileDestination by remember { mutableStateOf(ProfileDestination.PROFILE) }
+        var navigationState by remember { mutableStateOf(MainNavigationState()) }
         var editReturnDestination by remember { mutableStateOf(ProfileDestination.PROFILE) }
 
         val homeViewModel = remember { container.createHomeViewModel() }
@@ -218,44 +218,54 @@ fun MainAppScaffold(
             contentColor = MaterialTheme.colorScheme.onBackground,
             bottomBar = {
                 BulletinBottomNavigationBar(
-                    currentDestination = currentDestination,
-                    onDestinationSelected = {
-                        if (it != AppDestination.PROFILE) {
-                            profileDestination = ProfileDestination.PROFILE
+                    currentDestination = navigationState.currentDestination,
+                    onDestinationSelected = { destination ->
+                        if (
+                            destination != AppDestination.PROFILE ||
+                            navigationState.profileDestination != ProfileDestination.PROFILE
+                        ) {
                             listingsViewModel.cancelEditing()
                             listingsViewModel.clearMessages()
                         }
-                        currentDestination = it
+                        navigationState = navigationState.selectBottomNavigationDestination(destination)
                     }
                 )
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                when (currentDestination) {
+                when (navigationState.currentDestination) {
                     AppDestination.HOME -> HomeScreen(homeViewModel)
                     AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
                     AppDestination.PROFILE -> {
-                        if (profileDestination == ProfileDestination.MY_LISTINGS ||
-                            profileDestination == ProfileDestination.EDIT_LISTING
+                        if (navigationState.profileDestination == ProfileDestination.MY_LISTINGS ||
+                            navigationState.profileDestination == ProfileDestination.EDIT_LISTING
                         ) {
                             MyListingsScreen(
                                 viewModel = listingsViewModel,
                                 onBack = {
                                     listingsViewModel.clearMessages()
                                     listingsViewModel.cancelEditing()
-                                    profileDestination = backFromProfile(profileDestination)
+                                    navigationState = navigationState.copy(
+                                        profileDestination = backFromProfile(navigationState.profileDestination)
+                                    )
                                 },
                                 onEditListing = {
-                                    profileDestination = ProfileDestination.EDIT_LISTING
+                                    navigationState = navigationState.copy(
+                                        profileDestination = ProfileDestination.EDIT_LISTING
+                                    )
                                 }
                             )
                         } else {
-                            val resolvedProfileViewModel = remember(profileViewModel, container, profileDestination) {
+                            val resolvedProfileViewModel = remember(
+                                profileViewModel,
+                                container,
+                                navigationState.profileDestination
+                            ) {
                                 resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
                             }
-                            val profileFlows = remember(container, profileDestination) {
+                            val profileFlows = remember(container, navigationState.profileDestination) {
                                 ProfileScreenFlows(
                                     editing = container.createEditProfileViewModel(),
                                     account = container.createAccountViewModel(),
@@ -272,31 +282,37 @@ fun MainAppScaffold(
                             ProfileScreen(
                                 viewModel = resolvedProfileViewModel,
                                 flows = profileFlows,
-                                destination = profileDestination,
+                                destination = navigationState.profileDestination,
                                 callbacks = ProfileScreenCallbacks(
                                     onNavigate = { destination ->
                                         if (destination == ProfileDestination.EDIT_ACCOUNT) {
-                                            editReturnDestination = profileDestination
+                                            editReturnDestination = navigationState.profileDestination
                                         }
-                                        profileDestination = destination
+                                        navigationState = navigationState.copy(profileDestination = destination)
                                     },
                                     onBack = {
-                                        profileDestination = backFromProfileDestination(
-                                            profileDestination,
-                                            editReturnDestination
+                                        navigationState = navigationState.copy(
+                                            profileDestination = backFromProfileDestination(
+                                                navigationState.profileDestination,
+                                                editReturnDestination
+                                            )
                                         )
                                     },
                                     onSignOut = onSignOut,
                                     onMyListingsClick = {
                                         listingsViewModel.clearMessages()
-                                        profileDestination = ProfileDestination.MY_LISTINGS
+                                        navigationState = navigationState.copy(
+                                            profileDestination = ProfileDestination.MY_LISTINGS
+                                        )
                                     },
                                     onCreateListingClick = {
                                         listingsViewModel.clearMessages()
-                                        currentDestination = AppDestination.LISTINGS
+                                        navigationState = navigationState.copy(
+                                            currentDestination = AppDestination.LISTINGS
+                                        )
                                     }
                                 ),
-                                themeViewModel = themeViewModel,
+                                themeViewModel = themeViewModel
                             )
                         }
                     }

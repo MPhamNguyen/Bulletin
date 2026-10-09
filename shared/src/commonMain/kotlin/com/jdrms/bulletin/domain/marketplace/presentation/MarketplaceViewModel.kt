@@ -5,13 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,14 +18,27 @@ import kotlinx.coroutines.launch
 
 class MarketplaceViewModel(
     private val searchMarketplace: SearchMarketplace,
-    private val toggleSaveItem: ToggleSaveMarketplaceItem,
+    bookmarks: MarketplaceBookmarkDependencies,
     private val viewMarketplaceListing: ViewMarketplaceListing,
-    private val listingChangedSignal: RefreshSignal? = null
+    private val listingChangedSignal: RefreshSignal? = null,
+    private val currentUserIdProvider: suspend () -> String? = { DEFAULT_USER_ID }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
+    private val firstPageLoader = MarketplaceFirstPageLoader(
+        _uiState,
+        searchMarketplace,
+        bookmarks,
+        currentUserIdProvider
+    )
+    private val bookmarkController = MarketplaceBookmarkController(
+        _uiState,
+        viewModelScope,
+        bookmarks,
+        currentUserIdProvider
+    )
 
     init {
         refreshListings()
@@ -39,76 +50,25 @@ class MarketplaceViewModel(
         }
     }
 
-    fun refreshListings(userId: String = "student_user") {
+    fun refreshListings(userId: String? = null) {
         loadFirstPage(userId = userId, debounceMillis = 0L)
     }
 
-    private fun loadFirstPage(userId: String, debounceMillis: Long) {
+    private fun loadFirstPage(userId: String?, debounceMillis: Long) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    items = emptyList(),
-                    isLoading = true,
-                    isLoadingMore = false,
-                    nextCursor = null,
-                    endReached = false,
-                    errorMessage = null
-                )
-            }
-            if (debounceMillis > 0L) {
-                delay(debounceMillis)
-            }
-            val query = _uiState.value.searchQuery
-            val category = _uiState.value.selectedCategory
-            runCatching {
-                val page = searchMarketplace.getPage(
-                    MarketplacePageRequest(query = query, category = category)
-                )
-                val savedIds = toggleSaveItem.getSavedIds(userId)
-                page to savedIds
-            }.fold(
-                onSuccess = { (page, savedIds) ->
-                    _uiState.update { state ->
-                        if (state.searchQuery == query && state.selectedCategory == category) {
-                            state.copy(
-                                items = page.items,
-                                savedItemIds = savedIds,
-                                isLoading = false,
-                                nextCursor = page.nextCursor,
-                                endReached = page.nextCursor == null
-                            )
-                        } else {
-                            state
-                        }
-                    }
-                },
-                onFailure = { error ->
-                    error.rethrowIfCancellation()
-                    _uiState.update { state ->
-                        if (state.searchQuery == query && state.selectedCategory == category) {
-                            state.copy(
-                                isLoading = false,
-                                isLoadingMore = false,
-                                errorMessage = "Unable to load marketplace listings. Please try again."
-                            )
-                        } else {
-                            state
-                        }
-                    }
-                }
-            )
+            firstPageLoader.load(userId, debounceMillis)
         }
     }
 
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-        loadFirstPage(userId = DEFAULT_USER_ID, debounceMillis = SEARCH_DEBOUNCE_MILLIS)
+        loadFirstPage(userId = null, debounceMillis = SEARCH_DEBOUNCE_MILLIS)
     }
 
     fun onCategorySelected(category: MarketplaceCategory?) {
         _uiState.update { it.copy(selectedCategory = category) }
-        loadFirstPage(userId = DEFAULT_USER_ID, debounceMillis = 0L)
+        loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
     fun loadNextPage() {
@@ -149,7 +109,7 @@ class MarketplaceViewModel(
                     }
                 },
                 onFailure = { error ->
-                    error.rethrowIfCancellation()
+                    error.rethrowCancellation()
                     _uiState.update { state ->
                         if (
                             state.searchQuery == query &&
@@ -203,10 +163,14 @@ class MarketplaceViewModel(
             when (val result = viewMarketplaceListing(listingId)) {
                 is com.jdrms.bulletin.core.common.Result.Success -> {
                     val listing = result.data
-                    val isSaved = _uiState.value.savedItemIds.contains(listing.id)
+                    val canonicalId = MarketplaceItemId(listingId)
+                    val isBookmarked = _uiState.value.bookmarkedItemIds.contains(canonicalId)
                     _uiState.update {
                         it.copy(
-                            selectedListing = listing.copy(isSaved = isSaved),
+                            selectedListing = listing.copy(
+                                id = canonicalId,
+                                isBookmarked = isBookmarked
+                            ),
                             isDetailLoading = false,
                             detailErrorMessage = null
                         )
@@ -284,29 +248,12 @@ class MarketplaceViewModel(
         }
     }
 
-    fun toggleSaved(itemId: MarketplaceItemId, userId: String = "student_user") {
-        viewModelScope.launch {
-            val result = toggleSaveItem(userId, itemId)
-            if (result.isSuccess()) {
-                val savedIds = toggleSaveItem.getSavedIds(userId)
-                _uiState.update { state ->
-                    val updatedListing = if (state.selectedListing?.id == itemId) {
-                        state.selectedListing.copy(isSaved = savedIds.contains(itemId))
-                    } else {
-                        state.selectedListing
-                    }
-                    state.copy(savedItemIds = savedIds, selectedListing = updatedListing)
-                }
-            }
-        }
+    fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) {
+        bookmarkController.toggle(itemId, userId)
     }
 
     private companion object {
         const val DEFAULT_USER_ID = "student_user"
         const val SEARCH_DEBOUNCE_MILLIS = 300L
-    }
-
-    private fun Throwable.rethrowIfCancellation() {
-        if (this is CancellationException) throw this
     }
 }

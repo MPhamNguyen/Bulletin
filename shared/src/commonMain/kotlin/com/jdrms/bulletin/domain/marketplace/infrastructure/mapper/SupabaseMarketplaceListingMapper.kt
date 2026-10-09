@@ -4,12 +4,27 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnaps
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
+    fun toItem(dto: SupabaseMarketplaceListingDto): MarketplaceItem? {
+        val snapshot = toSnapshot(dto) ?: return null
+        return MarketplaceItem(
+            id = MarketplaceItemId(snapshot.id),
+            sellerId = snapshot.sellerId,
+            sellerName = snapshot.sellerName,
+            title = snapshot.title,
+            description = snapshot.description,
+            price = MarketplacePrice(snapshot.priceAmount, snapshot.priceCurrency),
+            category = snapshot.category,
+            createdAtMillis = snapshot.createdAtMillis
+        )
+    }
+
     fun toPageCursor(dto: SupabaseMarketplaceListingDto): MarketplacePageCursor {
         return MarketplacePageCursor(
             createdAt = dto.createdAt.toInstantOrEpoch(),
@@ -29,9 +44,9 @@ object SupabaseMarketplaceListingMapper {
         val condition = dto.condition.orEmpty().uppercase().ifBlank { "GOOD" }
 
         return Listing(
-            id = MarketplaceItemId(dto.id),
+            id = MarketplaceItemId("listing:${dto.id}"),
             sellerId = sellerId,
-            sellerName = DEFAULT_SELLER_NAME,
+            sellerName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
             title = title,
             description = description,
             price = MarketplacePrice(price.coerceAtLeast(0.0)),
@@ -53,7 +68,7 @@ object SupabaseMarketplaceListingMapper {
         return MarketplaceListingSnapshot(
             id = "listing:${dto.id}",
             sellerId = sellerId,
-            sellerName = DEFAULT_SELLER_NAME,
+            sellerName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
             title = title,
             description = dto.description.orEmpty(),
             priceAmount = price.coerceAtLeast(0.0),

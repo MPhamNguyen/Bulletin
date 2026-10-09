@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -29,7 +31,7 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
             profile = state.selectedSellerProfile,
             isLoading = state.isSellerProfileLoading,
             errorMessage = state.sellerProfileErrorMessage,
-            onBack = { viewModel.dismissSellerProfile() }
+            onBack = viewModel::dismissSellerProfile
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -43,18 +45,16 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                         subtitle = "Browse, search, & discover student items on campus"
                     )
                 }
-
                 item {
                     OutlinedTextField(
                         value = state.searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChanged(it) },
+                        onValueChange = viewModel::onSearchQueryChanged,
                         label = { Text("Search by title or category") },
                         singleLine = true,
                         colors = BulletinTextFieldDefaults.colors(),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-
                 item {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
@@ -73,7 +73,6 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                         }
                     }
                 }
-
                 if (state.isLoading) {
                     item {
                         Box(
@@ -84,7 +83,6 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                         }
                     }
                 }
-
                 if (state.items.isEmpty() && !state.isLoading && state.errorMessage == null) {
                     item {
                         BulletinCard {
@@ -96,36 +94,25 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                         }
                     }
                 }
-
-                items(
-                    items = state.items,
-                    key = { item -> item.id.value }
-                ) { item ->
-                    val isSaved = state.savedItemIds.contains(item.id)
+                items(items = state.items, key = { item -> item.id.value }) { item ->
                     MarketplaceItemCard(
                         item = item,
-                        isSaved = isSaved,
+                        isBookmarked = item.id in state.bookmarkedItemIds,
                         onCardClick = { viewModel.onListingClicked(item.id.value) },
-                        onToggleSaved = { viewModel.toggleSaved(item.id) }
+                        onToggleBookmark = { viewModel.toggleBookmark(item.id) }
                     )
                 }
-
                 if (state.nextCursor != null) {
                     item(key = "marketplace-pagination-trigger") {
-                        LaunchedEffect(state.nextCursor) {
-                            viewModel.loadNextPage()
-                        }
-                        if (state.isLoadingMore) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            if (state.isLoadingMore) {
                                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            } else {
+                                TextButton(onClick = viewModel::loadNextPage) { Text("Load more") }
                             }
                         }
                     }
                 }
-
                 state.errorMessage?.let { message ->
                     item {
                         BulletinCard {
@@ -134,28 +121,40 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error
                             )
-                            TextButton(onClick = { viewModel.retryListings() }) {
-                                Text("Retry")
-                            }
+                            TextButton(onClick = viewModel::retryListings) { Text("Retry") }
                         }
+                    }
+                }
+                state.bookmarkErrorMessage?.let { message ->
+                    item {
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }
 
             if (state.isDetailSheetOpen) {
                 MarketplaceDetailBottomSheet(
-                    listing = state.selectedListing,
-                    isLoading = state.isDetailLoading,
-                    errorMessage = state.detailErrorMessage,
-                    isSaved = state.selectedListing?.let { state.savedItemIds.contains(it.id) } ?: false,
-                    onDismiss = { viewModel.dismissListingDetail() },
-                    onRetry = { viewModel.retryLoadListingDetail() },
-                    onToggleSave = {
-                        state.selectedListing?.let { viewModel.toggleSaved(it.id) }
-                    },
-                    onSellerClick = { sellerId ->
-                        viewModel.onSellerClicked(sellerId)
-                    }
+                    state = MarketplaceDetailSheetState(
+                        listing = state.selectedListing,
+                        isLoading = state.isDetailLoading,
+                        errorMessage = state.detailErrorMessage,
+                        bookmarkErrorMessage = state.bookmarkErrorMessage,
+                        isBookmarked = state.selectedListing?.let {
+                            it.id in state.bookmarkedItemIds
+                        } ?: false
+                    ),
+                    actions = MarketplaceDetailSheetActions(
+                        onDismiss = viewModel::dismissListingDetail,
+                        onRetry = viewModel::retryLoadListingDetail,
+                        onToggleBookmark = {
+                            state.selectedListing?.let { viewModel.toggleBookmark(it.id) }
+                        },
+                        onSellerClick = viewModel::onSellerClicked
+                    )
                 )
             }
         }
@@ -165,13 +164,11 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
 @Composable
 private fun MarketplaceItemCard(
     item: MarketplaceItem,
-    isSaved: Boolean,
+    isBookmarked: Boolean,
     onCardClick: () -> Unit,
-    onToggleSaved: () -> Unit
+    onToggleBookmark: () -> Unit
 ) {
-    BulletinCard(
-        modifier = Modifier.clickable { onCardClick() }
-    ) {
+    BulletinCard(modifier = Modifier.clickable(onClick = onCardClick)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -204,17 +201,15 @@ private fun MarketplaceItemCard(
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            OutlinedButton(
-                onClick = onToggleSaved,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            OutlinedButton(onClick = onToggleBookmark) {
+                Icon(
+                    imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
+                    modifier = Modifier.size(18.dp)
                 )
-            ) {
-                Text(if (isSaved) "★ Saved" else "☆ Save")
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (isBookmarked) "Bookmarked" else "Bookmark")
             }
         }
     }

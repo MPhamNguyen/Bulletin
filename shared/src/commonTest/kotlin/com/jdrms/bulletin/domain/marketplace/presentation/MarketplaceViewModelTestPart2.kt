@@ -1,8 +1,11 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
@@ -35,6 +38,19 @@ class MarketplaceViewModelTestPart2 {
         )
     }
 
+    private fun createViewModel(
+        repository: InMemoryMarketplaceRepository,
+        source: MarketplaceListingSource
+    ) = MarketplaceViewModel(
+        searchMarketplace = SearchMarketplace(repository, source),
+        bookmarks = MarketplaceBookmarkDependencies(
+            add = BookmarkMarketplaceListing(repository),
+            remove = RemoveMarketplaceListingBookmark(repository),
+            get = GetMarketplaceListingBookmarks(repository)
+        ),
+        viewMarketplaceListing = ViewMarketplaceListing(repository)
+    )
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun loadNextPageAppendsListingsAndStopsAtTheEnd() = runTest {
@@ -50,11 +66,7 @@ class MarketplaceViewModelTestPart2 {
                     )
                 }
             }
-            val viewModel = MarketplaceViewModel(
-                searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
-                viewMarketplaceListing = ViewMarketplaceListing(repository)
-            )
+            val viewModel = createViewModel(repository, source)
             advanceUntilIdle()
 
             assertEquals(20, viewModel.uiState.value.items.size)
@@ -89,7 +101,11 @@ class MarketplaceViewModelTestPart2 {
             )
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             advanceUntilIdle()
@@ -131,11 +147,7 @@ class MarketplaceViewModelTestPart2 {
                     createdAtMillis = 0L
                 )
             )
-            val viewModel = MarketplaceViewModel(
-                searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
-                viewMarketplaceListing = ViewMarketplaceListing(repository)
-            )
+            val viewModel = createViewModel(repository, source)
             advanceUntilIdle()
 
             viewModel.loadNextPage()
@@ -182,7 +194,11 @@ class MarketplaceViewModelTestPart2 {
             }
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             advanceUntilIdle()
@@ -231,7 +247,11 @@ class MarketplaceViewModelTestPart2 {
             }
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             advanceUntilIdle()
@@ -270,7 +290,11 @@ class MarketplaceViewModelTestPart2 {
             val source = CancellableFirstRequestSource(uploadedListing())
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             testScheduler.runCurrent()

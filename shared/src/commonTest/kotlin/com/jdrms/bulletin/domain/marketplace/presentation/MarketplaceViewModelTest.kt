@@ -2,13 +2,15 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
+import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
@@ -49,6 +51,113 @@ class MarketplaceViewModelTestPart1 {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun rapidBookmarkTogglesPersistOnlyTheFinalState() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = CountingMarketplaceRepository(InMemoryMarketplaceRepository())
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            advanceUntilIdle()
+            val itemId = MarketplaceItemId("mkt_1")
+
+            viewModel.toggleBookmark(itemId)
+            viewModel.toggleBookmark(itemId)
+            advanceUntilIdle()
+            assertEquals(emptySet(), repository.getBookmarkedItemIds("student_user"))
+            assertEquals(0, repository.bookmarkMutationCount)
+
+            viewModel.toggleBookmark(itemId)
+            viewModel.toggleBookmark(itemId)
+            viewModel.toggleBookmark(itemId)
+            advanceUntilIdle()
+            assertEquals(setOf(itemId), repository.getBookmarkedItemIds("student_user"))
+            assertEquals(1, repository.bookmarkMutationCount)
+
+            viewModel.onListingClicked(itemId.value)
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+
+            viewModel.toggleBookmark(itemId)
+            advanceUntilIdle()
+            assertEquals(emptySet(), repository.getBookmarkedItemIds("student_user"))
+            assertEquals(2, repository.bookmarkMutationCount)
+            assertFalse(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun prefixedSupabaseIdSetsBookmarkStateOnDetailedListing() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = RawSupabaseIdMarketplaceRepository()
+            val itemId = MarketplaceItemId("listing:listing-42")
+            repository.bookmarkListing("student_user", itemId)
+            val source = MutableListingSource().apply {
+                listings += uploadedListing().copy(id = itemId.value)
+            }
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository, source),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            advanceUntilIdle()
+
+            viewModel.onListingClicked(itemId.value)
+            advanceUntilIdle()
+
+            assertEquals(itemId, viewModel.uiState.value.selectedListing?.id)
+            assertTrue(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun successfulBookmarkDoesNotTriggerAReconciliationRead() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = BookmarkRefreshFailingRepository()
+            val viewModel = MarketplaceViewModel(
+                searchMarketplace = SearchMarketplace(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
+                viewMarketplaceListing = ViewMarketplaceListing(repository)
+            )
+            advanceUntilIdle()
+            val itemId = MarketplaceItemId("mkt_1")
+
+            viewModel.toggleBookmark(itemId)
+            advanceUntilIdle()
+
+            assertEquals(setOf(itemId), viewModel.uiState.value.bookmarkedItemIds)
+            assertEquals(setOf(itemId), repository.persistedBookmarks())
+            assertEquals(1, repository.bookmarkReadCount)
+            assertEquals(null, viewModel.uiState.value.bookmarkErrorMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun refreshIncludesListingUploadedAfterViewModelWasCreated() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
@@ -56,7 +165,11 @@ class MarketplaceViewModelTestPart1 {
             val source = MutableListingSource()
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             advanceUntilIdle()
@@ -87,7 +200,11 @@ class MarketplaceViewModelTestPart1 {
             val signal = RefreshSignal()
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, source),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository),
                 listingChangedSignal = signal
             )
@@ -117,7 +234,11 @@ class MarketplaceViewModelTestPart1 {
             val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository, FailingListingSource),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
 
@@ -138,7 +259,11 @@ class MarketplaceViewModelTestPart1 {
             val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             advanceUntilIdle()
@@ -162,7 +287,11 @@ class MarketplaceViewModelTestPart1 {
             val repository = InMemoryMarketplaceRepository()
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(repository)
             )
             advanceUntilIdle()
@@ -196,7 +325,11 @@ class MarketplaceViewModelTestPart1 {
             val repository = InMemoryMarketplaceRepository()
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository),
-                toggleSaveItem = ToggleSaveMarketplaceItem(repository),
+                bookmarks = MarketplaceBookmarkDependencies(
+                    add = BookmarkMarketplaceListing(repository),
+                    remove = RemoveMarketplaceListingBookmark(repository),
+                    get = GetMarketplaceListingBookmarks(repository)
+                ),
                 viewMarketplaceListing = ViewMarketplaceListing(
                     repository,
                     sellerProfileProvider = { null }
@@ -288,6 +421,7 @@ internal class CountingMarketplaceRepository(
 ) : MarketplaceRepository {
     var detailLoadCount = 0
     var detailTitle = "Graphing Calculator"
+    var bookmarkMutationCount = 0
 
     override suspend fun getCatalog(): List<MarketplaceItem> = delegate.getCatalog()
 
@@ -306,9 +440,64 @@ internal class CountingMarketplaceRepository(
         }
     }
 
-    override suspend fun toggleSaved(userId: String, itemId: MarketplaceItemId): Result<Boolean> =
-        delegate.toggleSaved(userId, itemId)
+    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        bookmarkMutationCount += 1
+        return delegate.bookmarkListing(userId, itemId)
+    }
 
-    override suspend fun getSavedItemIds(userId: String): Set<MarketplaceItemId> =
-        delegate.getSavedItemIds(userId)
+    override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        bookmarkMutationCount += 1
+        return delegate.removeListingBookmark(userId, itemId)
+    }
+
+    override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> =
+        delegate.getBookmarkedItemIds(userId)
+
+    override suspend fun getBookmarkedListingsPage(
+        userId: String,
+        cursor: com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor?,
+        pageSize: Int
+    ): com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage =
+        delegate.getBookmarkedListingsPage(userId, cursor, pageSize)
+}
+
+private class RawSupabaseIdMarketplaceRepository(
+    private val delegate: InMemoryMarketplaceRepository = InMemoryMarketplaceRepository()
+) : MarketplaceRepository by delegate {
+    override suspend fun viewListing(listingID: String): Result<Listing> {
+        return Result.Success(
+            Listing(
+                id = MarketplaceItemId(listingID.removePrefix("listing:")),
+                sellerId = "seller-42",
+                sellerName = "Student",
+                title = "Campus desk",
+                description = "Compact desk for a dorm room.",
+                price = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice(25.0),
+                category = MarketplaceCategory.FURNITURE
+            )
+        )
+    }
+}
+
+private class BookmarkRefreshFailingRepository(
+    private val delegate: InMemoryMarketplaceRepository = InMemoryMarketplaceRepository()
+) : MarketplaceRepository by delegate {
+    private var failReads = false
+    var bookmarkReadCount = 0
+
+    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        val result = delegate.bookmarkListing(userId, itemId)
+        failReads = true
+        return result
+    }
+
+    override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> {
+        bookmarkReadCount += 1
+        if (failReads) error("Bookmark refresh unavailable")
+        return delegate.getBookmarkedItemIds(userId)
+    }
+
+    suspend fun persistedBookmarks(): Set<MarketplaceItemId> {
+        return delegate.getBookmarkedItemIds("student_user")
+    }
 }
