@@ -4,12 +4,16 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.CurrentMessageSenderProvider
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.HasListingConversation
+import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -35,6 +39,54 @@ class MessagesUseCasesTest {
         val next = send(conversationId, "Hello").getOrThrow()
         assertEquals(bob.id, next.senderId)
         assertEquals(bob.displayName, next.senderName)
+    }
+
+    @Test
+    fun messageSellerCreatesListingScopedConversationAndSendsOnce() = runTest {
+        val messageSeller = MessageSeller(
+            repository,
+            provider,
+            nextMessageId = { MessageId("seller-message") },
+            nowMillis = { 123L }
+        )
+        val result = messageSeller(
+            ListingReferenceId("listing-42"),
+            ConversationParticipant(bob.id, bob.displayName),
+            " Hi, is this available? "
+        )
+        assertEquals("listing-42", result.getOrThrow().listingId?.value)
+        assertEquals(1, repository.createdConversationCount)
+        assertEquals(1, repository.sentMessageCount)
+    }
+
+    @Test
+    fun messageSellerRejectsOwnListingBeforePersistence() = runTest {
+        val result = MessageSeller(repository, provider)(
+            ListingReferenceId("listing-42"),
+            ConversationParticipant(alice.id, alice.displayName),
+            "Hello"
+        )
+        assertTrue(result.isError())
+        assertEquals(0, repository.createdConversationCount)
+        assertEquals(0, repository.sentMessageCount)
+    }
+
+    @Test
+    fun hasListingConversationMatchesTheExactListingAndSeller() = runTest {
+        repository.conversations = listOf(
+            Conversation(
+                ConversationId("listing-one-chat"),
+                listOf(
+                    ConversationParticipant(alice.id, alice.displayName),
+                    ConversationParticipant(bob.id, bob.displayName)
+                ),
+                listingId = ListingReferenceId("listing-one")
+            )
+        )
+        val hasConversation = HasListingConversation(repository, provider)
+
+        assertEquals(true, hasConversation(ListingReferenceId("listing-one"), bob.id).getOrThrow())
+        assertEquals(false, hasConversation(ListingReferenceId("listing-two"), bob.id).getOrThrow())
     }
 
     @Test
@@ -106,11 +158,31 @@ class MessagesUseCasesTest {
 
     private class RecordingMessagesRepository : MessagesRepository {
         val callers = mutableListOf<SenderId>()
+        var createdConversationCount = 0
+        var sentMessageCount = 0
+        var conversations: List<Conversation> = emptyList()
         var failure: Result.Error? = null
+
+        override suspend fun getOrCreateConversation(
+            requesterId: SenderId,
+            otherParticipant: ConversationParticipant,
+            listingId: ListingReferenceId
+        ): Result<Conversation> {
+            createdConversationCount++
+            return failure ?: Result.Success(
+                Conversation(
+                    conversationId,
+                    listOf(
+                        ConversationParticipant(requesterId, "Requester"), otherParticipant
+                    ),
+                    listingId = listingId
+                )
+            )
+        }
 
         override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> {
             callers.add(userId)
-            return failure ?: Result.Success(emptyList())
+            return failure ?: Result.Success(conversations.filter { it.includes(userId) })
         }
 
         override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
@@ -119,6 +191,7 @@ class MessagesUseCasesTest {
         }
 
         override suspend fun sendMessage(message: Message): Result<Message> {
+            sentMessageCount++
             callers.add(message.senderId)
             return failure ?: Result.Success(message)
         }

@@ -4,11 +4,14 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationLookupDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationMembershipDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
@@ -18,9 +21,13 @@ import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseMessages
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class SupabaseMessagesRepository internal constructor(
     private val messagesTable: SupabaseMessagesTable
@@ -31,6 +38,20 @@ class SupabaseMessagesRepository internal constructor(
         messagesTable.getConversationIds(userId.value)
             .map { conversationId -> loadConversation(conversationId) }
             .sortedByDescending(Conversation::updatedAtMillis)
+    }
+
+    override suspend fun getOrCreateConversation(
+        requesterId: SenderId,
+        otherParticipant: ConversationParticipant,
+        listingId: ListingReferenceId
+    ): Result<Conversation> = repositoryCall {
+        val authenticatedRequester = requireAuthenticatedUser(requesterId)
+        val conversationId = messagesTable.getOrCreateConversation(
+            authenticatedRequester.value,
+            otherParticipant.id.value,
+            listingId.value
+        )
+        loadConversation(conversationId)
     }
 
     override suspend fun getMessages(
@@ -112,7 +133,11 @@ class SupabaseMessagesRepository internal constructor(
 class MessagesPersistenceException(cause: Throwable) :
     IllegalStateException("Unable to access messages. Please try again.", cause)
 
-internal interface SupabaseMessagesTable {
+internal interface SupabaseConversationCreationTable {
+    suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String
+}
+
+internal interface SupabaseMessagesTable : SupabaseConversationCreationTable {
     suspend fun getAuthenticatedUserId(): String?
     suspend fun getConversationIds(userId: String): List<String>
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
@@ -141,6 +166,17 @@ private class PostgrestSupabaseMessagesTable(
             .decodeList<SupabaseConversationMembershipDto>()
             .map(SupabaseConversationMembershipDto::conversationId)
             .distinct()
+    }
+
+    override suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String {
+        return supabase.postgrest.rpc(
+            "get_or_create_listing_conversation",
+            parameters = buildJsonObject {
+                put("p_requester_id", requesterId)
+                put("p_seller_id", sellerId)
+                put("p_listing_id", listingId)
+            }
+        ).decodeSingle<SupabaseConversationLookupDto>().conversationId
     }
 
     override suspend fun findConversation(conversationId: String): SupabaseConversationDto? {

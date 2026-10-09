@@ -28,6 +28,7 @@ class MessagesViewModel(
     private val _uiState = MutableStateFlow(MessagesUiState())
     val uiState: StateFlow<MessagesUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
+    private var requestedConversationId: ConversationId? = null
 
     init {
         loadConversations()
@@ -41,7 +42,11 @@ class MessagesViewModel(
             when (val result = getConversations()) {
                 is Result.Error -> showFailure(result)
                 is Result.Success -> {
-                    val selected = result.data.firstOrNull { it.id == previousSelection } ?: result.data.firstOrNull()
+                    val requested = requestedConversationId
+                    val selected = result.data.firstOrNull { it.id == requested }
+                        ?: result.data.firstOrNull { it.id == previousSelection }
+                        ?: result.data.firstOrNull()
+                    if (selected?.id == requested) requestedConversationId = null
                     _uiState.update {
                         it.copy(conversations = result.data, selectedConversationId = selected?.id, isLoading = false)
                     }
@@ -58,6 +63,11 @@ class MessagesViewModel(
             it.copy(selectedConversationId = conversationId, currentMessages = emptyList(), errorMessage = null)
         }
         loadJob = viewModelScope.launch { loadMessages(conversationId) }
+    }
+
+    fun openConversation(conversationId: ConversationId) {
+        requestedConversationId = conversationId
+        loadConversations()
     }
 
     private suspend fun loadMessages(conversationId: ConversationId) {

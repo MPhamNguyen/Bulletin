@@ -16,6 +16,11 @@ value class SenderId(val value: String) {
     }
 }
 
+@JvmInline
+value class ListingReferenceId(val value: String) {
+    init { require(value.isNotBlank()) { "Listing reference cannot be blank." } }
+}
+
 data class ConversationParticipant(val id: SenderId, val displayName: String)
 
 data class Message(
@@ -39,7 +44,8 @@ class Conversation(
     val id: ConversationId,
     participants: List<ConversationParticipant>,
     val lastMessage: Message? = null,
-    val updatedAtMillis: Long = 0L
+    val updatedAtMillis: Long = 0L,
+    val listingId: ListingReferenceId? = null
 ) {
     val participants: List<ConversationParticipant> = participants.toList()
     val participantNames: List<String> get() = participants.map { it.displayName }
@@ -57,7 +63,15 @@ class Conversation(
         return if (message.conversationId != id || !includes(message.senderId)) {
             Result.Error(ConversationAccessException())
         } else {
-            Result.Success(Conversation(id, participants, message, message.timestampMillis))
+            Result.Success(
+                Conversation(
+                    id = id,
+                    participants = participants,
+                    lastMessage = message,
+                    updatedAtMillis = message.timestampMillis,
+                    listingId = listingId
+                )
+            )
         }
     }
 }
