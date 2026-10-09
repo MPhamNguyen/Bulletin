@@ -25,6 +25,7 @@ internal class SupabaseListingBookmarks internal constructor(
 ) {
     private val cacheMutex = Mutex()
     private val cachedByUser = mutableMapOf<String, CachedBookmarks>()
+    private val cachedPages = mutableMapOf<BookmarkPageCacheKey, CachedBookmarkPage>()
 
     constructor(supabase: SupabaseClient) : this(
         fetch = { userId, offset ->
@@ -80,12 +81,12 @@ internal class SupabaseListingBookmarks internal constructor(
 
     suspend fun bookmark(userId: String, itemId: MarketplaceItemId) {
         upsert(ListingBookmarkDto(userId, itemId.value.removePrefix(LISTING_ID_PREFIX)))
-        updateCachedBookmarks(userId) { it.bookmark(itemId) }
+        updateCachesAfterMutation(userId) { it.bookmark(itemId) }
     }
 
     suspend fun remove(userId: String, itemId: MarketplaceItemId) {
         delete(userId, itemId.value.removePrefix(LISTING_ID_PREFIX))
-        updateCachedBookmarks(userId) { it.remove(itemId) }
+        updateCachesAfterMutation(userId) { it.remove(itemId) }
     }
 
     suspend fun getPage(
@@ -93,10 +94,12 @@ internal class SupabaseListingBookmarks internal constructor(
         cursor: ListingBookmarksPageCursor?,
         pageSize: Int
     ): BookmarkedListingsPage {
+        val cacheKey = BookmarkPageCacheKey(userId, cursor?.offset, pageSize)
+        cacheMutex.withLock { cachedPage(cacheKey) }?.let { return it }
         val offset = cursor?.offset ?: 0
         val rows = fetchPage(userId, offset.toLong(), pageSize)
         val pageRows = rows.take(pageSize)
-        return BookmarkedListingsPage(
+        val page = BookmarkedListingsPage(
             listingIds = pageRows.map { row -> MarketplaceItemId("$LISTING_ID_PREFIX${row.listingId}") },
             listings = pageRows.mapNotNull { row ->
                 row.listing?.let { listing -> SupabaseMarketplaceListingMapper.toListing(listing, null) }
@@ -107,6 +110,13 @@ internal class SupabaseListingBookmarks internal constructor(
                 null
             }
         )
+        cacheMutex.withLock {
+            cachedPages[cacheKey] = CachedBookmarkPage(
+                page = page,
+                expiresAtMillis = cachePolicy.currentTimeMillis() + cachePolicy.ttlMillis
+            )
+        }
+        return page
     }
 
     companion object {
@@ -128,17 +138,28 @@ internal class SupabaseListingBookmarks internal constructor(
         }
     }
 
-    private suspend fun updateCachedBookmarks(
+    private suspend fun updateCachesAfterMutation(
         userId: String,
         transform: (ListingBookmarks) -> ListingBookmarks
     ) {
         cacheMutex.withLock {
+            cachedPages.keys.removeAll { it.userId == userId }
             val cached = cachedByUser[userId] ?: return@withLock
             if (cachePolicy.currentTimeMillis() >= cached.expiresAtMillis) {
                 cachedByUser.remove(userId)
                 return@withLock
             }
             cachedByUser[userId] = cached.copy(bookmarks = transform(cached.bookmarks))
+        }
+    }
+
+    private fun cachedPage(key: BookmarkPageCacheKey): BookmarkedListingsPage? {
+        val cached = cachedPages[key] ?: return null
+        return if (cachePolicy.currentTimeMillis() < cached.expiresAtMillis) {
+            cached.page
+        } else {
+            cachedPages.remove(key)
+            null
         }
     }
 }
@@ -158,6 +179,17 @@ internal class BookmarkCachePolicy(
 
 private data class CachedBookmarks(
     val bookmarks: ListingBookmarks,
+    val expiresAtMillis: Long
+)
+
+private data class BookmarkPageCacheKey(
+    val userId: String,
+    val cursorOffset: Int?,
+    val pageSize: Int
+)
+
+private data class CachedBookmarkPage(
+    val page: BookmarkedListingsPage,
     val expiresAtMillis: Long
 )
 

@@ -51,10 +51,10 @@ class MarketplaceViewModelTestPart1 {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun duplicateBookmarkTapCreatesOneBookmarkAndDetailReflectsIt() = runTest {
+    fun rapidBookmarkTogglesPersistOnlyTheFinalState() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
-            val repository = InMemoryMarketplaceRepository()
+            val repository = CountingMarketplaceRepository(InMemoryMarketplaceRepository())
             val viewModel = MarketplaceViewModel(
                 searchMarketplace = SearchMarketplace(repository),
                 bookmarks = MarketplaceBookmarkDependencies(
@@ -70,7 +70,15 @@ class MarketplaceViewModelTestPart1 {
             viewModel.toggleBookmark(itemId)
             viewModel.toggleBookmark(itemId)
             advanceUntilIdle()
+            assertEquals(emptySet(), repository.getBookmarkedItemIds("student_user"))
+            assertEquals(0, repository.bookmarkMutationCount)
+
+            viewModel.toggleBookmark(itemId)
+            viewModel.toggleBookmark(itemId)
+            viewModel.toggleBookmark(itemId)
+            advanceUntilIdle()
             assertEquals(setOf(itemId), repository.getBookmarkedItemIds("student_user"))
+            assertEquals(1, repository.bookmarkMutationCount)
 
             viewModel.onListingClicked(itemId.value)
             advanceUntilIdle()
@@ -79,6 +87,7 @@ class MarketplaceViewModelTestPart1 {
             viewModel.toggleBookmark(itemId)
             advanceUntilIdle()
             assertEquals(emptySet(), repository.getBookmarkedItemIds("student_user"))
+            assertEquals(2, repository.bookmarkMutationCount)
             assertFalse(viewModel.uiState.value.selectedListing?.isBookmarked == true)
         } finally {
             Dispatchers.resetMain()
@@ -119,7 +128,7 @@ class MarketplaceViewModelTestPart1 {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun successfulBookmarkStaysVisibleWhenReconciliationRefreshFails() = runTest {
+    fun successfulBookmarkDoesNotTriggerAReconciliationRead() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val repository = BookmarkRefreshFailingRepository()
@@ -140,6 +149,7 @@ class MarketplaceViewModelTestPart1 {
 
             assertEquals(setOf(itemId), viewModel.uiState.value.bookmarkedItemIds)
             assertEquals(setOf(itemId), repository.persistedBookmarks())
+            assertEquals(1, repository.bookmarkReadCount)
             assertEquals(null, viewModel.uiState.value.bookmarkErrorMessage)
         } finally {
             Dispatchers.resetMain()
@@ -411,6 +421,7 @@ internal class CountingMarketplaceRepository(
 ) : MarketplaceRepository {
     var detailLoadCount = 0
     var detailTitle = "Graphing Calculator"
+    var bookmarkMutationCount = 0
 
     override suspend fun getCatalog(): List<MarketplaceItem> = delegate.getCatalog()
 
@@ -429,11 +440,15 @@ internal class CountingMarketplaceRepository(
         }
     }
 
-    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> =
-        delegate.bookmarkListing(userId, itemId)
+    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        bookmarkMutationCount += 1
+        return delegate.bookmarkListing(userId, itemId)
+    }
 
-    override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> =
-        delegate.removeListingBookmark(userId, itemId)
+    override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        bookmarkMutationCount += 1
+        return delegate.removeListingBookmark(userId, itemId)
+    }
 
     override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> =
         delegate.getBookmarkedItemIds(userId)
@@ -468,6 +483,7 @@ private class BookmarkRefreshFailingRepository(
     private val delegate: InMemoryMarketplaceRepository = InMemoryMarketplaceRepository()
 ) : MarketplaceRepository by delegate {
     private var failReads = false
+    var bookmarkReadCount = 0
 
     override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
         val result = delegate.bookmarkListing(userId, itemId)
@@ -476,6 +492,7 @@ private class BookmarkRefreshFailingRepository(
     }
 
     override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> {
+        bookmarkReadCount += 1
         if (failReads) error("Bookmark refresh unavailable")
         return delegate.getBookmarkedItemIds(userId)
     }

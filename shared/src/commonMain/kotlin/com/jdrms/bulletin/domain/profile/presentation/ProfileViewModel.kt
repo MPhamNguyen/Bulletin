@@ -188,35 +188,27 @@ class ProfileViewModel(
     }
 
     private suspend fun performBookmarkRemoval(userId: UserId, listingId: String) {
-        var removed = false
         try {
             val remover = bookmarks.remover ?: error("Bookmark removal is unavailable.")
             remover.removeBookmark(userId, listingId)
-            removed = true
             state.update {
                 it.copy(
                     bookmarkedListings = it.bookmarkedListings.filterNot { listing -> listing.id == listingId },
-                    selectedBookmarkedListingId = null
-                )
-            }
-            val page = getBookmarkedListingsPage(userId, null)
-            state.update {
-                it.copy(
-                    bookmarkedListings = page.listings,
-                    bookmarkedListingsNextCursor = page.nextCursor,
+                    bookmarkedListingsNextCursor = it.bookmarkedListingsNextCursor?.afterRemoval(),
                     removingBookmarkedListingId = null,
+                    selectedBookmarkedListingId = null,
                     errorMessage = null
                 )
             }
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {
-            val message = if (removed) {
-                "Bookmark removed, but the list could not be refreshed."
-            } else {
-                "Unable to remove bookmark. Please try again."
+            state.update {
+                it.copy(
+                    removingBookmarkedListingId = null,
+                    errorMessage = "Unable to remove bookmark. Please try again."
+                )
             }
-            state.update { it.copy(removingBookmarkedListingId = null, errorMessage = message) }
         }
     }
 
@@ -251,3 +243,6 @@ class ProfileViewModel(
         const val BOOKMARKS_PAGE_SIZE = 20
     }
 }
+
+private fun ProfileBookmarksPageCursor.afterRemoval(): ProfileBookmarksPageCursor =
+    ProfileBookmarksPageCursor((offset - 1).coerceAtLeast(0))

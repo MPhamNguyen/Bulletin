@@ -94,66 +94,91 @@ internal class MarketplaceBookmarkController(
     private val dependencies: MarketplaceBookmarkDependencies,
     private val currentUserId: suspend () -> String?
 ) {
-    private val pendingIds = mutableSetOf<MarketplaceItemId>()
+    private val pendingChanges = mutableMapOf<MarketplaceItemId, PendingBookmarkChange>()
 
     fun toggle(itemId: MarketplaceItemId, userId: String?) {
-        if (!pendingIds.add(itemId)) return
-        scope.launch {
-            try {
-                updateBookmark(itemId, userId)
-            } finally {
-                pendingIds.remove(itemId)
-            }
+        val pending = pendingChanges[itemId]
+        val displayedState = pending?.desired ?: (itemId in state.value.bookmarkedItemIds)
+        val desiredState = !displayedState
+        updateDisplayedBookmark(itemId, desiredState)
+        if (pending != null) {
+            pending.desired = desiredState
+            return
+        }
+        pendingChanges[itemId] = PendingBookmarkChange(confirmed = displayedState, desired = desiredState)
+        scope.launch { processChanges(itemId, userId) }
+    }
+
+    private suspend fun processChanges(itemId: MarketplaceItemId, userId: String?) {
+        delay(BOOKMARK_TOGGLE_DEBOUNCE_MILLIS)
+        val resolvedUserId = userId ?: currentUserId()
+        if (resolvedUserId == null) {
+            rollbackPendingChange(itemId, "Sign in to bookmark listings.")
+            return
+        }
+        while (applyNextChange(itemId, resolvedUserId)) {
+            delay(BOOKMARK_TOGGLE_DEBOUNCE_MILLIS)
         }
     }
 
-    private suspend fun updateBookmark(itemId: MarketplaceItemId, userId: String?) {
-        val resolvedUserId = userId ?: currentUserId()
-        if (resolvedUserId == null) {
-            state.update { it.copy(bookmarkErrorMessage = "Sign in to bookmark listings.") }
-            return
+    private suspend fun applyNextChange(itemId: MarketplaceItemId, userId: String): Boolean {
+        val change = pendingChanges[itemId] ?: return false
+        val desired = change.desired
+        if (desired == change.confirmed) {
+            pendingChanges.remove(itemId)
+            return false
         }
-        val shouldBookmark = itemId !in state.value.bookmarkedItemIds
         val result = runCatching {
-            if (shouldBookmark) {
-                dependencies.add(resolvedUserId, itemId)
+            if (desired) {
+                dependencies.add(userId, itemId)
             } else {
-                dependencies.remove(resolvedUserId, itemId)
+                dependencies.remove(userId, itemId)
             }
         }.getOrElse { error ->
             error.rethrowCancellation()
             Result.Error(error)
         }
-        when (result) {
-            is Result.Success -> applySuccessfulUpdate(itemId, shouldBookmark, resolvedUserId)
-            is Result.Error -> state.update {
-                it.copy(bookmarkErrorMessage = "Unable to update bookmark. Please try again.")
-            }
+        if (result is Result.Error) {
+            rollbackPendingChange(itemId, "Unable to update bookmark. Please try again.")
+            return false
+        }
+        change.confirmed = desired
+        return if (change.desired == desired) {
+            pendingChanges.remove(itemId)
+            false
+        } else {
+            true
         }
     }
 
-    private suspend fun applySuccessfulUpdate(itemId: MarketplaceItemId, bookmarked: Boolean, userId: String) {
+    private fun updateDisplayedBookmark(
+        itemId: MarketplaceItemId,
+        bookmarked: Boolean,
+        errorMessage: String? = null
+    ) {
         state.update { current ->
             val ids = if (bookmarked) current.bookmarkedItemIds + itemId else current.bookmarkedItemIds - itemId
             val listing = current.selectedListing?.let {
                 if (it.id == itemId) it.copy(isBookmarked = bookmarked) else it
             }
-            current.copy(bookmarkedItemIds = ids, selectedListing = listing, bookmarkErrorMessage = null)
+            current.copy(bookmarkedItemIds = ids, selectedListing = listing, bookmarkErrorMessage = errorMessage)
         }
-        runCatching { dependencies.get.getBookmarkedIds(userId) }
-            .onSuccess { ids ->
-                state.update { current ->
-                    current.copy(
-                        bookmarkedItemIds = ids,
-                        selectedListing = current.selectedListing?.let {
-                            it.copy(isBookmarked = it.id in ids)
-                        }
-                    )
-                }
-            }
-            .onFailure { it.rethrowCancellation() }
+    }
+
+    private fun rollbackPendingChange(itemId: MarketplaceItemId, message: String) {
+        val confirmed = pendingChanges.remove(itemId)?.confirmed ?: return
+        updateDisplayedBookmark(itemId, confirmed, message)
+    }
+
+    private companion object {
+        const val BOOKMARK_TOGGLE_DEBOUNCE_MILLIS = 250L
     }
 }
+
+private data class PendingBookmarkChange(
+    var confirmed: Boolean,
+    var desired: Boolean
+)
 
 internal fun Throwable.rethrowCancellation() {
     if (this is CancellationException) throw this

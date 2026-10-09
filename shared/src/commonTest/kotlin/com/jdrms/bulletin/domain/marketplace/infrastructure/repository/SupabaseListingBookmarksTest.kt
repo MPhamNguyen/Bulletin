@@ -167,6 +167,8 @@ class SupabaseListingBookmarksTest {
 
     @Test
     fun pageFetchReturnsCanonicalIdsAndMappedListingsWithLookaheadCursor() = runTest {
+        var nowMillis = 0L
+        var fetchPageCount = 0
         var requestedOffset = -1L
         var requestedPageSize = -1
         val store = SupabaseListingBookmarks(
@@ -174,33 +176,48 @@ class SupabaseListingBookmarksTest {
             upsert = {},
             delete = { _, _ -> },
             fetchPage = { _, offset, pageSize ->
+                fetchPageCount += 1
                 requestedOffset = offset
                 requestedPageSize = pageSize
-                listOf("one", "two", "three").map { id ->
-                    ListingBookmarkWithListingDto(
-                        listingId = id,
-                        listing = SupabaseMarketplaceListingDto(
-                            id = id,
-                            name = "Listing $id",
-                            userId = "seller-$id",
-                            price = 10.0,
-                            description = "Description for $id",
-                            profile = SupabaseMarketplaceProfileDto("Seller $id")
-                        )
-                    )
-                }
-            }
+                bookmarkPageRows()
+            },
+            cachePolicy = BookmarkCachePolicy(ttlMillis = 100L) { nowMillis }
         )
 
         val page = store.getPage("user-one", null, 2)
+        store.getPage("user-one", null, 2)
 
         assertEquals(0L, requestedOffset)
         assertEquals(2, requestedPageSize)
+        assertEquals(1, fetchPageCount)
         assertEquals(listOf("listing:one", "listing:two"), page.listingIds.map { it.value })
         assertEquals(listOf("listing:one", "listing:two"), page.listings.map { it.id.value })
         assertEquals(listOf("Seller one", "Seller two"), page.listings.map { it.sellerName })
         assertEquals(2, page.nextCursor?.offset)
+
+        nowMillis = 100L
+        store.getPage("user-one", null, 2)
+        assertEquals(2, fetchPageCount)
+
+        store.bookmark("user-one", MarketplaceItemId("listing:new"))
+        store.getPage("user-one", null, 2)
+        assertEquals(3, fetchPageCount)
     }
 }
 
 private fun Result<Unit>.exceptionOrNull(): Throwable? = (this as? Result.Error)?.exception
+
+private fun bookmarkPageRows(): List<ListingBookmarkWithListingDto> =
+    listOf("one", "two", "three").map { id ->
+        ListingBookmarkWithListingDto(
+            listingId = id,
+            listing = SupabaseMarketplaceListingDto(
+                id = id,
+                name = "Listing $id",
+                userId = "seller-$id",
+                price = 10.0,
+                description = "Description for $id",
+                profile = SupabaseMarketplaceProfileDto("Seller $id")
+            )
+        )
+    }
