@@ -12,7 +12,8 @@ data class ProfileBookmarkedListing(
     val description: String = "",
     val condition: String = "GOOD",
     val photos: List<String> = emptyList(),
-    val sellerReputationScore: Double? = null
+    val sellerReputationScore: Double? = null,
+    val sellerId: String = ""
 )
 
 @JvmInline

@@ -34,6 +34,10 @@ import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
@@ -235,7 +239,25 @@ fun MainAppScaffold(
             Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                 when (navigationState.currentDestination) {
                     AppDestination.HOME -> HomeScreen(homeViewModel)
-                    AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
+                    AppDestination.MARKETPLACE -> MarketplaceScreen(
+                        viewModel = marketplaceViewModel,
+                        onMessageSeller = { listingId, sellerId, sellerName, content ->
+                            val sendResult = sendListingMessage(
+                                container,
+                                navigationState,
+                                ListingMessageRequest(listingId, sellerId, sellerName, content)
+                            )
+                            navigationState = sendResult.navigationState
+                            sendResult.sent
+                        },
+                        hasExistingConversation = { listingId, sellerId ->
+                            hasListingConversation(container, listingId, sellerId)
+                        },
+                        onSeeChat = { listingId, sellerId ->
+                            openListingConversation(container, messagesViewModel, listingId, sellerId)
+                            navigationState = navigationState.selectBottomNavigationDestination(AppDestination.MESSAGES)
+                        }
+                    )
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
                     AppDestination.PROFILE -> {
@@ -310,6 +332,29 @@ fun MainAppScaffold(
                                         navigationState = navigationState.copy(
                                             currentDestination = AppDestination.LISTINGS
                                         )
+                                    },
+                                    onMessageSeller = { listingId, sellerId, sellerName, content ->
+                                        val sendResult = sendListingMessage(
+                                            container,
+                                            navigationState,
+                                            ListingMessageRequest(listingId, sellerId, sellerName, content)
+                                        )
+                                        navigationState = sendResult.navigationState
+                                        sendResult.sent
+                                    },
+                                    onMessageSent = {
+                                        navigationState = navigationState.selectBottomNavigationDestination(
+                                            AppDestination.MESSAGES
+                                        )
+                                    },
+                                    onSeeChat = { listingId, sellerId ->
+                                        openListingConversation(container, messagesViewModel, listingId, sellerId)
+                                        navigationState = navigationState.selectBottomNavigationDestination(
+                                            AppDestination.MESSAGES
+                                        )
+                                    },
+                                    hasExistingConversation = { listingId, sellerId ->
+                                        hasListingConversation(container, listingId, sellerId)
                                     }
                                 ),
                                 themeViewModel = themeViewModel
@@ -323,3 +368,70 @@ fun MainAppScaffold(
 }
 
 internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()
+
+private data class ListingMessageSendResult(
+    val sent: Boolean,
+    val navigationState: MainNavigationState
+)
+
+private data class ListingMessageRequest(
+    val listingId: String,
+    val sellerId: String,
+    val sellerName: String,
+    val content: String
+)
+
+private suspend fun sendListingMessage(
+    container: AppContainer,
+    navigationState: MainNavigationState,
+    request: ListingMessageRequest
+): ListingMessageSendResult {
+    val sent = container.messageSeller(
+        ListingReferenceId(request.listingId.removePrefix("listing:")),
+        ConversationParticipant(
+            com.jdrms.bulletin.domain.messages.domain.model.SenderId(request.sellerId),
+            request.sellerName
+        ),
+        request.content
+    ).isSuccess()
+    return ListingMessageSendResult(
+        sent = sent,
+        navigationState = if (sent) {
+            navigationState.selectBottomNavigationDestination(AppDestination.MESSAGES)
+        } else {
+            navigationState
+        }
+    )
+}
+
+private suspend fun hasListingConversation(
+    container: AppContainer,
+    listingId: String,
+    sellerId: String
+): Boolean {
+    return container.hasListingConversation(
+        ListingReferenceId(listingId.removePrefix("listing:")),
+        SenderId(sellerId)
+    ).getOrNull() == true
+}
+
+private suspend fun findListingConversation(
+    container: AppContainer,
+    listingId: String,
+    sellerId: String
+): ConversationId? {
+    val listingReference = ListingReferenceId(listingId.removePrefix("listing:"))
+    val seller = SenderId(sellerId)
+    return container.getConversations().getOrNull()?.firstOrNull { conversation ->
+        conversation.listingId == listingReference && conversation.includes(seller)
+    }?.id
+}
+
+private suspend fun openListingConversation(
+    container: AppContainer,
+    messagesViewModel: com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel,
+    listingId: String,
+    sellerId: String
+) {
+    findListingConversation(container, listingId, sellerId)?.let(messagesViewModel::openConversation)
+}

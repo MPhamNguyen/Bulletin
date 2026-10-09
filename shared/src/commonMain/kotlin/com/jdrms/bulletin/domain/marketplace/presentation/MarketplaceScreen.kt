@@ -23,7 +23,14 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
 @Composable
-fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
+fun MarketplaceScreen(
+    viewModel: MarketplaceViewModel,
+    onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
+        { _, _, _, _ -> false },
+    hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
+        { _, _ -> false },
+    onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
+) {
     val state by viewModel.uiState.collectAsState()
 
     if (state.isSellerProfileOpen) {
@@ -145,7 +152,8 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                         bookmarkErrorMessage = state.bookmarkErrorMessage,
                         isBookmarked = state.selectedListing?.let {
                             it.id in state.bookmarkedItemIds
-                        } ?: false
+                        } ?: false,
+                        currentUserId = state.currentUserId
                     ),
                     actions = MarketplaceDetailSheetActions(
                         onDismiss = viewModel::dismissListingDetail,
@@ -153,7 +161,10 @@ fun MarketplaceScreen(viewModel: MarketplaceViewModel) {
                         onToggleBookmark = {
                             state.selectedListing?.let { viewModel.toggleBookmark(it.id) }
                         },
-                        onSellerClick = viewModel::onSellerClicked
+                        onSellerClick = viewModel::onSellerClicked,
+                        onMessageSeller = onMessageSeller,
+                        hasExistingConversation = hasExistingConversation,
+                        onSeeChat = onSeeChat
                     )
                 )
             }
