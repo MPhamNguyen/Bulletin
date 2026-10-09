@@ -1,15 +1,116 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingBookmarkDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingBookmarkWithListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceProfileDto
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class SupabaseListingBookmarksTest {
+    @Test
+    fun bookmarkMembershipIsCachedUntilItsTtlExpires() = runTest {
+        var nowMillis = 0L
+        var fetchCount = 0
+        val store = SupabaseListingBookmarks(
+            fetch = { userId, _ ->
+                fetchCount += 1
+                listOf(ListingBookmarkDto(userId, "listing-one"))
+            },
+            upsert = {},
+            delete = { _, _ -> },
+            fetchPage = { _, _, _ -> emptyList() },
+            cachePolicy = BookmarkCachePolicy(ttlMillis = 100L) { nowMillis }
+        )
+
+        store.get("user-one")
+        store.get("user-one")
+        assertEquals(1, fetchCount)
+
+        nowMillis = 100L
+        store.get("user-one")
+        assertEquals(2, fetchCount)
+    }
+
+    @Test
+    fun successfulMutationsKeepCachedMembershipConsistent() = runTest {
+        val rows = mutableSetOf(ListingBookmarkDto("user-one", "listing-one"))
+        var fetchCount = 0
+        val store = SupabaseListingBookmarks(
+            fetch = { userId, _ ->
+                fetchCount += 1
+                rows.filter { it.userId == userId }
+            },
+            upsert = { rows.add(it) },
+            delete = { userId, listingId -> rows.remove(ListingBookmarkDto(userId, listingId)) },
+            fetchPage = { _, _, _ -> emptyList() }
+        )
+        val firstId = MarketplaceItemId("listing:listing-one")
+        val secondId = MarketplaceItemId("listing:listing-two")
+
+        store.get("user-one")
+        store.bookmark("user-one", secondId)
+        assertEquals(setOf(firstId, secondId), store.get("user-one").ids)
+
+        store.remove("user-one", firstId)
+        assertEquals(setOf(secondId), store.get("user-one").ids)
+        assertEquals(1, fetchCount)
+    }
+
+    @Test
+    fun failedMutationLeavesCachedMembershipUnchanged() = runTest {
+        var fetchCount = 0
+        val initialId = MarketplaceItemId("listing:listing-one")
+        val store = SupabaseListingBookmarks(
+            fetch = { userId, _ ->
+                fetchCount += 1
+                listOf(ListingBookmarkDto(userId, "listing-one"))
+            },
+            upsert = { error("Write failed") },
+            delete = { _, _ -> },
+            fetchPage = { _, _, _ -> emptyList() }
+        )
+
+        store.get("user-one")
+        assertFailsWith<IllegalStateException> {
+            store.bookmark("user-one", MarketplaceItemId("listing:listing-two"))
+        }
+
+        assertEquals(setOf(initialId), store.get("user-one").ids)
+        assertEquals(1, fetchCount)
+    }
+
+    @Test
+    fun bookmarkMutationReturnsErrorWhenTimeoutExpires() = runTest {
+        val result = runBookmarkMutation(timeoutMillis = 1L) { delay(100L) }
+
+        assertTrue(result.isError())
+        assertEquals("Bookmark request timed out.", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun bookmarkMutationPreservesFailuresAndCancellation() = runTest {
+        val failure = IllegalStateException("Write failed")
+        val result = runBookmarkMutation { throw failure }
+
+        assertEquals(failure, result.exceptionOrNull())
+        assertFailsWith<CancellationException> {
+            runBookmarkMutation { throw CancellationException("Cancelled") }
+        }
+    }
+
+    @Test
+    fun bookmarkCachePolicyRejectsNonPositiveTtl() {
+        assertFailsWith<IllegalArgumentException> { BookmarkCachePolicy(ttlMillis = 0L) }
+    }
+
     @Test
     fun fetchesEveryPageAndReconstructsBookmarksFromPersistedRows() = runTest {
         val rows = (1..501).map { ListingBookmarkDto("user-one", "listing-$it") }
@@ -101,3 +202,5 @@ class SupabaseListingBookmarksTest {
         assertEquals(2, page.nextCursor?.offset)
     }
 }
+
+private fun Result<Unit>.exceptionOrNull(): Throwable? = (this as? Result.Error)?.exception

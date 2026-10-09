@@ -127,23 +127,11 @@ class SupabaseMarketplaceRepository(
     }
 
     override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
-        return runCatching { bookmarks.bookmark(userId, itemId) }.fold(
-            onSuccess = { Result.Success(Unit) },
-            onFailure = { error ->
-                error.rethrowIfCancellation()
-                Result.Error(error)
-            }
-        )
+        return runBookmarkMutation { bookmarks.bookmark(userId, itemId) }
     }
 
     override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> {
-        return runCatching { bookmarks.remove(userId, itemId) }.fold(
-            onSuccess = { Result.Success(Unit) },
-            onFailure = { error ->
-                error.rethrowIfCancellation()
-                Result.Error(error)
-            }
-        )
+        return runBookmarkMutation { bookmarks.remove(userId, itemId) }
     }
 
     override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> {
@@ -206,4 +194,22 @@ class SupabaseMarketplaceRepository(
             throw this
         }
     }
+}
+
+internal suspend fun runBookmarkMutation(
+    timeoutMillis: Long = SupabaseMarketplaceRepository.TIMEOUT_MILLIS,
+    mutation: suspend () -> Unit
+): Result<Unit> {
+    val timedResult = withTimeoutOrNull(timeoutMillis) {
+        runCatching {
+            mutation()
+        }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { error ->
+                if (error is CancellationException) throw error
+                Result.Error(error)
+            }
+        )
+    }
+    return timedResult ?: Result.Error(Exception("Bookmark request timed out."))
 }
