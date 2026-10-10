@@ -64,7 +64,8 @@ class MarketplaceProfileBookmarkedListingsProvider(
         description = description,
         condition = condition,
         photos = photos,
-        sellerReputationScore = sellerReputationScore
+        sellerReputationScore = sellerReputationScore,
+        createdAtMillis = createdAtMillis
     )
 
     private fun com.jdrms.bulletin.domain.listings.domain.model.Listing.toProfileBookmark(
@@ -77,6 +78,7 @@ class MarketplaceProfileBookmarkedListingsProvider(
         category = category.name,
         description = description,
         condition = condition.name,
-        photos = images
+        photos = images,
+        createdAtMillis = createdAtMillis
     )
 }
