@@ -109,6 +109,19 @@ class AppNavigationTest {
     }
 
     @Test
+    fun selectingMessagesFromMyListingsResetsProfileRoute() {
+        val state = MainNavigationState(
+            currentDestination = AppDestination.PROFILE,
+            profileDestination = ProfileDestination.MY_LISTINGS
+        )
+
+        val result = state.selectBottomNavigationDestination(AppDestination.MESSAGES)
+
+        assertEquals(AppDestination.MESSAGES, result.currentDestination)
+        assertEquals(ProfileDestination.PROFILE, result.profileDestination)
+    }
+
+    @Test
     fun explicitBackCancelsEditRouteWithoutDiscardingParentRoute() {
         assertEquals(ProfileDestination.MY_LISTINGS, explicitProfileBack(ProfileDestination.EDIT_LISTING))
     }

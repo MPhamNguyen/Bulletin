@@ -218,11 +218,10 @@ fun MainAppScaffold(
             contentColor = MaterialTheme.colorScheme.onBackground,
             bottomBar = {
                 BulletinBottomNavigationBar(
-                    currentDestination = currentDestination,
-                    onDestinationSelected = {
-                        if (it == AppDestination.MESSAGES) messagesViewModel.loadConversations()
-                        if (it != AppDestination.PROFILE) {
-                            profileDestination = ProfileDestination.PROFILE
+                    currentDestination = navigationState.currentDestination,
+                    onDestinationSelected = { destination ->
+                        if (destination == AppDestination.MESSAGES) messagesViewModel.loadConversations()
+                        if (destination != AppDestination.PROFILE) {
                             listingsViewModel.cancelEditing()
                             listingsViewModel.clearMessages()
                         }
