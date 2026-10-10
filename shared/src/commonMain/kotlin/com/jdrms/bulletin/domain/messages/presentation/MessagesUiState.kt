@@ -3,12 +3,20 @@ package com.jdrms.bulletin.domain.messages.presentation
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 data class MessagesUiState(
+    val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
     val selectedConversationId: ConversationId? = null,
     val currentMessages: List<Message> = emptyList(),
+    val revealedReportedMessageIds: Set<MessageId> = emptySet(),
     val messageInput: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val isLoadingMessages: Boolean = false,
+    val isSending: Boolean = false,
+    val isReporting: Boolean = false,
+    val errorMessage: String? = null,
+    val statusMessage: String? = null
 )
