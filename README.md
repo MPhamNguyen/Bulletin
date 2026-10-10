@@ -146,13 +146,6 @@ Each business domain adheres to a 4-layer structure:
 * `infrastructure/`: Repository implementations, DTOs, and mappers.
 * `presentation/`: Compose screens, ViewModels, UI State, and feature UI components.
 
-### Backend status
-
-| Context / capability | Current binding | Notes |
-| --- | --- | --- |
-| Messages conversations and messages | Supabase when configured; in-memory fallback otherwise | Listing-scoped conversation creation uses the versioned `get_or_create_listing_conversation` migration and an application-level single-flight send guard. Live Supabase verification is still opt-in. |
-
----
 
 ## 🔐 Security & Privacy
 
