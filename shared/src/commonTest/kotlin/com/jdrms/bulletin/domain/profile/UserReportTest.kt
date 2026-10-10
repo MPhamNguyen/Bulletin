@@ -137,6 +137,20 @@ class UserReportTest {
     }
 
     @Test
+    fun allowsNewReportAfterEarlierReportIsClosed() = runTest {
+        val repository = InMemoryUserReportRepository()
+        val closedReport = report("reporter", "target", UserReportReason.SCAM_OR_FRAUD)
+        val newReport = report("reporter", "target", UserReportReason.FAKE_ACCOUNT_OR_IMPERSONATION)
+        repository.submit(closedReport)
+
+        repository.markClosedForTesting(closedReport)
+        val result = repository.submit(newReport)
+
+        assertIs<Result.Success<Unit>>(result)
+        assertEquals(listOf(closedReport, newReport), repository.reports())
+    }
+
+    @Test
     fun allowsDifferentReportersToReportSameUser() = runTest {
         val repository = InMemoryUserReportRepository()
 

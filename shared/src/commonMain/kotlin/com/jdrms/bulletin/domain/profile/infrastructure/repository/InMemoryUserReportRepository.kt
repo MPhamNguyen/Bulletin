@@ -9,16 +9,23 @@ import kotlinx.coroutines.sync.withLock
 
 class InMemoryUserReportRepository : UserReportRepository {
     private val mutex = Mutex()
-    private val submittedReports = mutableListOf<UserReport>()
+    private val submittedReports = mutableListOf<StoredUserReport>()
 
     override suspend fun submit(report: UserReport): Result<Unit> = mutex.withLock {
         val alreadySubmitted = submittedReports.any {
-            it.reporterId == report.reporterId && it.reportedUserId == report.reportedUserId
+            it.isOpen && it.report.reporterId == report.reporterId &&
+                it.report.reportedUserId == report.reportedUserId
         }
         if (alreadySubmitted) return@withLock Result.Error(UserReportAlreadySubmittedException())
-        submittedReports += report
+        submittedReports += StoredUserReport(report)
         Result.Success(Unit)
     }
 
-    fun reports(): List<UserReport> = submittedReports.toList()
+    internal suspend fun markClosedForTesting(report: UserReport) = mutex.withLock {
+        submittedReports.firstOrNull { it.report == report && it.isOpen }?.isOpen = false
+    }
+
+    fun reports(): List<UserReport> = submittedReports.map(StoredUserReport::report)
+
+    private data class StoredUserReport(val report: UserReport, var isOpen: Boolean = true)
 }
