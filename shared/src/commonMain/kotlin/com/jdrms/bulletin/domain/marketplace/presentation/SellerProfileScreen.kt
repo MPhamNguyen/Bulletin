@@ -11,18 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,7 +40,8 @@ fun SellerProfileScreen(
     profile: MarketplaceSellerProfile?,
     isLoading: Boolean,
     errorMessage: String?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onReportUser: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -51,7 +49,7 @@ fun SellerProfileScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Top Bar
-        SellerProfileTopBar(onBack = onBack)
+        SellerProfileTopBar(onBack = onBack, onReportUser = onReportUser)
 
         if (isLoading) {
             Box(
@@ -279,34 +277,6 @@ fun SellerProfileScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SellerProfileTopBar(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier.size(40.dp)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back to listing",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "Seller Profile",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
     }
 }
 

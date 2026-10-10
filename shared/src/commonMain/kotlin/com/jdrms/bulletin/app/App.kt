@@ -210,6 +210,7 @@ fun MainAppScaffold(
 
         val homeViewModel = remember { container.createHomeViewModel() }
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
+        val marketplaceUserReportViewModel = remember { container.createMarketplaceUserReportViewModel() }
         val listingsViewModel = remember { container.createListingsViewModel() }
         val messagesViewModel = remember { container.createMessagesViewModel() }
 
@@ -235,7 +236,10 @@ fun MainAppScaffold(
             Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                 when (navigationState.currentDestination) {
                     AppDestination.HOME -> HomeScreen(homeViewModel)
-                    AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
+                    AppDestination.MARKETPLACE -> MarketplaceScreen(
+                        marketplaceViewModel,
+                        marketplaceUserReportViewModel
+                    )
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
                     AppDestination.PROFILE -> {
