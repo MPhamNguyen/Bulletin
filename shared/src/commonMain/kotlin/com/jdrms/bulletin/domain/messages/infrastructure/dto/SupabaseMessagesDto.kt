@@ -6,8 +6,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SupabaseConversationDto(
     @SerialName("id") val id: String,
-    @SerialName("updated_at") val updatedAt: String? = null
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("listing_id") val listingId: String? = null
 )
+
+@Serializable
+data class SupabaseConversationLookupDto(@SerialName("conversation_id") val conversationId: String)
 
 @Serializable
 data class SupabaseConversationMembershipDto(

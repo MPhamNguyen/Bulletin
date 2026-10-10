@@ -26,5 +26,6 @@ data class MarketplaceUiState(
     val isSellerProfileOpen: Boolean = false,
     val isSellerProfileLoading: Boolean = false,
     val sellerProfileErrorMessage: String? = null,
-    val selectedSellerProfile: MarketplaceSellerProfile? = null
+    val selectedSellerProfile: MarketplaceSellerProfile? = null,
+    val currentUserId: String? = null
 )

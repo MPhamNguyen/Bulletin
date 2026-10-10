@@ -146,7 +146,6 @@ Each business domain adheres to a 4-layer structure:
 * `infrastructure/`: Repository implementations, DTOs, and mappers.
 * `presentation/`: Compose screens, ViewModels, UI State, and feature UI components.
 
----
 
 ## 🔐 Security & Privacy
 

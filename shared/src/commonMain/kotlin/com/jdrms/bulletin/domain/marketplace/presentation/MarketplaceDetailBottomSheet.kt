@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
+import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 data class MarketplaceDetailSheetState(
@@ -42,14 +44,20 @@ data class MarketplaceDetailSheetState(
     val isLoading: Boolean,
     val errorMessage: String?,
     val bookmarkErrorMessage: String?,
-    val isBookmarked: Boolean
+    val isBookmarked: Boolean,
+    val currentUserId: String?
 )
 
 data class MarketplaceDetailSheetActions(
     val onDismiss: () -> Unit,
     val onRetry: () -> Unit,
     val onToggleBookmark: () -> Unit,
-    val onSellerClick: (sellerId: String) -> Unit = {}
+    val onSellerClick: (sellerId: String) -> Unit = {},
+    val onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
+        { _, _, _, _ -> false },
+    val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
+        { _, _ -> false },
+    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +75,8 @@ fun MarketplaceDetailBottomSheet(
     val onRetry = actions.onRetry
     val onToggleBookmark = actions.onToggleBookmark
     val onSellerClick = actions.onSellerClick
+    val onMessageSeller = actions.onMessageSeller
+    val hasExistingConversation = actions.hasExistingConversation
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -232,6 +242,24 @@ fun MarketplaceDetailBottomSheet(
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
+
+                    if (state.currentUserId != listing.sellerId) {
+                        MessageSellerQuickAction(
+                            actions = MessageSellerQuickActionActions(
+                                conversationKey = "${listing.id.value}:${listing.sellerId}",
+                                hasExistingConversation = {
+                                    hasExistingConversation(listing.id.value, listing.sellerId)
+                                },
+                                onSend = { content ->
+                                    onMessageSeller(listing.id.value, listing.sellerId, listing.sellerName, content)
+                                },
+                                onSent = onDismiss,
+                                onSeeChat = {
+                                    actions.onSeeChat(listing.id.value, listing.sellerId)
+                                }
+                            )
+                        )
+                    }
 
                     // Action Buttons: Bookmark & Close
                     bookmarkErrorMessage?.let { message ->

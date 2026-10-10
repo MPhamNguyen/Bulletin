@@ -57,6 +57,7 @@ class MarketplaceProfileBookmarkedListingsProvider(
         itemId: MarketplaceItemId
     ) = ProfileBookmarkedListing(
         id = itemId.value,
+        sellerId = sellerId,
         title = title,
         sellerName = sellerName,
         price = price.formatted,
@@ -71,6 +72,7 @@ class MarketplaceProfileBookmarkedListingsProvider(
         itemId: MarketplaceItemId
     ) = ProfileBookmarkedListing(
         id = itemId.value,
+        sellerId = sellerId.value,
         title = title,
         sellerName = sellerName,
         price = price.formatted,
