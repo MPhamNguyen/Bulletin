@@ -9,7 +9,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemD
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 
 object MarketplaceMapper {
-    fun toDomain(dto: MarketplaceItemDto, isSaved: Boolean = false): MarketplaceItem {
+    fun toDomain(dto: MarketplaceItemDto, isBookmarked: Boolean = false): MarketplaceItem {
         val category = runCatching { MarketplaceCategory.valueOf(dto.category.uppercase()) }
             .getOrDefault(MarketplaceCategory.OTHER)
         return MarketplaceItem(
@@ -20,7 +20,7 @@ object MarketplaceMapper {
             description = dto.description,
             price = MarketplacePrice(dto.price.coerceAtLeast(0.0)),
             category = category,
-            isSaved = isSaved,
+            isBookmarked = isBookmarked,
             createdAtMillis = dto.createdAtMillis
         )
     }
@@ -40,7 +40,7 @@ object MarketplaceMapper {
 
     fun toListingDomain(
         dto: MarketplaceListingDto,
-        isSaved: Boolean = false,
+        isBookmarked: Boolean = false,
         reputationScore: Double? = null
     ): Listing {
         val category = runCatching { MarketplaceCategory.valueOf(dto.category.uppercase()) }
@@ -58,7 +58,7 @@ object MarketplaceMapper {
             status = dto.status,
             photos = dto.photos,
             sellerReputationScore = score,
-            isSaved = isSaved,
+            isBookmarked = isBookmarked,
             createdAtMillis = dto.createdAtMillis
         )
     }

@@ -1,7 +1,7 @@
 package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.profile.application.AuthenticateUser
+import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
@@ -24,7 +24,7 @@ class EmailVerificationApplicationTest {
     @Test
     fun registrationRemainsUnauthenticatedUntilCorrectCodeAndCannotReplay() = runTest {
         val repository = InMemoryAuthRepository(testVerificationCode = "012345")
-        val registration = AuthenticateUser(repository).register(email, "password123", "Student Name")
+        val registration = RegisterStudent(repository)("Student", "Name", email.value, "password123")
         assertIs<Result.Success<*>>(registration)
         assertEquals(email, registration.getOrNull()?.email)
         assertNull((repository.getCurrentUserId() as Result.Success).data)
@@ -47,7 +47,7 @@ class EmailVerificationApplicationTest {
     @Test
     fun defaultInMemoryAdapterDoesNotPretendToDeliverEmail() = runTest {
         val repository = InMemoryAuthRepository()
-        assertIs<Result.Error>(AuthenticateUser(repository).register(email, "password123", "Student Name"))
+        assertIs<Result.Error>(RegisterStudent(repository)("Student", "Name", email.value, "password123"))
         assertIs<Result.Error>(ResendVerificationCode(repository)(email))
         assertIs<Result.Error>(VerifyStudentEmail(repository)(email, "123456"))
         assertNull((repository.getCurrentUser() as Result.Success).data)
@@ -61,7 +61,7 @@ class EmailVerificationApplicationTest {
             }
         }
         val repository = InMemoryAuthRepository(profiles, testVerificationCode = "123456")
-        AuthenticateUser(repository).register(email, "password123", "Student Name")
+        RegisterStudent(repository)("Student", "Name", email.value, "password123")
         val result = assertIs<Result.Success<EmailVerificationOutcome>>(
             VerifyStudentEmail(repository)(email, "123456")
         )

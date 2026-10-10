@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,16 +11,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,24 +32,41 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
+
+data class MarketplaceDetailSheetState(
+    val listing: Listing?,
+    val isLoading: Boolean,
+    val errorMessage: String?,
+    val bookmarkErrorMessage: String?,
+    val isBookmarked: Boolean
+)
+
+data class MarketplaceDetailSheetActions(
+    val onDismiss: () -> Unit,
+    val onRetry: () -> Unit,
+    val onToggleBookmark: () -> Unit,
+    val onSellerClick: (sellerId: String) -> Unit = {}
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MarketplaceDetailBottomSheet(
-    listing: Listing?,
-    isLoading: Boolean,
-    errorMessage: String?,
-    isSaved: Boolean,
-    onDismiss: () -> Unit,
-    onRetry: () -> Unit,
-    onToggleSave: () -> Unit
+    state: MarketplaceDetailSheetState,
+    actions: MarketplaceDetailSheetActions
 ) {
+    val listing = state.listing
+    val isLoading = state.isLoading
+    val errorMessage = state.errorMessage
+    val bookmarkErrorMessage = state.bookmarkErrorMessage
+    val isBookmarked = state.isBookmarked
+    val onDismiss = actions.onDismiss
+    val onRetry = actions.onRetry
+    val onToggleBookmark = actions.onToggleBookmark
+    val onSellerClick = actions.onSellerClick
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -190,8 +202,16 @@ fun MarketplaceDetailBottomSheet(
 
                     // Seller Information & Reputation Score Card
                     SellerInfoCard(
-                        sellerName = listing.sellerName,
-                        reputationScore = listing.sellerReputationScore
+                        seller = SellerInfoCardState(
+                            name = listing.sellerName,
+                            school = listing.sellerSchool,
+                            avatarUrl = listing.sellerAvatarUrl,
+                            reputationScore = listing.sellerReputationScore,
+                            major = listing.sellerMajor,
+                            reviewCount = listing.sellerReviewCount,
+                            isVerified = listing.sellerIsVerified
+                        ),
+                        onClick = { onSellerClick(listing.sellerId) }
                     )
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -213,18 +233,35 @@ fun MarketplaceDetailBottomSheet(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Action Buttons: Save & Close
+                    // Action Buttons: Bookmark & Close
+                    bookmarkErrorMessage?.let { message ->
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
-                            onClick = onToggleSave,
+                            onClick = onToggleBookmark,
                             modifier = Modifier.weight(1f),
                             colors = BulletinButtonDefaults.outlinedButtonColors(),
                             border = BulletinButtonDefaults.outlinedButtonBorder()
                         ) {
-                            Text(if (isSaved) "★ Saved" else "☆ Save Item")
+                            Icon(
+                                imageVector = if (isBookmarked) {
+                                    Icons.Filled.Bookmark
+                                } else {
+                                    Icons.Outlined.BookmarkBorder
+                                },
+                                contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isBookmarked) "Bookmarked" else "Bookmark")
                         }
 
                         Button(
@@ -238,160 +275,5 @@ fun MarketplaceDetailBottomSheet(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ListingPhotosSection(photos: List<String>) {
-    if (photos.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                    shape = MaterialTheme.shapes.medium
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Image,
-                    contentDescription = "No photos",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(36.dp)
-                )
-                Text(
-                    text = "No photos uploaded for this listing",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    } else {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(photos) { photoUrl ->
-                Box(
-                    modifier = Modifier
-                        .size(width = 240.dp, height = 180.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline,
-                            shape = MaterialTheme.shapes.medium
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Image,
-                            contentDescription = "Listing photo",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Text(
-                            text = "Photo Preview",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SellerInfoCard(
-    sellerName: String,
-    reputationScore: Double?
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Person,
-                        contentDescription = "Seller Avatar",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = sellerName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Verified CSULB Student",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Reputation Score Badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = "Reputation Score",
-                    tint = BulletinExtras.colors.star,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = formatReputationScore(reputationScore),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-    }
-}
-
-internal fun formatReputationScore(reputationScore: Double?): String {
-    return if (reputationScore != null) {
-        "${(reputationScore * 10).toInt() / 10.0} / 5.0"
-    } else {
-        "5.0 (New)"
     }
 }

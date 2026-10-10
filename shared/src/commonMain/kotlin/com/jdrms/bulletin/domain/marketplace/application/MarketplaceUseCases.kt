@@ -1,7 +1,9 @@
 package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
+import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -82,30 +84,98 @@ private fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
     )
 }
 
-class ToggleSaveMarketplaceItem(
+class BookmarkMarketplaceListing(
     private val repository: MarketplaceRepository
 ) {
-    suspend operator fun invoke(userId: String, itemId: MarketplaceItemId): Result<Boolean> {
-        return repository.toggleSaved(userId, itemId)
+    suspend operator fun invoke(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        return repository.bookmarkListing(userId, itemId)
+    }
+}
+
+class GetMarketplaceListingBookmarks(
+    private val repository: MarketplaceRepository
+) {
+    suspend fun getBookmarkedIds(userId: String): Set<MarketplaceItemId> {
+        return repository.getBookmarkedItemIds(userId)
     }
 
-    suspend fun getSavedIds(userId: String): Set<MarketplaceItemId> {
-        return repository.getSavedItemIds(userId)
+    suspend fun getPage(
+        userId: String,
+        cursor: ListingBookmarksPageCursor? = null,
+        pageSize: Int = DEFAULT_BOOKMARKS_PAGE_SIZE
+    ): BookmarkedListingsPage {
+        require(pageSize in 1..MAX_BOOKMARKS_PAGE_SIZE) {
+            "Bookmark page size must be between 1 and $MAX_BOOKMARKS_PAGE_SIZE."
+        }
+        return repository.getBookmarkedListingsPage(userId, cursor, pageSize)
+    }
+}
+
+class RemoveMarketplaceListingBookmark(
+    private val repository: MarketplaceRepository
+) {
+    suspend operator fun invoke(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        return repository.removeListingBookmark(userId, itemId)
     }
 }
 
 class ViewMarketplaceListing(
-    private val repository: MarketplaceRepository
+    private val repository: MarketplaceRepository,
+    private val sellerProfileProvider: MarketplaceSellerProfileProvider? = null
 ) {
     suspend fun viewListing(listingID: String): Listing {
         val result = repository.viewListing(listingID)
         return when (result) {
-            is Result.Success -> result.data
+            is Result.Success -> result.data.withResolvedSellerName()
             is Result.Error -> throw result.exception
         }
     }
 
     suspend operator fun invoke(listingID: String): Result<Listing> {
-        return repository.viewListing(listingID)
+        return when (val result = repository.viewListing(listingID)) {
+            is Result.Success -> Result.Success(result.data.withResolvedSellerName())
+            is Result.Error -> result
+        }
+    }
+
+    suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile? {
+        return sellerProfileProvider?.getSellerProfile(sellerId)
+    }
+
+    private suspend fun Listing.withResolvedSellerName(): Listing {
+        val profile = sellerProfileProvider?.getSellerProfile(sellerId)
+        return if (profile != null) {
+            copy(
+                sellerName = profile.name?.takeIf(String::isNotBlank) ?: sellerName,
+                sellerSchool = profile.school?.takeIf(String::isNotBlank) ?: sellerSchool,
+                sellerAvatarUrl = profile.avatarUrl?.takeIf(String::isNotBlank) ?: sellerAvatarUrl,
+                sellerMajor = profile.major?.takeIf(String::isNotBlank) ?: sellerMajor,
+                sellerReputationScore = profile.reputationScore ?: sellerReputationScore,
+                sellerReviewCount = profile.reviewCount ?: sellerReviewCount,
+                sellerIsVerified = profile.isVerified
+            )
+        } else {
+            this
+        }
     }
 }
+
+data class MarketplaceSellerProfile(
+    val sellerId: String = "",
+    val name: String?,
+    val school: String?,
+    val major: String? = null,
+    val bio: String? = null,
+    val avatarUrl: String? = null,
+    val reputationScore: Double? = null,
+    val reviewCount: Int? = null,
+    val isVerified: Boolean = true
+)
+
+/** Provides seller profile details without coupling marketplace to a profile implementation. */
+fun interface MarketplaceSellerProfileProvider {
+    suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile?
+}
+
+const val DEFAULT_BOOKMARKS_PAGE_SIZE = 20
+const val MAX_BOOKMARKS_PAGE_SIZE = 50

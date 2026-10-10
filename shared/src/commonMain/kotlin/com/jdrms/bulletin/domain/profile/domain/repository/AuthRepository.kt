@@ -14,13 +14,16 @@ interface AuthRepository {
 
     suspend fun getCurrentUser(): Result<StudentProfile?>
     suspend fun login(email: StudentEmail, password: String): Result<StudentProfile>
+    suspend fun requestPasswordReset(email: StudentEmail): Result<Unit>
+    suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit>
+    suspend fun updatePassword(password: String): Result<Unit>
 
     /** Requests email confirmation; success must not establish an authenticated session. */
     suspend fun register(
         email: StudentEmail,
         password: String,
         fullName: String,
-        university: String = "CSU Long Beach"
+        university: String = ""
     ): Result<PendingRegistration>
 
     /** Exchanges a valid code for a confirmed session, even when profile loading needs a separate retry. */

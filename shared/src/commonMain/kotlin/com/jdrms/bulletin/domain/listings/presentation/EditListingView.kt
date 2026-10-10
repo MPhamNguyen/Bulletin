@@ -86,11 +86,9 @@ fun EditListingView(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = uiState.editPrice,
-                    onValueChange = actions.onPriceChange,
-                    label = { Text("Price ($ USD)") },
-                    singleLine = true,
+                CurrencyTextField(
+                    digits = uiState.editPriceCents,
+                    onDigitsChange = actions.onPriceChange,
                     colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()

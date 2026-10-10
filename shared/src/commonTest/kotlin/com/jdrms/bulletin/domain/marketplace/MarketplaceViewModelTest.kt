@@ -1,9 +1,12 @@
 package com.jdrms.bulletin.domain.marketplace
 
+import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
+import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +29,9 @@ class MarketplaceViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: InMemoryMarketplaceRepository
     private lateinit var searchMarketplace: SearchMarketplace
-    private lateinit var toggleSaveItem: ToggleSaveMarketplaceItem
+    private lateinit var bookmarkListing: BookmarkMarketplaceListing
+    private lateinit var removeListingBookmark: RemoveMarketplaceListingBookmark
+    private lateinit var getListingBookmarks: GetMarketplaceListingBookmarks
     private lateinit var viewMarketplaceListing: ViewMarketplaceListing
     private lateinit var viewModel: MarketplaceViewModel
 
@@ -35,11 +40,17 @@ class MarketplaceViewModelTest {
         Dispatchers.setMain(testDispatcher)
         repository = InMemoryMarketplaceRepository()
         searchMarketplace = SearchMarketplace(repository)
-        toggleSaveItem = ToggleSaveMarketplaceItem(repository)
+        bookmarkListing = BookmarkMarketplaceListing(repository)
+        removeListingBookmark = RemoveMarketplaceListingBookmark(repository)
+        getListingBookmarks = GetMarketplaceListingBookmarks(repository)
         viewMarketplaceListing = ViewMarketplaceListing(repository)
         viewModel = MarketplaceViewModel(
             searchMarketplace = searchMarketplace,
-            toggleSaveItem = toggleSaveItem,
+            bookmarks = MarketplaceBookmarkDependencies(
+                add = bookmarkListing,
+                remove = removeListingBookmark,
+                get = getListingBookmarks
+            ),
             viewMarketplaceListing = viewMarketplaceListing
         )
         testDispatcher.scheduler.advanceUntilIdle()

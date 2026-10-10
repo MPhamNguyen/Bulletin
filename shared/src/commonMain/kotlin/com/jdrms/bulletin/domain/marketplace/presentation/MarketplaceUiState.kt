@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
@@ -8,7 +9,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 
 data class MarketplaceUiState(
     val items: List<MarketplaceItem> = emptyList(),
-    val savedItemIds: Set<MarketplaceItemId> = emptySet(),
+    val bookmarkedItemIds: Set<MarketplaceItemId> = emptySet(),
     val searchQuery: String = "",
     val selectedCategory: MarketplaceCategory? = null,
     val isLoading: Boolean = false,
@@ -16,9 +17,14 @@ data class MarketplaceUiState(
     val nextCursor: MarketplacePageCursor? = null,
     val endReached: Boolean = false,
     val errorMessage: String? = null,
+    val bookmarkErrorMessage: String? = null,
     val selectedListingId: String? = null,
     val selectedListing: Listing? = null,
     val isDetailLoading: Boolean = false,
     val detailErrorMessage: String? = null,
-    val isDetailSheetOpen: Boolean = false
+    val isDetailSheetOpen: Boolean = false,
+    val isSellerProfileOpen: Boolean = false,
+    val isSellerProfileLoading: Boolean = false,
+    val sellerProfileErrorMessage: String? = null,
+    val selectedSellerProfile: MarketplaceSellerProfile? = null
 )
