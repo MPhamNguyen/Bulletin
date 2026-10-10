@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Settings
@@ -27,9 +28,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 
@@ -72,10 +78,15 @@ internal fun ProfileHero(
     fullName: String,
     major: String,
     university: String,
-    graduationDate: String,
     isVerified: Boolean,
-    onEditProfileClick: () -> Unit
+    onEditProfileClick: () -> Unit,
+    onChangePhotoClick: () -> Unit,
+    avatarUrl: String? = null
 ) {
+    val academicDetails = listOf(major, university)
+        .filter(String::isNotBlank)
+        .joinToString(" @ ")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -83,22 +94,24 @@ internal fun ProfileHero(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(modifier = Modifier.size(110.dp)) {
-            Box(
+            Surface(
+                onClick = onChangePhotoClick,
                 modifier = Modifier
                     .size(104.dp)
-                    .align(Alignment.TopCenter)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                contentAlignment = Alignment.Center
+                    .align(Alignment.TopCenter),
+                shape = CircleShape,
+                color = Color.Transparent
             ) {
-                Text(
-                    text = profileInitials(fullName),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold
+                ProfileAvatarImage(
+                    avatarUrl = avatarUrl,
+                    fullName = fullName,
+                    size = 104.dp,
+                    backgroundColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             }
             Surface(
-                onClick = onEditProfileClick,
+                onClick = onChangePhotoClick,
                 modifier = Modifier
                     .size(34.dp)
                     .align(Alignment.BottomEnd)
@@ -110,8 +123,8 @@ internal fun ProfileHero(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Edit profile",
+                        imageVector = Icons.Outlined.CameraAlt,
+                        contentDescription = "Change profile photo",
                         modifier = Modifier.size(15.dp)
                     )
                 }
@@ -133,13 +146,15 @@ internal fun ProfileHero(
             if (isVerified) VerifiedBadge()
         }
         Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "$major @ $university\n$graduationDate",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        if (academicDetails.isNotBlank()) {
+            Text(
+                text = academicDetails,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
         Spacer(modifier = Modifier.height(18.dp))
         Button(
             onClick = onEditProfileClick,
@@ -156,6 +171,46 @@ internal fun ProfileHero(
             )
             Spacer(modifier = Modifier.size(8.dp))
             Text("Edit profile")
+        }
+    }
+}
+
+@Composable
+internal fun ProfileAvatarImage(
+    avatarUrl: String?,
+    fullName: String,
+    size: Dp,
+    borderWidth: Dp = 0.dp,
+    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
+) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(backgroundColor, CircleShape)
+            .then(
+                if (borderWidth > 0.dp) {
+                    Modifier.border(borderWidth, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                } else {
+                    Modifier
+                }
+            )
+            .clip(CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = profileInitials(fullName),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = contentColor
+        )
+        if (!avatarUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = "$fullName profile photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(size)
+            )
         }
     }
 }

@@ -32,12 +32,28 @@ class MarketplaceInfrastructureTest {
             reputationScore = 4.5
         )
 
-        assertEquals("c3a81234-5678-4abc-9def-123456789abc", listing?.id?.value)
+        assertEquals("listing:c3a81234-5678-4abc-9def-123456789abc", listing?.id?.value)
         assertEquals("CECS 491 Software Engineering Textbook", listing?.title)
         assertEquals("seller-42", listing?.sellerId)
         assertEquals(45.0, listing?.price?.amount)
-        assertEquals(false, listing?.isSaved)
+        assertEquals(false, listing?.isBookmarked)
         assertEquals(4.5, listing?.sellerReputationScore)
+    }
+
+    @Test
+    fun mapsSupabaseListingToTheSameIdUsedByMarketplaceBookmarks() {
+        val item = SupabaseMarketplaceListingMapper.toItem(
+            SupabaseMarketplaceListingDto(
+                id = "listing-42",
+                name = "Campus desk",
+                userId = "seller-42",
+                category = "FURNITURE",
+                price = 25.0
+            )
+        )
+
+        assertEquals("listing:listing-42", item?.id?.value)
+        assertEquals("Campus desk", item?.title)
     }
 
     @Test
@@ -73,12 +89,12 @@ class MarketplaceInfrastructureTest {
             createdAtMillis = 1000L
         )
 
-        val domain = MarketplaceMapper.toListingDomain(dto, isSaved = true, reputationScore = 4.9)
+        val domain = MarketplaceMapper.toListingDomain(dto, isBookmarked = true, reputationScore = 4.9)
         assertEquals("mkt_map_1", domain.id.value)
         assertEquals("Sean Gallagher", domain.sellerName)
         assertEquals(MarketplaceCategory.ELECTRONICS, domain.category)
         assertEquals(4.9, domain.sellerReputationScore)
-        assertEquals(true, domain.isSaved)
+        assertEquals(true, domain.isBookmarked)
         assertEquals(1, domain.photos.size)
 
         val backToDto = MarketplaceMapper.toListingDto(domain)
@@ -103,14 +119,14 @@ class MarketplaceInfrastructureTest {
     }
 
     @Test
-    fun viewingListingDoesNotInferSavedStateFromAnotherUser() = runTest {
+    fun viewingListingDoesNotInferBookmarkedStateFromAnotherUser() = runTest {
         val repo = InMemoryMarketplaceRepository()
-        repo.toggleSaved("another_user", MarketplaceItemId("mkt_1"))
+        repo.bookmarkListing("another_user", MarketplaceItemId("mkt_1"))
 
         val result = repo.viewListing("mkt_1")
         val listing = (result as com.jdrms.bulletin.core.common.Result.Success).data
 
-        assertEquals(false, listing.isSaved)
+        assertEquals(false, listing.isBookmarked)
     }
 
     @Test

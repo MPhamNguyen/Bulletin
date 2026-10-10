@@ -1,345 +1,377 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.CameraAlt
-import androidx.compose.material.icons.outlined.ModeEdit
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.outlined.AddAPhoto
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import bulletin.shared.generated.resources.Res
-import bulletin.shared.generated.resources.ic_arrow_back
-import bulletin.shared.generated.resources.ic_graduation_cap
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinInactiveButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import org.jetbrains.compose.resources.painterResource
+
+internal const val BIO_MAX_LENGTH = 160
+internal const val BIO_WARN_LENGTH = 150
+internal const val OTHER_LABEL = "Other"
+
+internal data class EditProfileActions(
+    val onCancel: () -> Unit,
+    val onDraftChanged: (ProfileDraft) -> Unit,
+    val onUpdate: () -> Unit,
+    val onChangePhoto: () -> Unit,
+    val onSignOut: () -> Unit
+)
 
 @Composable
 internal fun EditProfileView(
-    uiState: ProfileUiState,
-    onBack: () -> Unit,
-    onCancel: () -> Unit,
-    onDraftChanged: (ProfileDraft) -> Unit,
-    onUpdate: () -> Unit,
-    onSignOut: () -> Unit
+    uiState: EditProfileUiState,
+    actions: EditProfileActions
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        ProfileTopBar(
-            title = "Edit Account",
-            onBackClick = onBack,
-            actionLabel = "Cancel",
-            onActionClick = onCancel
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                TextButton(onClick = actions.onCancel) {
+                    Text(
+                        "Cancel",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Edit Profile", style = MaterialTheme.typography.titleMedium)
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+        }
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 8.dp),
+                .imePadding()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ProfileContent(
+            EditProfileBody(
                 uiState = uiState,
-                onDraftChanged = onDraftChanged,
-                onUpdate = onUpdate,
-                onSignOut = onSignOut
+                actions = actions
             )
         }
     }
 }
 
 @Composable
-private fun ProfileTopBar(
-    title: String,
-    onBackClick: () -> Unit,
-    actionLabel: String?,
-    onActionClick: () -> Unit
+private fun EditProfileBody(
+    uiState: EditProfileUiState,
+    actions: EditProfileActions
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBackClick) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_arrow_back),
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = if (actionLabel == null) 0.dp else 48.dp)
+    val onDraftChanged = actions.onDraftChanged
+    val draft = uiState.profileDraft
+
+    EditProfilePhoto(
+        avatarUrl = uiState.profile?.avatarUrl,
+        fullName = uiState.profile?.fullName.orEmpty(),
+        isUploading = uiState.isPhotoUploading,
+        onChangePhoto = actions.onChangePhoto
+    )
+    Spacer(Modifier.height(20.dp))
+
+    ProfileEditCard("Personal Info") {
+        ProfileEditField(
+            label = "Full Name",
+            value = draft.fullName,
+            leadingIcon = Icons.Outlined.Person,
+            trailingAction = if (draft.fullName.isNotEmpty()) {
+                {
+                    IconButton(onClick = { onDraftChanged(draft.copy(fullName = "")) }) {
+                        Icon(
+                            Icons.Filled.Cancel,
+                            contentDescription = "Clear name",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                null
+            },
+            onValueChange = { onDraftChanged(draft.copy(fullName = it)) }
         )
-        if (actionLabel != null) {
-            TextButton(onClick = onActionClick) {
+        Spacer(Modifier.height(14.dp))
+        BioField(
+            value = draft.bio,
+            onValueChange = { onDraftChanged(draft.copy(bio = it)) }
+        )
+    }
+
+    Spacer(Modifier.height(16.dp))
+    ProfileEditCard(
+        title = "Campus & Academics",
+        trailingContent = if (uiState.profile?.isVerified == true) {
+            { VerifiedLabel() }
+        } else {
+            null
+        }
+    ) {
+        ProfileComboField(
+            spec = ComboFieldSpec(
+                label = "School",
+                value = draft.university,
+                placeholder = "Search or select your school",
+                leadingIcon = Icons.Outlined.School,
+                items = SCHOOL_OPTIONS,
+                isOther = draft.universityIsCustom ||
+                    (draft.university.isNotBlank() && !SCHOOL_OPTIONS.isKnownOption(draft.university)),
+                otherLabel = "Your school's full name",
+                otherPlaceholder = "e.g. Lincoln University",
+                errorMessage = uiState.profileFormErrors.school
+            ),
+            onValueChange = {
+                onDraftChanged(draft.copy(university = it, universityIsCustom = false))
+            },
+            onOtherSelected = {
+                onDraftChanged(draft.copy(university = "", universityIsCustom = true))
+            },
+            onOtherValueChange = { onDraftChanged(draft.copy(university = it, universityIsCustom = true)) }
+        )
+        Spacer(Modifier.height(14.dp))
+        ProfileComboField(
+            spec = ComboFieldSpec(
+                label = "Major / Department",
+                value = draft.major,
+                placeholder = "Search or select your major",
+                leadingIcon = Icons.AutoMirrored.Outlined.MenuBook,
+                items = MAJOR_OPTIONS,
+                isOther = draft.majorIsCustom ||
+                    (draft.major.isNotBlank() && !MAJOR_OPTIONS.isKnownOption(draft.major)),
+                otherLabel = "Your major or department",
+                otherPlaceholder = "e.g. Marine Biology",
+                errorMessage = uiState.profileFormErrors.major
+            ),
+            onValueChange = {
+                onDraftChanged(draft.copy(major = it, majorIsCustom = false))
+            },
+            onOtherSelected = {
+                onDraftChanged(draft.copy(major = "", majorIsCustom = true))
+            },
+            onOtherValueChange = { onDraftChanged(draft.copy(major = it, majorIsCustom = true)) }
+        )
+    }
+
+    uiState.errorMessage?.let {
+        Spacer(Modifier.height(12.dp))
+        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+    }
+    Spacer(Modifier.height(16.dp))
+    Button(
+        onClick = actions.onUpdate,
+        enabled = uiState.isProfileModified && !uiState.isLoading,
+        modifier = Modifier.fillMaxWidth().height(50.dp),
+        shape = MaterialTheme.shapes.medium,
+        colors = BulletinButtonDefaults.buttonColors()
+    ) {
+        Text("Save Changes", style = MaterialTheme.typography.labelLarge)
+    }
+    Spacer(Modifier.height(16.dp))
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    Spacer(Modifier.height(16.dp))
+    SignOutButton(onClick = actions.onSignOut)
+    Spacer(Modifier.height(24.dp))
+}
+
+@Composable
+private fun ProfileEditCard(
+    title: String,
+    trailingContent: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    BulletinCard(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                title.uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            trailingContent?.invoke()
+        }
+        Spacer(Modifier.height(8.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(Modifier.height(14.dp))
+        content()
+    }
+}
+
+@Composable
+private fun VerifiedLabel() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            Icons.Outlined.Verified,
+            contentDescription = null,
+            modifier = Modifier.size(13.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            "Verified .edu",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun EditProfilePhoto(
+    avatarUrl: String?,
+    fullName: String,
+    isUploading: Boolean,
+    onChangePhoto: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier.size(104.dp).clickable(
+                enabled = !isUploading,
+                role = Role.Button,
+                onClickLabel = "Change profile photo",
+                onClick = onChangePhoto
+            ),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), MaterialTheme.shapes.extraLarge)
+            ) {
+                ProfileAvatarImage(avatarUrl = avatarUrl, fullName = fullName, size = 96.dp)
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(32.dp)
+                    .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge)
+                    .border(2.dp, MaterialTheme.colorScheme.background, MaterialTheme.shapes.extraLarge),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        Icons.Outlined.AddAPhoto,
+                        contentDescription = "Upload photo",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onChangePhoto, enabled = !isUploading) {
                 Text(
-                    text = actionLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.secondary
+                    if (isUploading) "Uploading…" else "Upload New",
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
-        } else {
-            Spacer(modifier = Modifier.size(48.dp))
+            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = {}, enabled = false) {
+                Text(
+                    "Remove",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ProfileContent(
-    uiState: ProfileUiState,
-    onDraftChanged: (ProfileDraft) -> Unit,
-    onUpdate: () -> Unit,
-    onSignOut: () -> Unit = {}
-) {
-    EditProfilePhoto()
-
-    Spacer(modifier = Modifier.height(28.dp))
-    ProfileEditField(
-        label = "Full Name",
-        value = uiState.profileDraft.fullName,
-        onValueChange = { onDraftChanged(uiState.profileDraft.copy(fullName = it)) }
-    )
-    Spacer(modifier = Modifier.height(18.dp))
-    ProfileEditField(
-        label = "Major",
-        value = uiState.profileDraft.major,
-        placeholder = "e.g. Computer Science",
-        onValueChange = { onDraftChanged(uiState.profileDraft.copy(major = it)) }
-    )
-    Spacer(modifier = Modifier.height(18.dp))
-    ProfileEditField(
-        label = "Graduation Date",
-        value = uiState.profileDraft.graduationDate,
-        placeholder = "e.g. Class of 2025 or Spring 2026",
-        onValueChange = { onDraftChanged(uiState.profileDraft.copy(graduationDate = it)) }
-    )
-    Spacer(modifier = Modifier.height(18.dp))
-    ProfileEditField(
-        label = "School",
-        value = uiState.profileDraft.university,
-        onValueChange = { onDraftChanged(uiState.profileDraft.copy(university = it)) }
-    )
-    Spacer(modifier = Modifier.height(18.dp))
-    ProfileEditField(
-        label = "Bio",
-        value = uiState.profileDraft.bio,
-        placeholder = "Tell us a bit about yourself...",
-        singleLine = false,
-        onValueChange = { onDraftChanged(uiState.profileDraft.copy(bio = it)) }
-    )
-
-    uiState.errorMessage?.let { error ->
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = error,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error
-        )
-    }
-
-    val isModified = uiState.isProfileModified
-    val isButtonEnabled = isModified && !uiState.isLoading
-
-    Spacer(modifier = Modifier.height(36.dp))
-    Button(
-        onClick = onUpdate,
-        enabled = isButtonEnabled,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = MaterialTheme.shapes.medium,
-        colors = if (isModified) {
-            BulletinButtonDefaults.buttonColors()
-        } else {
-            BulletinInactiveButtonDefaults.colors()
-        }
-    ) {
-        if (uiState.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
-        } else {
-            Text(text = "Update", style = MaterialTheme.typography.titleLarge)
-        }
-    }
-
-    Spacer(modifier = Modifier.height(24.dp))
-    SignOutButton(onClick = onSignOut)
-    Spacer(modifier = Modifier.height(16.dp))
-}
-
-@Composable
-private fun EditProfilePhoto() {
-    Box(
-        modifier = Modifier.size(124.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .background(MaterialTheme.colorScheme.tertiaryContainer, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_graduation_cap),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp)
-            )
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .size(44.dp)
-                .background(MaterialTheme.colorScheme.primary, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.CameraAlt,
-                contentDescription = "Change profile photo",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-    Text(
-        text = "Change Photo",
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary
-    )
+internal fun FieldLabel(text: String) {
+    Text(text, style = MaterialTheme.typography.labelMedium)
 }
 
 @Composable
 private fun ProfileEditField(
     label: String,
     value: String,
+    leadingIcon: ImageVector,
     placeholder: String = "",
-    singleLine: Boolean = true,
+    trailingAction: (@Composable () -> Unit)? = null,
     onValueChange: (String) -> Unit
 ) {
-    var isEditing by rememberSaveable { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
-
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(6.dp))
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        placeholder = { Text(placeholder) },
-        readOnly = !isEditing,
-        singleLine = singleLine,
-        minLines = if (singleLine) 1 else 5,
-        maxLines = if (singleLine) 1 else 5,
-        trailingIcon = {
-            IconButton(
-                onClick = {
-                    val nextState = !isEditing
-                    isEditing = nextState
-                    if (nextState) {
-                        focusRequester.requestFocus()
-                    }
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ModeEdit,
-                    contentDescription = if (isEditing) "Done editing $label" else "Edit $label",
-                    tint = if (isEditing) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-        },
-        shape = MaterialTheme.shapes.medium,
-        colors = BulletinTextFieldDefaults.colors(),
-        modifier = Modifier
-            .fillMaxWidth()
-            .focusRequester(focusRequester)
-    )
-}
-
-@Composable
-internal fun SignOutButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        shape = MaterialTheme.shapes.large,
-        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
-        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.Logout,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Sign Out",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        FieldLabel(label)
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder) },
+            leadingIcon = { Icon(leadingIcon, contentDescription = null) },
+            trailingIcon = trailingAction,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
+            ),
+            shape = MaterialTheme.shapes.medium,
+            colors = BulletinTextFieldDefaults.colors(),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

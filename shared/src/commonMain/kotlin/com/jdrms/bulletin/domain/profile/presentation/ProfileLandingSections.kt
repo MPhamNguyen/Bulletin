@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.GridView
@@ -46,7 +45,6 @@ import com.jdrms.bulletin.core.designsystem.BulletinExtras
 @Composable
 internal fun ProfileAboutCard(
     major: String,
-    graduationDate: String,
     university: String,
     bio: String?,
     onEditProfileClick: () -> Unit
@@ -70,9 +68,12 @@ internal fun ProfileAboutCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ProfileInformationChip(Icons.Outlined.School, major)
-            ProfileInformationChip(Icons.Outlined.CalendarToday, graduationDate)
-            ProfileInformationChip(Icons.Outlined.LocationOn, university)
+            if (major.isNotBlank()) {
+                ProfileInformationChip(Icons.Outlined.School, major)
+            }
+            if (university.isNotBlank()) {
+                ProfileInformationChip(Icons.Outlined.LocationOn, university)
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
@@ -114,8 +115,8 @@ private fun ProfileInformationChip(icon: ImageVector, text: String) {
 @Composable
 internal fun MarketplaceActivityStatsCard(
     activeListings: Int,
-    itemsSold: Int,
-    rating: Double,
+    itemsSold: Int?,
+    rating: Double?,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -138,14 +139,14 @@ internal fun MarketplaceActivityStatsCard(
             )
             ActivityDivider()
             ActivityStat(
-                value = itemsSold.toString(),
+                value = formatProfileStat(itemsSold),
                 label = "Items sold",
                 icon = Icons.Outlined.CheckCircle,
                 modifier = Modifier.weight(1f)
             )
             ActivityDivider()
             ActivityStat(
-                value = rating.toString(),
+                value = formatProfileStat(rating),
                 label = "Reputation",
                 icon = Icons.Filled.Star,
                 iconTint = BulletinExtras.colors.star,
@@ -154,6 +155,8 @@ internal fun MarketplaceActivityStatsCard(
         }
     }
 }
+
+internal fun formatProfileStat(value: Number?): String = value?.toString() ?: "—"
 
 @Composable
 private fun ActivityStat(

@@ -109,6 +109,81 @@ class SupabaseEmailVerificationTest {
     }
 
     @Test
+    fun requestsPasswordRecoveryForTheRegisteredEmail() = runTest {
+        val client = client { path, body ->
+            assertEquals("/auth/v1/recover", path)
+            val request = Json.parseToJsonElement(body).jsonObject
+            assertEquals(email.value, request["email"]?.jsonPrimitive?.content)
+            "{}"
+        }
+        try {
+            assertIs<Result.Success<Unit>>(
+                SupabaseAuthRepository(client, InMemoryProfileRepository()).requestPasswordReset(email)
+            )
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun verifiesRecoveryCodeAndUpdatesPasswordWithTheRecoverySession() = runTest {
+        val client = client { path, body ->
+            when (path) {
+                "/auth/v1/recover" -> "{}"
+                "/auth/v1/verify" -> {
+                    val request = Json.parseToJsonElement(body).jsonObject
+                    assertEquals("recovery", request["type"]?.jsonPrimitive?.content)
+                    assertEquals("654321", request["token"]?.jsonPrimitive?.content)
+                    assertEquals(email.value, request["email"]?.jsonPrimitive?.content)
+                    session()
+                }
+                "/auth/v1/user" -> {
+                    val request = Json.parseToJsonElement(body).jsonObject
+                    assertEquals("newPassword123", request["password"]?.jsonPrimitive?.content)
+                    user()
+                }
+                else -> error("Unexpected Supabase path: $path")
+            }
+        }
+        try {
+            val repository = SupabaseAuthRepository(client, InMemoryProfileRepository())
+            assertIs<Result.Success<Unit>>(repository.requestPasswordReset(email))
+            assertIs<Result.Success<Unit>>(repository.verifyPasswordResetCode(email, "654321"))
+            assertIs<Result.Success<Unit>>(repository.updatePassword("newPassword123"))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun expiredRecoveryCodePreventsPasswordUpdate() = runTest {
+        val client = client(
+            statusForPath = { path ->
+                if (path == "/auth/v1/verify") HttpStatusCode.Forbidden else HttpStatusCode.OK
+            }
+        ) { path, _ ->
+            when (path) {
+                "/auth/v1/recover" -> "{}"
+                "/auth/v1/verify" -> """{"error_code":"otp_expired","msg":"Token has expired"}"""
+                else -> "{}"
+            }
+        }
+        try {
+            val repository = SupabaseAuthRepository(client, InMemoryProfileRepository())
+            assertIs<Result.Success<Unit>>(repository.requestPasswordReset(email))
+            val verification = assertIs<Result.Error>(repository.verifyPasswordResetCode(email, "654321"))
+            assertEquals(
+                "This code is invalid or has expired. Request a new code and try again.",
+                verification.exception.message
+            )
+            val update = assertIs<Result.Error>(repository.updatePassword("newPassword123"))
+            assertEquals("Verify the confirmation code before choosing a new password.", update.exception.message)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun expiredCodeLeavesNoSessionAndShowsRecoverableError() = runTest {
         val client = client(status = HttpStatusCode.Forbidden) { _, _ ->
             """{"code":403,"error_code":"otp_expired","msg":"Token has expired or is invalid"}"""
@@ -200,6 +275,34 @@ class SupabaseEmailVerificationTest {
     }
 
     @Test
+    fun doesNotRestoreAnIdForADeletedProfile() = runTest {
+        val client = client { _, _ -> session() }
+        val deletedProfile = StudentProfile(
+            id = UserId(USER_ID),
+            email = email,
+            fullName = "Student Name",
+            deletedAt = "2026-10-06T19:00:00Z"
+        )
+        val profiles = object : ProfileRepository by InMemoryProfileRepository(initialProfiles = emptyMap()) {
+            override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+                return Result.Success(deletedProfile.takeIf { it.id == userId })
+            }
+        }
+        try {
+            val repository = SupabaseAuthRepository(client, profiles)
+            client.auth.signInWith(Email) {
+                this.email = "student@example.com"
+                password = "password123"
+            }
+
+            assertNull((repository.getCurrentUserId() as Result.Success).data)
+            assertNull((repository.getCurrentUser() as Result.Success).data)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun profileFailureAfterConfirmationReturnsRecoverableOutcomeAndIdentityRemainsConfirmed() = runTest {
         val client = client { _, _ -> session() }
         val profiles = object : ProfileRepository by InMemoryProfileRepository() {
@@ -213,7 +316,9 @@ class SupabaseEmailVerificationTest {
                 VerifyStudentEmail(repository)(email, "123456")
             )
             assertIs<EmailVerificationOutcome.ProfileRecoveryRequired>(result.data)
-            assertEquals(UserId(USER_ID), (repository.getCurrentUserId() as Result.Success).data)
+            val currentUserId = repository.getCurrentUserId()
+            assertIs<Result.Error>(currentUserId)
+            assertEquals("Profile temporarily unavailable", currentUserId.exception.message)
         } finally {
             client.close()
         }
@@ -253,13 +358,14 @@ class SupabaseEmailVerificationTest {
 
     private fun client(
         status: HttpStatusCode = HttpStatusCode.OK,
+        statusForPath: (String) -> HttpStatusCode = { status },
         response: (String, String) -> String
     ): SupabaseClient = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
         install(Auth) { minimalSettings() }
         httpEngine = MockEngine { request ->
             respond(
                 response(request.url.encodedPath, (request.body as? TextContent)?.text.orEmpty()),
-                status,
+                statusForPath(request.url.encodedPath),
                 headersOf("Content-Type", "application/json")
             )
         }

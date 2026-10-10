@@ -1,7 +1,10 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
+import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarks
+import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -17,7 +20,7 @@ class InMemoryMarketplaceRepository(
 ) : MarketplaceRepository {
 
     private val listings = initialListings.map { MarketplaceMapper.toListingDomain(it) }.toMutableList()
-    private val savedItemIdsByUser = mutableMapOf<String, MutableSet<MarketplaceItemId>>()
+    private val bookmarksByUser = mutableMapOf<String, ListingBookmarks>()
 
     override suspend fun getCatalog(): List<MarketplaceItem> {
         return listings.map { listing ->
@@ -29,7 +32,7 @@ class InMemoryMarketplaceRepository(
                 description = listing.description,
                 price = listing.price,
                 category = listing.category,
-                isSaved = listing.isSaved,
+                isBookmarked = listing.isBookmarked,
                 createdAtMillis = listing.createdAtMillis
             )
         }
@@ -47,26 +50,46 @@ class InMemoryMarketplaceRepository(
     override suspend fun viewListing(listingID: String): Result<Listing> {
         val listing = listings.find { it.id.value == listingID }
         return if (listing != null) {
-            Result.Success(listing.copy(isSaved = false))
+            Result.Success(listing.copy(isBookmarked = false))
         } else {
             Result.Error(NoSuchElementException("Listing not found with ID: $listingID"))
         }
     }
 
-    override suspend fun toggleSaved(userId: String, itemId: MarketplaceItemId): Result<Boolean> {
-        val userSaved = savedItemIdsByUser.getOrPut(userId) { mutableSetOf() }
-        val isSaved = if (userSaved.contains(itemId)) {
-            userSaved.remove(itemId)
-            false
-        } else {
-            userSaved.add(itemId)
-            true
-        }
-        return Result.Success(isSaved)
+    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        val bookmarks = bookmarksByUser[userId] ?: ListingBookmarks.of(userId)
+        bookmarksByUser[userId] = bookmarks.bookmark(itemId)
+        return Result.Success(Unit)
     }
 
-    override suspend fun getSavedItemIds(userId: String): Set<MarketplaceItemId> {
-        return savedItemIdsByUser[userId]?.toSet() ?: emptySet()
+    override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        val bookmarks = bookmarksByUser[userId] ?: ListingBookmarks.of(userId)
+        bookmarksByUser[userId] = bookmarks.remove(itemId)
+        return Result.Success(Unit)
+    }
+
+    override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> {
+        return bookmarksByUser[userId]?.ids ?: emptySet()
+    }
+
+    override suspend fun getBookmarkedListingsPage(
+        userId: String,
+        cursor: ListingBookmarksPageCursor?,
+        pageSize: Int
+    ): BookmarkedListingsPage {
+        val offset = cursor?.offset ?: 0
+        val allIds = bookmarksByUser[userId]?.ids.orEmpty().toList()
+        val pageIds = allIds.drop(offset).take(pageSize)
+        val listingById = listings.associateBy(Listing::id)
+        return BookmarkedListingsPage(
+            listingIds = pageIds,
+            listings = pageIds.mapNotNull(listingById::get),
+            nextCursor = if (offset + pageIds.size < allIds.size) {
+                ListingBookmarksPageCursor(offset + pageIds.size)
+            } else {
+                null
+            }
+        )
     }
 
     companion object {
