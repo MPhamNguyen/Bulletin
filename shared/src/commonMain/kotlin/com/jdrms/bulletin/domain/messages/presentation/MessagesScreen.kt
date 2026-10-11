@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.SectionHeader
@@ -107,6 +109,17 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
                                     },
                                     maxLines = 1
                                 )
+                                conv.lastMessage?.let { message ->
+                                    Text(
+                                        text = formatRelativeTime(message.timestampMillis, currentTimeMillis()),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isSelected) {
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -241,6 +254,15 @@ private fun MessageItemCard(
                     MaterialTheme.colorScheme.onErrorContainer
                 } else {
                     MaterialTheme.colorScheme.onSurface
+                }
+            )
+            Text(
+                text = formatRelativeTime(message.timestampMillis, currentTimeMillis()),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (message.isReported) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
             if (message.isReported) {
