@@ -45,10 +45,11 @@ class MessagesViewModel(
             when (val result = getConversations()) {
                 is Result.Error -> showFailure(result)
                 is Result.Success -> {
+                    val conversations = result.data.conversations
                     val requested = requestedConversationId
-                    val selected = result.data.firstOrNull { it.id == requested }
-                        ?: result.data.firstOrNull { it.id == previousSelection }
-                        ?: result.data.firstOrNull()
+                    val selected = conversations.firstOrNull { it.id == requested }
+                        ?: conversations.firstOrNull { it.id == previousSelection }
+                        ?: conversations.firstOrNull()
                     if (selected?.id == requested) requestedConversationId = null
                     _uiState.update {
                         it.copy(

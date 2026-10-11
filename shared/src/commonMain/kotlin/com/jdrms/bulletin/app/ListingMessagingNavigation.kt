@@ -59,7 +59,7 @@ private suspend fun findListingConversation(
 ): ConversationId? {
     val listingReference = ListingReferenceId(listingId.removePrefix("listing:"))
     val seller = SenderId(sellerId)
-    return container.getConversations().getOrNull()?.firstOrNull { conversation ->
+    return container.getConversations().getOrNull()?.conversations?.firstOrNull { conversation ->
         conversation.listingId == listingReference && conversation.includes(seller)
     }?.id
 }
