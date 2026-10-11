@@ -37,13 +37,13 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
-internal fun MessagesContent(state: MessagesUiState, viewModel: MessagesViewModel) {
+internal fun MessagesContent(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
     MessagesFeedback(state, viewModel::loadConversations)
 
     when {
         state.isLoading -> MessagesLoading()
         state.conversations.isEmpty() && state.errorMessage == null -> EmptyConversations()
-        else -> MessagesConversationLayout(state, viewModel)
+        else -> MessagesConversationLayout(state, viewModel, modifier)
     }
 }
 
@@ -65,8 +65,8 @@ private fun EmptyConversations() {
 }
 
 @Composable
-private fun MessagesConversationLayout(state: MessagesUiState, viewModel: MessagesViewModel) {
-    Row(modifier = Modifier.weight(1f)) {
+private fun MessagesConversationLayout(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
+    Row(modifier = modifier) {
         ConversationList(state, viewModel, Modifier.weight(0.4f).padding(end = 8.dp))
         MessageThread(state, viewModel, Modifier.weight(0.6f))
     }
