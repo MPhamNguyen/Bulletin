@@ -30,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,8 +45,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinExtras
 internal fun ProfileAboutCard(
     major: String,
     university: String,
-    bio: String?,
-    onEditProfileClick: () -> Unit
+    bio: String?
 ) {
     BulletinCard {
         Row(
@@ -60,9 +58,6 @@ internal fun ProfileAboutCard(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
-            TextButton(onClick = onEditProfileClick) {
-                Text("Edit", style = MaterialTheme.typography.labelMedium)
-            }
         }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),

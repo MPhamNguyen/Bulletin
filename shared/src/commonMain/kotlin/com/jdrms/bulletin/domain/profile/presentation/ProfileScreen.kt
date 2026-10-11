@@ -86,7 +86,7 @@ private fun ProfileDestinationContent(
     themeViewModel: ThemeViewModel?
 ) {
     when (destination) {
-        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, flows.editing, callbacks)
+        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks)
         ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
         ProfileDestination.SETTINGS -> ProfileSettingsDestination(states.profile, flows, callbacks, themeViewModel)
         ProfileDestination.BOOKMARKED_LISTINGS -> {
@@ -140,18 +140,11 @@ private fun ProfileDestinationContent(
 @Composable
 private fun ProfileLandingDestination(
     state: ProfileUiState,
-    editing: EditProfileViewModel,
     callbacks: ProfileScreenCallbacks
 ) {
-    val photoPicker = rememberProfilePhotoPicker(
-        onPhotoSelected = editing::uploadPhoto,
-        onError = editing::onPhotoSelectionError
-    )
     MarketplaceProfileView(
         uiState = state,
         onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
-        onEditProfileClick = { callbacks.onNavigate(ProfileDestination.EDIT_ACCOUNT) },
-        onChangePhotoClick = photoPicker,
         onMyListingsClick = callbacks.onMyListingsClick,
         onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) },
         onCreateListingClick = callbacks.onCreateListingClick
@@ -194,9 +187,7 @@ private fun ProfileSettingsDestination(
             onEditAccount = { callbacks.onNavigate(ProfileDestination.EDIT_ACCOUNT) },
             onViewPublicProfile = { callbacks.onNavigate(ProfileDestination.PUBLIC_PROFILE) },
             onNotifications = { callbacks.onNavigate(ProfileDestination.NOTIFICATIONS) },
-            onPrivacy = { callbacks.onNavigate(ProfileDestination.PRIVACY) },
             onHelpSupport = { callbacks.onNavigate(ProfileDestination.HELP_AND_SUPPORT) },
-            onTermsConditions = { callbacks.onNavigate(ProfileDestination.TERMS_AND_CONDITIONS) },
             onSignOut = { flows.account.signOut(callbacks.onSignOut) },
             onConfirmDeleteProfile = { flows.account.deleteProfile(callbacks.onSignOut) }
         ),
