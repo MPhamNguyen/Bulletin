@@ -16,6 +16,11 @@ value class SenderId(val value: String) {
     }
 }
 
+@JvmInline
+value class ListingReferenceId(val value: String) {
+    init { require(value.isNotBlank()) { "Listing reference cannot be blank." } }
+}
+
 data class ConversationParticipant(val id: SenderId, val displayName: String)
 
 data class Message(
@@ -39,7 +44,8 @@ class Conversation(
     val id: ConversationId,
     participants: List<ConversationParticipant>,
     val lastMessage: Message? = null,
-    val updatedAtMillis: Long = 0L
+    val updatedAtMillis: Long = 0L,
+    val listingId: ListingReferenceId? = null
 ) {
     val participants: List<ConversationParticipant> = participants.toList()
     val participantNames: List<String> get() = participants.map { it.displayName }
@@ -53,11 +59,40 @@ class Conversation(
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
 
+    fun otherParticipantNames(viewerId: SenderId): List<String> {
+        require(includes(viewerId)) { "Viewer must be a participant." }
+        return participants.filterNot { it.id == viewerId }.map { it.displayName }
+    }
+
+    fun reconcileMessages(messages: List<Message>): Result<Conversation> {
+        if (messages.any { it.conversationId != id || !includes(it.senderId) }) {
+            return Result.Error(ConversationAccessException())
+        }
+        val latest = messages.maxWithOrNull(compareBy<Message> { it.timestampMillis }.thenBy { it.id.value })
+        return if (latest == null) Result.Success(this) else recordMessage(latest)
+    }
+
     fun recordMessage(message: Message): Result<Conversation> {
         return if (message.conversationId != id || !includes(message.senderId)) {
             Result.Error(ConversationAccessException())
         } else {
-            Result.Success(Conversation(id, participants, message, message.timestampMillis))
+            Result.Success(
+                Conversation(
+                    id = id,
+                    participants = participants,
+                    lastMessage = message,
+                    updatedAtMillis = message.timestampMillis,
+                    listingId = listingId
+                )
+            )
+            val current = lastMessage
+            val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
+                (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
+            if (isNewer) {
+                Result.Success(Conversation(id, participants, message, maxOf(updatedAtMillis, message.timestampMillis)))
+            } else {
+                Result.Success(this)
+            }
         }
     }
 }

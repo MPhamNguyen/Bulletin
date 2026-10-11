@@ -28,7 +28,13 @@ data class ProfileScreenCallbacks(
     val onBack: () -> Unit,
     val onSignOut: () -> Unit,
     val onMyListingsClick: () -> Unit,
-    val onCreateListingClick: () -> Unit
+    val onCreateListingClick: () -> Unit,
+    val onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
+        { _, _, _, _ -> false },
+    val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
+        { _, _ -> false },
+    val onMessageSent: () -> Unit = {},
+    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
 )
 
 private data class ProfileDestinationStates(
@@ -106,8 +112,19 @@ private fun ProfileDestinationContent(
                     listing = listing,
                     isRemovingBookmark = states.profile.removingBookmarkedListingId == listing.id,
                     errorMessage = states.profile.errorMessage,
-                    onDismiss = states.viewModel::dismissBookmarkedListing,
-                    onRemoveBookmark = { states.viewModel.removeBookmarkedListing(listing.id) }
+                    actions = BookmarkedListingDetailActions(
+                        onDismiss = states.viewModel::dismissBookmarkedListing,
+                        onRemoveBookmark = { states.viewModel.removeBookmarkedListing(listing.id) },
+                        canMessageSeller = states.profile.profile?.id?.value != listing.sellerId,
+                        onMessageSeller = { content ->
+                            callbacks.onMessageSeller(listing.id, listing.sellerId, listing.sellerName, content)
+                        },
+                        hasExistingConversation = {
+                            callbacks.hasExistingConversation(listing.id, listing.sellerId)
+                        },
+                        onMessageSent = callbacks.onMessageSent,
+                        onSeeChat = callbacks.onSeeChat
+                    )
                 )
             }
         }

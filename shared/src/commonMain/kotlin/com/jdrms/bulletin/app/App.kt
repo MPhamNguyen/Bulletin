@@ -221,10 +221,8 @@ fun MainAppScaffold(
                 BulletinBottomNavigationBar(
                     currentDestination = navigationState.currentDestination,
                     onDestinationSelected = { destination ->
-                        if (
-                            destination != AppDestination.PROFILE ||
-                            navigationState.profileDestination != ProfileDestination.PROFILE
-                        ) {
+                        if (destination == AppDestination.MESSAGES) messagesViewModel.loadConversations()
+                        if (destination != AppDestination.PROFILE) {
                             listingsViewModel.cancelEditing()
                             listingsViewModel.clearMessages()
                         }
@@ -237,8 +235,25 @@ fun MainAppScaffold(
                 when (navigationState.currentDestination) {
                     AppDestination.HOME -> HomeScreen(homeViewModel)
                     AppDestination.MARKETPLACE -> MarketplaceScreen(
-                        marketplaceViewModel,
-                        marketplaceUserReportViewModel
+                        viewModel = marketplaceViewModel,
+                        userReportViewModel = marketplaceUserReportViewModel,
+                        onMessageSeller = { listingId, sellerId, sellerName, content ->
+                            val sendResult = sendListingMessage(
+                                container,
+                                navigationState,
+                                ListingMessageRequest(listingId, sellerId, sellerName, content)
+                            )
+                            openSentListingConversation(sendResult, messagesViewModel)
+                            navigationState = sendResult.navigationState
+                            sendResult.sent
+                        },
+                        hasExistingConversation = { listingId, sellerId ->
+                            hasListingConversation(container, listingId, sellerId)
+                        },
+                        onSeeChat = { listingId, sellerId ->
+                            openListingConversation(container, messagesViewModel, listingId, sellerId)
+                            navigationState = navigationState.selectBottomNavigationDestination(AppDestination.MESSAGES)
+                        }
                     )
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
@@ -314,6 +329,30 @@ fun MainAppScaffold(
                                         navigationState = navigationState.copy(
                                             currentDestination = AppDestination.LISTINGS
                                         )
+                                    },
+                                    onMessageSeller = { listingId, sellerId, sellerName, content ->
+                                        val sendResult = sendListingMessage(
+                                            container,
+                                            navigationState,
+                                            ListingMessageRequest(listingId, sellerId, sellerName, content)
+                                        )
+                                        openSentListingConversation(sendResult, messagesViewModel)
+                                        navigationState = sendResult.navigationState
+                                        sendResult.sent
+                                    },
+                                    onMessageSent = {
+                                        navigationState = navigationState.selectBottomNavigationDestination(
+                                            AppDestination.MESSAGES
+                                        )
+                                    },
+                                    onSeeChat = { listingId, sellerId ->
+                                        openListingConversation(container, messagesViewModel, listingId, sellerId)
+                                        navigationState = navigationState.selectBottomNavigationDestination(
+                                            AppDestination.MESSAGES
+                                        )
+                                    },
+                                    hasExistingConversation = { listingId, sellerId ->
+                                        hasListingConversation(container, listingId, sellerId)
                                     }
                                 ),
                                 themeViewModel = themeViewModel

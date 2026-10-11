@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.SectionHeader
@@ -28,7 +30,12 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
-    userReportViewModel: MarketplaceUserReportViewModel
+    userReportViewModel: MarketplaceUserReportViewModel,
+    onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
+        { _, _, _, _ -> false },
+    hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
+        { _, _ -> false },
+    onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
 ) {
     val state by viewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
@@ -148,7 +155,8 @@ fun MarketplaceScreen(
                         bookmarkErrorMessage = state.bookmarkErrorMessage,
                         isBookmarked = state.selectedListing?.let {
                             it.id in state.bookmarkedItemIds
-                        } ?: false
+                        } ?: false,
+                        currentUserId = state.currentUserId
                     ),
                     actions = MarketplaceDetailSheetActions(
                         onDismiss = viewModel::dismissListingDetail,
@@ -156,7 +164,10 @@ fun MarketplaceScreen(
                         onToggleBookmark = {
                             state.selectedListing?.let { viewModel.toggleBookmark(it.id) }
                         },
-                        onSellerClick = viewModel::onSellerClicked
+                        onSellerClick = viewModel::onSellerClicked,
+                        onMessageSeller = onMessageSeller,
+                        hasExistingConversation = hasExistingConversation,
+                        onSeeChat = onSeeChat
                     )
                 )
             }
@@ -244,6 +255,11 @@ private fun MarketplaceItemCard(
             text = item.description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = formatRelativeTime(item.createdAtMillis, currentTimeMillis()),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

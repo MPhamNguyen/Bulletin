@@ -41,9 +41,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
+import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
+
+internal data class BookmarkedListingDetailActions(
+    val onDismiss: () -> Unit,
+    val onRemoveBookmark: () -> Unit,
+    val canMessageSeller: Boolean,
+    val onMessageSeller: suspend (String) -> Boolean,
+    val hasExistingConversation: suspend () -> Boolean,
+    val onMessageSent: () -> Unit,
+    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,11 +65,10 @@ internal fun BookmarkedListingDetailSheet(
     listing: ProfileBookmarkedListing,
     isRemovingBookmark: Boolean,
     errorMessage: String?,
-    onDismiss: () -> Unit,
-    onRemoveBookmark: () -> Unit
+    actions: BookmarkedListingDetailActions
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = actions.onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -89,11 +102,29 @@ internal fun BookmarkedListingDetailSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Text(
+                    text = formatRelativeTime(listing.createdAtMillis, currentTimeMillis()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (actions.canMessageSeller) {
+                MessageSellerQuickAction(
+                    actions = MessageSellerQuickActionActions(
+                        conversationKey = "${listing.id}:${listing.sellerId}",
+                        hasExistingConversation = actions.hasExistingConversation,
+                        onSend = actions.onMessageSeller,
+                        onSent = actions.onMessageSent,
+                        onSeeChat = {
+                            actions.onSeeChat(listing.id, listing.sellerId)
+                        }
+                    )
+                )
             }
             errorMessage?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
-            ListingDetailActions(isRemovingBookmark, onRemoveBookmark, onDismiss)
+            ListingDetailActions(isRemovingBookmark, actions.onRemoveBookmark, actions.onDismiss)
         }
     }
 }

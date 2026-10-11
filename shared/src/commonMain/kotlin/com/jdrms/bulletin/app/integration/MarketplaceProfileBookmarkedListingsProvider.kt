@@ -57,6 +57,7 @@ class MarketplaceProfileBookmarkedListingsProvider(
         itemId: MarketplaceItemId
     ) = ProfileBookmarkedListing(
         id = itemId.value,
+        sellerId = sellerId,
         title = title,
         sellerName = sellerName,
         price = price.formatted,
@@ -64,19 +65,22 @@ class MarketplaceProfileBookmarkedListingsProvider(
         description = description,
         condition = condition,
         photos = photos,
-        sellerReputationScore = sellerReputationScore
+        sellerReputationScore = sellerReputationScore,
+        createdAtMillis = createdAtMillis
     )
 
     private fun com.jdrms.bulletin.domain.listings.domain.model.Listing.toProfileBookmark(
         itemId: MarketplaceItemId
     ) = ProfileBookmarkedListing(
         id = itemId.value,
+        sellerId = sellerId.value,
         title = title,
         sellerName = sellerName,
         price = price.formatted,
         category = category.name,
         description = description,
         condition = condition.name,
-        photos = images
+        photos = images,
+        createdAtMillis = createdAtMillis
     )
 }
