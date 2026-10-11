@@ -15,13 +15,18 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import kotlinx.coroutines.sync.withLock
 
+data class MessageInbox(val viewerId: SenderId, val conversations: List<Conversation>)
+
 class GetConversations(
     private val repository: MessagesRepository,
     private val currentSenderProvider: CurrentMessageSenderProvider
 ) {
-    suspend operator fun invoke(): Result<List<Conversation>> {
+    suspend operator fun invoke(): Result<MessageInbox> {
         return when (val sender = currentSenderProvider.getCurrentSender()) {
-            is Result.Success -> repository.getConversations(sender.data.id)
+            is Result.Success -> when (val conversations = repository.getConversations(sender.data.id)) {
+                is Result.Success -> Result.Success(MessageInbox(sender.data.id, conversations.data))
+                is Result.Error -> conversations
+            }
             is Result.Error -> sender
         }
     }
