@@ -233,7 +233,26 @@ fun MainAppScaffold(
             Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                 when (navigationState.currentDestination) {
                     AppDestination.HOME -> HomeScreen(homeViewModel)
-                    AppDestination.MARKETPLACE -> MarketplaceScreen(marketplaceViewModel)
+                    AppDestination.MARKETPLACE -> MarketplaceScreen(
+                        viewModel = marketplaceViewModel,
+                        onMessageSeller = { listingId, sellerId, sellerName, content ->
+                            val sendResult = sendListingMessage(
+                                container,
+                                navigationState,
+                                ListingMessageRequest(listingId, sellerId, sellerName, content)
+                            )
+                            openSentListingConversation(sendResult, messagesViewModel)
+                            navigationState = sendResult.navigationState
+                            sendResult.sent
+                        },
+                        hasExistingConversation = { listingId, sellerId ->
+                            hasListingConversation(container, listingId, sellerId)
+                        },
+                        onSeeChat = { listingId, sellerId ->
+                            openListingConversation(container, messagesViewModel, listingId, sellerId)
+                            navigationState = navigationState.selectBottomNavigationDestination(AppDestination.MESSAGES)
+                        }
+                    )
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
                     AppDestination.PROFILE -> {
@@ -308,6 +327,30 @@ fun MainAppScaffold(
                                         navigationState = navigationState.copy(
                                             currentDestination = AppDestination.LISTINGS
                                         )
+                                    },
+                                    onMessageSeller = { listingId, sellerId, sellerName, content ->
+                                        val sendResult = sendListingMessage(
+                                            container,
+                                            navigationState,
+                                            ListingMessageRequest(listingId, sellerId, sellerName, content)
+                                        )
+                                        openSentListingConversation(sendResult, messagesViewModel)
+                                        navigationState = sendResult.navigationState
+                                        sendResult.sent
+                                    },
+                                    onMessageSent = {
+                                        navigationState = navigationState.selectBottomNavigationDestination(
+                                            AppDestination.MESSAGES
+                                        )
+                                    },
+                                    onSeeChat = { listingId, sellerId ->
+                                        openListingConversation(container, messagesViewModel, listingId, sellerId)
+                                        navigationState = navigationState.selectBottomNavigationDestination(
+                                            AppDestination.MESSAGES
+                                        )
+                                    },
+                                    hasExistingConversation = { listingId, sellerId ->
+                                        hasListingConversation(container, listingId, sellerId)
                                     }
                                 ),
                                 themeViewModel = themeViewModel

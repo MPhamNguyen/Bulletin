@@ -165,6 +165,7 @@ class MarketplaceViewModel(
                     val listing = result.data
                     val canonicalId = MarketplaceItemId(listingId)
                     val isBookmarked = _uiState.value.bookmarkedItemIds.contains(canonicalId)
+                    val currentUserId = currentUserIdProvider()
                     _uiState.update {
                         it.copy(
                             selectedListing = listing.copy(
@@ -172,7 +173,8 @@ class MarketplaceViewModel(
                                 isBookmarked = isBookmarked
                             ),
                             isDetailLoading = false,
-                            detailErrorMessage = null
+                            detailErrorMessage = null,
+                            currentUserId = currentUserId
                         )
                     }
                 }

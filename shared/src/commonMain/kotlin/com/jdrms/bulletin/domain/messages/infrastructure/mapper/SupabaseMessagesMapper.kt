@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages.infrastructure.mapper
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -27,6 +28,7 @@ object SupabaseMessagesMapper {
         return Conversation(
             id = ConversationId(conversation.id),
             participants = participants.map(::toParticipant),
+            listingId = conversation.listingId?.let(::ListingReferenceId),
             lastMessage = mappedLastMessage,
             updatedAtMillis = updatedAtMillis
         )

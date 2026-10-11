@@ -4,6 +4,8 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -29,6 +31,25 @@ class InMemoryMessagesRepository(
 
     override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = mutex.withLock {
         Result.Success(conversations.values.filter { it.includes(userId) })
+    }
+
+    override suspend fun getOrCreateConversation(
+        requesterId: SenderId,
+        otherParticipant: ConversationParticipant,
+        listingId: ListingReferenceId
+    ): Result<Conversation> = mutex.withLock {
+        val existing = conversations.values.firstOrNull { conversation ->
+            conversation.listingId == listingId &&
+                conversation.includes(requesterId) && conversation.includes(otherParticipant.id)
+        }
+        if (existing != null) return@withLock Result.Success(existing)
+        val conversation = Conversation(
+            id = ConversationId("conversation-${conversations.size + 1}"),
+            participants = listOf(ConversationParticipant(requesterId, "Student"), otherParticipant),
+            listingId = listingId
+        )
+        conversations[conversation.id] = conversation
+        Result.Success(conversation)
     }
 
     override suspend fun getMessages(
