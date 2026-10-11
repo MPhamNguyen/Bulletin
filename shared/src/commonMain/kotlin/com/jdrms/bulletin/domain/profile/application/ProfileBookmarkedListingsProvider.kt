@@ -13,7 +13,8 @@ data class ProfileBookmarkedListing(
     val condition: String = "GOOD",
     val photos: List<String> = emptyList(),
     val sellerReputationScore: Double? = null,
-    val sellerId: String = ""
+    val sellerId: String = "",
+    val createdAtMillis: Long = 0L
 )
 
 @JvmInline
