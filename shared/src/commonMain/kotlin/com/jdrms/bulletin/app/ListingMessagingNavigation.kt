@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 
 internal data class ListingMessageSendResult(
     val sent: Boolean,
+    val conversationId: ConversationId?,
     val navigationState: MainNavigationState
 )
 
@@ -21,19 +22,29 @@ internal data class ListingMessageRequest(
     val content: String
 )
 
+internal fun openSentListingConversation(
+    result: ListingMessageSendResult,
+    messagesViewModel: MessagesViewModel
+) {
+    if (result.sent) {
+        result.conversationId?.let(messagesViewModel::openConversation)
+    }
+}
+
 internal suspend fun sendListingMessage(
     container: AppContainer,
     navigationState: MainNavigationState,
     request: ListingMessageRequest
 ): ListingMessageSendResult {
-    val sent = container.messageSeller(
+    val conversationId = container.messageSeller(
         ListingReferenceId(request.listingId.removePrefix("listing:")),
         ConversationParticipant(SenderId(request.sellerId), request.sellerName),
         request.content
-    ).isSuccess()
+    ).getOrNull()?.id
     return ListingMessageSendResult(
-        sent = sent,
-        navigationState = if (sent) {
+        sent = conversationId != null,
+        conversationId = conversationId,
+        navigationState = if (conversationId != null) {
             navigationState.selectBottomNavigationDestination(AppDestination.MESSAGES)
         } else {
             navigationState

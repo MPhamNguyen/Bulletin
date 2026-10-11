@@ -78,6 +78,19 @@ class MessagesViewModelTest {
     }
 
     @Test
+    fun openingConversationAfterSendSelectsTheRequestedThread() = runTest {
+        val existing = conversation()
+        val requested = conversation(ConversationId("requested"))
+        val viewModel = viewModel(messagesRepository(listOf(existing, requested)))
+        advanceUntilIdle()
+
+        viewModel.openConversation(requested.id)
+        advanceUntilIdle()
+
+        assertEquals(requested.id, viewModel.uiState.value.selectedConversationId)
+    }
+
+    @Test
     fun sendUsesAuthenticatedIdentityAndRefreshesSelectedConversation() = runTest {
         val repository = messagesRepository()
         val viewModel = viewModel(repository)

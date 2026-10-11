@@ -241,6 +241,7 @@ fun MainAppScaffold(
                                 navigationState,
                                 ListingMessageRequest(listingId, sellerId, sellerName, content)
                             )
+                            openSentListingConversation(sendResult, messagesViewModel)
                             navigationState = sendResult.navigationState
                             sendResult.sent
                         },
@@ -333,6 +334,7 @@ fun MainAppScaffold(
                                             navigationState,
                                             ListingMessageRequest(listingId, sellerId, sellerName, content)
                                         )
+                                        openSentListingConversation(sendResult, messagesViewModel)
                                         navigationState = sendResult.navigationState
                                         sendResult.sent
                                     },
