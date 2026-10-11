@@ -11,6 +11,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
@@ -107,6 +109,25 @@ class MessagesViewModelTest {
         assertEquals(listOf(sent), viewModel.uiState.value.currentMessages)
         assertEquals("Message sent.", viewModel.uiState.value.statusMessage)
         assertFalse(viewModel.uiState.value.isSending)
+    }
+
+    @Test
+    fun olderHistoryLoadsOnceAndKeepsChronologicalOrder() = runTest {
+        val history = (1..35).map { index ->
+            message(id = MessageId("message-$index")).copy(timestampMillis = index.toLong())
+        }
+        val viewModel = viewModel(messagesRepository(messages = history))
+        advanceUntilIdle()
+        assertEquals(30, viewModel.uiState.value.currentMessages.size)
+        assertNotNull(viewModel.uiState.value.olderCursor)
+
+        viewModel.loadOlderMessages()
+        viewModel.loadOlderMessages()
+        advanceUntilIdle()
+
+        assertEquals(history, viewModel.uiState.value.currentMessages)
+        assertNull(viewModel.uiState.value.olderCursor)
+        assertFalse(viewModel.uiState.value.isLoadingOlder)
     }
 
     @Test
@@ -317,9 +338,11 @@ class MessagesViewModelTest {
             listOf(message(), message(inConversation = other.id))
         )
         val repository = object : MessagesRepository by backing {
-            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+            override suspend fun getMessagePage(
+                userId: SenderId, conversationId: ConversationId, before: MessageCursor?, limit: Int
+            ): Result<MessagePage> {
                 if (conversationId != other.id) delay(1000)
-                return backing.getMessages(userId, conversationId)
+                return backing.getMessagePage(userId, conversationId, before, limit)
             }
         }
         val viewModel = viewModel(repository)
@@ -370,9 +393,11 @@ class MessagesViewModelTest {
     fun identityFailureCancelsOutstandingLoadsSoTheyCannotRestorePrivateMessages() = runTest {
         val backing = messagesRepository(messages = listOf(message()))
         val repository = object : MessagesRepository by backing {
-            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+            override suspend fun getMessagePage(
+                userId: SenderId, conversationId: ConversationId, before: MessageCursor?, limit: Int
+            ): Result<MessagePage> {
                 delay(1000)
-                return backing.getMessages(userId, conversationId)
+                return backing.getMessagePage(userId, conversationId, before, limit)
             }
         }
         val viewModel = viewModel(repository)

@@ -16,6 +16,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import kotlinx.coroutines.CancellationException
@@ -185,9 +187,14 @@ class MessagesUseCasesTest {
             return failure ?: Result.Success(conversations.filter { it.includes(userId) })
         }
 
-        override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+        override suspend fun getMessagePage(
+            userId: SenderId,
+            conversationId: ConversationId,
+            before: MessageCursor?,
+            limit: Int
+        ): Result<MessagePage> {
             callers.add(userId)
-            return failure ?: Result.Success(emptyList())
+            return failure ?: Result.Success(MessagePage(emptyList(), null))
         }
 
         override suspend fun sendMessage(message: Message): Result<Message> {

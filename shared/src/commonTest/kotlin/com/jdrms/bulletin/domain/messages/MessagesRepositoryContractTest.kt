@@ -102,6 +102,25 @@ abstract class MessagesRepositoryContractTest {
         assertEquals(emptyList(), before)
     }
 
+    @Test
+    fun pagesUseTimestampAndIdWithoutRepeatingTiedMessages() = runTest {
+        val messages = (1..5).map { index ->
+            message(id = MessageId("message-$index")).copy(timestampMillis = 42L)
+        }
+        val repository = createRepository(listOf(conversation()), messages.reversed())
+        val newest = repository.getMessagePage(alice.id, conversationId, limit = 2).getOrThrow()
+        assertEquals(listOf("message-4", "message-5"), newest.messages.map { it.id.value })
+        val middle = repository.getMessagePage(alice.id, conversationId, newest.olderCursor, 2).getOrThrow()
+        assertEquals(listOf("message-2", "message-3"), middle.messages.map { it.id.value })
+        val oldest = repository.getMessagePage(alice.id, conversationId, middle.olderCursor, 2).getOrThrow()
+        assertEquals(listOf("message-1"), oldest.messages.map { it.id.value })
+        assertEquals(null, oldest.olderCursor)
+        assertEquals(emptyList(), repository.getMessagePage(alice.id, conversationId,
+            before = com.jdrms.bulletin.domain.messages.domain.model.MessageCursor(
+                kotlin.time.Instant.fromEpochMilliseconds(0), MessageId("any")
+            ), limit = 2).getOrThrow().messages)
+    }
+
     private fun assertAccessDenied(result: Result<*>) {
         assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
     }

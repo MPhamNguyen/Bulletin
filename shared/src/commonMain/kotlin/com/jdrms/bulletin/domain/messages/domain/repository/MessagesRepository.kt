@@ -7,6 +7,9 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
+import com.jdrms.bulletin.domain.messages.domain.model.MESSAGE_PAGE_SIZE
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 /**
@@ -22,7 +25,12 @@ interface MessagesRepository {
         listingId: ListingReferenceId
     ): Result<Conversation>
     suspend fun getConversations(userId: SenderId): Result<List<Conversation>>
-    suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>>
+    suspend fun getMessagePage(
+        userId: SenderId,
+        conversationId: ConversationId,
+        before: MessageCursor? = null,
+        limit: Int = MESSAGE_PAGE_SIZE
+    ): Result<MessagePage>
     suspend fun sendMessage(message: Message): Result<Message>
     suspend fun reportMessage(
         userId: SenderId,

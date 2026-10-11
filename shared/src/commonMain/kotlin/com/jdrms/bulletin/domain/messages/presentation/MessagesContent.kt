@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,7 +32,6 @@ import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
-import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
@@ -175,6 +173,16 @@ private fun MessageList(
         state = messageListState,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        if (state.olderCursor != null) {
+            item {
+                TextButton(
+                    onClick = viewModel::loadOlderMessages,
+                    enabled = !state.isLoadingOlder
+                ) {
+                    Text(if (state.isLoadingOlder) "Loading..." else "Load older messages")
+                }
+            }
+        }
         items(state.currentMessages, key = { it.id.value }) { message ->
             MessageItemCard(
                 message = message,
@@ -229,82 +237,3 @@ private fun MessagesFeedback(state: MessagesUiState, onRetry: () -> Unit) {
     }
 }
 
-@Composable
-private fun MessageItemCard(
-    message: Message,
-    isRevealed: Boolean,
-    canReport: Boolean,
-    onReport: () -> Unit,
-    onToggleVisibility: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (message.isReported) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-            contentColor = if (message.isReported) {
-                MaterialTheme.colorScheme.onErrorContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            MessageMetadataText(
-                text = message.senderName,
-                isReported = message.isReported,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = messageBodyText(message, isRevealed),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (message.isReported) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
-            MessageMetadataText(
-                text = formatRelativeTime(message.timestampMillis, currentTimeMillis()),
-                isReported = message.isReported,
-                fontWeight = null
-            )
-            if (message.isReported) {
-                Text(
-                    text = "[Reported for moderation]",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-                TextButton(onClick = onToggleVisibility) {
-                    Text(if (isRevealed) "Hide message" else "Show message")
-                }
-            } else {
-                TextButton(
-                    onClick = onReport,
-                    enabled = canReport,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Report", style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MessageMetadataText(text: String, isReported: Boolean, fontWeight: FontWeight?) {
-    val color = if (isReported) {
-        MaterialTheme.colorScheme.onErrorContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = fontWeight,
-        color = color
-    )
-}

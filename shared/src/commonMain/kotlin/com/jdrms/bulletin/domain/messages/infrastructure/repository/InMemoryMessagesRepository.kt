@@ -8,6 +8,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.ConversationDto
@@ -15,6 +17,7 @@ import com.jdrms.bulletin.domain.messages.infrastructure.dto.MessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.MessagesMapper
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Instant
 
 /** Development adapter. Conversations are explicitly supplied by tests; no shared fictional inbox is seeded. */
 class InMemoryMessagesRepository(
@@ -52,18 +55,28 @@ class InMemoryMessagesRepository(
         Result.Success(conversation)
     }
 
-    override suspend fun getMessages(
+    override suspend fun getMessagePage(
         userId: SenderId,
-        conversationId: ConversationId
-    ): Result<List<Message>> = mutex.withLock {
+        conversationId: ConversationId,
+        before: MessageCursor?,
+        limit: Int
+    ): Result<MessagePage> = mutex.withLock {
         if (conversations[conversationId]?.includes(userId) != true) {
             Result.Error(ConversationAccessException())
         } else {
-            val orderedMessages = messagesByConvId[conversationId].orEmpty()
-                .sortedWith(compareBy<Message> { it.timestampMillis }.thenBy { it.id.value })
-            Result.Success(orderedMessages)
+            require(limit > 0)
+            val descending = messagesByConvId[conversationId].orEmpty()
+                .filter { before == null || it.cursor().isBefore(before) }
+                .sortedWith(compareByDescending<Message> { it.timestampMillis }.thenByDescending { it.id.value })
+            val page = descending.take(limit)
+            Result.Success(MessagePage(page.reversed(), page.lastOrNull()?.takeIf { descending.size > limit }?.cursor()))
         }
     }
+
+    private fun Message.cursor() = MessageCursor(Instant.fromEpochMilliseconds(timestampMillis), id)
+
+    private fun MessageCursor.isBefore(other: MessageCursor): Boolean =
+        createdAt < other.createdAt || (createdAt == other.createdAt && id.value < other.id.value)
 
     override suspend fun sendMessage(message: Message): Result<Message> = mutex.withLock {
         val conversation = conversations[message.conversationId]

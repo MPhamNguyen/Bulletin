@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessExcepti
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ class MessagesViewModel(
     val uiState: StateFlow<MessagesUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
     private var requestedConversationId: ConversationId? = null
+    private var olderJob: Job? = null
 
     init {
         loadConversations()
@@ -39,6 +41,7 @@ class MessagesViewModel(
 
     private fun refreshConversations(statusMessage: String? = null) {
         loadJob?.cancel()
+        olderJob?.cancel()
         val previousSelection = _uiState.value.selectedConversationId
         _uiState.update { MessagesUiState(isLoading = true, statusMessage = statusMessage) }
         loadJob = viewModelScope.launch {
@@ -68,12 +71,15 @@ class MessagesViewModel(
     fun selectConversation(conversationId: ConversationId) {
         if (_uiState.value.conversations.none { it.id == conversationId }) return
         loadJob?.cancel()
+        olderJob?.cancel()
         _uiState.update {
             it.copy(
                 selectedConversationId = conversationId,
                 currentMessages = emptyList(),
                 revealedReportedMessageIds = emptySet(),
+                olderCursor = null,
                 isLoadingMessages = true,
+                isLoadingOlder = false,
                 errorMessage = null,
                 statusMessage = null
             )
@@ -97,20 +103,43 @@ class MessagesViewModel(
                     _uiState.update { it.clearMessageLoadingForMissingConversation(conversationId) }
                     return
                 }
-                when (val reconciled = conversation.reconcileMessages(result.data)) {
+                when (val reconciled = conversation.reconcileMessages(result.data.messages)) {
                     is Result.Error -> showFailure(reconciled)
                     is Result.Success -> _uiState.update { state ->
                         state.copy(
                             conversations = state.conversations.map { existing ->
                                 if (existing.id == conversationId) reconciled.data else existing
                             }.sortedByDescending { it.updatedAtMillis },
-                            currentMessages = result.data,
-                            isLoadingMessages = false
+                            currentMessages = MessageTimeline.merge(state.currentMessages, result.data.messages),
+                            olderCursor = result.data.olderCursor,
+                            isLoadingMessages = false,
+                            isLoadingOlder = false
                         )
                     }
                 }
             }
             is Result.Error -> showFailure(result)
+        }
+    }
+
+    fun loadOlderMessages() {
+        val selected = _uiState.value.selectedConversationId ?: return
+        val cursor = _uiState.value.olderCursor ?: return
+        if (olderJob?.isActive == true) return
+        _uiState.update { it.copy(isLoadingOlder = true) }
+        olderJob = viewModelScope.launch {
+            when (val result = getConversationMessages(selected, cursor)) {
+                is Result.Success -> _uiState.update {
+                    if (it.selectedConversationId == selected && it.olderCursor == cursor) {
+                        it.copy(
+                            currentMessages = MessageTimeline.merge(it.currentMessages, result.data.messages),
+                            olderCursor = result.data.olderCursor,
+                            isLoadingOlder = false
+                        )
+                    } else it
+                }
+                is Result.Error -> showFailure(result)
+            }
         }
     }
 
@@ -194,6 +223,7 @@ class MessagesViewModel(
         val identityUnavailable = error.exception is MessagingAuthenticationRequiredException ||
             error.exception is MessageSenderLookupException || error.exception is ConversationAccessException
         if (identityUnavailable) loadJob?.cancel()
+        if (identityUnavailable) olderJob?.cancel()
         val message = if (error.exception is MessagingAuthenticationRequiredException) {
             "Sign in to access your messages."
         } else {
@@ -206,6 +236,7 @@ class MessagesViewModel(
                 it.copy(
                     isLoading = false,
                     isLoadingMessages = false,
+                    isLoadingOlder = false,
                     isSending = false,
                     isReporting = false,
                     errorMessage = message,
@@ -214,4 +245,5 @@ class MessagesViewModel(
             }
         }
     }
+
 }

@@ -4,6 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
@@ -165,7 +166,7 @@ class SupabaseMessagesRepositoryTest {
             replaceMessageTimestamp("not-an-instant")
         }
 
-        val result = SupabaseMessagesRepository(table).getMessages(alice.id, conversationId)
+        val result = SupabaseMessagesRepository(table).getMessagePage(alice.id, conversationId)
 
         assertIs<MessagesPersistenceException>(assertIs<Result.Error>(result).exception)
     }
@@ -217,9 +218,14 @@ private class FakeSupabaseMessagesTable(
         return participantRows.filter { it.conversationId == conversationId }
     }
 
-    override suspend fun getMessages(conversationId: String): List<SupabaseMessageDto> {
+    override suspend fun getMessagePage(
+        conversationId: String, before: MessageCursor?, limit: Int
+    ): List<SupabaseMessageDto> {
         return messageRows.filter { it.conversationId == conversationId }
-            .sortedWith(compareBy(SupabaseMessageDto::createdAt, SupabaseMessageDto::id))
+            .filter { before == null || Instant.parse(it.createdAt) < before.createdAt ||
+                (Instant.parse(it.createdAt) == before.createdAt && it.id < before.id.value) }
+            .sortedWith(compareByDescending<SupabaseMessageDto> { it.createdAt }.thenByDescending { it.id })
+            .take(limit)
     }
 
     override suspend fun findMessage(conversationId: String, messageId: String): SupabaseMessageDto? {
@@ -227,7 +233,7 @@ private class FakeSupabaseMessagesTable(
     }
 
     override suspend fun findLatestMessage(conversationId: String): SupabaseMessageDto? {
-        return getMessages(conversationId).lastOrNull()
+        return getMessagePage(conversationId, null, 1).firstOrNull()
     }
 
     override suspend fun insertMessage(message: SupabaseMessageInsertDto) {
