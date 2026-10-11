@@ -210,6 +210,7 @@ fun MainAppScaffold(
 
         val homeViewModel = remember { container.createHomeViewModel() }
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
+        val marketplaceUserReportViewModel = remember { container.createMarketplaceUserReportViewModel() }
         val listingsViewModel = remember { container.createListingsViewModel() }
         val messagesViewModel = remember { container.createMessagesViewModel() }
 
@@ -235,6 +236,7 @@ fun MainAppScaffold(
                     AppDestination.HOME -> HomeScreen(homeViewModel)
                     AppDestination.MARKETPLACE -> MarketplaceScreen(
                         viewModel = marketplaceViewModel,
+                        userReportViewModel = marketplaceUserReportViewModel,
                         onMessageSeller = { listingId, sellerId, sellerName, content ->
                             val sendResult = sendListingMessage(
                                 container,

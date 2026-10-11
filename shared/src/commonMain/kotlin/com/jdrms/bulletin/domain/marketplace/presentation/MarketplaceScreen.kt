@@ -12,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +30,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
+    userReportViewModel: MarketplaceUserReportViewModel,
     onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
         { _, _, _, _ -> false },
     hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
@@ -34,15 +38,12 @@ fun MarketplaceScreen(
     onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
 ) {
     val state by viewModel.uiState.collectAsState()
+    val reportState by userReportViewModel.uiState.collectAsState()
+    var isReportScreenOpen by remember { mutableStateOf(false) }
 
-    if (state.isSellerProfileOpen) {
-        SellerProfileScreen(
-            profile = state.selectedSellerProfile,
-            isLoading = state.isSellerProfileLoading,
-            errorMessage = state.sellerProfileErrorMessage,
-            onBack = viewModel::dismissSellerProfile
-        )
-    } else {
+    val flowState = MarketplaceSellerFlowUiState(state, reportState, isReportScreenOpen)
+    val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel)
+    if (!MarketplaceSellerProfileFlow(flowState, flowViewModels) { isReportScreenOpen = it }) {
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -173,6 +174,48 @@ fun MarketplaceScreen(
         }
     }
 }
+
+@Composable
+private fun MarketplaceSellerProfileFlow(
+    state: MarketplaceSellerFlowUiState,
+    viewModels: MarketplaceSellerFlowViewModels,
+    onReportScreenOpen: (Boolean) -> Unit
+): Boolean {
+    if (state.isReportScreenOpen) {
+        ReportMarketplaceUserScreen(
+            state = state.reportState,
+            onReasonSelected = viewModels.report::selectReason,
+            onDescriptionChanged = viewModels.report::updateDescription,
+            onSubmit = viewModels.report::submit,
+            onBack = { onReportScreenOpen(false) }
+        )
+        return true
+    }
+    if (!state.marketplaceState.isSellerProfileOpen) return false
+
+    SellerProfileScreen(
+        profile = state.marketplaceState.selectedSellerProfile,
+        isLoading = state.marketplaceState.isSellerProfileLoading,
+        errorMessage = state.marketplaceState.sellerProfileErrorMessage,
+        onBack = viewModels.marketplace::dismissSellerProfile,
+        onReportUser = {
+            state.marketplaceState.selectedSellerProfile?.sellerId?.let(viewModels.report::begin)
+            onReportScreenOpen(state.marketplaceState.selectedSellerProfile != null)
+        }
+    )
+    return true
+}
+
+private data class MarketplaceSellerFlowUiState(
+    val marketplaceState: MarketplaceUiState,
+    val reportState: MarketplaceUserReportUiState,
+    val isReportScreenOpen: Boolean
+)
+
+private data class MarketplaceSellerFlowViewModels(
+    val marketplace: MarketplaceViewModel,
+    val report: MarketplaceUserReportViewModel
+)
 
 @Composable
 private fun MarketplaceItemCard(
