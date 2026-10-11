@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.messages.domain.model
 
 import com.jdrms.bulletin.core.common.Result
 import kotlin.jvm.JvmInline
+import kotlin.time.Instant
 
 @JvmInline
 value class ConversationId(val value: String)
@@ -30,8 +31,10 @@ data class Message(
     val senderName: String,
     val content: String,
     val timestampMillis: Long = 0L,
-    val isReported: Boolean = false
+    val isReported: Boolean = false,
+    val preciseCreatedAt: Instant? = null
 ) {
+    val orderingTimestamp: Instant get() = preciseCreatedAt ?: Instant.fromEpochMilliseconds(timestampMillis)
     init {
         require(content.isNotBlank()) { "Message content cannot be blank." }
         require(content.length <= 1000) { "Message cannot exceed 1000 characters." }

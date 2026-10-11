@@ -219,11 +219,15 @@ private class FakeSupabaseMessagesTable(
     }
 
     override suspend fun getMessagePage(
-        conversationId: String, before: MessageCursor?, limit: Int
+        conversationId: String,
+        before: MessageCursor?,
+        limit: Int
     ): List<SupabaseMessageDto> {
         return messageRows.filter { it.conversationId == conversationId }
-            .filter { before == null || Instant.parse(it.createdAt) < before.createdAt ||
-                (Instant.parse(it.createdAt) == before.createdAt && it.id < before.id.value) }
+            .filter {
+                before == null || Instant.parse(it.createdAt) < before.createdAt ||
+                    (Instant.parse(it.createdAt) == before.createdAt && it.id < before.id.value)
+            }
             .sortedWith(compareByDescending<SupabaseMessageDto> { it.createdAt }.thenByDescending { it.id })
             .take(limit)
     }
