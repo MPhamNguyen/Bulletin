@@ -25,9 +25,7 @@ class ProfilePresentationTest {
             onEditAccount = {},
             onViewPublicProfile = {},
             onNotifications = {},
-            onPrivacy = {},
             onHelpSupport = {},
-            onTermsConditions = {},
             onSignOut = {}
         )
         defaultActions.onDeleteProfile()
@@ -36,9 +34,7 @@ class ProfilePresentationTest {
             onEditAccount = {},
             onViewPublicProfile = {},
             onNotifications = {},
-            onPrivacy = {},
             onHelpSupport = {},
-            onTermsConditions = {},
             onSignOut = {},
             onDeleteProfile = { clicked = true }
         )
@@ -53,9 +49,7 @@ class ProfilePresentationTest {
             onEditAccount = {},
             onViewPublicProfile = {},
             onNotifications = {},
-            onPrivacy = {},
             onHelpSupport = {},
-            onTermsConditions = {},
             onSignOut = {}
         )
         defaultActions.onConfirmDeleteProfile()
@@ -64,9 +58,7 @@ class ProfilePresentationTest {
             onEditAccount = {},
             onViewPublicProfile = {},
             onNotifications = {},
-            onPrivacy = {},
             onHelpSupport = {},
-            onTermsConditions = {},
             onSignOut = {},
             onConfirmDeleteProfile = { confirmed = true }
         )

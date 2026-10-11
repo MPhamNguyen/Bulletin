@@ -20,10 +20,8 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,9 +49,7 @@ internal data class SettingsActions(
     val onEditAccount: () -> Unit,
     val onViewPublicProfile: () -> Unit,
     val onNotifications: () -> Unit,
-    val onPrivacy: () -> Unit,
     val onHelpSupport: () -> Unit,
-    val onTermsConditions: () -> Unit,
     val onSignOut: () -> Unit,
     val onDeleteProfile: () -> Unit = {},
     val onConfirmDeleteProfile: () -> Unit = {}
@@ -126,28 +122,13 @@ internal fun SettingsView(
                 )
             }
 
-            // Section: Security & Privacy
-            SettingsSectionHeader(title = "SECURITY & PRIVACY")
-            SettingsActionCard(
-                icon = Icons.Outlined.Security,
-                title = "Privacy",
-                description = "Control profile visibility, campus verification, and student email",
-                onClick = actions.onPrivacy
-            )
-
-            // Section: Support & Legal
-            SettingsSectionHeader(title = "SUPPORT & LEGAL")
+            // Section: Support
+            SettingsSectionHeader(title = "SUPPORT")
             SettingsActionCard(
                 icon = Icons.AutoMirrored.Outlined.HelpOutline,
                 title = "Help and Support",
                 description = "Campus meetup safety guidelines, FAQs, and support team",
                 onClick = actions.onHelpSupport
-            )
-            SettingsActionCard(
-                icon = Icons.Outlined.Description,
-                title = "Terms and Conditions",
-                description = "Bulletin student honor code, community standards, and marketplace rules",
-                onClick = actions.onTermsConditions
             )
 
             Spacer(modifier = Modifier.height(8.dp))

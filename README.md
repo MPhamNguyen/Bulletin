@@ -195,7 +195,7 @@ Personalized results should also refresh as user behavior changes without notice
 - [ ] Add personalized recommendations
 - [ ] Validate security/privacy requirements
 - [ ] Benchmark performance requirements
-- [ ] Prepare user guide, privacy policy, and terms of service
+- [ ] Prepare user guide
 - [ ] Explore future iOS support
 
 ---
