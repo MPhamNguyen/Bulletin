@@ -13,11 +13,19 @@ import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
 import io.github.jan.supabase.postgrest.query.filter.TextSearchType
 
 class SupabaseMarketplaceListingSource private constructor(
-    private val listingTable: MarketplaceListingTable
+    private val listingTable: MarketplaceListingTable,
+    private val readCache: MarketplaceReadCache
 ) : MarketplaceListingSource {
-    constructor(supabase: SupabaseClient) : this(PostgrestMarketplaceListingTable(supabase))
+    constructor(supabase: SupabaseClient) : this(PostgrestMarketplaceListingTable(supabase), MarketplaceReadCache())
+
+    internal constructor(supabase: SupabaseClient, readCache: MarketplaceReadCache) :
+        this(PostgrestMarketplaceListingTable(supabase), readCache)
 
     override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
+        return readCache.page(request) { loadPage(request) }
+    }
+
+    private suspend fun loadPage(request: MarketplacePageRequest): MarketplaceListingPage {
         val rows = listingTable.getListings(request)
         val mappedRows = rows.mapNotNull { row ->
             SupabaseMarketplaceListingMapper.toSnapshot(row)?.let { snapshot -> row to snapshot }
@@ -35,7 +43,7 @@ class SupabaseMarketplaceListingSource private constructor(
     }
 
     internal constructor(getListings: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>) :
-        this(MarketplaceListingTable(getListings))
+        this(MarketplaceListingTable(getListings), MarketplaceReadCache())
 }
 
 private fun interface MarketplaceListingTable {

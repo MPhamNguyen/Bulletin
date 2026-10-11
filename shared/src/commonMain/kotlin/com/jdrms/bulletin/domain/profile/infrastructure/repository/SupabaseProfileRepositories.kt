@@ -18,24 +18,28 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class SupabaseProfileRepository(
+class SupabaseProfileRepository private constructor(
     private val supabase: SupabaseClient,
-    private val policy: ProfileValidationPolicy = ProfileValidationPolicy()
+    private val policy: ProfileValidationPolicy,
+    internal val readCache: ProfileReadCache
 ) : ProfileRepository {
+
+    constructor(supabase: SupabaseClient) : this(supabase, ProfileValidationPolicy(), ProfileReadCache())
+
+    internal constructor(supabase: SupabaseClient, readCache: ProfileReadCache) :
+        this(supabase, ProfileValidationPolicy(), readCache)
 
     override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
         return runCatching {
+            val currentUserId = supabase.auth.currentUserOrNull()?.id
+            readCache.observeSession(currentUserId)
             val resolvedId = resolveUserId(userId) ?: return@runCatching null
-
-            val dto = supabase.from(PROFILES_TABLE).select {
-                filter {
-                    eq("id", resolvedId)
+            readCache.profile(UserId(resolvedId), isCurrentUser = resolvedId == currentUserId) {
+                val dto = supabase.from(PROFILES_TABLE).select {
+                    filter { eq("id", resolvedId) }
                 }
-            }.decodeSingleOrNull<ProfileDto>()
-
-            dto?.let {
-                val reputation = getReputation(UserId(resolvedId))
-                ProfileMapper.toDomain(it, reputation)
+                    .decodeSingleOrNull<ProfileDto>()
+                dto?.let { ProfileMapper.toDomain(it, getReputation(UserId(resolvedId))) }
             }
         }.fold(
             onSuccess = { Result.Success(it) },
@@ -44,7 +48,7 @@ class SupabaseProfileRepository(
     }
 
     override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
-        return runCatching {
+        val result = runCatching {
             val resolvedId = resolveUserId(profile.id) ?: profile.id.value
             val profileToSave = if (resolvedId != profile.id.value) {
                 profile.copy(id = UserId(resolvedId))
@@ -62,11 +66,15 @@ class SupabaseProfileRepository(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
         )
+        if (result is Result.Success) readCache.invalidate(result.data.id)
+        return result
     }
 
     override suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit> {
-        return runCatching {
+        var resolvedUserId: UserId? = null
+        val result = runCatching {
             val resolvedId = resolveUserId(userId) ?: userId.value
+            resolvedUserId = UserId(resolvedId)
             supabase.from(PROFILES_TABLE).update(
                 buildJsonObject {
                     put("deleted_at", JsonPrimitive(deletedAt))
@@ -81,13 +89,17 @@ class SupabaseProfileRepository(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
         )
+        if (result is Result.Success) resolvedUserId?.let { readCache.invalidate(it) }
+        return result
     }
 
     override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
-        return runCatching {
+        var resolvedTargetUserId: UserId? = null
+        val result = runCatching {
             val currentUserId = supabase.auth.currentUserOrNull()?.id
                 ?: error("You must be logged in to submit a review.")
             val resolvedTargetId = resolveUserId(targetUserId) ?: targetUserId.value
+            resolvedTargetUserId = UserId(resolvedTargetId)
 
             val insertDto = ReviewInsertDto(
                 reviewerId = currentUserId,
@@ -101,29 +113,33 @@ class SupabaseProfileRepository(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
         )
+        if (result is Result.Success) resolvedTargetUserId?.let { readCache.invalidate(it) }
+        return result
     }
 
     override suspend fun getReputation(userId: UserId): StudentReputation {
+        val currentUserId = supabase.auth.currentUserOrNull()?.id
+        readCache.observeSession(currentUserId)
         val resolvedId = resolveUserId(userId) ?: return policy.calculateReputation(userId, emptyList())
-
-        val reviews = runCatching {
-            val dtos = runCatching {
-                supabase.from(REVIEWS_VIEW).select {
-                    filter {
-                        eq("reviewee_id", resolvedId)
-                    }
-                }.decodeList<ReviewDto>()
-            }.getOrElse {
-                supabase.from(REVIEWS_TABLE).select {
-                    filter {
-                        eq("reviewee_id", resolvedId)
-                    }
-                }.decodeList<ReviewDto>()
-            }
-            dtos.map { ProfileMapper.toDomain(it) }
-        }.getOrDefault(emptyList())
-
-        return policy.calculateReputation(UserId(resolvedId), reviews)
+        return readCache.reputation(UserId(resolvedId), isCurrentUser = resolvedId == currentUserId) {
+            val reviews = runCatching {
+                val dtos = runCatching {
+                    supabase.from(REVIEWS_VIEW).select {
+                        filter {
+                            eq("reviewee_id", resolvedId)
+                        }
+                    }.decodeList<ReviewDto>()
+                }.getOrElse {
+                    supabase.from(REVIEWS_TABLE).select {
+                        filter {
+                            eq("reviewee_id", resolvedId)
+                        }
+                    }.decodeList<ReviewDto>()
+                }
+                dtos.map { ProfileMapper.toDomain(it) }
+            }.getOrDefault(emptyList())
+            policy.calculateReputation(UserId(resolvedId), reviews)
+        }
     }
 
     private fun resolveUserId(userId: UserId): String? {

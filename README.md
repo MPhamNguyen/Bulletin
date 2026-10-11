@@ -141,6 +141,20 @@ The requirements describe the following planned technology direction:
 
 ## ??? Repository Architecture
 
+### Backend status
+
+`AppContainer` binds Supabase adapters when Supabase is configured; otherwise it uses in-memory fallbacks for local
+development. This table records the configured binding and does not claim live-project verification.
+
+| Repository / context | Configured binding | Local fallback |
+| --- | --- | --- |
+| Home | In-memory | In-memory |
+| Marketplace | Supabase | In-memory |
+| Listings | Supabase | In-memory |
+| Messages | Supabase | In-memory |
+| Profile | Supabase | In-memory |
+| Profile photos | Supabase storage | In-memory |
+
 Bulletin follows a **DDD-inspired + Feature-First Clean Architecture**:
 
 ```text

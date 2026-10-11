@@ -42,6 +42,7 @@ import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.MarketplaceReadCache
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
@@ -94,6 +95,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfi
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryUserBlockRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryUserReportRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.ProfileReadCache
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
@@ -109,6 +111,8 @@ class AppContainer(
 ) {
     internal val themePreferenceStore = themePreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
+    private val marketplaceReadCache by lazy { MarketplaceReadCache() }
+    private val profileReadCache by lazy { ProfileReadCache() }
     val supabaseClient: SupabaseClient? by lazy {
         if (providedSupabaseClient != null) {
             providedSupabaseClient
@@ -131,7 +135,7 @@ class AppContainer(
     val marketplaceRepository: MarketplaceRepository by lazy {
         val client = supabaseClient
         if (client != null) {
-            SupabaseMarketplaceRepository(client)
+            SupabaseMarketplaceRepository(client, readCache = marketplaceReadCache)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
                 error("Supabase client is not configured and in-memory fallback is disabled.")
@@ -142,7 +146,7 @@ class AppContainer(
     val listingsRepository: ListingsRepository by lazy {
         val client = supabaseClient
         if (client != null) {
-            SupabaseListingsRepository(client)
+            SupabaseListingsRepository(client) { marketplaceReadCache.invalidateAll() }
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
                 error("Supabase client is not configured and in-memory fallback is disabled.")
@@ -153,7 +157,7 @@ class AppContainer(
     val marketplaceListingSource: MarketplaceListingSource by lazy {
         val client = supabaseClient
         if (client != null) {
-            SupabaseMarketplaceListingSource(client)
+            SupabaseMarketplaceListingSource(client, marketplaceReadCache)
         } else {
             CompositeMarketplaceListingSource(
                 ListingsMarketplaceListingSource(listingsRepository),
@@ -186,7 +190,7 @@ class AppContainer(
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
-            SupabaseProfileRepository(client)
+            SupabaseProfileRepository(client, readCache = profileReadCache)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
                 error("Supabase client is not configured and in-memory fallback is disabled.")
@@ -225,7 +229,7 @@ class AppContainer(
     val authRepository: AuthRepository by lazy {
         val client = supabaseClient
         if (client != null) {
-            SupabaseAuthRepository(client, profileRepository)
+            SupabaseAuthRepository(client, profileRepository) { profileReadCache.clearCurrentSession() }
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
                 error("Supabase client is not configured and in-memory fallback is disabled.")

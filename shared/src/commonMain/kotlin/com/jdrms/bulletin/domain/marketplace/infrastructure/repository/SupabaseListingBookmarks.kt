@@ -71,10 +71,12 @@ internal class SupabaseListingBookmarks internal constructor(
         } while (page.size == PAGE_SIZE.toInt())
         val bookmarks = ListingBookmarks.of(userId, rows.map { MarketplaceItemId("listing:${it.listingId}") })
         cacheMutex.withLock {
+            cachedByUser.remove(userId)
             cachedByUser[userId] = CachedBookmarks(
                 bookmarks = bookmarks,
                 expiresAtMillis = cachePolicy.currentTimeMillis() + cachePolicy.ttlMillis
             )
+            trimToLimit(cachedByUser)
         }
         return bookmarks
     }
@@ -115,6 +117,7 @@ internal class SupabaseListingBookmarks internal constructor(
                 page = page,
                 expiresAtMillis = cachePolicy.currentTimeMillis() + cachePolicy.ttlMillis
             )
+            trimToLimit(cachedPages)
         }
         return page
     }
@@ -123,6 +126,7 @@ internal class SupabaseListingBookmarks internal constructor(
         const val TABLE = "listing_bookmarks"
         const val PAGE_SIZE = 500L
         const val LISTING_ID_PREFIX = "listing:"
+        const val MAX_CACHE_ENTRIES = 128
         val BOOKMARKED_LISTING_COLUMNS = Columns.raw(
             "listing_id,listings(id,name,user_id,buyer_id,is_sold,category,condition,price,description,created_at," +
                 "seller_profile:profiles!listings_user_id_fkey ( full_name ))"
@@ -132,6 +136,8 @@ internal class SupabaseListingBookmarks internal constructor(
     private fun cachedBookmarks(userId: String): ListingBookmarks? {
         val cached = cachedByUser[userId] ?: return null
         return if (cachePolicy.currentTimeMillis() < cached.expiresAtMillis) {
+            cachedByUser.remove(userId)
+            cachedByUser[userId] = cached
             cached.bookmarks
         } else {
             cachedByUser.remove(userId)
@@ -157,11 +163,17 @@ internal class SupabaseListingBookmarks internal constructor(
     private fun cachedPage(key: BookmarkPageCacheKey): BookmarkedListingsPage? {
         val cached = cachedPages[key] ?: return null
         return if (cachePolicy.currentTimeMillis() < cached.expiresAtMillis) {
+            cachedPages.remove(key)
+            cachedPages[key] = cached
             cached.page
         } else {
             cachedPages.remove(key)
             null
         }
+    }
+
+    private fun <K, V> trimToLimit(cache: MutableMap<K, V>) {
+        while (cache.size > MAX_CACHE_ENTRIES) cache.remove(cache.keys.first())
     }
 }
 

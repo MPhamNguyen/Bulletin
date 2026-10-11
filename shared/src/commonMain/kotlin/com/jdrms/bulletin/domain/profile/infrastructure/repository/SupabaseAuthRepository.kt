@@ -20,7 +20,8 @@ import kotlinx.serialization.json.put
 
 class SupabaseAuthRepository(
     private val supabase: SupabaseClient,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val onSessionEnded: suspend () -> Unit = {}
 ) : AuthRepository {
 
     private var passwordResetRequested = false
@@ -218,6 +219,7 @@ class SupabaseAuthRepository(
         } finally {
             // Rejected credentials must not survive a failed remote sign-out or an app restart.
             supabase.auth.clearSession()
+            onSessionEnded()
         }
         error(message)
     }
@@ -228,6 +230,7 @@ class SupabaseAuthRepository(
                 supabase.auth.signOut()
             } finally {
                 supabase.auth.clearSession()
+                onSessionEnded()
             }
         }.fold(
             onSuccess = { Result.Success(Unit) },

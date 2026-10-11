@@ -23,18 +23,36 @@ import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 
-class SupabaseMarketplaceRepository(
+class SupabaseMarketplaceRepository private constructor(
     private val supabase: SupabaseClient,
-    private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy()
+    private val searchPolicy: MarketplaceSearchPolicy,
+    private val fallbackRepository: InMemoryMarketplaceRepository,
+    internal val readCache: MarketplaceReadCache
 ) : MarketplaceRepository {
+
+    constructor(supabase: SupabaseClient) : this(
+        supabase,
+        MarketplaceSearchPolicy(),
+        InMemoryMarketplaceRepository(),
+        MarketplaceReadCache()
+    )
+
+    internal constructor(supabase: SupabaseClient, readCache: MarketplaceReadCache) : this(
+        supabase,
+        MarketplaceSearchPolicy(),
+        InMemoryMarketplaceRepository(),
+        readCache
+    )
 
     private val bookmarks = SupabaseListingBookmarks(supabase)
 
     override suspend fun getCatalog(): List<MarketplaceItem> {
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
-                val dtos = supabase.from(LISTINGS_TABLE).select().decodeList<MarketplaceItemDto>()
-                dtos.map { MarketplaceMapper.toDomain(it) }
+                readCache.catalog {
+                    val dtos = supabase.from(LISTINGS_TABLE).select().decodeList<MarketplaceItemDto>()
+                    if (dtos.isEmpty()) fallbackRepository.getCatalog() else dtos.map(MarketplaceMapper::toDomain)
+                }
             }.getOrElse { error ->
                 error.rethrowIfCancellation()
                 emptyList()
@@ -56,12 +74,12 @@ class SupabaseMarketplaceRepository(
         val databaseListingId = normalizeListingId(id.value)
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
-                val dto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
-                    filter {
-                        eq("id", databaseListingId)
-                    }
-                }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
-                dto?.let { SupabaseMarketplaceListingMapper.toItem(it) }
+                readCache.item(id) {
+                    val dto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
+                        filter { eq("id", databaseListingId) }
+                    }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
+                    dto?.let(SupabaseMarketplaceListingMapper::toItem)
+                }
             }.getOrElse { error ->
                 error.rethrowIfCancellation()
                 null
@@ -74,13 +92,13 @@ class SupabaseMarketplaceRepository(
         val databaseListingId = normalizeListingId(listingID)
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
-                val listingDto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
-                    filter {
-                        eq("id", databaseListingId)
-                    }
-                }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
-
-                if (listingDto != null) {
+                readCache.detail(databaseListingId) {
+                    val listingDto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
+                        filter {
+                            eq("id", databaseListingId)
+                        }
+                    }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
+                        ?: error("Listing not found.")
                     val reputationScore = listingDto.userId?.let { sellerId ->
                         runCatching {
                             val reviews = supabase.from(REVIEWS_TABLE).select {
@@ -102,16 +120,10 @@ class SupabaseMarketplaceRepository(
                         dto = listingDto,
                         reputationScore = reputationScore
                     ) ?: error("Supabase listing is missing required fields.")
-                } else {
-                    null
                 }
             }.fold(
                 onSuccess = { listing ->
-                    if (listing != null) {
-                        Result.Success(listing)
-                    } else {
-                        Result.Error(NoSuchElementException("Listing not found."))
-                    }
+                    Result.Success(listing)
                 },
                 onFailure = { error ->
                     error.rethrowIfCancellation()
