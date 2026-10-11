@@ -15,6 +15,7 @@ data class MessagesUiState(
     val revealedReportedMessageIds: Set<MessageId> = emptySet(),
     val olderCursor: MessageCursor? = null,
     val isLoadingOlder: Boolean = false,
+    val connectionState: MessageConnectionState = MessageConnectionState.CONNECTING,
     val messageInput: String = "",
     val isLoading: Boolean = false,
     val isLoadingMessages: Boolean = false,
@@ -32,3 +33,5 @@ internal fun MessagesUiState.clearMessageLoadingForMissingConversation(
     } else {
         copy(isLoadingMessages = false)
     }
+
+enum class MessageConnectionState { CONNECTING, CONNECTED, DISCONNECTED }

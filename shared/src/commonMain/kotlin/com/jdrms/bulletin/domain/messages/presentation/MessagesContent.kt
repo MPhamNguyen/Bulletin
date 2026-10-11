@@ -22,6 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -136,7 +141,7 @@ private fun ConversationCard(
 @Composable
 private fun MessageThread(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
     Column(modifier = modifier) {
-        val messageListState = rememberLazyListState()
+        val messageListState = rememberMessageHistoryListState(viewModel, state)
         if (state.isLoadingMessages) {
             MessageThreadLoading()
         } else {
@@ -159,15 +164,6 @@ private fun MessageList(
     messageListState: androidx.compose.foundation.lazy.LazyListState,
     modifier: Modifier
 ) {
-    LaunchedEffect(
-        state.selectedConversationId,
-        state.currentMessages.lastOrNull()?.id,
-        state.currentMessages.size
-    ) {
-        if (state.currentMessages.isNotEmpty()) {
-            messageListState.scrollToItem(state.currentMessages.lastIndex)
-        }
-    }
     LazyColumn(
         modifier = modifier,
         state = messageListState,
@@ -193,6 +189,30 @@ private fun MessageList(
             )
         }
     }
+}
+
+@Composable
+private fun rememberMessageHistoryListState(
+    viewModel: MessagesViewModel,
+    state: MessagesUiState
+): androidx.compose.foundation.lazy.LazyListState {
+    val listState = rememberLazyListState()
+    var positioned by remember(state.selectedConversationId) { mutableStateOf(false) }
+    LaunchedEffect(state.selectedConversationId, state.currentMessages.size) {
+        if (!positioned && state.currentMessages.isNotEmpty()) {
+            val olderButton = if (state.olderCursor != null) 1 else 0
+            listState.scrollToItem(state.currentMessages.lastIndex + olderButton)
+            positioned = true
+        }
+    }
+    LaunchedEffect(state.selectedConversationId, state.olderCursor, positioned) {
+        if (positioned && state.olderCursor != null) {
+            snapshotFlow { listState.firstVisibleItemIndex }.collect { firstVisible ->
+                if (firstVisible == 0) viewModel.loadOlderMessages()
+            }
+        }
+    }
+    return listState
 }
 
 @Composable
@@ -236,4 +256,3 @@ private fun MessagesFeedback(state: MessagesUiState, onRetry: () -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
     }
 }
-
