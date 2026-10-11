@@ -79,7 +79,9 @@ class MessagesViewModel(
 
     private suspend fun loadMessages(conversationId: ConversationId) {
         _uiState.update { it.copy(isLoadingMessages = true) }
-        when (val result = getConversationMessages(conversationId)) {
+        val result = getConversationMessages(conversationId)
+        if (_uiState.value.selectedConversationId != conversationId) return
+        when (result) {
             is Result.Success -> {
                 val conversation = _uiState.value.conversations.firstOrNull { it.id == conversationId }
                 if (conversation == null) {

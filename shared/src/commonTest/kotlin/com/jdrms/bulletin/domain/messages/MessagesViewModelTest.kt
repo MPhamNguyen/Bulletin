@@ -318,6 +318,42 @@ class MessagesViewModelTest {
     }
 
     @Test
+    fun lateMessageLoadCannotReplaceMessagesForNewlySelectedConversation() = runTest {
+        val first = conversation()
+        val other = conversation(ConversationId("other"))
+        val backing = messagesRepository(
+            listOf(first, other),
+            listOf(message(inConversation = first.id), message(inConversation = other.id))
+        )
+        lateinit var viewModel: MessagesViewModel
+        var switchedDuringFirstLoad = false
+        val repository = object : MessagesRepository by backing {
+            override suspend fun getMessages(
+                userId: SenderId,
+                conversationId: ConversationId
+            ): Result<List<Message>> {
+                val result = backing.getMessages(userId, conversationId)
+                if (conversationId == first.id && !switchedDuringFirstLoad) {
+                    switchedDuringFirstLoad = true
+                    viewModel.selectConversation(other.id)
+                } else if (conversationId == other.id) {
+                    delay(1000)
+                }
+                return result
+            }
+        }
+        viewModel = viewModel(repository)
+
+        runCurrent()
+
+        assertEquals(other.id, viewModel.uiState.value.selectedConversationId)
+        assertTrue(viewModel.uiState.value.isLoadingMessages)
+        assertEquals(emptyList(), viewModel.uiState.value.currentMessages)
+        advanceUntilIdle()
+        assertEquals(listOf(message(inConversation = other.id)), viewModel.uiState.value.currentMessages)
+    }
+
+    @Test
     fun identityFailureCancelsOutstandingLoadsSoTheyCannotRestorePrivateMessages() = runTest {
         val backing = messagesRepository(messages = listOf(message()))
         val repository = object : MessagesRepository by backing {
