@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
+@Suppress("TooGenericExceptionCaught")
 object SupabaseRealtimeMessageMapper {
     private val json = Json { ignoreUnknownKeys = true }
 
