@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,17 @@ class MessagesViewModel(
     private var observeJob: Job? = null
     private var initialPageLoaded = false
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
+    private val streamCallbacks = MessagesStreamCallbacksFactory(
+        _uiState,
+        ::reloadSelectedConversation,
+        ::showFailure,
+        { !initialPageLoaded }
+    )
+    override fun onCleared() {
+        viewModelScope.cancel()
+        super.onCleared()
+    }
+
     init { loadConversations() }
     fun loadConversations() = refreshConversations()
 
@@ -94,26 +106,7 @@ class MessagesViewModel(
         observeJob = streamCoordinator.observe(
             viewModelScope,
             conversationId,
-            MessageStreamCallbacks(
-                isCurrent = { _uiState.value.selectedConversationId == conversationId },
-                onConnected = {
-                    _uiState.update { it.copy(connectionState = MessageConnectionState.CONNECTED) }
-                    reloadSelectedConversation(conversationId)
-                },
-                onReceived = { message ->
-                    _uiState.update {
-                        it.copy(currentMessages = MessageTimeline.merge(it.currentMessages, listOf(message)))
-                    }
-                },
-                onFailed = { cause, terminal ->
-                    if (terminal) {
-                        showFailure(Result.Error(cause))
-                    } else {
-                        _uiState.update { it.copy(connectionState = MessageConnectionState.DISCONNECTED) }
-                        if (!initialPageLoaded) reloadSelectedConversation(conversationId)
-                    }
-                }
-            )
+            streamCallbacks.forConversation(conversationId)
         )
     }
 

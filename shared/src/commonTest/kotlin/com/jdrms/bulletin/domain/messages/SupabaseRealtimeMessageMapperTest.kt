@@ -7,6 +7,7 @@ import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 class SupabaseRealtimeMessageMapperTest {
     @Test
@@ -27,6 +28,27 @@ class SupabaseRealtimeMessageMapperTest {
         assertFailsWith<Exception> {
             SupabaseRealtimeMessageMapper.toMessage(buildJsonObject { put("id", "missing") }, conversationId)
         }
+    }
+
+    @Test
+    fun insertForAnotherConversationReturnsNullFromToMessageOrNull() {
+        val mapped = SupabaseRealtimeMessageMapper.toMessageOrNull(record("another"), conversationId)
+        assertNull(mapped)
+    }
+
+    @Test
+    fun missingRequiredFieldReturnsNullFromToMessageOrNull() {
+        val mapped = SupabaseRealtimeMessageMapper.toMessageOrNull(
+            buildJsonObject { put("id", "missing") },
+            conversationId
+        )
+        assertNull(mapped)
+    }
+
+    @Test
+    fun validPayloadReturnsMessageFromToMessageOrNull() {
+        val mapped = SupabaseRealtimeMessageMapper.toMessageOrNull(record(), conversationId)
+        assertEquals(message(), mapped)
     }
 
     private fun record(conversation: String = conversationId.value) = buildJsonObject {

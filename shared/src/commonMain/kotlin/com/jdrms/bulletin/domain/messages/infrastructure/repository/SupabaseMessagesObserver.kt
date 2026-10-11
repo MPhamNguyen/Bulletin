@@ -9,9 +9,13 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.ProducerScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.withContext
 
 @Suppress("TooGenericExceptionCaught")
@@ -22,26 +26,69 @@ class SupabaseMessagesObserver internal constructor(
     constructor(supabase: SupabaseClient, repository: MessagesRepository) :
         this(SupabaseMessageRealtimeGateway(supabase), repository)
 
-    override fun observe(userId: SenderId, conversationId: ConversationId): Flow<MessageStreamEvent> = flow {
-        var channel: MessageRealtimeChannel? = null
+    override fun observe(userId: SenderId, conversationId: ConversationId): Flow<MessageStreamEvent> = channelFlow {
         try {
-            if (gateway.authenticatedUserId() != userId.value) throw ConversationAccessException()
-            repository.getMessagePage(userId, conversationId, limit = 1).getOrThrow()
-            val active = gateway.open(conversationId)
-            channel = active
-            active.subscribe()
-            emit(MessageStreamEvent.Connected)
-            active.events.collect { emit(it) }
+            verifyAccess(userId, conversationId)
+            observeWithRetries(conversationId)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: ConversationAccessException) {
-            emit(MessageStreamEvent.Failed(exception))
-        } catch (exception: Throwable) {
-            emit(MessageStreamEvent.Failed(MessagesPersistenceException(exception)))
-        } finally {
-            channel?.let { active ->
-                withContext(NonCancellable) { runCatching { active.close() } }
+            send(MessageStreamEvent.Failed(exception))
+        } catch (exception: Exception) {
+            send(MessageStreamEvent.Failed(MessagesPersistenceException(exception)))
+        }
+    }
+
+    private suspend fun verifyAccess(
+        userId: SenderId,
+        conversationId: ConversationId
+    ) {
+        if (gateway.authenticatedUserId() != userId.value) throw ConversationAccessException()
+        repository.getMessagePage(userId, conversationId, limit = 1).getOrThrow()
+    }
+
+    private suspend fun ProducerScope<MessageStreamEvent>.observeWithRetries(
+        conversationId: ConversationId
+    ) {
+        var attempt = 0
+        while (attempt < MAX_SUBSCRIBE_ATTEMPTS) {
+            val failure = try {
+                observeChannel(conversationId)
+                IllegalStateException("Message stream ended unexpectedly")
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: ConversationAccessException) {
+                send(MessageStreamEvent.Failed(exception))
+                return
+            } catch (exception: Exception) {
+                exception
             }
+            attempt++
+            if (attempt == MAX_SUBSCRIBE_ATTEMPTS) {
+                send(MessageStreamEvent.Failed(MessagesPersistenceException(failure)))
+                return
+            }
+            send(MessageStreamEvent.Reconnecting)
+            delay(SUBSCRIBE_RETRY_BASE_DELAY_MILLIS * (1L shl (attempt - 1)))
+        }
+    }
+
+    private suspend fun ProducerScope<MessageStreamEvent>.observeChannel(
+        conversationId: ConversationId
+    ) {
+        val channel = gateway.open(conversationId)
+        try {
+            channel.subscribe()
+            send(MessageStreamEvent.Connected)
+            channel.events
+                .onEach { send(it) }
+                .takeWhile { it !is MessageStreamEvent.Disconnected }
+                .collect()
+        } finally {
+            withContext(NonCancellable) { runCatching { channel.close() } }
         }
     }
 }
+
+private const val MAX_SUBSCRIBE_ATTEMPTS = 4
+private const val SUBSCRIBE_RETRY_BASE_DELAY_MILLIS = 250L

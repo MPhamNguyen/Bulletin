@@ -26,6 +26,15 @@ class MessageTimelineTest {
     }
 
     @Test
+    fun realtimeFallbackDoesNotReplaceKnownSenderName() {
+        val known = message().copy(senderName = "Alice")
+        val fallbackEcho = known.copy(senderName = "Student")
+
+        assertEquals(listOf(known), MessageTimeline.merge(listOf(known), listOf(fallbackEcho)))
+        assertEquals(listOf(known), MessageTimeline.merge(listOf(fallbackEcho), listOf(known)))
+    }
+
+    @Test
     fun mergeUsesSubmillisecondTimestampBeforeId() {
         val early = message(id = MessageId("z")).copy(preciseCreatedAt = Instant.parse("2026-01-01T00:00:00.000100Z"))
         val late = message(id = MessageId("a")).copy(preciseCreatedAt = Instant.parse("2026-01-01T00:00:00.000200Z"))

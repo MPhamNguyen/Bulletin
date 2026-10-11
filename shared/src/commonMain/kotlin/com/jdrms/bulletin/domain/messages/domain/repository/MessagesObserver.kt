@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 sealed interface MessageStreamEvent {
     data object Connected : MessageStreamEvent
+    data object Disconnected : MessageStreamEvent
+    data object Reconnecting : MessageStreamEvent
     data class Received(val message: Message) : MessageStreamEvent
     data class Failed(val cause: Throwable) : MessageStreamEvent
 }

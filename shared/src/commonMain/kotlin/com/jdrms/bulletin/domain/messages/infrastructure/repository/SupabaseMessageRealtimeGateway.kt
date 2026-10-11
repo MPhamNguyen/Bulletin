@@ -14,6 +14,7 @@ import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 
 internal interface MessageRealtimeGateway {
@@ -47,21 +48,23 @@ private class SupabaseMessageRealtimeChannel(
     private val inserts = channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
         table = SupabaseMessagesRepository.MESSAGES_TABLE
         filter("conversation_id", FilterOperator.EQ, conversationId.value)
-    }.map { action ->
-        MessageStreamEvent.Received(SupabaseRealtimeMessageMapper.toMessage(action.record, conversationId))
+    }.mapNotNull { action ->
+        SupabaseRealtimeMessageMapper.toMessageOrNull(action.record, conversationId)
+            ?.let(MessageStreamEvent::Received)
     }
 
-    private val status = channel.status.drop(1).map(::statusEvent)
+    private val status = channel.status.drop(1).map { it.toMessageStreamEvent() }
 
     override val events: Flow<MessageStreamEvent> = merge(inserts, status)
 
     override suspend fun subscribe() = channel.subscribe(blockUntilSubscribed = true)
 
     override suspend fun close() = supabase.realtime.removeChannel(channel)
+}
 
-    private fun statusEvent(state: RealtimeChannel.Status): MessageStreamEvent {
-        if (state == RealtimeChannel.Status.SUBSCRIBED) return MessageStreamEvent.Connected
-        val cause = MessagesPersistenceException(IllegalStateException("Message stream disconnected"))
-        return MessageStreamEvent.Failed(cause)
-    }
+internal fun RealtimeChannel.Status.toMessageStreamEvent(): MessageStreamEvent = when (this) {
+    RealtimeChannel.Status.SUBSCRIBED -> MessageStreamEvent.Connected
+    RealtimeChannel.Status.SUBSCRIBING -> MessageStreamEvent.Reconnecting
+    RealtimeChannel.Status.UNSUBSCRIBED,
+    RealtimeChannel.Status.UNSUBSCRIBING -> MessageStreamEvent.Disconnected
 }

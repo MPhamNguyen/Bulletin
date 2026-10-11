@@ -198,10 +198,10 @@ private fun rememberMessageHistoryListState(
 ): androidx.compose.foundation.lazy.LazyListState {
     val listState = rememberLazyListState()
     var positioned by remember(state.selectedConversationId) { mutableStateOf(false) }
-    LaunchedEffect(state.selectedConversationId, state.currentMessages.size) {
-        if (!positioned && state.currentMessages.isNotEmpty()) {
-            val olderButton = if (state.olderCursor != null) 1 else 0
-            listState.scrollToItem(state.currentMessages.lastIndex + olderButton)
+    LaunchedEffect(state.selectedConversationId, state.currentMessages.lastOrNull()?.id) {
+        val targetIndex = messageScrollTargetIndex(state.currentMessages.size, state.olderCursor != null)
+        if (targetIndex != null) {
+            listState.scrollToItem(targetIndex)
             positioned = true
         }
     }
@@ -214,6 +214,9 @@ private fun rememberMessageHistoryListState(
     }
     return listState
 }
+
+internal fun messageScrollTargetIndex(messagesCount: Int, hasOlderCursor: Boolean): Int? =
+    if (messagesCount <= 0) null else (messagesCount - 1) + if (hasOlderCursor) 1 else 0
 
 @Composable
 private fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewModel) {

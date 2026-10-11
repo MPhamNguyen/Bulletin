@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 internal class MessageStreamCallbacks(
     val isCurrent: () -> Boolean,
     val onConnected: () -> Unit,
+    val onConnectionState: (MessageConnectionState) -> Unit,
     val onReceived: (Message) -> Unit,
     val onFailed: (Throwable, Boolean) -> Unit
 )
@@ -30,6 +31,8 @@ internal class MessageStreamCoordinator(
             if (!callbacks.isCurrent()) return@collect
             when (event) {
                 MessageStreamEvent.Connected -> callbacks.onConnected()
+                MessageStreamEvent.Disconnected -> callbacks.onConnectionState(MessageConnectionState.DISCONNECTED)
+                MessageStreamEvent.Reconnecting -> callbacks.onConnectionState(MessageConnectionState.CONNECTING)
                 is MessageStreamEvent.Received -> callbacks.onReceived(event.message)
                 is MessageStreamEvent.Failed -> callbacks.onFailed(event.cause, event.cause.isTerminal())
             }
