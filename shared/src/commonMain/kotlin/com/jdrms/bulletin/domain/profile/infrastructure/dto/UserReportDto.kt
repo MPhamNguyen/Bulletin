@@ -8,6 +8,5 @@ data class UserReportInsertDto(
     @SerialName("reporter_id") val reporterId: String,
     @SerialName("reported_user_id") val reportedUserId: String,
     @SerialName("reason") val reason: String,
-    @SerialName("description") val description: String,
-    @SerialName("status") val status: String = "pending"
+    @SerialName("description") val description: String
 )

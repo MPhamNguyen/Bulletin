@@ -138,6 +138,53 @@ class MarketplaceUserReportViewModelTest {
         }
     }
 
+    @Test
+    fun ignoresSuccessfulSubmissionResultAfterBeginningAnotherUserReport() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val response = CompletableDeferred<Result<Unit>>()
+            val reporter = MarketplaceUserReporter { _, _, _ -> response.await() }
+            val viewModel = createReadyViewModel(reporter)
+
+            viewModel.submit()
+            runCurrent()
+            viewModel.begin("seller-2")
+            response.complete(Result.Success(Unit))
+            advanceUntilIdle()
+
+            assertEquals("seller-2", viewModel.uiState.value.reportedUserId)
+            assertEquals(null, viewModel.uiState.value.selectedReason)
+            assertFalse(viewModel.uiState.value.isSubmitting)
+            assertFalse(viewModel.uiState.value.submitted)
+            assertEquals(null, viewModel.uiState.value.errorMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun ignoresFailedSubmissionResultAfterBeginningAnotherUserReport() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val response = CompletableDeferred<Result<Unit>>()
+            val reporter = MarketplaceUserReporter { _, _, _ -> response.await() }
+            val viewModel = createReadyViewModel(reporter)
+
+            viewModel.submit()
+            runCurrent()
+            viewModel.begin("seller-2")
+            response.complete(Result.Error(IllegalStateException("old failure")))
+            advanceUntilIdle()
+
+            assertEquals("seller-2", viewModel.uiState.value.reportedUserId)
+            assertFalse(viewModel.uiState.value.isSubmitting)
+            assertFalse(viewModel.uiState.value.submitted)
+            assertEquals(null, viewModel.uiState.value.errorMessage)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private fun createReadyViewModel(reporter: MarketplaceUserReporter): MarketplaceUserReportViewModel {
         return MarketplaceUserReportViewModel(ReportMarketplaceUser(reporter)).apply {
             begin("seller-1")

@@ -7,8 +7,11 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmitted
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportReason
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.UserReportInsertDto
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
@@ -33,6 +36,20 @@ class SupabaseUserReportRepositoryTest {
     }
 
     @Test
+    fun insertPayloadLeavesModerationStatusToDatabase() {
+        val payload = Json.encodeToString(
+            UserReportInsertDto(
+                reporterId = "reporter-id",
+                reportedUserId = "target-id",
+                reason = "Scam or Fraud",
+                description = "Details"
+            )
+        )
+
+        assertFalse(payload.contains("\"status\""))
+    }
+
+    @Test
     fun insertsExpectedColumnsAndReason() = runTest {
         val table = FakeTable("reporter-id")
 
@@ -44,8 +61,7 @@ class SupabaseUserReportRepositoryTest {
                 reporterId = "reporter-id",
                 reportedUserId = "target-id",
                 reason = "Scam or Fraud",
-                description = "Details",
-                status = "pending"
+                description = "Details"
             ),
             table.inserted
         )

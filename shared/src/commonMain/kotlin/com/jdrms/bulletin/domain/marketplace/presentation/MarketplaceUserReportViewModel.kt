@@ -25,8 +25,10 @@ class MarketplaceUserReportViewModel(
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(MarketplaceUserReportUiState())
     val uiState = mutableUiState.asStateFlow()
+    private var reportFormGeneration = 0
 
     fun begin(reportedUserId: String) {
+        reportFormGeneration++
         mutableUiState.value = MarketplaceUserReportUiState(reportedUserId = reportedUserId)
     }
 
@@ -48,14 +50,15 @@ class MarketplaceUserReportViewModel(
             return
         }
         if (state.isSubmitting || state.submitted) return
+        val generation = reportFormGeneration
         mutableUiState.update { it.copy(isSubmitting = true, errorMessage = null) }
         viewModelScope.launch {
             try {
                 when (val result = reportMarketplaceUser(userId, reason, state.description)) {
-                    is Result.Success -> mutableUiState.update {
+                    is Result.Success -> updateIfCurrent(generation, userId) {
                         it.copy(isSubmitting = false, submitted = true)
                     }
-                    is Result.Error -> mutableUiState.update {
+                    is Result.Error -> updateIfCurrent(generation, userId) {
                         it.copy(
                             isSubmitting = false,
                             errorMessage = result.exception.message ?: "Unable to submit your report."
@@ -65,13 +68,23 @@ class MarketplaceUserReportViewModel(
             } catch (exception: CancellationException) {
                 throw exception
             } catch (_: Exception) {
-                mutableUiState.update {
+                updateIfCurrent(generation, userId) {
                     it.copy(
                         isSubmitting = false,
                         errorMessage = "We couldn't submit your report right now. Please try again."
                     )
                 }
             }
+        }
+    }
+
+    private fun updateIfCurrent(
+        generation: Int,
+        reportedUserId: String,
+        update: (MarketplaceUserReportUiState) -> MarketplaceUserReportUiState
+    ) {
+        if (generation == reportFormGeneration && mutableUiState.value.reportedUserId == reportedUserId) {
+            mutableUiState.update(update)
         }
     }
 }
