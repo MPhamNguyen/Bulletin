@@ -1,6 +1,9 @@
 package com.jdrms.bulletin.domain.messages.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.application.MessagesInstrumentation
+import com.jdrms.bulletin.domain.messages.application.NoOpMessagesInstrumentation
+import com.jdrms.bulletin.domain.messages.application.measuredMessagesOperation
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
@@ -31,19 +34,46 @@ import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Instant
 
 class SupabaseMessagesRepository internal constructor(
-    private val messagesTable: SupabaseMessagesTable
+    private val messagesTable: SupabaseMessagesTable,
+    private val maxConcurrentConversations: Int = DEFAULT_MAX_CONCURRENT_CONVERSATIONS,
+    private val instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
 ) : MessagesRepository {
-    constructor(supabase: SupabaseClient) : this(PostgrestSupabaseMessagesTable(supabase))
+    init {
+        require(maxConcurrentConversations in MIN_CONCURRENT_CONVERSATIONS..MAX_CONCURRENT_CONVERSATIONS)
+    }
 
-    override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = repositoryCall {
-        messagesTable.getConversationIds(userId.value)
-            .map { conversationId -> loadConversation(conversationId) }
-            .sortedByDescending(Conversation::updatedAtMillis)
+    constructor(
+        supabase: SupabaseClient,
+        maxConcurrentConversations: Int = DEFAULT_MAX_CONCURRENT_CONVERSATIONS,
+        instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
+    ) : this(PostgrestSupabaseMessagesTable(supabase), maxConcurrentConversations, instrumentation)
+
+    override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = measuredMessagesOperation(
+        instrumentation,
+        "inbox_retrieval",
+        { result -> (result as? Result.Success)?.data?.size },
+        { result -> (result as? Result.Success)?.data?.size?.let { 1 + (3 * it) } }
+    ) {
+        repositoryCall {
+            val semaphore = Semaphore(maxConcurrentConversations)
+            val conversationIds = messagesTable.getConversationIds(userId.value)
+            coroutineScope {
+                conversationIds
+                    .map { conversationId -> async { semaphore.withPermit { loadConversation(conversationId) } } }
+                    .awaitAll()
+                    .sortedByDescending(Conversation::updatedAtMillis)
+            }
+        }
     }
 
     override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
@@ -80,14 +110,16 @@ class SupabaseMessagesRepository internal constructor(
     ): Result<MessagePage> = repositoryCall {
         require(limit > 0)
         requireParticipant(userId, conversationId)
-        val rows = messagesTable.getMessagePage(conversationId.value, before, limit + 1)
-        val visible = rows.take(limit)
-        MessagePage(
-            messages = visible.map(SupabaseMessagesMapper::toMessage).reversed(),
-            olderCursor = visible.lastOrNull()?.takeIf { rows.size > limit }?.let {
-                MessageCursor(Instant.parse(it.createdAt), MessageId(it.id))
-            }
-        )
+        measuredMessagesOperation(instrumentation, "message_fetch", { it.messages.size }) {
+            val rows = messagesTable.getMessagePage(conversationId.value, before, limit + 1)
+            val visible = rows.take(limit)
+            MessagePage(
+                messages = visible.map(SupabaseMessagesMapper::toMessage).reversed(),
+                olderCursor = visible.lastOrNull()?.takeIf { rows.size > limit }?.let {
+                    MessageCursor(Instant.parse(it.createdAt), MessageId(it.id))
+                }
+            )
+        }
     }
 
     override suspend fun sendMessage(message: Message): Result<Message> = repositoryCall {
@@ -124,10 +156,14 @@ class SupabaseMessagesRepository internal constructor(
         code == UNIQUE_VIOLATION_CODE && message?.contains(MESSAGE_REPORT_UNIQUE_CONSTRAINT) == true
 
     private suspend fun loadConversation(conversationId: String): Conversation {
-        val conversation = messagesTable.findConversation(conversationId) ?: throw ConversationAccessException()
-        val participants = messagesTable.getParticipants(conversationId)
-        val lastMessage = messagesTable.findLatestMessage(conversationId)
-        return SupabaseMessagesMapper.toConversation(conversation, participants, lastMessage)
+        val (conversation, participants, lastMessage) = coroutineScope {
+            val conversation = async { messagesTable.findConversation(conversationId) }
+            val participants = async { messagesTable.getParticipants(conversationId) }
+            val lastMessage = async { messagesTable.findLatestMessage(conversationId) }
+            Triple(conversation.await(), participants.await(), lastMessage.await())
+        }
+        val accessibleConversation = conversation ?: throw ConversationAccessException()
+        return SupabaseMessagesMapper.toConversation(accessibleConversation, participants, lastMessage)
     }
 
     private suspend fun requireParticipant(userId: SenderId, conversationId: ConversationId) {
@@ -163,6 +199,9 @@ class SupabaseMessagesRepository internal constructor(
     }
 
     companion object {
+        const val DEFAULT_MAX_CONCURRENT_CONVERSATIONS = 4
+        private const val MIN_CONCURRENT_CONVERSATIONS = 1
+        private const val MAX_CONCURRENT_CONVERSATIONS = 8
         const val CONVERSATIONS_TABLE = "conversations"
         const val PARTICIPANTS_TABLE = "conversation_participants"
         const val MESSAGES_TABLE = "messages"

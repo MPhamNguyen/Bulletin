@@ -46,6 +46,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.Marketpla
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
+import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.HideConversation
@@ -168,7 +169,7 @@ class AppContainer(
     val messagesRepository: MessagesRepository by lazy {
         val client = supabaseClient
         if (client != null) {
-            SupabaseMessagesRepository(client)
+            SupabaseMessagesRepository(client, instrumentation = ConsoleMessagesInstrumentation)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
                 error("Supabase client is not configured and in-memory fallback is disabled.")
