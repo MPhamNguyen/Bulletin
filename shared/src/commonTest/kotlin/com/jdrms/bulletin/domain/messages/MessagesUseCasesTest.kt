@@ -44,7 +44,7 @@ class MessagesUseCasesTest {
         val report = ReportMessage(repository, provider)
         listOf(alice, bob).forEach { sender ->
             provider.result = Result.Success(sender)
-            conversations().getOrThrow()
+            assertEquals(sender.id, conversations().getOrThrow().viewerId)
             messages(conversationId).getOrThrow()
             report(conversationId, message().id, "Spam").getOrThrow()
             assertEquals(List(3) { sender.id }, repository.callers.takeLast(3))

@@ -220,10 +220,8 @@ fun MainAppScaffold(
                 BulletinBottomNavigationBar(
                     currentDestination = navigationState.currentDestination,
                     onDestinationSelected = { destination ->
-                        if (
-                            destination != AppDestination.PROFILE ||
-                            navigationState.profileDestination != ProfileDestination.PROFILE
-                        ) {
+                        if (destination == AppDestination.MESSAGES) messagesViewModel.loadConversations()
+                        if (destination != AppDestination.PROFILE) {
                             listingsViewModel.cancelEditing()
                             listingsViewModel.clearMessages()
                         }

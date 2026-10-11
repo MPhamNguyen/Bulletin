@@ -38,7 +38,9 @@ class InMemoryMessagesRepository(
         if (conversations[conversationId]?.includes(userId) != true) {
             Result.Error(ConversationAccessException())
         } else {
-            Result.Success(messagesByConvId[conversationId]?.toList() ?: emptyList())
+            val orderedMessages = messagesByConvId[conversationId].orEmpty()
+                .sortedWith(compareBy<Message> { it.timestampMillis }.thenBy { it.id.value })
+            Result.Success(orderedMessages)
         }
     }
 

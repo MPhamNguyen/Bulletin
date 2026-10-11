@@ -44,7 +44,7 @@ class AppContainerTest {
         val sender = container.currentMessageSenderProvider.getCurrentSender().getOrThrow()
         assertEquals(profile.id.value, sender.id.value)
         assertEquals(profile.fullName, sender.displayName)
-        assertEquals(emptyList(), container.getConversations().getOrThrow())
+        assertEquals(emptyList(), container.getConversations().getOrThrow().conversations)
         container.signOutUser().getOrThrow()
         assertIs<MessagingAuthenticationRequiredException>(
             assertIs<Result.Error>(container.getConversations()).exception

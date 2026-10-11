@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
  * Every operation is scoped to a participant. Missing and inaccessible conversations return the same error.
  * Adapters must enforce membership for reads and writes; names are display metadata, never identity.
  * A network adapter must also enforce these rules on the server using the authenticated session.
+ * Message lists are ordered oldest to newest by timestamp, then by ID for equal timestamps.
  */
 interface MessagesRepository {
     suspend fun getConversations(userId: SenderId): Result<List<Conversation>>
