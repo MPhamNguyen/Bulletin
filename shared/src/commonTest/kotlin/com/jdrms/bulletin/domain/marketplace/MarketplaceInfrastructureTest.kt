@@ -8,6 +8,12 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMa
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -134,6 +140,25 @@ class MarketplaceInfrastructureTest {
         val repo = InMemoryMarketplaceRepository()
         val result = repo.viewListing("nonexistent")
         assertTrue(result.isError())
+    }
+
+    @Test
+    fun supabaseMarketplaceDoesNotReplaceEmptyBackendResultsWithSeededListings() = runTest {
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond("[]", HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
+            }
+        }
+
+        try {
+            val repository = SupabaseMarketplaceRepository(client)
+
+            assertEquals(emptyList(), repository.getCatalog())
+            assertEquals(null, repository.getItem(MarketplaceItemId("mkt_1")))
+        } finally {
+            client.close()
+        }
     }
 
     @Test

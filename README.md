@@ -67,6 +67,22 @@ Save / Message ←→ Student Profile
 
 ## 🧩 Functional Scope
 
+## Backend status
+
+The app binds Supabase adapters when a Supabase client is configured. In-memory adapters remain available as a local
+development fallback and in tests; they are not evidence of a live backend integration.
+
+| Context / data | Configured backend | Local fallback / kept in memory |
+| --- | --- | --- |
+| Marketplace listings and bookmarks | Supabase `listings`, `reviews`, and bookmark storage | In-memory marketplace repository when no client is configured |
+| Seller listings | Supabase `listings` | In-memory listings repository when no client is configured |
+| Messages and reports | Supabase messages repository | In-memory messages repository when no client is configured |
+| Auth, profiles, reviews, and profile photos | Supabase Auth, profile/review tables, and profile photo storage | In-memory repositories when no client is configured |
+| Home / FYP | Not migrated | In-memory Home repository, intentionally retained |
+| Theme preference | Platform preference store on Android | In-memory preference store for common/preview use |
+
+Live Supabase project verification is not recorded by this repository status.
+
 ### Account & Identity
 - Create an account using a school email
 - Verify the email before account creation

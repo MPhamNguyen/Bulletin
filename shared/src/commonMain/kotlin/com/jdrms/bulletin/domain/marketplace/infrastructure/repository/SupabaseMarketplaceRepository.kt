@@ -21,8 +21,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 class SupabaseMarketplaceRepository(
     private val supabase: SupabaseClient,
-    private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy(),
-    private val fallbackRepository: InMemoryMarketplaceRepository = InMemoryMarketplaceRepository()
+    private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy()
 ) : MarketplaceRepository {
 
     private val bookmarks = SupabaseListingBookmarks(supabase)
@@ -31,17 +30,13 @@ class SupabaseMarketplaceRepository(
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
                 val dtos = supabase.from(LISTINGS_TABLE).select().decodeList<MarketplaceItemDto>()
-                if (dtos.isEmpty()) {
-                    fallbackRepository.getCatalog()
-                } else {
-                    dtos.map { MarketplaceMapper.toDomain(it) }
-                }
+                dtos.map { MarketplaceMapper.toDomain(it) }
             }.getOrElse { error ->
                 error.rethrowIfCancellation()
-                fallbackRepository.getCatalog()
+                emptyList()
             }
         }
-        return timedResult ?: fallbackRepository.getCatalog()
+        return timedResult.orEmpty()
     }
 
     override suspend fun search(query: String, category: MarketplaceCategory?): List<MarketplaceItem> {
@@ -64,7 +59,7 @@ class SupabaseMarketplaceRepository(
                 null
             }
         }
-        return timedResult ?: fallbackRepository.getItem(id)
+        return timedResult
     }
 
     override suspend fun viewListing(listingID: String): Result<Listing> {
@@ -107,18 +102,12 @@ class SupabaseMarketplaceRepository(
                     if (listing != null) {
                         Result.Success(listing)
                     } else {
-                        // Check fallback repository if not found on server
-                        fallbackRepository.viewListing(databaseListingId)
+                        Result.Error(NoSuchElementException("Listing not found."))
                     }
                 },
                 onFailure = { error ->
                     error.rethrowIfCancellation()
-                    val fallbackResult = fallbackRepository.viewListing(databaseListingId)
-                    if (fallbackResult.isSuccess()) {
-                        fallbackResult
-                    } else {
-                        Result.Error(Exception(mapMarketplaceErrorMessage(error), error))
-                    }
+                    Result.Error(Exception(mapMarketplaceErrorMessage(error), error))
                 }
             )
         }
