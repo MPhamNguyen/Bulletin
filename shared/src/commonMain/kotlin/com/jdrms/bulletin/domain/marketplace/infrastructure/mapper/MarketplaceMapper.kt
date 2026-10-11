@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.mapper
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
@@ -20,6 +21,7 @@ object MarketplaceMapper {
             description = dto.description,
             price = MarketplacePrice(dto.price.coerceAtLeast(0.0)),
             category = category,
+            condition = MarketplaceCondition.GOOD,
             isBookmarked = isBookmarked,
             createdAtMillis = dto.createdAtMillis
         )

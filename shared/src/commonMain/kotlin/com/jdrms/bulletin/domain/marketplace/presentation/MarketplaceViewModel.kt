@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -45,7 +46,7 @@ class MarketplaceViewModel(
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
                 refreshListings()
-                _uiState.value.selectedListingId?.let(::loadListingDetail)
+                _uiState.value.detail.listingId?.let(::loadListingDetail)
             }
         }
     }
@@ -62,12 +63,17 @@ class MarketplaceViewModel(
     }
 
     fun onSearchQueryChanged(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { it.copy(filters = it.filters.copy(query = query)) }
         loadFirstPage(userId = null, debounceMillis = SEARCH_DEBOUNCE_MILLIS)
     }
 
     fun onCategorySelected(category: MarketplaceCategory?) {
-        _uiState.update { it.copy(selectedCategory = category) }
+        _uiState.update { it.copy(filters = it.filters.copy(category = category)) }
+        loadFirstPage(userId = null, debounceMillis = 0L)
+    }
+
+    fun onConditionSelected(condition: MarketplaceCondition?) {
+        _uiState.update { it.copy(filters = it.filters.copy(condition = condition)) }
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
@@ -79,13 +85,13 @@ class MarketplaceViewModel(
         _uiState.update { it.copy(isLoadingMore = true, errorMessage = null) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            val query = currentState.searchQuery
-            val category = currentState.selectedCategory
+            val filters = currentState.filters
             runCatching {
                 searchMarketplace.getPage(
                     MarketplacePageRequest(
-                        query = query,
-                        category = category,
+                        query = filters.query,
+                        category = filters.category,
+                        condition = filters.condition,
                         cursor = cursor
                     )
                 )
@@ -93,8 +99,7 @@ class MarketplaceViewModel(
                 onSuccess = { page ->
                     _uiState.update { state ->
                         if (
-                            state.searchQuery == query &&
-                            state.selectedCategory == category &&
+                            state.filters == filters &&
                             state.nextCursor == cursor
                         ) {
                             state.copy(
@@ -112,8 +117,7 @@ class MarketplaceViewModel(
                     error.rethrowCancellation()
                     _uiState.update { state ->
                         if (
-                            state.searchQuery == query &&
-                            state.selectedCategory == category &&
+                            state.filters == filters &&
                             state.nextCursor == cursor
                         ) {
                             state.copy(
@@ -139,21 +143,15 @@ class MarketplaceViewModel(
 
     fun onListingClicked(listingId: String) {
         _uiState.update {
-            it.copy(
-                selectedListingId = listingId,
-                selectedListing = null,
-                isDetailLoading = true,
-                detailErrorMessage = null,
-                isDetailSheetOpen = true
-            )
+            it.copy(detail = MarketplaceDetailState(listingId = listingId, isLoading = true, isOpen = true))
         }
         loadListingDetail(listingId)
     }
 
     fun retryLoadListingDetail() {
-        val listingId = _uiState.value.selectedListingId ?: return
+        val listingId = _uiState.value.detail.listingId ?: return
         _uiState.update {
-            it.copy(isDetailLoading = true, detailErrorMessage = null)
+            it.copy(detail = it.detail.copy(isLoading = true, errorMessage = null))
         }
         loadListingDetail(listingId)
     }
@@ -168,12 +166,11 @@ class MarketplaceViewModel(
                     val currentUserId = currentUserIdProvider()
                     _uiState.update {
                         it.copy(
-                            selectedListing = listing.copy(
-                                id = canonicalId,
-                                isBookmarked = isBookmarked
+                            detail = it.detail.copy(
+                                listing = listing.copy(id = canonicalId, isBookmarked = isBookmarked),
+                                isLoading = false,
+                                errorMessage = null
                             ),
-                            isDetailLoading = false,
-                            detailErrorMessage = null,
                             currentUserId = currentUserId
                         )
                     }
@@ -181,8 +178,10 @@ class MarketplaceViewModel(
                 is com.jdrms.bulletin.core.common.Result.Error -> {
                     _uiState.update {
                         it.copy(
-                            isDetailLoading = false,
-                            detailErrorMessage = result.exception.message ?: "Failed to load listing details."
+                            detail = it.detail.copy(
+                                isLoading = false,
+                                errorMessage = result.exception.message ?: "Failed to load listing details."
+                            )
                         )
                     }
                 }
@@ -192,20 +191,14 @@ class MarketplaceViewModel(
 
     fun dismissListingDetail() {
         _uiState.update {
-            it.copy(
-                isDetailSheetOpen = false,
-                selectedListing = null,
-                selectedListingId = null,
-                detailErrorMessage = null,
-                isDetailLoading = false
-            )
+            it.copy(detail = MarketplaceDetailState())
         }
     }
 
     fun onSellerClicked(sellerId: String) {
         _uiState.update {
             it.copy(
-                isDetailSheetOpen = false,
+                detail = it.detail.copy(isOpen = false),
                 isSellerProfileOpen = true,
                 isSellerProfileLoading = true,
                 sellerProfileErrorMessage = null,
@@ -245,7 +238,7 @@ class MarketplaceViewModel(
                 isSellerProfileOpen = false,
                 selectedSellerProfile = null,
                 sellerProfileErrorMessage = null,
-                isDetailSheetOpen = it.selectedListing != null
+                detail = it.detail.copy(isOpen = it.detail.listing != null)
             )
         }
     }

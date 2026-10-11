@@ -16,6 +16,14 @@ enum class MarketplaceCategory {
     OTHER
 }
 
+enum class MarketplaceCondition {
+    NEW,
+    LIKE_NEW,
+    GOOD,
+    FAIR,
+    POOR
+}
+
 data class MarketplacePrice(
     val amount: Double,
     val currency: String = "USD"
@@ -39,6 +47,7 @@ data class MarketplaceItem(
     val description: String,
     val price: MarketplacePrice,
     val category: MarketplaceCategory,
+    val condition: MarketplaceCondition = MarketplaceCondition.GOOD,
     val isBookmarked: Boolean = false,
     val createdAtMillis: Long = 0L
 ) {

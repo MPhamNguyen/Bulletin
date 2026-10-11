@@ -38,6 +38,7 @@ class MarketplaceInfrastructureTest {
         assertEquals(45.0, listing?.price?.amount)
         assertEquals(false, listing?.isBookmarked)
         assertEquals(4.5, listing?.sellerReputationScore)
+        assertEquals("GOOD", listing?.condition)
     }
 
     @Test
@@ -93,6 +94,7 @@ class MarketplaceInfrastructureTest {
         assertEquals("mkt_map_1", domain.id.value)
         assertEquals("Sean Gallagher", domain.sellerName)
         assertEquals(MarketplaceCategory.ELECTRONICS, domain.category)
+        assertEquals("LIKE_NEW", domain.condition)
         assertEquals(4.9, domain.sellerReputationScore)
         assertEquals(true, domain.isBookmarked)
         assertEquals(1, domain.photos.size)

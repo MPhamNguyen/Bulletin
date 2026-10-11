@@ -4,6 +4,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnaps
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
@@ -21,6 +22,7 @@ object SupabaseMarketplaceListingMapper {
             description = snapshot.description,
             price = MarketplacePrice(snapshot.priceAmount, snapshot.priceCurrency),
             category = snapshot.category,
+            condition = snapshot.condition,
             createdAtMillis = snapshot.createdAtMillis
         )
     }
@@ -41,7 +43,7 @@ object SupabaseMarketplaceListingMapper {
         val price = dto.price ?: return null
         val description = dto.description?.takeIf(String::isNotBlank) ?: DEFAULT_DESCRIPTION
         val category = dto.category.orEmpty().uppercase().ifBlank { "OTHER" }
-        val condition = dto.condition.orEmpty().uppercase().ifBlank { "GOOD" }
+        val condition = dto.condition.orEmpty().uppercase().replace(' ', '_').ifBlank { "GOOD" }
 
         return Listing(
             id = MarketplaceItemId("listing:${dto.id}"),
@@ -65,6 +67,7 @@ object SupabaseMarketplaceListingMapper {
         val price = dto.price ?: return null
         val category = runCatching { MarketplaceCategory.valueOf(dto.category.orEmpty().uppercase()) }
             .getOrDefault(MarketplaceCategory.OTHER)
+        val condition = dto.condition.toMarketplaceCondition()
         return MarketplaceListingSnapshot(
             id = "listing:${dto.id}",
             sellerId = sellerId,
@@ -74,7 +77,8 @@ object SupabaseMarketplaceListingMapper {
             priceAmount = price.coerceAtLeast(0.0),
             priceCurrency = "USD",
             category = category,
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            condition = condition
         )
     }
 
@@ -85,6 +89,11 @@ object SupabaseMarketplaceListingMapper {
     private fun String?.toInstantOrEpoch(): Instant {
         return this?.let { timestamp -> runCatching { Instant.parse(timestamp) }.getOrNull() }
             ?: Instant.fromEpochMilliseconds(0L)
+    }
+
+    private fun String?.toMarketplaceCondition(): MarketplaceCondition {
+        return runCatching { MarketplaceCondition.valueOf(orEmpty().uppercase().replace(' ', '_')) }
+            .getOrDefault(MarketplaceCondition.GOOD)
     }
 
     private const val DEFAULT_SELLER_NAME = "Student"

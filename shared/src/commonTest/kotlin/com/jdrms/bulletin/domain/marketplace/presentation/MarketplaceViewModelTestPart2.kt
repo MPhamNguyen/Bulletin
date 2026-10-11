@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListin
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -221,6 +222,29 @@ class MarketplaceViewModelTestPart2 {
             }
             assertTrue(allItemsMatch)
             assertTrue(viewModel.uiState.value.endReached)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun conditionSelectionReloadsOnlyMatchingListings() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
+            val source = MutableListingSource().apply {
+                listings += uploadedListing().copy(id = "listing:new", condition = MarketplaceCondition.NEW)
+                listings += uploadedListing().copy(id = "listing:fair", condition = MarketplaceCondition.FAIR)
+            }
+            val viewModel = createViewModel(repository, source)
+            advanceUntilIdle()
+
+            viewModel.onConditionSelected(MarketplaceCondition.FAIR)
+            advanceUntilIdle()
+
+            assertEquals(MarketplaceCondition.FAIR, viewModel.uiState.value.filters.condition)
+            assertEquals(listOf("listing:fair"), viewModel.uiState.value.items.map { it.id.value })
         } finally {
             Dispatchers.resetMain()
         }

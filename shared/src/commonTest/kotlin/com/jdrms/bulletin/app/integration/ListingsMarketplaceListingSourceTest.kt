@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.integration
 
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
@@ -14,6 +15,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,6 +38,7 @@ class ListingsMarketplaceListingSourceTest {
         assertEquals("listing:available", snapshots.single().id)
         assertEquals("Campus Sofa", snapshots.single().title)
         assertEquals(MarketplaceCategory.FURNITURE, snapshots.single().category)
+        assertEquals(MarketplaceCondition.FAIR, snapshots.single().condition)
     }
 
     @Test
@@ -85,6 +88,7 @@ class ListingsMarketplaceListingSourceTest {
             description = "Compact sofa in good condition",
             price = ListingPrice(75.0),
             category = ListingCategory.FURNITURE,
+            condition = ListingCondition.FAIR,
             status = status
         )
     }

@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.app.integration
 
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
@@ -9,6 +10,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSourc
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 
 class ListingsMarketplaceListingSource(
     private val listingsRepository: ListingsRepository
@@ -26,7 +28,8 @@ class ListingsMarketplaceListingSource(
                     priceAmount = listing.price.amount,
                     priceCurrency = listing.price.currency,
                     category = listing.category.toMarketplaceCategory(),
-                    createdAtMillis = listing.createdAtMillis
+                    createdAtMillis = listing.createdAtMillis,
+                    condition = listing.condition.toMarketplaceCondition()
                 )
             }
             .pageFor(request)
@@ -41,5 +44,15 @@ private fun ListingCategory.toMarketplaceCategory(): MarketplaceCategory {
         ListingCategory.CLOTHING -> MarketplaceCategory.CLOTHING
         ListingCategory.HOUSING -> MarketplaceCategory.HOUSING
         ListingCategory.OTHER -> MarketplaceCategory.OTHER
+    }
+}
+
+private fun ListingCondition.toMarketplaceCondition(): MarketplaceCondition {
+    return when (this) {
+        ListingCondition.NEW -> MarketplaceCondition.NEW
+        ListingCondition.LIKE_NEW -> MarketplaceCondition.LIKE_NEW
+        ListingCondition.GOOD -> MarketplaceCondition.GOOD
+        ListingCondition.FAIR -> MarketplaceCondition.FAIR
+        ListingCondition.POOR -> MarketplaceCondition.POOR
     }
 }

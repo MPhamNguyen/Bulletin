@@ -82,13 +82,13 @@ class MarketplaceViewModelTestPart1 {
 
             viewModel.onListingClicked(itemId.value)
             advanceUntilIdle()
-            assertTrue(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+            assertTrue(viewModel.uiState.value.detail.listing?.isBookmarked == true)
 
             viewModel.toggleBookmark(itemId)
             advanceUntilIdle()
             assertEquals(emptySet(), repository.getBookmarkedItemIds("student_user"))
             assertEquals(2, repository.bookmarkMutationCount)
-            assertFalse(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+            assertFalse(viewModel.uiState.value.detail.listing?.isBookmarked == true)
         } finally {
             Dispatchers.resetMain()
         }
@@ -119,8 +119,8 @@ class MarketplaceViewModelTestPart1 {
             viewModel.onListingClicked(itemId.value)
             advanceUntilIdle()
 
-            assertEquals(itemId, viewModel.uiState.value.selectedListing?.id)
-            assertTrue(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+            assertEquals(itemId, viewModel.uiState.value.detail.listing?.id)
+            assertTrue(viewModel.uiState.value.detail.listing?.isBookmarked == true)
         } finally {
             Dispatchers.resetMain()
         }
@@ -220,7 +220,7 @@ class MarketplaceViewModelTestPart1 {
 
             assertTrue(source.loadCount >= 2)
             assertEquals(detailLoadsBeforeChange + 1, repository.detailLoadCount)
-            assertEquals("Updated Calculator", viewModel.uiState.value.selectedListing?.title)
+            assertEquals("Updated Calculator", viewModel.uiState.value.detail.listing?.title)
         } finally {
             Dispatchers.resetMain()
         }
@@ -271,9 +271,9 @@ class MarketplaceViewModelTestPart1 {
             viewModel.onListingClicked("missing-listing")
             advanceUntilIdle()
 
-            assertTrue(viewModel.uiState.value.isDetailSheetOpen)
-            assertFalse(viewModel.uiState.value.isDetailLoading)
-            assertEquals("Listing not found with ID: missing-listing", viewModel.uiState.value.detailErrorMessage)
+            assertTrue(viewModel.uiState.value.detail.isOpen)
+            assertFalse(viewModel.uiState.value.detail.isLoading)
+            assertEquals("Listing not found with ID: missing-listing", viewModel.uiState.value.detail.errorMessage)
         } finally {
             Dispatchers.resetMain()
         }
@@ -298,20 +298,20 @@ class MarketplaceViewModelTestPart1 {
 
             viewModel.onListingClicked("mkt_1")
             advanceUntilIdle()
-            val viewedListingId = viewModel.uiState.value.selectedListing?.id?.value
+            val viewedListingId = viewModel.uiState.value.detail.listing?.id?.value
 
             viewModel.onSellerClicked("seller_101")
             advanceUntilIdle()
 
             assertTrue(viewModel.uiState.value.isSellerProfileOpen)
-            assertFalse(viewModel.uiState.value.isDetailSheetOpen)
-            assertEquals(viewedListingId, viewModel.uiState.value.selectedListing?.id?.value)
+            assertFalse(viewModel.uiState.value.detail.isOpen)
+            assertEquals(viewedListingId, viewModel.uiState.value.detail.listing?.id?.value)
 
             viewModel.dismissSellerProfile()
 
             assertFalse(viewModel.uiState.value.isSellerProfileOpen)
-            assertTrue(viewModel.uiState.value.isDetailSheetOpen)
-            assertEquals(viewedListingId, viewModel.uiState.value.selectedListing?.id?.value)
+            assertTrue(viewModel.uiState.value.detail.isOpen)
+            assertEquals(viewedListingId, viewModel.uiState.value.detail.listing?.id?.value)
         } finally {
             Dispatchers.resetMain()
         }
@@ -427,8 +427,9 @@ internal class CountingMarketplaceRepository(
 
     override suspend fun search(
         query: String,
-        category: MarketplaceCategory?
-    ): List<MarketplaceItem> = delegate.search(query, category)
+        category: MarketplaceCategory?,
+        condition: com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition?
+    ): List<MarketplaceItem> = delegate.search(query, category, condition)
 
     override suspend fun getItem(id: MarketplaceItemId): MarketplaceItem? = delegate.getItem(id)
 

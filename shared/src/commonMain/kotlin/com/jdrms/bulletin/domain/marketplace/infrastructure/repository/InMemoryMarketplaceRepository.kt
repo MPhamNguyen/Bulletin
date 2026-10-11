@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
@@ -32,15 +33,22 @@ class InMemoryMarketplaceRepository(
                 description = listing.description,
                 price = listing.price,
                 category = listing.category,
+                condition = runCatching {
+                    MarketplaceCondition.valueOf(listing.condition.uppercase().replace(' ', '_'))
+                }.getOrDefault(MarketplaceCondition.GOOD),
                 isBookmarked = listing.isBookmarked,
                 createdAtMillis = listing.createdAtMillis
             )
         }
     }
 
-    override suspend fun search(query: String, category: MarketplaceCategory?): List<MarketplaceItem> {
+    override suspend fun search(
+        query: String,
+        category: MarketplaceCategory?,
+        condition: MarketplaceCondition?
+    ): List<MarketplaceItem> {
         val items = getCatalog()
-        return searchPolicy.filterItems(items, query, category)
+        return searchPolicy.filterItems(items, query, category, condition)
     }
 
     override suspend fun getItem(id: MarketplaceItemId): MarketplaceItem? {
