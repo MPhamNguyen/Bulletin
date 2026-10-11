@@ -20,3 +20,12 @@ data class MessagesUiState(
     val errorMessage: String? = null,
     val statusMessage: String? = null
 )
+
+internal fun MessagesUiState.clearMessageLoadingForMissingConversation(
+    conversationId: ConversationId
+): MessagesUiState =
+    if (selectedConversationId != null && selectedConversationId != conversationId) {
+        this
+    } else {
+        copy(isLoadingMessages = false)
+    }

@@ -81,7 +81,11 @@ class MessagesViewModel(
         _uiState.update { it.copy(isLoadingMessages = true) }
         when (val result = getConversationMessages(conversationId)) {
             is Result.Success -> {
-                val conversation = _uiState.value.conversations.firstOrNull { it.id == conversationId } ?: return
+                val conversation = _uiState.value.conversations.firstOrNull { it.id == conversationId }
+                if (conversation == null) {
+                    _uiState.update { it.clearMessageLoadingForMissingConversation(conversationId) }
+                    return
+                }
                 when (val reconciled = conversation.reconcileMessages(result.data)) {
                     is Result.Error -> showFailure(reconciled)
                     is Result.Success -> _uiState.update { state ->
