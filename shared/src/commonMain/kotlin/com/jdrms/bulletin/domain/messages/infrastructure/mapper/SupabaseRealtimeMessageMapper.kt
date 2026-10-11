@@ -5,11 +5,11 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
-@Suppress("TooGenericExceptionCaught")
 object SupabaseRealtimeMessageMapper {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -23,8 +23,14 @@ object SupabaseRealtimeMessageMapper {
         toMessage(record, conversationId)
     } catch (exception: CancellationException) {
         throw exception
-    } catch (exception: Exception) {
-        println("Skipping malformed or mismatched realtime message payload: ${exception.message}")
+    } catch (_: ConversationAccessException) {
+        println("Skipping realtime message for a different conversation.")
+        null
+    } catch (_: SerializationException) {
+        println("Skipping malformed realtime message payload.")
+        null
+    } catch (_: IllegalArgumentException) {
+        println("Skipping realtime message with invalid field values.")
         null
     }
 }

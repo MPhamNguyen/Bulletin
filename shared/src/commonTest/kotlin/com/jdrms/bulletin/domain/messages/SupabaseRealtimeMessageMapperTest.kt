@@ -46,16 +46,28 @@ class SupabaseRealtimeMessageMapperTest {
     }
 
     @Test
+    fun invalidTimestampReturnsNullFromToMessageOrNull() {
+        val mapped = SupabaseRealtimeMessageMapper.toMessageOrNull(
+            record(timestamp = "not-a-timestamp"),
+            conversationId
+        )
+        assertNull(mapped)
+    }
+
+    @Test
     fun validPayloadReturnsMessageFromToMessageOrNull() {
         val mapped = SupabaseRealtimeMessageMapper.toMessageOrNull(record(), conversationId)
         assertEquals(message(), mapped)
     }
 
-    private fun record(conversation: String = conversationId.value) = buildJsonObject {
+    private fun record(
+        conversation: String = conversationId.value,
+        timestamp: String = "1970-01-01T00:00:00.042Z"
+    ) = buildJsonObject {
         put("id", "message-a")
         put("conversation_id", conversation)
         put("sender_id", alice.id.value)
         put("body", "Hello")
-        put("created_at", "1970-01-01T00:00:00.042Z")
+        put("created_at", timestamp)
     }
 }
