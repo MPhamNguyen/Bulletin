@@ -130,7 +130,6 @@ private fun ProfileDestinationContent(
         }
         ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
         ProfileDestination.PRIVACY -> PrivacyView(callbacks.onBack)
-        ProfileDestination.HELP_AND_SUPPORT -> HelpAndSupportView(callbacks.onBack)
         ProfileDestination.TERMS_AND_CONDITIONS -> TermsAndConditionsView(callbacks.onBack)
         ProfileDestination.PUBLIC_PROFILE -> PublicProfileView(states.profile.profile, callbacks.onBack)
         ProfileDestination.MY_LISTINGS, ProfileDestination.EDIT_LISTING -> Unit
@@ -187,7 +186,6 @@ private fun ProfileSettingsDestination(
             onEditAccount = { callbacks.onNavigate(ProfileDestination.EDIT_ACCOUNT) },
             onViewPublicProfile = { callbacks.onNavigate(ProfileDestination.PUBLIC_PROFILE) },
             onNotifications = { callbacks.onNavigate(ProfileDestination.NOTIFICATIONS) },
-            onHelpSupport = { callbacks.onNavigate(ProfileDestination.HELP_AND_SUPPORT) },
             onSignOut = { flows.account.signOut(callbacks.onSignOut) },
             onConfirmDeleteProfile = { flows.account.deleteProfile(callbacks.onSignOut) }
         ),

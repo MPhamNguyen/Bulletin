@@ -17,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -49,7 +48,6 @@ internal data class SettingsActions(
     val onEditAccount: () -> Unit,
     val onViewPublicProfile: () -> Unit,
     val onNotifications: () -> Unit,
-    val onHelpSupport: () -> Unit,
     val onSignOut: () -> Unit,
     val onDeleteProfile: () -> Unit = {},
     val onConfirmDeleteProfile: () -> Unit = {}
@@ -121,15 +119,6 @@ internal fun SettingsView(
                     onThemePreferenceChanged = onThemePreferenceChanged
                 )
             }
-
-            // Section: Support
-            SettingsSectionHeader(title = "SUPPORT")
-            SettingsActionCard(
-                icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                title = "Help and Support",
-                description = "Campus meetup safety guidelines, FAQs, and support team",
-                onClick = actions.onHelpSupport
-            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
