@@ -322,12 +322,6 @@ fun MainAppScaffold(
                                             profileDestination = ProfileDestination.MY_LISTINGS
                                         )
                                     },
-                                    onCreateListingClick = {
-                                        listingsViewModel.clearMessages()
-                                        navigationState = navigationState.copy(
-                                            currentDestination = AppDestination.LISTINGS
-                                        )
-                                    },
                                     onMessageSeller = { listingId, sellerId, sellerName, content ->
                                         val sendResult = sendListingMessage(
                                             container,

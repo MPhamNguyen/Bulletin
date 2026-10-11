@@ -19,8 +19,7 @@ internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
     onSettingsClick: () -> Unit,
     onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit,
-    onCreateListingClick: () -> Unit
+    onBookmarkedListingsClick: () -> Unit
 ) {
     val profile = uiState.profile
     val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
@@ -61,8 +60,7 @@ internal fun MarketplaceProfileView(
             ProfileMarketplaceCard(
                 activeListings = uiState.activeListingsCount,
                 onMyListingsClick = onMyListingsClick,
-                onBookmarkedListingsClick = onBookmarkedListingsClick,
-                onCreateListingClick = onCreateListingClick
+                onBookmarkedListingsClick = onBookmarkedListingsClick
             )
             Spacer(modifier = Modifier.height(16.dp))
         }

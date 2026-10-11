@@ -28,7 +28,6 @@ data class ProfileScreenCallbacks(
     val onBack: () -> Unit,
     val onSignOut: () -> Unit,
     val onMyListingsClick: () -> Unit,
-    val onCreateListingClick: () -> Unit,
     val onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
         { _, _, _, _ -> false },
     val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
@@ -145,8 +144,7 @@ private fun ProfileLandingDestination(
         uiState = state,
         onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
         onMyListingsClick = callbacks.onMyListingsClick,
-        onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) },
-        onCreateListingClick = callbacks.onCreateListingClick
+        onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) }
     )
 }
 
