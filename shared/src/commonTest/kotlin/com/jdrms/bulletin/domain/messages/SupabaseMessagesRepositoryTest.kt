@@ -176,6 +176,9 @@ private class FakeSupabaseMessagesTable(
     messages: List<Message> = emptyList(),
     private val authenticatedUserId: String? = alice.id.value
 ) : SupabaseMessagesTable {
+    override suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String {
+        return conversationRows.keys.firstOrNull() ?: "created-conversation"
+    }
     private val conversationRows = conversations.associate { conversation ->
         conversation.id.value to SupabaseConversationDto(
             id = conversation.id.value,

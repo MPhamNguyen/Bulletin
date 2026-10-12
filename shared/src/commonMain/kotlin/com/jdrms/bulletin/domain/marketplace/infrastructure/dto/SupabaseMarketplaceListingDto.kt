@@ -13,5 +13,11 @@ data class SupabaseMarketplaceListingDto(
     @SerialName("price") val price: Double? = null,
     @SerialName("description") val description: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("is_sold") val isSold: Boolean = false
+    @SerialName("is_sold") val isSold: Boolean = false,
+    @SerialName("profiles") val profile: SupabaseMarketplaceProfileDto? = null
+)
+
+@Serializable
+data class SupabaseMarketplaceProfileDto(
+    @SerialName("full_name") val fullName: String? = null
 )

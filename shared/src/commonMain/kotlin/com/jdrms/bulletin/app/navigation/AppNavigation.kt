@@ -36,6 +36,16 @@ enum class ProfileDestination {
     EDIT_LISTING
 }
 
+data class MainNavigationState(
+    val currentDestination: AppDestination = AppDestination.HOME,
+    val profileDestination: ProfileDestination = ProfileDestination.PROFILE
+) {
+    fun selectBottomNavigationDestination(destination: AppDestination): MainNavigationState = copy(
+        currentDestination = destination,
+        profileDestination = ProfileDestination.PROFILE
+    )
+}
+
 fun backFromProfile(destination: ProfileDestination): ProfileDestination {
     return when (destination) {
         ProfileDestination.PROFILE -> ProfileDestination.PROFILE

@@ -6,7 +6,9 @@ import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
+import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
+import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserReporter
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -27,18 +29,25 @@ import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
+import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
+import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
+import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.application.ToggleSaveMarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.HasListingConversation
+import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
@@ -47,6 +56,8 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMess
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
 import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.domain.profile.application.PublishStudentReview
 import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
@@ -56,6 +67,7 @@ import com.jdrms.bulletin.domain.profile.application.SignInUser
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
 import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
+import com.jdrms.bulletin.domain.profile.application.SubmitUserReport
 import com.jdrms.bulletin.domain.profile.application.UpdatePassword
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
@@ -64,16 +76,20 @@ import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.AuthSessionRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryUserReportRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserReportRepository
 import com.jdrms.bulletin.domain.profile.presentation.AccountViewModel
 import com.jdrms.bulletin.domain.profile.presentation.EditProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
+import com.jdrms.bulletin.domain.profile.presentation.ProfileBookmarksDependencies
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
@@ -165,6 +181,17 @@ class AppContainer(
             InMemoryProfileRepository()
         }
     }
+    private val userReportRepository: UserReportRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseUserReportRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryUserReportRepository()
+        }
+    }
     val profilePhotoRepository: ProfilePhotoRepository by lazy {
         supabaseClient?.let(::SupabaseProfilePhotoRepository) ?: InMemoryProfilePhotoRepository()
     }
@@ -188,12 +215,18 @@ class AppContainer(
 
     // Use Cases - Marketplace
     val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
-    val toggleSaveMarketplaceItem by lazy { ToggleSaveMarketplaceItem(marketplaceRepository) }
+    val bookmarkMarketplaceListing by lazy { BookmarkMarketplaceListing(marketplaceRepository) }
+    val getMarketplaceListingBookmarks by lazy { GetMarketplaceListingBookmarks(marketplaceRepository) }
+    val removeMarketplaceListingBookmark by lazy { RemoveMarketplaceListingBookmark(marketplaceRepository) }
     val viewMarketplaceListing by lazy {
         ViewMarketplaceListing(
             repository = marketplaceRepository,
             sellerProfileProvider = ProfileMarketplaceSellerNameProvider(profileRepository)
         )
+    }
+    private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
+    private val reportMarketplaceUser by lazy {
+        ReportMarketplaceUser(ProfileMarketplaceUserReporter(submitUserReport))
     }
 
     // Use Cases - Listings
@@ -208,8 +241,10 @@ class AppContainer(
     // Use Cases - Messages
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
+    val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
 
     // Use Cases - Profile
@@ -231,6 +266,15 @@ class AppContainer(
     val profileSoldListingsProvider by lazy { ListingsSoldListingsCountProvider(listingsRepository) }
     val getProfileOverview by lazy { GetProfileOverview(profileRepository, profileActiveListingsProvider) }
     val getProfileActivity by lazy { GetProfileActivity(profileActiveListingsProvider) }
+    private val marketplaceProfileBookmarks by lazy {
+        MarketplaceProfileBookmarkedListingsProvider(
+            getMarketplaceListingBookmarks,
+            removeMarketplaceListingBookmark,
+            listingsRepository
+        )
+    }
+    val profileBookmarkedListingsProvider: ProfileBookmarkedListingsProvider by lazy { marketplaceProfileBookmarks }
+    val profileBookmarkedListingRemover: ProfileBookmarkedListingRemover by lazy { marketplaceProfileBookmarks }
 
     // ViewModels
     fun createHomeViewModel() = HomeViewModel(
@@ -240,10 +284,22 @@ class AppContainer(
 
     fun createMarketplaceViewModel() = MarketplaceViewModel(
         searchMarketplace = searchMarketplace,
-        toggleSaveItem = toggleSaveMarketplaceItem,
+        bookmarks = MarketplaceBookmarkDependencies(
+            add = bookmarkMarketplaceListing,
+            remove = removeMarketplaceListingBookmark,
+            get = getMarketplaceListingBookmarks
+        ),
         viewMarketplaceListing = viewMarketplaceListing,
-        listingChangedSignal = listingChangedSignal
+        listingChangedSignal = listingChangedSignal,
+        currentUserIdProvider = {
+            when (val result = authRepository.getCurrentUserId()) {
+                is com.jdrms.bulletin.core.common.Result.Success -> result.data?.value
+                is com.jdrms.bulletin.core.common.Result.Error -> null
+            }
+        }
     )
+
+    fun createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
 
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
@@ -273,11 +329,15 @@ class AppContainer(
     )
 
     fun createProfileViewModel() = ProfileViewModel(
-        sessionRepository,
-        getProfileOverview,
-        getProfileActivity,
-        listingChangedSignal,
-        profileSoldListingsProvider
+        sessionRepository = sessionRepository,
+        getProfileOverview = getProfileOverview,
+        getProfileActivity = getProfileActivity,
+        listingChangedSignal = listingChangedSignal,
+        soldListingsProvider = profileSoldListingsProvider,
+        bookmarks = ProfileBookmarksDependencies(
+            provider = profileBookmarkedListingsProvider,
+            remover = profileBookmarkedListingRemover
+        )
     )
 
     fun createEditProfileViewModel() = EditProfileViewModel(

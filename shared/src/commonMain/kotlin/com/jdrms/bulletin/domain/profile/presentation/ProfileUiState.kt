@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarksPageCursor
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
@@ -25,8 +27,17 @@ data class ProfileUiState(
     val reputation: StudentReputation? = null,
     val activeListingsCount: Int = 0,
     val itemsSoldCount: Int? = null,
+    val bookmarkedListings: List<ProfileBookmarkedListing> = emptyList(),
+    val isLoadingBookmarkedListings: Boolean = false,
+    val isLoadingMoreBookmarkedListings: Boolean = false,
+    val bookmarkedListingsNextCursor: ProfileBookmarksPageCursor? = null,
+    val selectedBookmarkedListingId: String? = null,
+    val removingBookmarkedListingId: String? = null,
     val errorMessage: String? = null,
-)
+) {
+    val selectedBookmarkedListing: ProfileBookmarkedListing?
+        get() = bookmarkedListings.firstOrNull { it.id == selectedBookmarkedListingId }
+}
 
 fun validateProfileDraft(draft: ProfileDraft): ProfileFormErrors = ProfileFormErrors(
     school = if (draft.university.isBlank()) "Enter or select your school." else null,

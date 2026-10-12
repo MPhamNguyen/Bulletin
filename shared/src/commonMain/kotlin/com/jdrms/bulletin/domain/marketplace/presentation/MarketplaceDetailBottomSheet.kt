@@ -15,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,21 +34,51 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
+import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
+
+data class MarketplaceDetailSheetState(
+    val listing: Listing?,
+    val isLoading: Boolean,
+    val errorMessage: String?,
+    val bookmarkErrorMessage: String?,
+    val isBookmarked: Boolean,
+    val currentUserId: String?
+)
+
+data class MarketplaceDetailSheetActions(
+    val onDismiss: () -> Unit,
+    val onRetry: () -> Unit,
+    val onToggleBookmark: () -> Unit,
+    val onSellerClick: (sellerId: String) -> Unit = {},
+    val onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
+        { _, _, _, _ -> false },
+    val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
+        { _, _ -> false },
+    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MarketplaceDetailBottomSheet(
-    listing: Listing?,
-    isLoading: Boolean,
-    errorMessage: String?,
-    isSaved: Boolean,
-    onDismiss: () -> Unit,
-    onRetry: () -> Unit,
-    onToggleSave: () -> Unit,
-    onSellerClick: (sellerId: String) -> Unit = {}
+    state: MarketplaceDetailSheetState,
+    actions: MarketplaceDetailSheetActions
 ) {
+    val listing = state.listing
+    val isLoading = state.isLoading
+    val errorMessage = state.errorMessage
+    val bookmarkErrorMessage = state.bookmarkErrorMessage
+    val isBookmarked = state.isBookmarked
+    val onDismiss = actions.onDismiss
+    val onRetry = actions.onRetry
+    val onToggleBookmark = actions.onToggleBookmark
+    val onSellerClick = actions.onSellerClick
+    val onMessageSeller = actions.onMessageSeller
+    val hasExistingConversation = actions.hasExistingConversation
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -209,22 +241,62 @@ fun MarketplaceDetailBottomSheet(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = formatRelativeTime(listing.createdAtMillis, currentTimeMillis()),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Action Buttons: Save & Close
+                    if (state.currentUserId != listing.sellerId) {
+                        MessageSellerQuickAction(
+                            actions = MessageSellerQuickActionActions(
+                                conversationKey = "${listing.id.value}:${listing.sellerId}",
+                                hasExistingConversation = {
+                                    hasExistingConversation(listing.id.value, listing.sellerId)
+                                },
+                                onSend = { content ->
+                                    onMessageSeller(listing.id.value, listing.sellerId, listing.sellerName, content)
+                                },
+                                onSent = onDismiss,
+                                onSeeChat = {
+                                    actions.onSeeChat(listing.id.value, listing.sellerId)
+                                }
+                            )
+                        )
+                    }
+
+                    // Action Buttons: Bookmark & Close
+                    bookmarkErrorMessage?.let { message ->
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
-                            onClick = onToggleSave,
+                            onClick = onToggleBookmark,
                             modifier = Modifier.weight(1f),
                             colors = BulletinButtonDefaults.outlinedButtonColors(),
                             border = BulletinButtonDefaults.outlinedButtonBorder()
                         ) {
-                            Text(if (isSaved) "★ Saved" else "☆ Save Item")
+                            Icon(
+                                imageVector = if (isBookmarked) {
+                                    Icons.Filled.Bookmark
+                                } else {
+                                    Icons.Outlined.BookmarkBorder
+                                },
+                                contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isBookmarked) "Bookmarked" else "Bookmark")
                         }
 
                         Button(

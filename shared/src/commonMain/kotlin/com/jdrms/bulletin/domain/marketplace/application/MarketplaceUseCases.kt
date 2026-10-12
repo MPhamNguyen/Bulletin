@@ -1,7 +1,9 @@
 package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
+import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -82,15 +84,38 @@ private fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
     )
 }
 
-class ToggleSaveMarketplaceItem(
+class BookmarkMarketplaceListing(
     private val repository: MarketplaceRepository
 ) {
-    suspend operator fun invoke(userId: String, itemId: MarketplaceItemId): Result<Boolean> {
-        return repository.toggleSaved(userId, itemId)
+    suspend operator fun invoke(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        return repository.bookmarkListing(userId, itemId)
+    }
+}
+
+class GetMarketplaceListingBookmarks(
+    private val repository: MarketplaceRepository
+) {
+    suspend fun getBookmarkedIds(userId: String): Set<MarketplaceItemId> {
+        return repository.getBookmarkedItemIds(userId)
     }
 
-    suspend fun getSavedIds(userId: String): Set<MarketplaceItemId> {
-        return repository.getSavedItemIds(userId)
+    suspend fun getPage(
+        userId: String,
+        cursor: ListingBookmarksPageCursor? = null,
+        pageSize: Int = DEFAULT_BOOKMARKS_PAGE_SIZE
+    ): BookmarkedListingsPage {
+        require(pageSize in 1..MAX_BOOKMARKS_PAGE_SIZE) {
+            "Bookmark page size must be between 1 and $MAX_BOOKMARKS_PAGE_SIZE."
+        }
+        return repository.getBookmarkedListingsPage(userId, cursor, pageSize)
+    }
+}
+
+class RemoveMarketplaceListingBookmark(
+    private val repository: MarketplaceRepository
+) {
+    suspend operator fun invoke(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        return repository.removeListingBookmark(userId, itemId)
     }
 }
 
@@ -151,3 +176,6 @@ data class MarketplaceSellerProfile(
 fun interface MarketplaceSellerProfileProvider {
     suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile?
 }
+
+const val DEFAULT_BOOKMARKS_PAGE_SIZE = 20
+const val MAX_BOOKMARKS_PAGE_SIZE = 50

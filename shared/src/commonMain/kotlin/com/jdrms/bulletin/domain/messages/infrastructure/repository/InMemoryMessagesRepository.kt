@@ -4,6 +4,8 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -31,6 +33,25 @@ class InMemoryMessagesRepository(
         Result.Success(conversations.values.filter { it.includes(userId) })
     }
 
+    override suspend fun getOrCreateConversation(
+        requesterId: SenderId,
+        otherParticipant: ConversationParticipant,
+        listingId: ListingReferenceId
+    ): Result<Conversation> = mutex.withLock {
+        val existing = conversations.values.firstOrNull { conversation ->
+            conversation.listingId == listingId &&
+                conversation.includes(requesterId) && conversation.includes(otherParticipant.id)
+        }
+        if (existing != null) return@withLock Result.Success(existing)
+        val conversation = Conversation(
+            id = ConversationId("conversation-${conversations.size + 1}"),
+            participants = listOf(ConversationParticipant(requesterId, "Student"), otherParticipant),
+            listingId = listingId
+        )
+        conversations[conversation.id] = conversation
+        Result.Success(conversation)
+    }
+
     override suspend fun getMessages(
         userId: SenderId,
         conversationId: ConversationId
@@ -38,7 +59,9 @@ class InMemoryMessagesRepository(
         if (conversations[conversationId]?.includes(userId) != true) {
             Result.Error(ConversationAccessException())
         } else {
-            Result.Success(messagesByConvId[conversationId]?.toList() ?: emptyList())
+            val orderedMessages = messagesByConvId[conversationId].orEmpty()
+                .sortedWith(compareBy<Message> { it.timestampMillis }.thenBy { it.id.value })
+            Result.Success(orderedMessages)
         }
     }
 
