@@ -8,17 +8,18 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.ProducerScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Suppress("TooGenericExceptionCaught")
@@ -82,15 +83,20 @@ class SupabaseMessagesObserver internal constructor(
         val channel = gateway.open(conversationId)
         try {
             coroutineScope {
+                val connected = CompletableDeferred<Unit>()
                 val eventsJob = launch(start = CoroutineStart.UNDISPATCHED) {
                     channel.events
-                        .onEach { send(it) }
+                        .onEach {
+                            connected.await()
+                            send(it)
+                        }
                         .takeWhile { it !is MessageStreamEvent.Disconnected }
                         .collect()
                 }
                 try {
                     channel.subscribe()
                     send(MessageStreamEvent.Connected)
+                    connected.complete(Unit)
                     eventsJob.join()
                 } finally {
                     eventsJob.cancel()

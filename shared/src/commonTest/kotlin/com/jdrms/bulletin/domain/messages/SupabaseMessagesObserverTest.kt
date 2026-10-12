@@ -11,7 +11,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -30,14 +29,12 @@ class SupabaseMessagesObserverTest {
     fun startsCollectingBeforeSubscribeWhenConversationHasNoMessageHistory() = runTest {
         val gateway = FakeMessageRealtimeGateway()
         gateway.channel.requireEventsCollectionBeforeSubscribe = true
+        gateway.channel.eventDuringSubscribe = MessageStreamEvent.Received(message())
         val observer = SupabaseMessagesObserver(gateway, messagesRepository())
         val events = mutableListOf<MessageStreamEvent>()
         val job = backgroundScope.launch {
             observer.observe(alice.id, conversationId).take(2).toList(events)
         }
-        runCurrent()
-
-        gateway.channel.emit(MessageStreamEvent.Received(message()))
         runCurrent()
         job.join()
 
@@ -190,9 +187,9 @@ private class FakeMessageRealtimeGateway(
 
 private class FakeMessageRealtimeChannel : MessageRealtimeChannel {
     private val changes = MutableSharedFlow<MessageStreamEvent>()
-    private var eventsCollectionStarted = false
-    override val events: Flow<MessageStreamEvent> = changes.onStart { eventsCollectionStarted = true }
+    override val events: Flow<MessageStreamEvent> = changes
     var requireEventsCollectionBeforeSubscribe = false
+    var eventDuringSubscribe: MessageStreamEvent? = null
     var subscribeError: Throwable? = null
     var subscribeErrorsRemaining = 0
     var subscribeCount = 0
@@ -200,12 +197,13 @@ private class FakeMessageRealtimeChannel : MessageRealtimeChannel {
 
     override suspend fun subscribe() {
         subscribeCount++
-        check(!requireEventsCollectionBeforeSubscribe || eventsCollectionStarted)
+        check(!requireEventsCollectionBeforeSubscribe || changes.subscriptionCount.value > 0)
         if (subscribeErrorsRemaining > 0) {
             subscribeErrorsRemaining--
             error("Temporary subscription failure")
         }
         subscribeError?.let { throw it }
+        eventDuringSubscribe?.let { changes.emit(it) }
     }
 
     suspend fun emit(event: MessageStreamEvent) = changes.emit(event)
