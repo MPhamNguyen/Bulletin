@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.messages
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.MessagesInstrumentation
+import com.jdrms.bulletin.domain.messages.application.MessagesMeasurement
 import com.jdrms.bulletin.domain.messages.application.MessagesTimingEvent
 import com.jdrms.bulletin.domain.messages.application.measuredMessagesOperation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
@@ -43,6 +44,20 @@ class MessagesInstrumentationTest {
         assertEquals(1, events.single().callCount)
         assertEquals(2, events.single().resultCount)
         assertEquals("success", events.single().outcome)
+    }
+
+    @Test
+    fun recordsUtf8PayloadSizeAndMicrosecondDuration() = runTest {
+        val events = mutableListOf<MessagesTimingEvent>()
+
+        measuredMessagesOperation(
+            MessagesInstrumentation(events::add),
+            "inbox_request_body",
+            MessagesMeasurement(responseBytes = { it.encodeToByteArray().size })
+        ) { "é" }
+
+        assertEquals(2, events.single().responseBytes)
+        assertEquals(events.single().durationMicros / 1_000, events.single().durationMillis)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.messages.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.MessagesInstrumentation
+import com.jdrms.bulletin.domain.messages.application.MessagesMeasurement
 import com.jdrms.bulletin.domain.messages.application.NoOpMessagesInstrumentation
 import com.jdrms.bulletin.domain.messages.application.measuredMessagesOperation
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
@@ -47,20 +48,28 @@ class SupabaseMessagesRepository internal constructor(
     constructor(
         supabase: SupabaseClient,
         instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
-    ) : this(PostgrestSupabaseMessagesTable(supabase), instrumentation)
+    ) : this(PostgrestSupabaseMessagesTable(supabase, instrumentation), instrumentation)
 
     override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> =
         measuredMessagesOperation(
             instrumentation,
             "inbox_retrieval",
-            { result -> (result as? Result.Success)?.data?.size },
-            { result -> (result as? Result.Success)?.data?.let { 1 } }
+            MessagesMeasurement(
+                count = { result -> (result as? Result.Success)?.data?.size },
+                callCount = { result -> (result as? Result.Success)?.data?.let { 1 } }
+            )
         ) {
             repositoryCall {
-                messagesTable.getInboxConversations(userId.value)
-                    .distinctBy(SupabaseConversationInboxDto::id)
-                    .map(SupabaseMessagesMapper::toInboxConversation)
-                    .sortedByDescending(Conversation::updatedAtMillis)
+                val rows = messagesTable.getInboxConversations(userId.value)
+                measuredMessagesOperation(
+                    instrumentation,
+                    "inbox_mapping",
+                    MessagesMeasurement(count = { it.size }, callCount = { 0 })
+                ) {
+                    rows.distinctBy(SupabaseConversationInboxDto::id)
+                        .map(SupabaseMessagesMapper::toInboxConversation)
+                        .sortedByDescending(Conversation::updatedAtMillis)
+                }
             }
         }
 
@@ -222,7 +231,8 @@ internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, Su
 }
 
 internal class PostgrestSupabaseMessagesTable(
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
 ) : SupabaseMessagesTable {
     override suspend fun getAuthenticatedUserId(): String? {
         supabase.auth.awaitInitialization()
@@ -230,13 +240,26 @@ internal class PostgrestSupabaseMessagesTable(
     }
 
     override suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto> {
-        return supabase.from(SupabaseMessagesRepository.CONVERSATIONS_TABLE).select(columns = INBOX_COLUMNS) {
-            filter { eq("membership.user_id", userId) }
-            order("user_id", Order.ASCENDING, referencedTable = "participants")
-            order("created_at", Order.DESCENDING, referencedTable = "messages")
-            order("id", Order.DESCENDING, referencedTable = "messages")
-            limit(1, referencedTable = "messages")
-        }.decodeList()
+        val response = measuredMessagesOperation(
+            instrumentation,
+            "inbox_request_body",
+            MessagesMeasurement(responseBytes = { it.data.encodeToByteArray().size })
+        ) {
+            supabase.from(SupabaseMessagesRepository.CONVERSATIONS_TABLE).select(columns = INBOX_COLUMNS) {
+                filter { eq("membership.user_id", userId) }
+                order("user_id", Order.ASCENDING, referencedTable = "participants")
+                order("created_at", Order.DESCENDING, referencedTable = "messages")
+                order("id", Order.DESCENDING, referencedTable = "messages")
+                limit(1, referencedTable = "messages")
+            }
+        }
+        return measuredMessagesOperation(
+            instrumentation,
+            "inbox_decode",
+            MessagesMeasurement(count = { it.size }, callCount = { 0 })
+        ) {
+            response.decodeList<SupabaseConversationInboxDto>()
+        }
     }
 
     override suspend fun hideConversation(conversationId: String): Boolean =

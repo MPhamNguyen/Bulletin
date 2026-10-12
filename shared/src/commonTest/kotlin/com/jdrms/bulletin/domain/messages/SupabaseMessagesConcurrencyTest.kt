@@ -29,8 +29,9 @@ class SupabaseMessagesConcurrencyTest {
             conversations.sortedByDescending(Conversation::updatedAtMillis).map(Conversation::id),
             assertIs<Result.Success<List<Conversation>>>(result).data.map(Conversation::id)
         )
-        assertEquals(1, events.single().callCount)
-        assertEquals(7, events.single().resultCount)
+        assertEquals(1, events.single { it.operation == "inbox_retrieval" }.callCount)
+        assertEquals(7, events.single { it.operation == "inbox_retrieval" }.resultCount)
+        assertEquals(7, events.single { it.operation == "inbox_mapping" }.resultCount)
     }
 
     @Test
