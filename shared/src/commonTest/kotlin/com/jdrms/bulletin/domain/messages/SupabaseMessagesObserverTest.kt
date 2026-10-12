@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -25,6 +26,25 @@ import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SupabaseMessagesObserverTest {
+    @Test
+    fun startsCollectingBeforeSubscribeWhenConversationHasNoMessageHistory() = runTest {
+        val gateway = FakeMessageRealtimeGateway()
+        gateway.channel.requireEventsCollectionBeforeSubscribe = true
+        val observer = SupabaseMessagesObserver(gateway, messagesRepository())
+        val events = mutableListOf<MessageStreamEvent>()
+        val job = backgroundScope.launch {
+            observer.observe(alice.id, conversationId).take(2).toList(events)
+        }
+        runCurrent()
+
+        gateway.channel.emit(MessageStreamEvent.Received(message()))
+        runCurrent()
+        job.join()
+
+        assertEquals(listOf(MessageStreamEvent.Connected, MessageStreamEvent.Received(message())), events)
+        assertEquals(1, gateway.channel.subscribeCount)
+    }
+
     @Test
     fun subscriptionDeliversMessageAndClosesWhenCollectorStops() = runTest {
         val gateway = FakeMessageRealtimeGateway()
@@ -170,7 +190,9 @@ private class FakeMessageRealtimeGateway(
 
 private class FakeMessageRealtimeChannel : MessageRealtimeChannel {
     private val changes = MutableSharedFlow<MessageStreamEvent>()
-    override val events: Flow<MessageStreamEvent> = changes
+    private var eventsCollectionStarted = false
+    override val events: Flow<MessageStreamEvent> = changes.onStart { eventsCollectionStarted = true }
+    var requireEventsCollectionBeforeSubscribe = false
     var subscribeError: Throwable? = null
     var subscribeErrorsRemaining = 0
     var subscribeCount = 0
@@ -178,6 +200,7 @@ private class FakeMessageRealtimeChannel : MessageRealtimeChannel {
 
     override suspend fun subscribe() {
         subscribeCount++
+        check(!requireEventsCollectionBeforeSubscribe || eventsCollectionStarted)
         if (subscribeErrorsRemaining > 0) {
             subscribeErrorsRemaining--
             error("Temporary subscription failure")

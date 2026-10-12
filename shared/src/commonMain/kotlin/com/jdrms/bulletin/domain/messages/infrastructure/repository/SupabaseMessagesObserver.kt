@@ -8,9 +8,12 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
@@ -78,12 +81,21 @@ class SupabaseMessagesObserver internal constructor(
     ) {
         val channel = gateway.open(conversationId)
         try {
-            channel.subscribe()
-            send(MessageStreamEvent.Connected)
-            channel.events
-                .onEach { send(it) }
-                .takeWhile { it !is MessageStreamEvent.Disconnected }
-                .collect()
+            coroutineScope {
+                val eventsJob = launch(start = CoroutineStart.UNDISPATCHED) {
+                    channel.events
+                        .onEach { send(it) }
+                        .takeWhile { it !is MessageStreamEvent.Disconnected }
+                        .collect()
+                }
+                try {
+                    channel.subscribe()
+                    send(MessageStreamEvent.Connected)
+                    eventsJob.join()
+                } finally {
+                    eventsJob.cancel()
+                }
+            }
         } finally {
             withContext(NonCancellable) { runCatching { channel.close() } }
         }
