@@ -140,11 +140,11 @@ class MessagesReportingViewModelTest {
         assertNotNull(viewModel.uiState.value.errorMessage)
     }
 
-    private fun viewModel(repository: MessagesRepository) = MessagesViewModel(
+    private fun viewModel(repository: MessagesRepository): MessagesViewModel = MessagesViewModel(
         GetConversations(repository, provider),
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(repository as? MessagesObserver ?: messagesRepository(), provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
         ReportMessage(repository, provider)
-    )
+    ).also { it.onDestinationActiveChanged(true) }
 }

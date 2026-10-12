@@ -157,11 +157,11 @@ class MessagesViewModelBasicsTest {
     private fun viewModel(
         repository: MessagesRepository,
         observer: MessagesObserver = repository as? MessagesObserver ?: messagesRepository()
-    ) = MessagesViewModel(
+    ): MessagesViewModel = MessagesViewModel(
         GetConversations(repository, provider),
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
         ReportMessage(repository, provider)
-    )
+    ).also { it.onDestinationActiveChanged(true) }
 }

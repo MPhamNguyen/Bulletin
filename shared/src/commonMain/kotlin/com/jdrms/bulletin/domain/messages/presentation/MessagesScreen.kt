@@ -21,8 +21,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 @Composable
 fun MessagesScreen(viewModel: MessagesViewModel) {
     DisposableEffect(viewModel) {
-        viewModel.onDestinationEntered()
-        onDispose { viewModel.onDestinationLeft() }
+        viewModel.onDestinationActiveChanged(true)
+        onDispose { viewModel.onDestinationActiveChanged(false) }
     }
     val state by viewModel.uiState.collectAsState()
 

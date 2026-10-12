@@ -81,7 +81,7 @@ class MessagesViewModelTest {
         val backing = messagesRepository(messages = listOf(message()))
         val observer = MessagesObserver { _, _ -> flowOf(MessageStreamEvent.Failed(IllegalStateException())) }
         val viewModel = viewModel(backing, observer)
-        viewModel.onDestinationEntered()
+        viewModel.onDestinationActiveChanged(true)
         advanceUntilIdle()
 
         assertEquals(MessageConnectionState.DISCONNECTED, viewModel.uiState.value.connectionState)
@@ -393,5 +393,5 @@ class MessagesViewModelTest {
         ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
         ReportMessage(repository, provider)
-    ).also(MessagesViewModel::onDestinationEntered)
+    ).also { it.onDestinationActiveChanged(true) }
 }

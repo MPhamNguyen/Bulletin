@@ -64,7 +64,7 @@ class MessagesStreamLifecycleTest {
         val viewModel = viewModel(messagesRepository(), observer)
         val store = ViewModelStore()
         store.put("messages", viewModel)
-        viewModel.onDestinationEntered()
+        viewModel.onDestinationActiveChanged(true)
 
         advanceUntilIdle()
         assertEquals(MessageConnectionState.CONNECTED, viewModel.uiState.value.connectionState)
@@ -91,15 +91,15 @@ class MessagesStreamLifecycleTest {
             }
         }
         val viewModel = viewModel(messagesRepository(), observer)
-        viewModel.onDestinationEntered()
+        viewModel.onDestinationActiveChanged(true)
 
         advanceUntilIdle()
         assertEquals(1, starts)
-        viewModel.onDestinationLeft()
+        viewModel.onDestinationActiveChanged(false)
         runCurrent()
         assertEquals(1, cancellations)
 
-        viewModel.onDestinationEntered()
+        viewModel.onDestinationActiveChanged(true)
         advanceUntilIdle()
 
         assertEquals(2, starts)
@@ -112,7 +112,7 @@ class MessagesStreamLifecycleTest {
         val events = MutableSharedFlow<MessageStreamEvent>()
         val observer = MessagesObserver { _, _ -> events }
         val viewModel = viewModel(messagesRepository(), observer)
-        viewModel.onDestinationEntered()
+        viewModel.onDestinationActiveChanged(true)
         advanceUntilIdle()
 
         events.emit(MessageStreamEvent.Connected)
@@ -140,7 +140,7 @@ class MessagesStreamLifecycleTest {
         val repository = messagesRepository(listOf(Conversation(conversationId, participants)))
         val events = MutableSharedFlow<MessageStreamEvent>()
         val viewModel = viewModel(repository, MessagesObserver { _, _ -> events })
-        viewModel.onDestinationEntered()
+        viewModel.onDestinationActiveChanged(true)
         advanceUntilIdle()
 
         viewModel.onMessageInputChanged("Hello")

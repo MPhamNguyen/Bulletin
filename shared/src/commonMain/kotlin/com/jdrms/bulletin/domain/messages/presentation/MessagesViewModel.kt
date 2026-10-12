@@ -9,7 +9,6 @@ import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessage
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
-import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import kotlinx.coroutines.Job
@@ -50,8 +49,16 @@ class MessagesViewModel(
     init { loadConversations() }
     fun loadConversations() = refreshConversations()
 
-    fun onDestinationEntered() { if (!destinationActive) { destinationActive = true; refreshConversations() } }
-    fun onDestinationLeft() { destinationActive = false; observeJob?.cancel(); observeJob = null }
+    fun onDestinationActiveChanged(isActive: Boolean) {
+        if (destinationActive == isActive) return
+        destinationActive = isActive
+        if (isActive) {
+            refreshConversations()
+        } else {
+            observeJob?.cancel()
+            observeJob = null
+        }
+    }
 
     private fun refreshConversations(statusMessage: String? = null) {
         loadJob?.cancel()
@@ -203,16 +210,12 @@ class MessagesViewModel(
         _uiState.update { it.copy(isSending = true, errorMessage = null, statusMessage = null) }
         viewModelScope.launch {
             when (val result = sendMessage(activeConvId, text)) {
-                is Result.Success -> applySentMessage(activeConvId, result.data)
+                is Result.Success -> when (val updated = _uiState.value.withSentMessage(activeConvId, result.data)) {
+                    is Result.Error -> showFailure(updated)
+                    is Result.Success -> _uiState.update { updated.data }
+                }
                 is Result.Error -> showFailure(result)
             }
-        }
-    }
-
-    private fun applySentMessage(conversationId: ConversationId, message: Message) {
-        when (val updated = _uiState.value.withSentMessage(conversationId, message)) {
-            is Result.Error -> showFailure(updated)
-            is Result.Success -> _uiState.update { updated.data }
         }
     }
 

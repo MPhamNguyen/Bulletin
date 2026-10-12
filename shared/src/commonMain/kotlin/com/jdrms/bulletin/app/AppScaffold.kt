@@ -28,6 +28,7 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
@@ -62,6 +63,7 @@ private class ProfilePresentation(
 private class MainScaffoldModels(
     val home: HomeViewModel,
     val marketplace: MarketplaceViewModel,
+    val marketplaceUserReport: MarketplaceUserReportViewModel,
     val listings: ListingsViewModel,
     val messages: MessagesViewModel
 )
@@ -81,6 +83,7 @@ fun MainAppScaffold(
         MainScaffoldModels(
             container.createHomeViewModel(),
             container.createMarketplaceViewModel(),
+            container.createMarketplaceUserReportViewModel(),
             container.createListingsViewModel(),
             container.createMessagesViewModel()
         )
@@ -125,6 +128,7 @@ private fun MainAppContent(
         AppDestination.HOME -> HomeScreen(models.home)
         AppDestination.MARKETPLACE -> MarketplaceScreen(
             viewModel = models.marketplace,
+            userReportViewModel = models.marketplaceUserReport,
             onMessageSeller = { listingId, sellerId, sellerName, content ->
                 val result = sendListingMessage(
                     container,
