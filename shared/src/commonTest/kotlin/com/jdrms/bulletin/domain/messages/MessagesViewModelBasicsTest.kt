@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.messages.presentation.conversationTitle
+import com.jdrms.bulletin.domain.messages.presentation.shouldLoadOlderAfterScroll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -116,6 +117,14 @@ class MessagesViewModelBasicsTest {
         assertEquals(history, viewModel.uiState.value.currentMessages)
         assertNull(viewModel.uiState.value.olderCursor)
         assertFalse(viewModel.uiState.value.isLoadingOlder)
+    }
+
+    @Test
+    fun olderHistoryLoadsOnlyAfterEnteringTopThresholdFromBelow() {
+        assertFalse(shouldLoadOlderAfterScroll(null, 0))
+        assertFalse(shouldLoadOlderAfterScroll(0, 0))
+        assertFalse(shouldLoadOlderAfterScroll(1, 1))
+        assertTrue(shouldLoadOlderAfterScroll(1, 0))
     }
 
     @Test

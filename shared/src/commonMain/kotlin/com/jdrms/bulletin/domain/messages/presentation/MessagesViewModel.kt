@@ -33,6 +33,7 @@ class MessagesViewModel(
     private var requestedConversationId: ConversationId? = null
     private var olderJob: Job? = null
     private var observeJob: Job? = null
+    private var destinationActive = false
     private var initialPageLoaded = false
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
     private val streamCallbacks = MessagesStreamCallbacksFactory(
@@ -48,6 +49,9 @@ class MessagesViewModel(
 
     init { loadConversations() }
     fun loadConversations() = refreshConversations()
+
+    fun onDestinationEntered() { if (!destinationActive) { destinationActive = true; refreshConversations() } }
+    fun onDestinationLeft() { destinationActive = false; observeJob?.cancel(); observeJob = null }
 
     private fun refreshConversations(statusMessage: String? = null) {
         loadJob?.cancel()
@@ -74,7 +78,7 @@ class MessagesViewModel(
                             isLoading = false
                         )
                     }
-                    selected?.let { observeConversation(it.id) }
+                    if (destinationActive) selected?.let { observeConversation(it.id) }
                 }
             }
         }

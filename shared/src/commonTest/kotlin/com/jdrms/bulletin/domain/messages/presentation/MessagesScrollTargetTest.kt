@@ -2,7 +2,9 @@ package com.jdrms.bulletin.domain.messages.presentation
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class MessagesScrollTargetTest {
     @Test
@@ -26,5 +28,41 @@ class MessagesScrollTargetTest {
 
         assertEquals(2, initialIndex)
         assertEquals(3, afterNewMessageIndex)
+    }
+
+    @Test
+    fun initialLoadScrollsToLatestMessage() {
+        assertTrue(
+            shouldScrollToLatest(
+                isInitialPosition = true,
+                lastVisibleItemIndex = 0,
+                totalItemsCount = 10
+            )
+        )
+    }
+
+    @Test
+    fun newMessageScrollsOnlyWhenReaderIsNearTheBottom() {
+        assertTrue(
+            shouldScrollToLatest(
+                isInitialPosition = false,
+                lastVisibleItemIndex = 8,
+                totalItemsCount = 10
+            )
+        )
+        assertFalse(
+            shouldScrollToLatest(
+                isInitialPosition = false,
+                lastVisibleItemIndex = 4,
+                totalItemsCount = 10
+            )
+        )
+        assertFalse(
+            shouldScrollToLatest(
+                isInitialPosition = false,
+                lastVisibleItemIndex = -1,
+                totalItemsCount = 0
+            )
+        )
     }
 }

@@ -64,6 +64,7 @@ class MessagesStreamLifecycleTest {
         val viewModel = viewModel(messagesRepository(), observer)
         val store = ViewModelStore()
         store.put("messages", viewModel)
+        viewModel.onDestinationEntered()
 
         advanceUntilIdle()
         assertEquals(MessageConnectionState.CONNECTED, viewModel.uiState.value.connectionState)
@@ -75,10 +76,43 @@ class MessagesStreamLifecycleTest {
     }
 
     @Test
+    fun leavingAndReopeningMessagesCancelsAndRestartsConversationStream() = runTest {
+        var starts = 0
+        var cancellations = 0
+        val observer = MessagesObserver { _, _ ->
+            flow {
+                starts++
+                emit(MessageStreamEvent.Connected)
+                try {
+                    awaitCancellation()
+                } finally {
+                    cancellations++
+                }
+            }
+        }
+        val viewModel = viewModel(messagesRepository(), observer)
+        viewModel.onDestinationEntered()
+
+        advanceUntilIdle()
+        assertEquals(1, starts)
+        viewModel.onDestinationLeft()
+        runCurrent()
+        assertEquals(1, cancellations)
+
+        viewModel.onDestinationEntered()
+        advanceUntilIdle()
+
+        assertEquals(2, starts)
+        assertEquals(1, cancellations)
+        assertEquals(MessageConnectionState.CONNECTED, viewModel.uiState.value.connectionState)
+    }
+
+    @Test
     fun reconnectingStreamShowsConnectingStateWithoutFailureBanner() = runTest {
         val events = MutableSharedFlow<MessageStreamEvent>()
         val observer = MessagesObserver { _, _ -> events }
         val viewModel = viewModel(messagesRepository(), observer)
+        viewModel.onDestinationEntered()
         advanceUntilIdle()
 
         events.emit(MessageStreamEvent.Connected)
@@ -106,6 +140,7 @@ class MessagesStreamLifecycleTest {
         val repository = messagesRepository(listOf(Conversation(conversationId, participants)))
         val events = MutableSharedFlow<MessageStreamEvent>()
         val viewModel = viewModel(repository, MessagesObserver { _, _ -> events })
+        viewModel.onDestinationEntered()
         advanceUntilIdle()
 
         viewModel.onMessageInputChanged("Hello")

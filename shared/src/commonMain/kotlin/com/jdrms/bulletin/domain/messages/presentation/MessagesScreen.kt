@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -19,6 +20,10 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
 fun MessagesScreen(viewModel: MessagesViewModel) {
+    DisposableEffect(viewModel) {
+        viewModel.onDestinationEntered()
+        onDispose { viewModel.onDestinationLeft() }
+    }
     val state by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {

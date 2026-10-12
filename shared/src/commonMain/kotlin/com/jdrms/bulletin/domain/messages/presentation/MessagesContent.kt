@@ -201,14 +201,27 @@ private fun rememberMessageHistoryListState(
     LaunchedEffect(state.selectedConversationId, state.currentMessages.lastOrNull()?.id) {
         val targetIndex = messageScrollTargetIndex(state.currentMessages.size, state.olderCursor != null)
         if (targetIndex != null) {
-            listState.scrollToItem(targetIndex)
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            if (shouldScrollToLatest(
+                    isInitialPosition = !positioned,
+                    lastVisibleItemIndex = lastVisibleItemIndex,
+                    totalItemsCount = layoutInfo.totalItemsCount
+                )
+            ) {
+                listState.scrollToItem(targetIndex)
+            }
             positioned = true
         }
     }
     LaunchedEffect(state.selectedConversationId, state.olderCursor, positioned) {
         if (positioned && state.olderCursor != null) {
+            var previousFirstVisible: Int? = null
             snapshotFlow { listState.firstVisibleItemIndex }.collect { firstVisible ->
-                if (firstVisible == 0) viewModel.loadOlderMessages()
+                if (shouldLoadOlderAfterScroll(previousFirstVisible, firstVisible)) {
+                    viewModel.loadOlderMessages()
+                }
+                previousFirstVisible = firstVisible
             }
         }
     }
@@ -217,6 +230,16 @@ private fun rememberMessageHistoryListState(
 
 internal fun messageScrollTargetIndex(messagesCount: Int, hasOlderCursor: Boolean): Int? =
     if (messagesCount <= 0) null else (messagesCount - 1) + if (hasOlderCursor) 1 else 0
+
+internal fun shouldLoadOlderAfterScroll(previousFirstVisible: Int?, firstVisible: Int): Boolean =
+    previousFirstVisible != null && previousFirstVisible > 0 && firstVisible == 0
+
+internal fun shouldScrollToLatest(
+    isInitialPosition: Boolean,
+    lastVisibleItemIndex: Int,
+    totalItemsCount: Int
+): Boolean = isInitialPosition ||
+    (totalItemsCount > 0 && lastVisibleItemIndex >= totalItemsCount - 2)
 
 @Composable
 private fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewModel) {
