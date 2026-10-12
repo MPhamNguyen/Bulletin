@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
@@ -24,7 +23,6 @@ import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.SectionHeader
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
 @Composable
@@ -57,7 +55,7 @@ fun MarketplaceScreen(
                 }
                 item {
                     OutlinedTextField(
-                        value = state.searchQuery,
+                        value = state.filters.query,
                         onValueChange = viewModel::onSearchQueryChanged,
                         label = { Text("Search by title or category") },
                         singleLine = true,
@@ -66,22 +64,11 @@ fun MarketplaceScreen(
                     )
                 }
                 item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item {
-                            FilterChip(
-                                selected = state.selectedCategory == null,
-                                onClick = { viewModel.onCategorySelected(null) },
-                                label = { Text("All") }
-                            )
-                        }
-                        items(MarketplaceCategory.entries.toTypedArray()) { category ->
-                            FilterChip(
-                                selected = state.selectedCategory == category,
-                                onClick = { viewModel.onCategorySelected(category) },
-                                label = { Text(category.name) }
-                            )
-                        }
-                    }
+                    MarketplaceFilters(
+                        filters = state.filters,
+                        onCategorySelected = viewModel::onCategorySelected,
+                        onConditionSelected = viewModel::onConditionSelected
+                    )
                 }
                 if (state.isLoading) {
                     item {
@@ -146,14 +133,14 @@ fun MarketplaceScreen(
                 }
             }
 
-            if (state.isDetailSheetOpen) {
+            if (state.detail.isOpen) {
                 MarketplaceDetailBottomSheet(
                     state = MarketplaceDetailSheetState(
-                        listing = state.selectedListing,
-                        isLoading = state.isDetailLoading,
-                        errorMessage = state.detailErrorMessage,
+                        listing = state.detail.listing,
+                        isLoading = state.detail.isLoading,
+                        errorMessage = state.detail.errorMessage,
                         bookmarkErrorMessage = state.bookmarkErrorMessage,
-                        isBookmarked = state.selectedListing?.let {
+                        isBookmarked = state.detail.listing?.let {
                             it.id in state.bookmarkedItemIds
                         } ?: false,
                         currentUserId = state.currentUserId
@@ -162,7 +149,7 @@ fun MarketplaceScreen(
                         onDismiss = viewModel::dismissListingDetail,
                         onRetry = viewModel::retryLoadListingDetail,
                         onToggleBookmark = {
-                            state.selectedListing?.let { viewModel.toggleBookmark(it.id) }
+                            state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
                         },
                         onSellerClick = viewModel::onSellerClicked,
                         onMessageSeller = onMessageSeller,

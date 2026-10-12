@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import io.github.jan.supabase.postgrest.PropertyConversionMethod
 import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
@@ -158,10 +159,15 @@ class SupabaseMarketplaceListingSourceTest {
         val query = "desk,lamp)\\\"%_\\\\"
 
         builder.applyMarketplaceSearch(
-            MarketplacePageRequest(query = query, category = MarketplaceCategory.TEXTBOOKS)
+            MarketplacePageRequest(
+                query = query,
+                category = MarketplaceCategory.TEXTBOOKS,
+                condition = MarketplaceCondition.LIKE_NEW
+            )
         )
 
         assertEquals(listOf("ilike.TEXTBOOKS"), builder.params["category"])
+        assertEquals(listOf("ilike.LIKE_NEW"), builder.params["condition"])
         assertEquals(listOf("fts.desk:* & lamp:*"), builder.params["name"])
         assertFalse("or" in builder.params)
     }

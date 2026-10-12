@@ -7,7 +7,6 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceItemPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -31,16 +30,21 @@ internal class MarketplaceFirstPageLoader(
     suspend fun load(userId: String?, debounceMillis: Long) {
         prepareForLoad()
         if (debounceMillis > 0L) delay(debounceMillis)
-        val query = state.value.searchQuery
-        val category = state.value.selectedCategory
+        val filters = state.value.filters
         runCatching {
-            val page = search.getPage(MarketplacePageRequest(query = query, category = category))
+            val page = search.getPage(
+                MarketplacePageRequest(
+                    query = filters.query,
+                    category = filters.category,
+                    condition = filters.condition
+                )
+            )
             val resolvedUserId = userId ?: currentUserId()
             val bookmarkedIds = resolvedUserId?.let { bookmarks.get.getBookmarkedIds(it) }.orEmpty()
             FirstPageResult(page, bookmarkedIds)
         }.fold(
-            onSuccess = { applySuccess(it, query, category) },
-            onFailure = { applyFailure(it, query, category) }
+            onSuccess = { applySuccess(it, filters) },
+            onFailure = { applyFailure(it, filters) }
         )
     }
 
@@ -57,9 +61,9 @@ internal class MarketplaceFirstPageLoader(
         }
     }
 
-    private fun applySuccess(result: FirstPageResult, query: String, category: MarketplaceCategory?) {
+    private fun applySuccess(result: FirstPageResult, filters: MarketplaceFilterState) {
         state.update { current ->
-            if (current.searchQuery != query || current.selectedCategory != category) return@update current
+            if (current.filters != filters) return@update current
             current.copy(
                 items = result.page.items,
                 bookmarkedItemIds = result.bookmarkedIds,
@@ -70,10 +74,10 @@ internal class MarketplaceFirstPageLoader(
         }
     }
 
-    private fun applyFailure(error: Throwable, query: String, category: MarketplaceCategory?) {
+    private fun applyFailure(error: Throwable, filters: MarketplaceFilterState) {
         error.rethrowCancellation()
         state.update { current ->
-            if (current.searchQuery != query || current.selectedCategory != category) return@update current
+            if (current.filters != filters) return@update current
             current.copy(
                 isLoading = false,
                 isLoadingMore = false,
@@ -158,10 +162,14 @@ internal class MarketplaceBookmarkController(
     ) {
         state.update { current ->
             val ids = if (bookmarked) current.bookmarkedItemIds + itemId else current.bookmarkedItemIds - itemId
-            val listing = current.selectedListing?.let {
+            val listing = current.detail.listing?.let {
                 if (it.id == itemId) it.copy(isBookmarked = bookmarked) else it
             }
-            current.copy(bookmarkedItemIds = ids, selectedListing = listing, bookmarkErrorMessage = errorMessage)
+            current.copy(
+                bookmarkedItemIds = ids,
+                detail = current.detail.copy(listing = listing),
+                bookmarkErrorMessage = errorMessage
+            )
         }
     }
 

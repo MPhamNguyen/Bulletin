@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
@@ -25,19 +26,24 @@ class SearchMarketplace(
     }
 
     suspend fun getCatalog(): List<MarketplaceItem> {
-        return collectPages(query = "", category = null)
+        return collectPages(query = "", category = null, condition = null)
     }
 
-    suspend fun search(query: String, category: MarketplaceCategory?): List<MarketplaceItem> {
-        return collectPages(query, category)
+    suspend fun search(
+        query: String,
+        category: MarketplaceCategory?,
+        condition: MarketplaceCondition? = null
+    ): List<MarketplaceItem> {
+        return collectPages(query, category, condition)
     }
 
     fun filterCatalog(
         catalog: List<MarketplaceItem>,
         query: String,
-        category: MarketplaceCategory?
+        category: MarketplaceCategory?,
+        condition: MarketplaceCondition? = null
     ): List<MarketplaceItem> {
-        return searchPolicy.filterItems(catalog, query, category)
+        return searchPolicy.filterItems(catalog, query, category, condition)
     }
 
     suspend fun getById(id: MarketplaceItemId): MarketplaceItem? {
@@ -46,7 +52,8 @@ class SearchMarketplace(
 
     private suspend fun collectPages(
         query: String,
-        category: MarketplaceCategory?
+        category: MarketplaceCategory?,
+        condition: MarketplaceCondition?
     ): List<MarketplaceItem> {
         val items = mutableListOf<MarketplaceItem>()
         var cursor: MarketplacePageCursor? = null
@@ -55,6 +62,7 @@ class SearchMarketplace(
                 MarketplacePageRequest(
                     query = query,
                     category = category,
+                    condition = condition,
                     cursor = cursor,
                     pageSize = MAX_MARKETPLACE_PAGE_SIZE
                 )
@@ -80,6 +88,7 @@ private fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
         description = description,
         price = MarketplacePrice(priceAmount, priceCurrency),
         category = category,
+        condition = condition,
         createdAtMillis = createdAtMillis
     )
 }

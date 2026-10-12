@@ -12,6 +12,7 @@ data class MarketplaceItemDto(
     @SerialName("description") val description: String = "",
     @SerialName("price") val price: Double,
     @SerialName("category") val category: String = "OTHER",
+    @SerialName("condition") val condition: String? = null,
     @SerialName("created_at_millis") val createdAtMillis: Long = 0L
 )
 
@@ -24,7 +25,7 @@ data class MarketplaceListingDto(
     @SerialName("description") val description: String = "",
     @SerialName("price") val price: Double,
     @SerialName("category") val category: String = "OTHER",
-    @SerialName("condition") val condition: String = "GOOD",
+    @SerialName("condition") val condition: String = "UNKNOWN",
     @SerialName("status") val status: String = "AVAILABLE",
     @SerialName("photos") val photos: List<String> = emptyList(),
     @SerialName("reputation_score") val reputationScore: Double? = null,

@@ -21,6 +21,7 @@ object SupabaseMarketplaceListingMapper {
             description = snapshot.description,
             price = MarketplacePrice(snapshot.priceAmount, snapshot.priceCurrency),
             category = snapshot.category,
+            condition = snapshot.condition,
             createdAtMillis = snapshot.createdAtMillis
         )
     }
@@ -41,7 +42,7 @@ object SupabaseMarketplaceListingMapper {
         val price = dto.price ?: return null
         val description = dto.description?.takeIf(String::isNotBlank) ?: DEFAULT_DESCRIPTION
         val category = dto.category.orEmpty().uppercase().ifBlank { "OTHER" }
-        val condition = dto.condition.orEmpty().uppercase().ifBlank { "GOOD" }
+        val condition = dto.condition.toMarketplaceCondition().name
 
         return Listing(
             id = MarketplaceItemId("listing:${dto.id}"),
@@ -65,6 +66,7 @@ object SupabaseMarketplaceListingMapper {
         val price = dto.price ?: return null
         val category = runCatching { MarketplaceCategory.valueOf(dto.category.orEmpty().uppercase()) }
             .getOrDefault(MarketplaceCategory.OTHER)
+        val condition = dto.condition.toMarketplaceCondition()
         return MarketplaceListingSnapshot(
             id = "listing:${dto.id}",
             sellerId = sellerId,
@@ -74,7 +76,8 @@ object SupabaseMarketplaceListingMapper {
             priceAmount = price.coerceAtLeast(0.0),
             priceCurrency = "USD",
             category = category,
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            condition = condition
         )
     }
 
