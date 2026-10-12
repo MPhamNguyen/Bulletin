@@ -15,7 +15,7 @@ data class MarketplaceListingSnapshot(
     val priceCurrency: String,
     val category: MarketplaceCategory,
     val createdAtMillis: Long,
-    val condition: MarketplaceCondition = MarketplaceCondition.GOOD
+    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN
 )
 
 data class MarketplacePageCursor(

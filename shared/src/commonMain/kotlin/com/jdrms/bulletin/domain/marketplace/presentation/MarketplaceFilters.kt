@@ -23,6 +23,7 @@ fun MarketplaceFilters(
     onConditionSelected: (MarketplaceCondition?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val conditions = MarketplaceCondition.knownValues
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -37,8 +38,8 @@ fun MarketplaceFilters(
         MarketplaceFilterMenu(
             label = "Conditions",
             selectedLabel = filters.condition?.displayName(),
-            options = MarketplaceCondition.entries.map { it.displayName() },
-            onSelected = { index -> onConditionSelected(index?.let(MarketplaceCondition.entries::get)) },
+            options = conditions.map { it.displayName() },
+            onSelected = { index -> onConditionSelected(index?.let(conditions::get)) },
             modifier = Modifier.weight(1f)
         )
     }

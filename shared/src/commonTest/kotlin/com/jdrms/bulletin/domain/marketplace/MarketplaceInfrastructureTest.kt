@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
@@ -55,6 +56,42 @@ class MarketplaceInfrastructureTest {
 
         assertEquals("listing:listing-42", item?.id?.value)
         assertEquals("Campus desk", item?.title)
+        assertEquals(MarketplaceCondition.UNKNOWN, item?.condition)
+    }
+
+    @Test
+    fun unrecognizedSupabaseConditionRemainsUnknown() {
+        val item = SupabaseMarketplaceListingMapper.toItem(
+            SupabaseMarketplaceListingDto(
+                id = "listing-unknown-condition",
+                name = "Campus desk",
+                userId = "seller-42",
+                category = "FURNITURE",
+                condition = "refurbished",
+                price = 25.0
+            )
+        )
+
+        assertEquals(MarketplaceCondition.UNKNOWN, item?.condition)
+    }
+
+    @Test
+    fun inMemoryRepositoryKeepsUnrecognizedConditionUnknown() = runTest {
+        val repository = InMemoryMarketplaceRepository(
+            initialListings = listOf(
+                MarketplaceListingDto(
+                    id = "mkt_unknown_condition",
+                    sellerId = "seller-42",
+                    title = "Campus desk",
+                    description = "Solid wood",
+                    price = 25.0,
+                    category = "FURNITURE",
+                    condition = "refurbished"
+                )
+            )
+        )
+
+        assertEquals(MarketplaceCondition.UNKNOWN, repository.getCatalog().single().condition)
     }
 
     @Test

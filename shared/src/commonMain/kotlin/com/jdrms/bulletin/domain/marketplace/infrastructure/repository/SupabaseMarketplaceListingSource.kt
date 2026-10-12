@@ -76,10 +76,10 @@ private class PostgrestMarketplaceListingTable(
 
 internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplacePageRequest) {
     request.category?.let { category ->
-        eq("category", category.name)
+        ilike("category", category.name)
     }
     request.condition?.let { condition ->
-        eq("condition", condition.name)
+        ilike("condition", condition.name)
     }
     request.query.toSafePrefixSearchQuery()?.let { query ->
         textSearch("name", query, TextSearchType.NONE)

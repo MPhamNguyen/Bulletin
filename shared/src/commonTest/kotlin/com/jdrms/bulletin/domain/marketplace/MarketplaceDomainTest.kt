@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.marketplace
 
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
@@ -149,15 +151,55 @@ class MarketplaceDomainTest {
             title = "Monitor",
             description = "4K display",
             price = 150.0,
-            category = "ELECTRONICS"
+            category = "ELECTRONICS",
+            condition = "LIKE_NEW"
         )
         val domain = MarketplaceMapper.toDomain(dto, isBookmarked = true)
         assertEquals(true, domain.isBookmarked)
         assertEquals(MarketplaceCategory.ELECTRONICS, domain.category)
+        assertEquals(MarketplaceCondition.LIKE_NEW, domain.condition)
 
         val backToDto = MarketplaceMapper.toDto(domain)
         assertEquals(dto.id, backToDto.id)
         assertEquals(dto.price, backToDto.price)
+        assertEquals(dto.condition, backToDto.condition)
+    }
+
+    @Test
+    fun missingOrUnrecognizedConditionRemainsUnknown() {
+        val missingCondition = MarketplaceMapper.toDomain(marketplaceItemDto(condition = null))
+        val unrecognizedCondition = MarketplaceMapper.toDomain(marketplaceItemDto(condition = "refurbished"))
+
+        assertEquals(MarketplaceCondition.UNKNOWN, missingCondition.condition)
+        assertEquals(MarketplaceCondition.UNKNOWN, unrecognizedCondition.condition)
+        assertTrue(MarketplaceCondition.UNKNOWN !in MarketplaceCondition.knownValues)
+    }
+
+    @Test
+    fun conditionDefaultsRepresentMissingDataAsUnknown() {
+        val item = MarketplaceItem(
+            id = MarketplaceItemId("mkt_missing_condition"),
+            sellerId = "seller_1",
+            sellerName = "Student",
+            title = "Campus desk",
+            description = "Solid wood",
+            price = MarketplacePrice(25.0),
+            category = MarketplaceCategory.FURNITURE
+        )
+        val snapshot = MarketplaceListingSnapshot(
+            id = item.id.value,
+            sellerId = item.sellerId,
+            sellerName = item.sellerName,
+            title = item.title,
+            description = item.description,
+            priceAmount = item.price.amount,
+            priceCurrency = item.price.currency,
+            category = item.category,
+            createdAtMillis = 0L
+        )
+
+        assertEquals(MarketplaceCondition.UNKNOWN, item.condition)
+        assertEquals(MarketplaceCondition.UNKNOWN, snapshot.condition)
     }
 
     @Test
@@ -225,5 +267,16 @@ class MarketplaceDomainTest {
                 photos = listOf("  ")
             )
         }
+    }
+
+    private fun marketplaceItemDto(condition: String?): MarketplaceItemDto {
+        return MarketplaceItemDto(
+            id = "mkt_unknown_condition",
+            sellerId = "seller_1",
+            title = "Campus desk",
+            price = 25.0,
+            category = "FURNITURE",
+            condition = condition
+        )
     }
 }

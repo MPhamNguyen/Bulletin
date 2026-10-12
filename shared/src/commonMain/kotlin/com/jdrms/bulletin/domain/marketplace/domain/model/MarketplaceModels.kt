@@ -21,7 +21,13 @@ enum class MarketplaceCondition {
     LIKE_NEW,
     GOOD,
     FAIR,
-    POOR
+    POOR,
+    UNKNOWN;
+
+    companion object {
+        val knownValues: List<MarketplaceCondition>
+            get() = entries.filterNot { it == UNKNOWN }
+    }
 }
 
 data class MarketplacePrice(
@@ -47,7 +53,7 @@ data class MarketplaceItem(
     val description: String,
     val price: MarketplacePrice,
     val category: MarketplaceCategory,
-    val condition: MarketplaceCondition = MarketplaceCondition.GOOD,
+    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
     val isBookmarked: Boolean = false,
     val createdAtMillis: Long = 0L
 ) {
@@ -67,7 +73,7 @@ data class Listing(
     val description: String,
     val price: MarketplacePrice,
     val category: MarketplaceCategory,
-    val condition: String = "GOOD",
+    val condition: String = "UNKNOWN",
     val status: String = "AVAILABLE",
     val photos: List<String> = emptyList(),
     val sellerReputationScore: Double? = null,

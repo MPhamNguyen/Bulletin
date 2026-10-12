@@ -14,6 +14,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPol
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
+import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.toMarketplaceCondition
 
 class InMemoryMarketplaceRepository(
     private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy(),
@@ -33,9 +34,7 @@ class InMemoryMarketplaceRepository(
                 description = listing.description,
                 price = listing.price,
                 category = listing.category,
-                condition = runCatching {
-                    MarketplaceCondition.valueOf(listing.condition.uppercase().replace(' ', '_'))
-                }.getOrDefault(MarketplaceCondition.GOOD),
+                condition = listing.condition.toMarketplaceCondition(),
                 isBookmarked = listing.isBookmarked,
                 createdAtMillis = listing.createdAtMillis
             )
