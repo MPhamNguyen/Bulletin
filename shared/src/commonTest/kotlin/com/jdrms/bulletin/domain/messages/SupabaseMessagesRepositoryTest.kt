@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInsertDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportInsertDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportType
@@ -261,7 +262,7 @@ class SupabaseMessagesRepositoryTest {
     fun unexpectedStorageFailureReturnsSafeErrorAndPreservesCause() = runTest {
         val cause = IllegalStateException("PostgREST private detail")
         val table = object : SupabaseMessagesTable by FakeSupabaseMessagesTable(emptyList()) {
-            override suspend fun getConversationIds(userId: String): List<String> = throw cause
+            override suspend fun getInboxConversations(userId: String) = throw cause
         }
 
         val result = assertIs<Result.Error>(SupabaseMessagesRepository(table).getConversations(alice.id))
@@ -274,7 +275,7 @@ class SupabaseMessagesRepositoryTest {
     @Test
     fun cancellationFromStorageIsRethrown() = runTest {
         val table = object : SupabaseMessagesTable by FakeSupabaseMessagesTable(emptyList()) {
-            override suspend fun getConversationIds(userId: String): List<String> {
+            override suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto> {
                 throw CancellationException("Cancelled")
             }
         }

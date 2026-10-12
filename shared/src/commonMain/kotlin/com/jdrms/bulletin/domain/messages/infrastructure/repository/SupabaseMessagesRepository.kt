@@ -17,6 +17,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmi
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationLookupDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationMembershipDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
@@ -31,50 +32,37 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Instant
 
 class SupabaseMessagesRepository internal constructor(
     private val messagesTable: SupabaseMessagesTable,
-    private val maxConcurrentConversations: Int = DEFAULT_MAX_CONCURRENT_CONVERSATIONS,
     private val instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
 ) : MessagesRepository {
-    init {
-        require(maxConcurrentConversations in MIN_CONCURRENT_CONVERSATIONS..MAX_CONCURRENT_CONVERSATIONS)
-    }
-
     constructor(
         supabase: SupabaseClient,
-        maxConcurrentConversations: Int = DEFAULT_MAX_CONCURRENT_CONVERSATIONS,
         instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
-    ) : this(PostgrestSupabaseMessagesTable(supabase), maxConcurrentConversations, instrumentation)
+    ) : this(PostgrestSupabaseMessagesTable(supabase), instrumentation)
 
-    override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = measuredMessagesOperation(
-        instrumentation,
-        "inbox_retrieval",
-        { result -> (result as? Result.Success)?.data?.size },
-        { result -> (result as? Result.Success)?.data?.size?.let { 1 + (3 * it) } }
-    ) {
-        repositoryCall {
-            val semaphore = Semaphore(maxConcurrentConversations)
-            val conversationIds = messagesTable.getConversationIds(userId.value)
-            coroutineScope {
-                conversationIds
-                    .map { conversationId -> async { semaphore.withPermit { loadConversation(conversationId) } } }
-                    .awaitAll()
+    override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> =
+        measuredMessagesOperation(
+            instrumentation,
+            "inbox_retrieval",
+            { result -> (result as? Result.Success)?.data?.size },
+            { result -> (result as? Result.Success)?.data?.let { 1 } }
+        ) {
+            repositoryCall {
+                messagesTable.getInboxConversations(userId.value)
+                    .distinctBy(SupabaseConversationInboxDto::id)
+                    .map(SupabaseMessagesMapper::toInboxConversation)
                     .sortedByDescending(Conversation::updatedAtMillis)
             }
         }
-    }
 
     override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
         repositoryCall {
@@ -199,9 +187,6 @@ class SupabaseMessagesRepository internal constructor(
     }
 
     companion object {
-        const val DEFAULT_MAX_CONCURRENT_CONVERSATIONS = 4
-        private const val MIN_CONCURRENT_CONVERSATIONS = 1
-        private const val MAX_CONCURRENT_CONVERSATIONS = 8
         const val CONVERSATIONS_TABLE = "conversations"
         const val PARTICIPANTS_TABLE = "conversation_participants"
         const val MESSAGES_TABLE = "messages"
@@ -225,7 +210,7 @@ internal interface SupabaseConversationVisibilityTable {
 
 internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, SupabaseConversationVisibilityTable {
     suspend fun getAuthenticatedUserId(): String?
-    suspend fun getConversationIds(userId: String): List<String>
+    suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto>
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
     suspend fun isParticipant(conversationId: String, userId: String): Boolean
     suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto>
@@ -244,17 +229,14 @@ internal class PostgrestSupabaseMessagesTable(
         return supabase.auth.currentUserOrNull()?.id
     }
 
-    override suspend fun getConversationIds(userId: String): List<String> {
-        return supabase.from(SupabaseMessagesRepository.PARTICIPANTS_TABLE)
-            .select(columns = MEMBERSHIP_COLUMNS) {
-                filter {
-                    eq("user_id", userId)
-                    filter("deleted_at", FilterOperator.IS, "null")
-                }
-            }
-            .decodeList<SupabaseConversationMembershipDto>()
-            .map(SupabaseConversationMembershipDto::conversationId)
-            .distinct()
+    override suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto> {
+        return supabase.from(SupabaseMessagesRepository.CONVERSATIONS_TABLE).select(columns = INBOX_COLUMNS) {
+            filter { eq("membership.user_id", userId) }
+            order("user_id", Order.ASCENDING, referencedTable = "participants")
+            order("created_at", Order.DESCENDING, referencedTable = "messages")
+            order("id", Order.DESCENDING, referencedTable = "messages")
+            limit(1, referencedTable = "messages")
+        }.decodeList()
     }
 
     override suspend fun hideConversation(conversationId: String): Boolean =
@@ -367,6 +349,11 @@ internal class PostgrestSupabaseMessagesTable(
     private companion object {
         val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id")
         val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name)")
+        val INBOX_COLUMNS = Columns.raw(
+            "id,updated_at,listing_id,membership:conversation_participants!inner(user_id)," +
+                "participants:conversation_participants(user_id,profiles(full_name))," +
+                "messages(id,conversation_id,sender_id,body,created_at,profiles(full_name),reports(id,status))"
+        )
         val MESSAGE_COLUMNS = Columns.raw(
             "id,conversation_id,sender_id,body,created_at,profiles(full_name),reports(id,status)"
         )

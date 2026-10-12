@@ -2,7 +2,9 @@ package com.jdrms.bulletin.domain.messages
 
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseInboxParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProfileDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportMarkerDto
@@ -56,6 +58,48 @@ class SupabaseMessagesMapperTest {
 
         assertEquals(42L, conversation.updatedAtMillis)
         assertEquals(MessageId("message-a"), conversation.lastMessage?.id)
+    }
+
+    @Test
+    fun inboxConversationMapsNestedParticipantsAndLatestMessage() {
+        val conversation = SupabaseMessagesMapper.toInboxConversation(
+            SupabaseConversationInboxDto(
+                id = "conversation-a",
+                updatedAt = "1970-01-01T00:00:00.001Z",
+                participants = listOf(SupabaseInboxParticipantDto("alice-id", SupabaseMessageProfileDto("Alice"))),
+                latestMessages = listOf(messageDto())
+            )
+        )
+
+        assertEquals("Alice", conversation.participants.single().displayName)
+        assertEquals(MessageId("message-a"), conversation.lastMessage?.id)
+        assertEquals(42L, conversation.updatedAtMillis)
+    }
+
+    @Test
+    fun decodesEmbeddedInboxRowsFromPostgrestShape() {
+        val dto = Json.decodeFromString<SupabaseConversationInboxDto>(
+            """
+            {
+                "id":"conversation-a",
+                "updated_at":"1970-01-01T00:00:00.001Z",
+                "membership":[{"user_id":"alice-id"}],
+                "participants":[{"user_id":"alice-id","profiles":{"full_name":"Alice"}}],
+                "messages":[{
+                    "id":"message-a",
+                    "conversation_id":"conversation-a",
+                    "sender_id":"alice-id",
+                    "body":"Hello",
+                    "created_at":"1970-01-01T00:00:00.042Z",
+                    "profiles":{"full_name":"Alice"},
+                    "message_reports":[]
+                }]
+            }
+            """.trimIndent()
+        )
+
+        assertEquals("Alice", SupabaseMessagesMapper.toInboxConversation(dto).participants.single().displayName)
+        assertEquals(MessageId("message-a"), SupabaseMessagesMapper.toInboxConversation(dto).lastMessage?.id)
     }
 
     @Test

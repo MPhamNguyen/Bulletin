@@ -5,7 +5,9 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseInboxParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInsertDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProfileDto
@@ -41,6 +43,8 @@ internal class FakeSupabaseMessagesTable(
 
     var insertedMessage: SupabaseMessageInsertDto? = null
     var insertedReport: SupabaseMessageReportInsertDto? = null
+    var inboxReadCount = 0
+        private set
 
     override suspend fun getAuthenticatedUserId(): String? = authenticatedUserId
 
@@ -69,10 +73,25 @@ internal class FakeSupabaseMessagesTable(
         return createdId
     }
 
-    override suspend fun getConversationIds(userId: String): List<String> = participantRows
-        .filter { it.userId == userId && userId !in hiddenBy[it.conversationId].orEmpty() }
-        .map { it.conversationId }
-        .distinct()
+    override suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto> {
+        inboxReadCount++
+        return participantRows
+            .filter { it.userId == userId && userId !in hiddenBy[it.conversationId].orEmpty() }
+            .map { it.conversationId }
+            .distinct()
+            .mapNotNull { id ->
+                val conversation = conversationRows[id] ?: return@mapNotNull null
+                SupabaseConversationInboxDto(
+                    id = conversation.id,
+                    updatedAt = conversation.updatedAt,
+                    listingId = conversation.listingId,
+                    participants = participantRows.filter { it.conversationId == id }.map { participant ->
+                        SupabaseInboxParticipantDto(participant.userId, participant.profile)
+                    },
+                    latestMessages = listOfNotNull(findLatestMessage(id))
+                )
+            }
+    }
 
     override suspend fun hideConversation(conversationId: String): Boolean {
         val viewerId = authenticatedUserId ?: return false
