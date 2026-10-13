@@ -121,6 +121,13 @@ private fun ConversationCard(
                 fontWeight = FontWeight.Bold,
                 color = selectedColor
             )
+            conversation.listingId?.let { listingId ->
+                Text(
+                    text = "Listing ${listingId.value}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Text(
                 text = conversationPreviewText(conversation),
                 style = MaterialTheme.typography.bodySmall,

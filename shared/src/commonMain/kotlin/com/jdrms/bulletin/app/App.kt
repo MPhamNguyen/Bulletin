@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppRootScreen
@@ -36,6 +38,10 @@ import kotlinx.coroutines.cancel
 fun App(appContainer: AppContainer? = null) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
+    DisposableEffect(container) {
+        onDispose { container.inboxStateOwner.close() }
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { container.inboxStateOwner.onForeground() }
     val systemDarkTheme = isSystemInDarkTheme()
     val themeViewModel = remember { container.createThemeViewModel() }
     val themePreference by themeViewModel.themePreference.collectAsState()
