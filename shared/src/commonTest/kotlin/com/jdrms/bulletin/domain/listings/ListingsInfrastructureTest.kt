@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
+import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingProfileDto
@@ -54,7 +55,42 @@ class ListingsInfrastructureTest {
             )
         )
 
-        assertEquals(com.jdrms.bulletin.domain.listings.domain.model.ListingStatus.SOLD, listing?.status)
+        assertEquals(ListingStatus.SOLD, listing?.status)
+    }
+
+    @Test
+    fun preservesPendingAndArchivedSupabaseStatusesWhenNotSold() {
+        val statuses = listOf(ListingStatus.PENDING, ListingStatus.ARCHIVED)
+
+        statuses.forEach { status ->
+            val listing = SupabaseListingMapper.toDomain(
+                SupabaseListingDto(
+                    id = "listing-${status.name.lowercase()}",
+                    name = "Desk Lamp",
+                    userId = "seller-42",
+                    price = 18.5,
+                    status = status.name.lowercase()
+                )
+            )
+
+            assertEquals(status, listing?.status)
+        }
+    }
+
+    @Test
+    fun soldFlagOverridesSupabaseStatus() {
+        val listing = SupabaseListingMapper.toDomain(
+            SupabaseListingDto(
+                id = "listing-sold",
+                name = "Desk Lamp",
+                userId = "seller-42",
+                price = 18.5,
+                status = ListingStatus.PENDING.name,
+                isSold = true
+            )
+        )
+
+        assertEquals(ListingStatus.SOLD, listing?.status)
     }
 
     @Test

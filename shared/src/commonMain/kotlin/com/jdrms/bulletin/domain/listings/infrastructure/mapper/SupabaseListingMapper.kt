@@ -28,7 +28,7 @@ object SupabaseListingMapper {
                 .getOrDefault(ListingCategory.OTHER),
             condition = runCatching { ListingCondition.valueOf(dto.condition.orEmpty().uppercase()) }
                 .getOrDefault(ListingCondition.GOOD),
-            status = if (dto.isSold) ListingStatus.SOLD else ListingStatus.AVAILABLE,
+            status = dto.toListingStatus(),
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
         )
     }
@@ -53,6 +53,12 @@ object SupabaseListingMapper {
         return this?.let { timestamp ->
             runCatching { Instant.parse(timestamp).toEpochMilliseconds() }.getOrNull()
         } ?: 0L
+    }
+
+    private fun SupabaseListingDto.toListingStatus(): ListingStatus {
+        if (isSold) return ListingStatus.SOLD
+        return runCatching { ListingStatus.valueOf(status.orEmpty().uppercase()) }
+            .getOrDefault(ListingStatus.AVAILABLE)
     }
 
     private const val DEFAULT_SELLER_NAME = "Student"
