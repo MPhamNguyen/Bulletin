@@ -4,10 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,14 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
-import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
-import com.jdrms.bulletin.app.navigation.MainNavigationState
-import com.jdrms.bulletin.app.navigation.ProfileDestination
-import com.jdrms.bulletin.app.navigation.backFromProfile
-import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.app.theme.ThemePreference
-import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
@@ -42,10 +34,6 @@ import com.jdrms.bulletin.domain.profile.presentation.ChangePasswordScreen
 import com.jdrms.bulletin.domain.profile.presentation.ForgotPasswordScreen
 import com.jdrms.bulletin.domain.profile.presentation.PasswordConfirmationCodeScreen
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
-import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignInScreen
 import com.jdrms.bulletin.domain.profile.presentation.SignUpScreen
 import kotlinx.coroutines.cancel
@@ -105,9 +93,7 @@ fun App(appContainer: AppContainer? = null) {
                             onClearMessages = signInViewModel::clearError,
                             onSignIn = signInViewModel::signIn,
                             onForgotPassword = { passwordRecoveryViewModel.beginPasswordReset() },
-                            onCreateAccount = {
-                                currentRootScreen = AppRootScreen.CREATE_PROFILE
-                            }
+                            onCreateAccount = { currentRootScreen = AppRootScreen.CREATE_PROFILE }
                         )
                         PasswordRecoveryStage.ENTER_EMAIL -> ForgotPasswordScreen(
                             errorMessage = passwordRecoveryUiState.errorMessage,
@@ -151,14 +137,12 @@ fun App(appContainer: AppContainer? = null) {
                         }
                     )
                 }
-                AppRootScreen.MAIN -> {
-                    MainAppScaffold(
-                        appContainer = container,
-                        themeViewModel = themeViewModel,
-                        darkTheme = isDarkTheme,
-                        onSignOut = { currentRootScreen = AppRootScreen.SIGN_IN }
-                    )
-                }
+                AppRootScreen.MAIN -> MainAppScaffold(
+                    appContainer = container,
+                    themeViewModel = themeViewModel,
+                    darkTheme = isDarkTheme,
+                    onSignOut = { currentRootScreen = AppRootScreen.SIGN_IN }
+                )
             }
         }
     }
@@ -167,15 +151,13 @@ fun App(appContainer: AppContainer? = null) {
 internal fun resolveRootScreen(
     currentRootScreen: AppRootScreen,
     authSessionState: AuthSessionState
-): AppRootScreen {
-    return when (authSessionState) {
-        AuthSessionState.CHECKING -> currentRootScreen
-        AuthSessionState.AUTHENTICATED -> {
-            if (currentRootScreen == AppRootScreen.CREATE_PROFILE) AppRootScreen.CREATE_PROFILE else AppRootScreen.MAIN
-        }
-        AuthSessionState.UNAUTHENTICATED -> {
-            if (currentRootScreen == AppRootScreen.MAIN) AppRootScreen.SIGN_IN else currentRootScreen
-        }
+): AppRootScreen = when (authSessionState) {
+    AuthSessionState.CHECKING -> currentRootScreen
+    AuthSessionState.AUTHENTICATED -> {
+        if (currentRootScreen == AppRootScreen.CREATE_PROFILE) AppRootScreen.CREATE_PROFILE else AppRootScreen.MAIN
+    }
+    AuthSessionState.UNAUTHENTICATED -> {
+        if (currentRootScreen == AppRootScreen.MAIN) AppRootScreen.SIGN_IN else currentRootScreen
     }
 }
 

@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -17,6 +20,10 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
 fun MessagesScreen(viewModel: MessagesViewModel) {
+    DisposableEffect(viewModel) {
+        viewModel.onDestinationActiveChanged(true)
+        onDispose { viewModel.onDestinationActiveChanged(false) }
+    }
     val state by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -24,9 +31,14 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
             title = "Messages",
             subtitle = "Conversations with campus buyers and sellers"
         )
-
         Spacer(modifier = Modifier.height(8.dp))
-
+        if (state.connectionState == MessageConnectionState.DISCONNECTED) {
+            Text(
+                text = "Live updates unavailable. Recent messages may be delayed.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
         MessagesContent(state, viewModel, Modifier.weight(1f))
     }
 }

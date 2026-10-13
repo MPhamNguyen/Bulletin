@@ -6,15 +6,13 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
 import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsPage
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarksPageCursor
+import com.jdrms.bulletin.domain.profile.application.ProfileSoldListingsProvider
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionState
-import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
-import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -22,23 +20,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class ProfileUiState(
-    val profile: StudentProfile? = null,
-    val reputation: StudentReputation? = null,
-    val activeListingsCount: Int = 0,
-    val itemsSoldCount: Int? = null,
-    val bookmarkedListings: List<ProfileBookmarkedListing> = emptyList(),
-    val isLoadingBookmarkedListings: Boolean = false,
-    val isLoadingMoreBookmarkedListings: Boolean = false,
-    val bookmarkedListingsNextCursor: ProfileBookmarksPageCursor? = null,
-    val selectedBookmarkedListingId: String? = null,
-    val removingBookmarkedListingId: String? = null,
-    val errorMessage: String? = null
-) {
-    val selectedBookmarkedListing: ProfileBookmarkedListing?
-        get() = bookmarkedListings.firstOrNull { it.id == selectedBookmarkedListingId }
-}
 
 data class ProfileBookmarksDependencies(
     val provider: ProfileBookmarkedListingsProvider? = null,
@@ -51,6 +32,7 @@ class ProfileViewModel(
     private val getProfileOverview: GetProfileOverview,
     private val getProfileActivity: GetProfileActivity,
     listingChangedSignal: RefreshSignal,
+    private val soldListingsProvider: ProfileSoldListingsProvider? = null,
     private val bookmarks: ProfileBookmarksDependencies = ProfileBookmarksDependencies()
 ) : ViewModel() {
     private val state = MutableStateFlow(ProfileUiState())
@@ -77,8 +59,9 @@ class ProfileViewModel(
     fun refreshActiveListings() {
         val profile = state.value.profile ?: return
         viewModelScope.launch {
-            val count = getProfileActivity(profile.id)
-            state.update { it.copy(activeListingsCount = count) }
+            val activeCount = getProfileActivity(profile.id)
+            val soldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
+            state.update { it.copy(activeListingsCount = activeCount, itemsSoldCount = soldCount) }
         }
     }
 
@@ -229,7 +212,8 @@ class ProfileViewModel(
                     it.copy(
                         profile = overview.profile,
                         reputation = overview.reputation,
-                        activeListingsCount = overview.activeListingsCount
+                        activeListingsCount = overview.activeListingsCount,
+                        itemsSoldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
                     )
                 }
             }

@@ -34,3 +34,6 @@ xcuserdata/
 
 # Dependencies
 node_modules/
+
+# Supabase local state
+supabase/.temp/

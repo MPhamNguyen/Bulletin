@@ -17,6 +17,7 @@ import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
+import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 
 @Composable
 fun ListingsScreen(viewModel: ListingsViewModel) {
@@ -151,7 +152,8 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
             )
         }
 
-        if (state.myListings.isEmpty()) {
+        val activeListings = state.myListings.filter { it.status == ListingStatus.AVAILABLE }
+        if (activeListings.isEmpty()) {
             item {
                 BulletinCard {
                     Text(
@@ -163,10 +165,11 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
             }
         }
 
-        items(state.myListings) { listing ->
+        items(activeListings) { listing ->
             MyListingCard(
                 listing = listing,
-                onDelete = { viewModel.requestDeleteListing(listing) }
+                onDelete = { viewModel.requestDeleteListing(listing) },
+                onMarkSold = { viewModel.requestMarkListingSold(listing) }
             )
         }
     }
@@ -180,12 +183,22 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
             onConfirm = viewModel::confirmDeleteListing
         )
     }
+    state.pendingSold?.let { listing ->
+        ListingSoldConfirmationDialog(
+            listing = listing,
+            isMarkingSold = state.isMarkingSold,
+            errorMessage = state.errorMessage,
+            onDismiss = viewModel::cancelMarkListingSold,
+            onConfirm = viewModel::confirmMarkListingSold
+        )
+    }
 }
 
 @Composable
 private fun MyListingCard(
     listing: Listing,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onMarkSold: () -> Unit
 ) {
     BulletinCard {
         Row(
@@ -224,6 +237,14 @@ private fun MyListingCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
+            FilledTonalButton(
+                onClick = onMarkSold,
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) { Text("Mark as sold") }
             TextButton(
                 onClick = onDelete,
                 colors = ButtonDefaults.textButtonColors(

@@ -1,27 +1,20 @@
 package com.jdrms.bulletin.app.theme
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
-import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class AndroidThemePreferenceStoreTest {
 
     @Test
     fun defaultsToSystemWhenNoPreferenceSaved() = runTest {
-        val tempFile = File.createTempFile("test_theme_prefs", ".preferences_pb").apply { deleteOnExit() }
-        val testScope = TestScope(UnconfinedTestDispatcher(testScheduler))
-        val dataStore = PreferenceDataStoreFactory.create(
-            scope = testScope,
-            produceFile = { tempFile }
-        )
-        val store = AndroidThemePreferenceStore(dataStore)
+        val store = createStore()
 
         assertEquals(ThemePreference.SYSTEM, store.lastAppliedPreference())
         assertEquals(ThemePreference.SYSTEM, store.preferenceFor(UserId("user-1")))
@@ -29,13 +22,7 @@ class AndroidThemePreferenceStoreTest {
 
     @Test
     fun setsAndRetrievesLastAppliedPreference() = runTest {
-        val tempFile = File.createTempFile("test_theme_prefs", ".preferences_pb").apply { deleteOnExit() }
-        val testScope = TestScope(UnconfinedTestDispatcher(testScheduler))
-        val dataStore = PreferenceDataStoreFactory.create(
-            scope = testScope,
-            produceFile = { tempFile }
-        )
-        val store = AndroidThemePreferenceStore(dataStore)
+        val store = createStore()
 
         store.setLastAppliedPreference(ThemePreference.DARK)
         assertEquals(ThemePreference.DARK, store.lastAppliedPreference())
@@ -46,13 +33,7 @@ class AndroidThemePreferenceStoreTest {
 
     @Test
     fun setsAndRetrievesPerUserPreferenceAndUpdatesLastApplied() = runTest {
-        val tempFile = File.createTempFile("test_theme_prefs", ".preferences_pb").apply { deleteOnExit() }
-        val testScope = TestScope(UnconfinedTestDispatcher(testScheduler))
-        val dataStore = PreferenceDataStoreFactory.create(
-            scope = testScope,
-            produceFile = { tempFile }
-        )
-        val store = AndroidThemePreferenceStore(dataStore)
+        val store = createStore()
 
         val user1 = UserId("user-1")
         val user2 = UserId("user-2")
@@ -66,5 +47,20 @@ class AndroidThemePreferenceStoreTest {
         assertEquals(ThemePreference.LIGHT, store.preferenceFor(user2))
         assertEquals(ThemePreference.DARK, store.preferenceFor(user1))
         assertEquals(ThemePreference.LIGHT, store.lastAppliedPreference())
+    }
+
+    private fun createStore(): AndroidThemePreferenceStore =
+        AndroidThemePreferenceStore(InMemoryPreferencesDataStore())
+}
+
+private class InMemoryPreferencesDataStore : DataStore<Preferences> {
+    private val preferences = MutableStateFlow<Preferences>(emptyPreferences())
+
+    override val data: Flow<Preferences> = preferences
+
+    override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+        val updatedPreferences = transform(preferences.value)
+        preferences.value = updatedPreferences
+        return updatedPreferences
     }
 }
