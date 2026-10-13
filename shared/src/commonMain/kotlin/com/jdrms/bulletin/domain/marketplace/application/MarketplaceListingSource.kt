@@ -42,7 +42,7 @@ data class MarketplaceListingPage(
     val nextCursor: MarketplacePageCursor?
 )
 
-interface MarketplaceListingSource {
+fun interface MarketplaceListingSource {
     suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage
 }
 

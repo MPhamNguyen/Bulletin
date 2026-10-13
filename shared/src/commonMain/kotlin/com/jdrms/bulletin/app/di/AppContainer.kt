@@ -34,6 +34,7 @@ import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListin
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
@@ -41,6 +42,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseM
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
+import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
@@ -215,11 +217,15 @@ class AppContainer(
     val bookmarkMarketplaceListing by lazy { BookmarkMarketplaceListing(marketplaceRepository) }
     val getMarketplaceListingBookmarks by lazy { GetMarketplaceListingBookmarks(marketplaceRepository) }
     val removeMarketplaceListingBookmark by lazy { RemoveMarketplaceListingBookmark(marketplaceRepository) }
+    private val marketplaceSellerProfileProvider by lazy { ProfileMarketplaceSellerNameProvider(profileRepository) }
     val viewMarketplaceListing by lazy {
         ViewMarketplaceListing(
             repository = marketplaceRepository,
-            sellerProfileProvider = ProfileMarketplaceSellerNameProvider(profileRepository)
+            sellerProfileProvider = marketplaceSellerProfileProvider
         )
+    }
+    private val viewMarketplaceSellerProfile by lazy {
+        ViewMarketplaceSellerProfile(marketplaceSellerProfileProvider, marketplaceListingSource)
     }
     private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
     private val reportMarketplaceUser by lazy {
@@ -294,6 +300,8 @@ class AppContainer(
     )
 
     fun createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
+
+    fun createSellerProfileViewModel() = SellerProfileViewModel(viewMarketplaceSellerProfile)
 
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,

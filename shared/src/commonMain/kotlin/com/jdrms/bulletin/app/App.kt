@@ -34,6 +34,7 @@ import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
@@ -210,6 +211,7 @@ fun MainAppScaffold(
 
         val homeViewModel = remember { container.createHomeViewModel() }
         val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
+        val sellerProfileViewModel = remember { container.createSellerProfileViewModel() }
         val marketplaceUserReportViewModel = remember { container.createMarketplaceUserReportViewModel() }
         val listingsViewModel = remember { container.createListingsViewModel() }
         val messagesViewModel = remember { container.createMessagesViewModel() }
@@ -236,24 +238,29 @@ fun MainAppScaffold(
                     AppDestination.HOME -> HomeScreen(homeViewModel)
                     AppDestination.MARKETPLACE -> MarketplaceScreen(
                         viewModel = marketplaceViewModel,
+                        sellerProfileViewModel = sellerProfileViewModel,
                         userReportViewModel = marketplaceUserReportViewModel,
-                        onMessageSeller = { listingId, sellerId, sellerName, content ->
-                            val sendResult = sendListingMessage(
-                                container,
-                                navigationState,
-                                ListingMessageRequest(listingId, sellerId, sellerName, content)
-                            )
-                            openSentListingConversation(sendResult, messagesViewModel)
-                            navigationState = sendResult.navigationState
-                            sendResult.sent
-                        },
-                        hasExistingConversation = { listingId, sellerId ->
-                            hasListingConversation(container, listingId, sellerId)
-                        },
-                        onSeeChat = { listingId, sellerId ->
-                            openListingConversation(container, messagesViewModel, listingId, sellerId)
-                            navigationState = navigationState.selectBottomNavigationDestination(AppDestination.MESSAGES)
-                        }
+                        actions = MarketplaceScreenActions(
+                            onMessageSeller = { listingId, sellerId, sellerName, content ->
+                                val sendResult = sendListingMessage(
+                                    container,
+                                    navigationState,
+                                    ListingMessageRequest(listingId, sellerId, sellerName, content)
+                                )
+                                openSentListingConversation(sendResult, messagesViewModel)
+                                navigationState = sendResult.navigationState
+                                sendResult.sent
+                            },
+                            hasExistingConversation = { listingId, sellerId ->
+                                hasListingConversation(container, listingId, sellerId)
+                            },
+                            onSeeChat = { listingId, sellerId ->
+                                openListingConversation(container, messagesViewModel, listingId, sellerId)
+                                navigationState = navigationState.selectBottomNavigationDestination(
+                                    AppDestination.MESSAGES
+                                )
+                            }
+                        )
                     )
                     AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
                     AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
