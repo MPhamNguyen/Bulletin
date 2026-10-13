@@ -73,7 +73,9 @@ fun MyListingsScreen(
                     viewModel.startEditing(listing)
                     onEditListing()
                 },
-                onDeleteListing = viewModel::requestDeleteListing
+                onDeleteListing = viewModel::requestDeleteListing,
+                onMarkSoldListing = viewModel::requestMarkListingSold,
+                onRestoreListing = viewModel::requestRestoreListing
             )
         }
 
@@ -99,6 +101,24 @@ fun MyListingsScreen(
                 errorMessage = uiState.errorMessage,
                 onDismiss = viewModel::cancelDeleteListing,
                 onConfirm = viewModel::confirmDeleteListing
+            )
+        }
+        uiState.pendingSold?.let { listing ->
+            ListingSoldConfirmationDialog(
+                listing = listing,
+                isMarkingSold = uiState.isMarkingSold,
+                errorMessage = uiState.errorMessage,
+                onDismiss = viewModel::cancelMarkListingSold,
+                onConfirm = viewModel::confirmMarkListingSold
+            )
+        }
+        uiState.pendingRestoration?.let { listing ->
+            ListingRestoreConfirmationDialog(
+                listing = listing,
+                isRestoring = uiState.isRestoring,
+                errorMessage = uiState.errorMessage,
+                onDismiss = viewModel::cancelRestoreListing,
+                onConfirm = viewModel::confirmRestoreListing
             )
         }
     }
