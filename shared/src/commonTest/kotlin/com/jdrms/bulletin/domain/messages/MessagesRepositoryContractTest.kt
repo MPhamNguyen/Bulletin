@@ -39,6 +39,38 @@ abstract class MessagesRepositoryContractTest {
     }
 
     @Test
+    fun hidingConversationAffectsOnlyRequestingParticipantsInbox() = runTest {
+        val repository = createRepository(listOf(conversation()), listOf(message()))
+
+        assertEquals(Result.Success(Unit), repository.hideConversation(alice.id, conversationId))
+        assertEquals(Result.Success(Unit), repository.hideConversation(alice.id, conversationId))
+        assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
+        assertEquals(listOf(conversationId), repository.getConversations(carol.id).getOrThrow().map { it.id })
+        assertEquals(listOf(message()), repository.getMessages(alice.id, conversationId).getOrThrow())
+    }
+
+    @Test
+    fun newMessageRestoresConversationForParticipantsWhoPreviouslyHidIt() = runTest {
+        val repository = createRepository(listOf(conversation()))
+
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
+
+        repository.sendMessage(message()).getOrThrow()
+
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
+    fun hidingUnknownConversationOrAsOutsiderIsDenied() = runTest {
+        val repository = createRepository(listOf(conversation()))
+
+        assertAccessDenied(repository.hideConversation(bob.id, conversationId))
+        assertAccessDenied(repository.hideConversation(alice.id, ConversationId("missing")))
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
     fun conversationCreationIsListingScopedAndIdempotent() = runTest {
         val repository = createRepository(emptyList())
         val seller = ConversationParticipant(carol.id, carol.displayName)
@@ -171,6 +203,33 @@ private fun Conversation.withListing(listingId: ListingReferenceId) =
 class InMemoryMessagesRepositoryTest : MessagesRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository =
         messagesRepository(conversations, messages)
+
+    @Test
+    fun startingSameListingConversationAgainRestoresOnlyRequestersInbox() = runTest {
+        val listingId = ListingReferenceId("listing-a")
+        val repository = createRepository(
+            listOf(
+                Conversation(
+                    conversationId,
+                    listOf(
+                        ConversationParticipant(alice.id, alice.displayName),
+                        ConversationParticipant(carol.id, carol.displayName)
+                    ),
+                    listingId = listingId
+                )
+            )
+        )
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        repository.hideConversation(carol.id, conversationId).getOrThrow()
+
+        val otherParticipant = ConversationParticipant(carol.id, carol.displayName)
+        assertEquals(
+            conversationId,
+            repository.getOrCreateConversation(alice.id, otherParticipant, listingId).getOrThrow().id
+        )
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+        assertEquals(emptyList(), repository.getConversations(carol.id).getOrThrow())
+    }
 
     @Test
     fun fetchedMessagesAreOrderedOldestToNewestWithStableTimestampTies() = runTest {

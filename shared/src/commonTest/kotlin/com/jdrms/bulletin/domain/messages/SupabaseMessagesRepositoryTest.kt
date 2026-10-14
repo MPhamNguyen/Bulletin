@@ -3,28 +3,32 @@ package com.jdrms.bulletin.domain.messages
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
-import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
-import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
-import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
-import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInsertDto
-import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProfileDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportInsertDto
-import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportMarkerDto
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.MessagesPersistenceException
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.PostgrestSupabaseMessagesTable
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesTable
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
-import kotlin.time.Instant
+import kotlin.test.assertTrue
 
 class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository {
@@ -33,6 +37,45 @@ class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() 
 }
 
 class SupabaseMessagesRepositoryTest {
+    @Test
+    fun incomingMessageResurfacesConversationForParticipantWhoHidIt() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+        val repository = SupabaseMessagesRepository(table)
+
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
+
+        table.authenticatedUserId = carol.id.value
+        repository.sendMessage(message(carol)).getOrThrow()
+
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
+    fun conversationVisibilityRpcsDecodeScalarBooleanResponses() = runTest {
+        val requestedPaths = mutableListOf<String>()
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                requestedPaths += request.url.encodedPath
+                val body = if (request.url.encodedPath.endsWith("hide_conversation")) "true" else "false"
+                respond(body, HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
+            }
+        }
+
+        try {
+            val table = PostgrestSupabaseMessagesTable(client)
+            assertTrue(table.hideConversation(conversationId.value))
+            assertFalse(table.restoreConversation(conversationId.value))
+            assertEquals(
+                listOf("/rest/v1/rpc/hide_conversation", "/rest/v1/rpc/restore_conversation"),
+                requestedPaths
+            )
+        } finally {
+            client.close()
+        }
+    }
+
     @Test
     fun sendWritesTransportFieldsWithoutClientControlledIdentity() = runTest {
         val table = FakeSupabaseMessagesTable(listOf(conversation()))
@@ -76,6 +119,80 @@ class SupabaseMessagesRepositoryTest {
 
         assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
         assertNull(table.insertedMessage)
+    }
+
+    @Test
+    fun hideRejectsClaimedIdentityThatDoesNotMatchSession() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+
+        val result = SupabaseMessagesRepository(table).hideConversation(carol.id, conversationId)
+
+        assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
+        assertEquals(listOf(conversationId.value), table.getConversationIds(alice.id.value))
+    }
+
+    @Test
+    fun hideReturnsPersistenceFailureWithoutChangingInboxWhenStorageFails() = runTest {
+        val table = object : SupabaseMessagesTable by FakeSupabaseMessagesTable(listOf(conversation())) {
+            override suspend fun hideConversation(conversationId: String): Boolean {
+                error("storage unavailable")
+            }
+        }
+
+        val result = SupabaseMessagesRepository(table).hideConversation(alice.id, conversationId)
+
+        assertIs<MessagesPersistenceException>(assertIs<Result.Error>(result).exception)
+    }
+
+    @Test
+    fun startingSameListingConversationAgainRestoresRequestersInbox() = runTest {
+        val existing = conversation()
+        val table = FakeSupabaseMessagesTable(
+            listOf(
+                Conversation(
+                    existing.id,
+                    existing.participants,
+                    existing.lastMessage,
+                    existing.updatedAtMillis,
+                    ListingReferenceId("listing-a")
+                )
+            )
+        )
+        val repository = SupabaseMessagesRepository(table)
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+
+        val reopened = repository.getOrCreateConversation(
+            alice.id,
+            ConversationParticipant(carol.id, carol.displayName),
+            ListingReferenceId("listing-a")
+        )
+
+        assertEquals(conversationId, reopened.getOrThrow().id)
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
+    fun startingAlreadyVisibleListingConversationSucceeds() = runTest {
+        val existing = conversation()
+        val table = FakeSupabaseMessagesTable(
+            listOf(
+                Conversation(
+                    existing.id,
+                    existing.participants,
+                    existing.lastMessage,
+                    existing.updatedAtMillis,
+                    ListingReferenceId("listing-a")
+                )
+            )
+        )
+
+        val result = SupabaseMessagesRepository(table).getOrCreateConversation(
+            alice.id,
+            ConversationParticipant(carol.id, carol.displayName),
+            ListingReferenceId("listing-a")
+        )
+
+        assertEquals(conversationId, result.getOrThrow().id)
     }
 
     @Test
@@ -169,140 +286,5 @@ class SupabaseMessagesRepositoryTest {
         val result = SupabaseMessagesRepository(table).getMessagePage(alice.id, conversationId)
 
         assertIs<MessagesPersistenceException>(assertIs<Result.Error>(result).exception)
-    }
-}
-
-private class FakeSupabaseMessagesTable(
-    conversations: List<Conversation>,
-    messages: List<Message> = emptyList(),
-    private val authenticatedUserId: String? = alice.id.value
-) : SupabaseMessagesTable {
-    override suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String {
-        val members = setOf(requesterId, sellerId)
-        val existingId = conversationRows.values.firstOrNull { row ->
-            row.listingId == listingId && participantRows
-                .filter { it.conversationId == row.id }
-                .map { it.userId }
-                .toSet() == members
-        }?.id
-        if (existingId != null) return existingId
-
-        val createdId = "created-conversation-${conversationRows.size + 1}"
-        conversationRows[createdId] = SupabaseConversationDto(createdId, listingId = listingId)
-        participantRows += SupabaseConversationParticipantDto(
-            conversationId = createdId,
-            userId = requesterId,
-            profile = SupabaseMessageProfileDto("Student")
-        )
-        participantRows += SupabaseConversationParticipantDto(
-            conversationId = createdId,
-            userId = sellerId,
-            profile = SupabaseMessageProfileDto("Carol")
-        )
-        return createdId
-    }
-    private val conversationRows = conversations.associate { conversation ->
-        conversation.id.value to SupabaseConversationDto(
-            id = conversation.id.value,
-            updatedAt = Instant.fromEpochMilliseconds(conversation.updatedAtMillis).toString(),
-            listingId = conversation.listingId?.value
-        )
-    }.toMutableMap()
-    private val participantRows = conversations.flatMap { conversation ->
-        conversation.participants.map { participant ->
-            SupabaseConversationParticipantDto(
-                conversationId = conversation.id.value,
-                userId = participant.id.value,
-                profile = SupabaseMessageProfileDto(participant.displayName)
-            )
-        }
-    }.toMutableList()
-    private val messageRows = messages.map(::toMessageDto).toMutableList()
-
-    var insertedMessage: SupabaseMessageInsertDto? = null
-    var insertedReport: SupabaseMessageReportInsertDto? = null
-
-    override suspend fun getAuthenticatedUserId(): String? = authenticatedUserId
-
-    override suspend fun getConversationIds(userId: String): List<String> {
-        return participantRows.filter { it.userId == userId }.map { it.conversationId }.distinct()
-    }
-
-    override suspend fun findConversation(conversationId: String): SupabaseConversationDto? {
-        return conversationRows[conversationId]
-    }
-
-    override suspend fun isParticipant(conversationId: String, userId: String): Boolean {
-        return participantRows.any { it.conversationId == conversationId && it.userId == userId }
-    }
-
-    override suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto> {
-        return participantRows.filter { it.conversationId == conversationId }
-    }
-
-    override suspend fun getMessagePage(
-        conversationId: String,
-        before: MessageCursor?,
-        limit: Int
-    ): List<SupabaseMessageDto> {
-        return messageRows.filter { it.conversationId == conversationId }
-            .filter {
-                before == null || Instant.parse(it.createdAt) < before.createdAt ||
-                    (Instant.parse(it.createdAt) == before.createdAt && it.id < before.id.value)
-            }
-            .sortedWith(compareByDescending<SupabaseMessageDto> { it.createdAt }.thenByDescending { it.id })
-            .take(limit)
-    }
-
-    override suspend fun findMessage(conversationId: String, messageId: String): SupabaseMessageDto? {
-        return messageRows.find { it.conversationId == conversationId && it.id == messageId }
-    }
-
-    override suspend fun findLatestMessage(conversationId: String): SupabaseMessageDto? {
-        return getMessagePage(conversationId, null, 1).firstOrNull()
-    }
-
-    override suspend fun insertMessage(message: SupabaseMessageInsertDto) {
-        insertedMessage = message
-        val senderId = checkNotNull(authenticatedUserId)
-        val participant = participantRows.first { row ->
-            row.conversationId == message.conversationId && row.userId == senderId
-        }
-        messageRows += SupabaseMessageDto(
-            id = message.id,
-            conversationId = message.conversationId,
-            senderId = senderId,
-            content = message.content,
-            createdAt = message.createdAt,
-            senderProfile = participant.profile
-        )
-        val conversation = conversationRows.getValue(message.conversationId)
-        conversationRows[message.conversationId] = conversation.copy(updatedAt = message.createdAt)
-    }
-
-    override suspend fun insertReport(report: SupabaseMessageReportInsertDto) {
-        insertedReport = report
-        val index = messageRows.indexOfFirst { it.id == report.messageId }
-        check(index >= 0)
-        messageRows[index] = messageRows[index].copy(
-            reports = messageRows[index].reports + SupabaseMessageReportMarkerDto("report-${report.messageId}")
-        )
-    }
-
-    fun replaceMessageTimestamp(timestamp: String) {
-        check(messageRows.isNotEmpty())
-        messageRows[0] = messageRows[0].copy(createdAt = timestamp)
-    }
-
-    private fun toMessageDto(message: Message): SupabaseMessageDto {
-        return SupabaseMessageDto(
-            id = message.id.value,
-            conversationId = message.conversationId.value,
-            senderId = message.senderId.value,
-            content = message.content,
-            createdAt = Instant.fromEpochMilliseconds(message.timestampMillis).toString(),
-            senderProfile = SupabaseMessageProfileDto(message.senderName),
-            reports = if (message.isReported) listOf(SupabaseMessageReportMarkerDto("existing-report")) else emptyList()
-        )
     }
 }
