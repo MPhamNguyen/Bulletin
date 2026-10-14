@@ -42,14 +42,16 @@ object SupabaseMessagesMapper {
     }
 
     fun toMessage(dto: SupabaseMessageDto): Message {
+        val createdAt = Instant.parse(dto.createdAt)
         return Message(
             id = MessageId(dto.id),
             conversationId = ConversationId(dto.conversationId),
             senderId = SenderId(dto.senderId),
             senderName = dto.senderProfile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
             content = dto.content,
-            timestampMillis = Instant.parse(dto.createdAt).toEpochMilliseconds(),
-            isReported = dto.reports.isNotEmpty()
+            timestampMillis = createdAt.toEpochMilliseconds(),
+            isReported = dto.reports.isNotEmpty(),
+            preciseCreatedAt = createdAt.takeUnless { it == Instant.fromEpochMilliseconds(it.toEpochMilliseconds()) }
         )
     }
 
@@ -58,7 +60,7 @@ object SupabaseMessagesMapper {
             id = message.id.value,
             conversationId = message.conversationId.value,
             content = message.content,
-            createdAt = Instant.fromEpochMilliseconds(message.timestampMillis).toString()
+            createdAt = message.orderingTimestamp.toString()
         )
     }
 

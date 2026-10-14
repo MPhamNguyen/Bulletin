@@ -4,11 +4,13 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
+import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import kotlinx.coroutines.Dispatchers
@@ -138,10 +140,11 @@ class MessagesReportingViewModelTest {
         assertNotNull(viewModel.uiState.value.errorMessage)
     }
 
-    private fun viewModel(repository: MessagesRepository) = MessagesViewModel(
+    private fun viewModel(repository: MessagesRepository): MessagesViewModel = MessagesViewModel(
         GetConversations(repository, provider),
         GetConversationMessages(repository, provider),
+        ObserveConversationMessages(repository as? MessagesObserver ?: messagesRepository(), provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
         ReportMessage(repository, provider)
-    )
+    ).also { it.onDestinationActiveChanged(true) }
 }

@@ -4,6 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import io.github.jan.supabase.createSupabaseClient
@@ -13,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class AppContainerTest {
 
@@ -28,12 +30,14 @@ class AppContainerTest {
         )
 
         assertIs<SupabaseMessagesRepository>(container.messagesRepository)
+        assertIs<SupabaseMessagesObserver>(container.messagesObserver)
     }
 
     @Test
     fun messagingUsesTheSameAuthSessionAndKeepsInMemoryStorage() = runTest {
         val container = AppContainer(isInspectionMode = true)
         assertIs<InMemoryMessagesRepository>(container.messagesRepository)
+        assertTrue(container.messagesRepository === container.messagesObserver)
         assertIs<MessagingAuthenticationRequiredException>(
             assertIs<Result.Error>(container.getConversations()).exception
         )

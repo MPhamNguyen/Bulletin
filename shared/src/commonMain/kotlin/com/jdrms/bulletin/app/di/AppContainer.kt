@@ -5,6 +5,7 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserReporter
@@ -22,6 +23,8 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.MarkListingSold
+import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
@@ -47,10 +50,13 @@ import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
+import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
@@ -169,6 +175,14 @@ class AppContainer(
             InMemoryMessagesRepository()
         }
     }
+    val messagesObserver: MessagesObserver by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseMessagesObserver(client, messagesRepository)
+        } else {
+            messagesRepository as InMemoryMessagesRepository
+        }
+    }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -235,6 +249,8 @@ class AppContainer(
     // Use Cases - Listings
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
+    val markListingSold by lazy { MarkListingSold(listingsRepository) }
+    val restoreListingToMarketplace by lazy { RestoreListingToMarketplace(listingsRepository) }
     val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
@@ -244,6 +260,11 @@ class AppContainer(
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
+    val observeConversationMessages by lazy {
+        val observer = messagesObserver
+        val sender = currentMessageSenderProvider
+        ObserveConversationMessages(observer, sender)
+    }
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
@@ -264,6 +285,7 @@ class AppContainer(
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
     val publishStudentReview by lazy { PublishStudentReview(submitStudentReview) }
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
+    val profileSoldListingsProvider by lazy { ListingsSoldListingsCountProvider(listingsRepository) }
     val getProfileOverview by lazy { GetProfileOverview(profileRepository, profileActiveListingsProvider) }
     val getProfileActivity by lazy { GetProfileActivity(profileActiveListingsProvider) }
     private val marketplaceProfileBookmarks by lazy {
@@ -306,6 +328,8 @@ class AppContainer(
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
+        markListingSold = markListingSold,
+        restoreListingToMarketplace = restoreListingToMarketplace,
         deleteListing = deleteListing,
         getSellerListings = getSellerListings,
         currentSellerProvider = currentListingSellerProvider,
@@ -315,6 +339,7 @@ class AppContainer(
     fun createMessagesViewModel() = MessagesViewModel(
         getConversations = getConversations,
         getConversationMessages = getConversationMessages,
+        observeConversationMessages = observeConversationMessages,
         sendMessage = sendMessage,
         reportMessage = reportMessage
     )
@@ -333,6 +358,7 @@ class AppContainer(
         getProfileOverview = getProfileOverview,
         getProfileActivity = getProfileActivity,
         listingChangedSignal = listingChangedSignal,
+        soldListingsProvider = profileSoldListingsProvider,
         bookmarks = ProfileBookmarksDependencies(
             provider = profileBookmarkedListingsProvider,
             remover = profileBookmarkedListingRemover

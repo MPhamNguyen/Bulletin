@@ -30,5 +30,9 @@ data class ListingsUiState(
     val editCondition: ListingCondition = ListingCondition.GOOD,
     val isUpdating: Boolean = false,
     val pendingDeletion: Listing? = null,
-    val isDeleting: Boolean = false
+    val isDeleting: Boolean = false,
+    val pendingSold: Listing? = null,
+    val isMarkingSold: Boolean = false,
+    val pendingRestoration: Listing? = null,
+    val isRestoring: Boolean = false
 )
