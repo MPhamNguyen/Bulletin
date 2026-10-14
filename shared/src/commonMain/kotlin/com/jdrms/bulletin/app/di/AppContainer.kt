@@ -134,7 +134,6 @@ class AppContainer(
         }
     }
 
-    // Repositories
     val homeRepository by lazy { InMemoryHomeRepository() }
     val marketplaceRepository: MarketplaceRepository by lazy {
         val client = supabaseClient
@@ -283,7 +282,6 @@ class AppContainer(
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
 
-    // Use Cases - Profile
     val signInUser by lazy { SignInUser(authRepository) }
     val registerStudent by lazy { RegisterStudent(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
@@ -312,7 +310,6 @@ class AppContainer(
     val profileBookmarkedListingsProvider: ProfileBookmarkedListingsProvider by lazy { marketplaceProfileBookmarks }
     val profileBookmarkedListingRemover: ProfileBookmarkedListingRemover by lazy { marketplaceProfileBookmarks }
 
-    // ViewModels
     fun createHomeViewModel() = HomeViewModel(
         getPersonalizedFeed = getPersonalizedFeed,
         updateUserPreferences = updateUserPreferences
