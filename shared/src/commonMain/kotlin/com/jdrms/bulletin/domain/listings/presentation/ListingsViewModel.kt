@@ -48,6 +48,7 @@ class ListingsViewModel(
     internal val _uiState = MutableStateFlow(ListingsUiState())
     val uiState: StateFlow<ListingsUiState> = _uiState.asStateFlow()
     internal var flashNotificationJob: Job? = null
+    private var recentSoldBuyersJob: Job? = null
     internal val notificationScope get() = viewModelScope
     init {
         loadMyListings()
@@ -163,6 +164,7 @@ class ListingsViewModel(
     }
 
     fun requestMarkListingSold(listing: Listing) {
+        recentSoldBuyersJob?.cancel()
         _uiState.update {
             it.copy(
                 pendingSold = listing,
@@ -172,26 +174,31 @@ class ListingsViewModel(
                 errorMessage = null
             )
         }
-        viewModelScope.launch {
+        recentSoldBuyersJob = viewModelScope.launch {
             val seller = currentSellerProvider.getCurrentSeller()
             val buyers = if (seller is Result.Success) {
                 recentListingBuyersProvider.getRecentBuyers(listing.id, seller.data.id.value)
             } else {
                 emptyList()
             }
+            if (_uiState.value.pendingSold?.id != listing.id) return@launch
             _uiState.update {
-                it.copy(
-                    pendingSold = listing,
-                    recentSoldBuyers = buyers,
-                    selectedBuyerId = buyers.singleOrNull()?.id,
-                    soldOnAnotherPlatform = buyers.isEmpty(),
-                    errorMessage = null
-                )
+                if (it.pendingSold?.id == listing.id) {
+                    it.copy(
+                        recentSoldBuyers = buyers,
+                        selectedBuyerId = buyers.singleOrNull()?.id,
+                        soldOnAnotherPlatform = buyers.isEmpty(),
+                        errorMessage = null
+                    )
+                } else {
+                    it
+                }
             }
         }
     }
 
     fun cancelMarkListingSold() {
+        recentSoldBuyersJob?.cancel()
         _uiState.update { it.copy(pendingSold = null, recentSoldBuyers = emptyList(), selectedBuyerId = null) }
     }
 
