@@ -58,13 +58,7 @@ private class SupabaseInboxRealtimeChannel(
     private val changes = channel.broadcastFlow<JsonObject>("conversation-changed").mapNotNull { payload ->
         SupabaseInboxInvalidationMapper.conversationIdOrNull(payload)?.let(InboxInvalidation::Changed)
     }
-    private val status = channel.status.drop(1).mapNotNull { channelStatus ->
-        when (channelStatus) {
-            RealtimeChannel.Status.SUBSCRIBED -> InboxInvalidation.Subscribed
-            RealtimeChannel.Status.UNSUBSCRIBED -> InboxInvalidation.Disconnected
-            else -> null
-        }
-    }
+    private val status = channel.status.drop(1).mapNotNull(::invalidationForChannelStatus)
 
     override val events: Flow<InboxInvalidation> = merge(changes, status)
 
@@ -118,6 +112,13 @@ class SupabaseInboxObserver internal constructor(private val gateway: InboxRealt
             withContext(NonCancellable) { runCatching { channel.close() } }
         }
     }
+}
+
+internal fun invalidationForChannelStatus(status: RealtimeChannel.Status): InboxInvalidation? = when (status) {
+    RealtimeChannel.Status.SUBSCRIBED -> InboxInvalidation.Subscribed
+    RealtimeChannel.Status.UNSUBSCRIBED,
+    RealtimeChannel.Status.UNSUBSCRIBING -> InboxInvalidation.Disconnected
+    RealtimeChannel.Status.SUBSCRIBING -> null
 }
 
 private const val MAX_INBOX_SUBSCRIBE_ATTEMPTS = 4
