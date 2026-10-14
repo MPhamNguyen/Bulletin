@@ -136,7 +136,7 @@ private class PostgrestSupabaseListingsTable(
         val LISTING_COLUMNS = Columns.raw(
             """
             *,
-            profiles ( full_name )
+            seller_profile:profiles!listings_user_id_fkey ( full_name )
             """.trimIndent()
         )
     }

@@ -14,6 +14,7 @@ import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
 import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
+import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -30,6 +31,7 @@ class ListingsViewModel(
     private val createListing: CreateListing,
     private val manageListing: ManageListing,
     private val markListingSold: MarkListingSold? = null,
+    private val recentListingBuyersProvider: RecentListingBuyersProvider = RecentListingBuyersProvider { _, _ -> emptyList() },
     private val restoreListingToMarketplace: RestoreListingToMarketplace? = null,
     private val deleteListing: DeleteListing,
     private val getSellerListings: GetSellerListings,
@@ -154,11 +156,44 @@ class ListingsViewModel(
     }
 
     fun requestMarkListingSold(listing: Listing) {
-        _uiState.update { it.copy(pendingSold = listing, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                pendingSold = listing,
+                recentSoldBuyers = emptyList(),
+                selectedBuyerId = null,
+                soldOnAnotherPlatform = true,
+                errorMessage = null
+            )
+        }
+        viewModelScope.launch {
+            val seller = currentSellerProvider.getCurrentSeller()
+            val buyers = if (seller is Result.Success) {
+                recentListingBuyersProvider.getRecentBuyers(listing.id, seller.data.id.value)
+            } else {
+                emptyList()
+            }
+            _uiState.update {
+                it.copy(
+                    pendingSold = listing,
+                    recentSoldBuyers = buyers,
+                    selectedBuyerId = buyers.singleOrNull()?.id,
+                    soldOnAnotherPlatform = buyers.isEmpty(),
+                    errorMessage = null
+                )
+            }
+        }
     }
 
     fun cancelMarkListingSold() {
-        _uiState.update { it.copy(pendingSold = null) }
+        _uiState.update { it.copy(pendingSold = null, recentSoldBuyers = emptyList(), selectedBuyerId = null) }
+    }
+
+    fun selectSoldBuyer(id: String?) {
+        _uiState.update { it.copy(selectedBuyerId = id, soldOnAnotherPlatform = false, errorMessage = null) }
+    }
+
+    fun selectSoldOnAnotherPlatform() {
+        _uiState.update { it.copy(selectedBuyerId = null, soldOnAnotherPlatform = true, errorMessage = null) }
     }
 
     fun requestRestoreListing(listing: Listing) {
@@ -224,9 +259,21 @@ class ListingsViewModel(
         viewModelScope.launch {
             when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
                 is Result.Success -> {
-                    when (val result = markSold(listing.id, sellerResult.data.id)) {
+                    val buyerId = _uiState.value.selectedBuyerId
+                    if (buyerId == null && !_uiState.value.soldOnAnotherPlatform) {
+                        _uiState.update { it.copy(isMarkingSold = false, errorMessage = "Choose who bought this listing.") }
+                        return@launch
+                    }
+                    when (val result = markSold(listing.id, sellerResult.data.id, buyerId)) {
                         is Result.Success -> {
-                            _uiState.update { it.copy(pendingSold = null, isMarkingSold = false) }
+                            _uiState.update {
+                                it.copy(
+                                    pendingSold = null,
+                                    recentSoldBuyers = emptyList(),
+                                    selectedBuyerId = null,
+                                    isMarkingSold = false
+                                )
+                            }
                             showFlashNotification("Listing marked as sold!")
                             loadMyListings(sellerResult.data)
                             listingChangedSignal?.emit()

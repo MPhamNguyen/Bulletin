@@ -25,6 +25,8 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
+import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
+import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
 import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
@@ -37,6 +39,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryLi
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
+import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
@@ -246,6 +249,7 @@ class AppContainer(
             sellerProfileProvider = marketplaceSellerProfileProvider
         )
     }
+    val submitMarketplaceReview by lazy { SubmitMarketplaceReview(marketplaceRepository) }
     private val viewMarketplaceSellerProfile by lazy {
         ViewMarketplaceSellerProfile(marketplaceSellerProfileProvider, marketplaceListingSource)
     }
@@ -266,6 +270,21 @@ class AppContainer(
     // Use Cases - Messages
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    private val recentListingBuyersProvider by lazy {
+        RecentListingBuyersProvider { listingId, sellerId ->
+            when (val result = getConversations()) {
+                is com.jdrms.bulletin.core.common.Result.Success -> result.data.conversations
+                    .asSequence()
+                    .filter { it.listingId?.value == listingId.value }
+                    .flatMap { conversation -> conversation.participants.asSequence() }
+                    .filter { it.id.value != sellerId }
+                    .distinctBy { it.id }
+                    .map { RecentListingBuyer(it.id.value, it.displayName) }
+                    .toList()
+                is com.jdrms.bulletin.core.common.Result.Error -> emptyList()
+            }
+        }
+    }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
     val observeConversationMessages by lazy {
@@ -324,6 +343,7 @@ class AppContainer(
             get = getMarketplaceListingBookmarks
         ),
         viewMarketplaceListing = viewMarketplaceListing,
+        submitMarketplaceReview = submitMarketplaceReview,
         listingChangedSignal = listingChangedSignal,
         currentUserIdProvider = {
             when (val result = authRepository.getCurrentUserId()) {
@@ -341,6 +361,7 @@ class AppContainer(
         createListing = createListing,
         manageListing = manageListing,
         markListingSold = markListingSold,
+        recentListingBuyersProvider = recentListingBuyersProvider,
         restoreListingToMarketplace = restoreListingToMarketplace,
         deleteListing = deleteListing,
         getSellerListings = getSellerListings,

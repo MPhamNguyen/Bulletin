@@ -187,9 +187,14 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
         ListingSoldConfirmationDialog(
             listing = listing,
             isMarkingSold = state.isMarkingSold,
+                recentBuyers = state.recentSoldBuyers,
+                selectedBuyerId = state.selectedBuyerId,
+                soldOnAnotherPlatform = state.soldOnAnotherPlatform,
             errorMessage = state.errorMessage,
             onDismiss = viewModel::cancelMarkListingSold,
-            onConfirm = viewModel::confirmMarkListingSold
+                onConfirm = viewModel::confirmMarkListingSold,
+                onBuyerSelected = viewModel::selectSoldBuyer,
+                onSoldOnAnotherPlatform = viewModel::selectSoldOnAnotherPlatform
         )
     }
 }

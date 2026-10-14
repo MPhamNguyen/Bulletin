@@ -88,7 +88,7 @@ class MarkListingSold(
     private val listingsRepository: ListingsRepository,
     private val policy: ListingValidationPolicy = ListingValidationPolicy()
 ) {
-    suspend operator fun invoke(id: ListingId, sellerId: SellerId): Result<Listing> {
+    suspend operator fun invoke(id: ListingId, sellerId: SellerId, buyerId: String? = null): Result<Listing> {
         val listing = listingsRepository.getListing(id)
             ?: return Result.Error(NoSuchElementException("Listing not found with ID: ${id.value}"))
         val ownershipValidation = policy.validateOwnership(listing, sellerId, action = "mark as sold")
@@ -96,7 +96,7 @@ class MarkListingSold(
             return Result.Error((ownershipValidation as Result.Error).exception)
         }
         val soldListing = try {
-            listing.markSold(sellerId)
+            listing.markSold(sellerId, buyerId)
         } catch (exception: IllegalArgumentException) {
             return Result.Error(exception)
         }
