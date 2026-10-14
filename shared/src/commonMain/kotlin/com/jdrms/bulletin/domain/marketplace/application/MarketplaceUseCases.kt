@@ -132,6 +132,9 @@ class ViewMarketplaceListing(
     private val repository: MarketplaceRepository,
     private val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider
 ) {
+    suspend fun hasReview(listingId: String, reviewerId: String): Boolean =
+        repository.hasReviewForListing(MarketplaceItemId(listingId.removePrefix("listing:")), reviewerId)
+
     suspend fun viewListing(listingID: String): Listing {
         val result = repository.viewListing(listingID)
         return when (result) {

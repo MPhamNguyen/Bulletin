@@ -154,8 +154,8 @@ local fallback. Adapter bindings describe code paths, not verification against a
 | Repository or port | Configured Supabase client | Local fallback | Live project verification |
 | --- | --- | --- | --- |
 | Home repository | In-memory | In-memory | Not applicable |
-| Marketplace repository and listing source | Supabase adapters | In-memory/composite adapters | Not verified here |
-| Listings repository | Supabase adapter | In-memory adapter | Not verified here |
+| Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters | Not verified here |
+| Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter | Not verified here |
 | Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
 | Profile repository | Supabase adapter | In-memory adapter | Not verified here |
 | User report repository | Supabase adapter | In-memory adapter | Not verified here |

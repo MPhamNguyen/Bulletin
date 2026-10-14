@@ -56,6 +56,8 @@ internal data class BookmarkedListingDetailActions(
     val onMessageSeller: suspend (String) -> Boolean,
     val hasExistingConversation: suspend () -> Boolean,
     val onMessageSent: () -> Unit,
+    val canLeaveReview: Boolean = false,
+    val onLeaveReview: () -> Unit = {},
     val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit
 )
 
@@ -120,6 +122,15 @@ internal fun BookmarkedListingDetailSheet(
                         }
                     )
                 )
+            }
+            if (actions.canLeaveReview) {
+                Button(
+                    onClick = actions.onLeaveReview,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = BulletinButtonDefaults.buttonColors()
+                ) {
+                    Text("Leave Review for Seller")
+                }
             }
             errorMessage?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)

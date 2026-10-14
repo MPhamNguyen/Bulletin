@@ -136,7 +136,7 @@ data class StudentReview(
 
 data class StudentReputation(
     val userId: UserId,
-    val averageRating: Double = 5.0,
+    val averageRating: Double = 0.0,
     val totalReviews: Int = 0,
     val reviews: List<StudentReview> = emptyList()
 )

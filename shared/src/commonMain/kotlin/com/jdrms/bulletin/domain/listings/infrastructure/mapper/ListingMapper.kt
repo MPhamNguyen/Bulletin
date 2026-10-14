@@ -21,6 +21,7 @@ object ListingMapper {
         return Listing(
             id = ListingId(dto.id),
             sellerId = SellerId(dto.sellerId),
+            buyerId = dto.buyerId,
             sellerName = dto.sellerName,
             title = dto.title,
             description = dto.description,
@@ -37,6 +38,7 @@ object ListingMapper {
         return ListingDto(
             id = domain.id.value,
             sellerId = domain.sellerId.value,
+            buyerId = domain.buyerId,
             sellerName = domain.sellerName,
             title = domain.title,
             description = domain.description,

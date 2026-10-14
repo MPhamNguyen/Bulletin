@@ -21,6 +21,7 @@ import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
@@ -35,12 +36,12 @@ import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.cancel
-import com.jdrms.bulletin.app.navigation.MainNavigationState as NavigationSnapshot
 
 internal class MainNavigationState {
     var currentDestination by mutableStateOf(AppDestination.HOME)
@@ -48,9 +49,9 @@ internal class MainNavigationState {
     var editReturnDestination by mutableStateOf(ProfileDestination.PROFILE)
     var pendingConversationId by mutableStateOf<ConversationId?>(null)
 
-    fun snapshot() = NavigationSnapshot(currentDestination, profileDestination)
+    fun snapshot() = com.jdrms.bulletin.app.navigation.MainNavigationState(currentDestination, profileDestination)
 
-    fun apply(snapshot: NavigationSnapshot) {
+    fun apply(snapshot: com.jdrms.bulletin.app.navigation.MainNavigationState) {
         currentDestination = snapshot.currentDestination
         profileDestination = snapshot.profileDestination
     }
@@ -279,12 +280,40 @@ private fun profileCallbacks(
         result.sent
     },
     onMessageSent = { navigation.openMessages() },
-    onSeeChat = { listingId, sellerId ->
-        openListingConversation(container, messagesViewModel, listingId, sellerId)
-        navigation.openMessages()
-    },
-    hasExistingConversation = { listingId, sellerId -> hasListingConversation(container, listingId, sellerId) }
+    onSeeChat = profileSeeChatCallback(container, navigation, messagesViewModel),
+    hasExistingConversation = profileConversationChecker(container),
+    onSubmitReview = profileReviewCallback(container)
 )
+
+private fun profileSeeChatCallback(
+    container: AppContainer,
+    navigation: MainNavigationState,
+    messagesViewModel: MessagesViewModel
+): suspend (String, String) -> Unit = { listingId, sellerId ->
+    openListingConversation(container, messagesViewModel, listingId, sellerId)
+    navigation.openMessages()
+}
+
+private fun profileConversationChecker(
+    container: AppContainer
+): suspend (String, String) -> Boolean = { listingId, sellerId ->
+    hasListingConversation(container, listingId, sellerId)
+}
+
+private fun profileReviewCallback(
+    container: AppContainer
+): suspend (ProfileBookmarkedListing, String, Int, String) -> Result<Unit> =
+    { listing, reviewerId, score, comment ->
+        container.submitMarketplaceReview.submitForSoldListing(
+            listingId = listing.id,
+            buyerId = listing.buyerId,
+            sellerId = listing.sellerId,
+            isSold = listing.isSold,
+            reviewerId = reviewerId,
+            score = score,
+            comment = comment
+        )
+    }
 
 private fun MainNavigationState.openMessages() {
     apply(snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))

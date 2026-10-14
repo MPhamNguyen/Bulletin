@@ -124,7 +124,7 @@ class ProfileValidationPolicy {
 
     fun calculateReputation(userId: UserId, reviews: List<StudentReview>): StudentReputation {
         if (reviews.isEmpty()) {
-            return StudentReputation(userId = userId, averageRating = 5.0, totalReviews = 0, reviews = emptyList())
+            return StudentReputation(userId = userId, averageRating = 0.0, totalReviews = 0, reviews = emptyList())
         }
         val avg = reviews.map { it.rating.score }.average()
         val roundedAvg = (avg * 10).toInt() / 10.0

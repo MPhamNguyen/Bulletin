@@ -32,5 +32,9 @@ data class MarketplaceDetailState(
     val listing: Listing? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val isOpen: Boolean = false
+    val isOpen: Boolean = false,
+    val hasReview: Boolean = false,
+    val isReviewDialogOpen: Boolean = false,
+    val isSubmittingReview: Boolean = false,
+    val reviewErrorMessage: String? = null
 )

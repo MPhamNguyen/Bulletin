@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
@@ -23,6 +24,7 @@ class InMemoryMarketplaceRepository(
 
     private val listings = initialListings.map { MarketplaceMapper.toListingDomain(it) }.toMutableList()
     private val bookmarksByUser = mutableMapOf<String, ListingBookmarks>()
+    private val reviews = mutableListOf<MarketplaceReview>()
 
     override suspend fun getCatalog(): List<MarketplaceItem> {
         return listings.map { listing ->
@@ -97,6 +99,18 @@ class InMemoryMarketplaceRepository(
                 null
             }
         )
+    }
+
+    override suspend fun hasReviewForListing(listingId: MarketplaceItemId, reviewerId: String): Boolean {
+        return reviews.any { it.listingId == listingId && it.reviewerId == reviewerId }
+    }
+
+    override suspend fun submitReview(review: MarketplaceReview): Result<Unit> {
+        if (hasReviewForListing(review.listingId, review.reviewerId)) {
+            return Result.Error(IllegalStateException("A review has already been submitted for this listing."))
+        }
+        reviews += review
+        return Result.Success(Unit)
     }
 
     companion object {

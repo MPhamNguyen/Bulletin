@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
 
 interface MarketplaceRepository {
     suspend fun getCatalog(): List<MarketplaceItem>
@@ -26,4 +27,7 @@ interface MarketplaceRepository {
         cursor: ListingBookmarksPageCursor?,
         pageSize: Int
     ): BookmarkedListingsPage
+    suspend fun hasReviewForListing(listingId: MarketplaceItemId, reviewerId: String): Boolean = false
+    suspend fun submitReview(review: MarketplaceReview): Result<Unit> =
+        Result.Error(UnsupportedOperationException("Review submission is unavailable."))
 }

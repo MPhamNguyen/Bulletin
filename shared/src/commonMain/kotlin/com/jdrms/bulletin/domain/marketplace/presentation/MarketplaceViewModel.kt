@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
+import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
@@ -20,6 +21,10 @@ class MarketplaceViewModel(
     private val searchMarketplace: SearchMarketplace,
     bookmarks: MarketplaceBookmarkDependencies,
     private val viewMarketplaceListing: ViewMarketplaceListing,
+    private val submitMarketplaceReview: SubmitMarketplaceReview =
+        SubmitMarketplaceReview(
+            com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
+        ),
     private val listingChangedSignal: RefreshSignal? = null,
     private val currentUserIdProvider: suspend () -> String? = { null }
 ) : ViewModel() {
@@ -39,6 +44,7 @@ class MarketplaceViewModel(
         bookmarks,
         currentUserIdProvider
     )
+    val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
         refreshListings()
@@ -163,12 +169,16 @@ class MarketplaceViewModel(
                     val canonicalId = MarketplaceItemId(listingId)
                     val isBookmarked = _uiState.value.bookmarkedItemIds.contains(canonicalId)
                     val currentUserId = currentUserIdProvider()
+                    val hasReview = currentUserId?.let {
+                        viewMarketplaceListing.hasReview(listing.id.value, it)
+                    } ?: false
                     _uiState.update {
                         it.copy(
                             detail = it.detail.copy(
                                 listing = listing.copy(id = canonicalId, isBookmarked = isBookmarked),
                                 isLoading = false,
-                                errorMessage = null
+                                errorMessage = null,
+                                hasReview = hasReview
                             ),
                             currentUserId = currentUserId
                         )

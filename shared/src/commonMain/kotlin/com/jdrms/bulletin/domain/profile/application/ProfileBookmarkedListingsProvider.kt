@@ -14,6 +14,8 @@ data class ProfileBookmarkedListing(
     val photos: List<String> = emptyList(),
     val sellerReputationScore: Double? = null,
     val sellerId: String = "",
+    val buyerId: String? = null,
+    val isSold: Boolean = false,
     val createdAtMillis: Long = 0L
 )
 
