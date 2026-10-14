@@ -130,7 +130,7 @@ class MarketplaceViewModelTestPart2 {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun emptyIntermediatePageKeepsItsContinuationCursor() = runTest {
+    fun emptyIntermediatePageIsSkippedWhenVisibleListingsRemain() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
@@ -150,13 +150,6 @@ class MarketplaceViewModelTestPart2 {
             )
             val viewModel = createViewModel(repository, source)
             advanceUntilIdle()
-
-            viewModel.loadNextPage()
-            advanceUntilIdle()
-
-            assertEquals(20, viewModel.uiState.value.items.size)
-            assertNotNull(viewModel.uiState.value.nextCursor)
-            assertFalse(viewModel.uiState.value.endReached)
 
             viewModel.loadNextPage()
             advanceUntilIdle()
