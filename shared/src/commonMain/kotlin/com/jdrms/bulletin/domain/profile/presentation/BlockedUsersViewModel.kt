@@ -58,6 +58,7 @@ class BlockedUsersViewModel(
     fun unblock(userId: String) {
         if (mutableUiState.value.removingUserId != null) return
         if (mutableUiState.value.users.none { it.id.value == userId }) return
+        loadJob?.cancel()
         unblockJob?.cancel()
         unblockJob = viewModelScope.launch {
             mutableUiState.update { it.copy(removingUserId = userId, errorMessage = null) }

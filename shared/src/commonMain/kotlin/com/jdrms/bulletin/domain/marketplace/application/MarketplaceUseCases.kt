@@ -19,14 +19,23 @@ class SearchMarketplace(
     private val blockedUserProvider: MarketplaceBlockedUserProvider? = null
 ) {
     suspend fun getPage(request: MarketplacePageRequest): MarketplaceItemPage {
-        val page = listingSource.getAvailableListings(request)
         val hiddenUserIds = request.viewerId?.let { viewerId ->
             blockedUserProvider?.getHiddenUserIds(viewerId).orEmpty()
         }.orEmpty()
-        return MarketplaceItemPage(
-            items = page.listings.filterNot { it.sellerId in hiddenUserIds }.map { it.toMarketplaceItem() },
+        val visibleItems = mutableListOf<MarketplaceItem>()
+        var cursor = request.cursor
+        var nextCursor: MarketplacePageCursor?
+        do {
+            val page = listingSource.getAvailableListings(request.copy(cursor = cursor))
+            visibleItems += page.listings
+                .asSequence()
+                .filterNot { it.sellerId in hiddenUserIds }
+                .map { it.toMarketplaceItem() }
+                .take(request.pageSize - visibleItems.size)
             nextCursor = page.nextCursor
-        )
+            cursor = nextCursor
+        } while (visibleItems.size < request.pageSize && nextCursor != null)
+        return MarketplaceItemPage(visibleItems, nextCursor)
     }
 
     suspend fun getCatalog(): List<MarketplaceItem> {
@@ -140,7 +149,7 @@ class ViewMarketplaceListing(
     suspend fun viewListing(listingID: String, viewerId: String? = null): Listing {
         val result = invoke(listingID, viewerId)
         return when (result) {
-            is Result.Success -> result.data.withResolvedSellerName()
+            is Result.Success -> result.data
             is Result.Error -> throw result.exception
         }
     }
