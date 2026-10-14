@@ -7,6 +7,9 @@ import kotlin.jvm.JvmInline
 @JvmInline
 value class MarketplaceItemId(val value: String)
 
+@JvmInline
+value class MarketplaceSellerId(val value: String)
+
 enum class MarketplaceCategory {
     TEXTBOOKS,
     ELECTRONICS,

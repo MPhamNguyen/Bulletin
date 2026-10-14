@@ -44,7 +44,7 @@ fun SellerProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item { SellerProfileHero(state.profile) }
-                item { SellerProfileStats(state.profile) }
+                item { SellerProfileStats(state.profile, state.soldListingsCount) }
                 messageActions?.let { actions -> item { MessageSellerQuickAction(actions) } }
                 item { SellerProfileAbout(state.profile) }
                 item { SellerProfileVerification(state.profile) }
