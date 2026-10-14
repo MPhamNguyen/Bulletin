@@ -1,4 +1,5 @@
 package com.jdrms.bulletin.app.di
+
 import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
@@ -67,28 +68,7 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMess
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
-import com.jdrms.bulletin.domain.profile.application.BlockUser
-import com.jdrms.bulletin.domain.profile.application.GetBlockedUsers
-import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
-import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
-import com.jdrms.bulletin.domain.profile.application.PublishStudentReview
-import com.jdrms.bulletin.domain.profile.application.RegisterStudent
-import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
-import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
-import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
-import com.jdrms.bulletin.domain.profile.application.SignInUser
-import com.jdrms.bulletin.domain.profile.application.SignOutUser
-import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
-import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
-import com.jdrms.bulletin.domain.profile.application.SubmitUserReport
-import com.jdrms.bulletin.domain.profile.application.UnblockUser
-import com.jdrms.bulletin.domain.profile.application.UpdatePassword
-import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
-import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
-import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
-import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.application.*
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
@@ -105,15 +85,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfi
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserBlockRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserReportRepository
-import com.jdrms.bulletin.domain.profile.presentation.AccountViewModel
-import com.jdrms.bulletin.domain.profile.presentation.BlockedUsersViewModel
-import com.jdrms.bulletin.domain.profile.presentation.EditProfileViewModel
-import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
-import com.jdrms.bulletin.domain.profile.presentation.ProfileBookmarksDependencies
-import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
-import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
-import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
-import com.jdrms.bulletin.domain.profile.presentation.SignInViewModel
+import com.jdrms.bulletin.domain.profile.presentation.*
 import io.github.jan.supabase.SupabaseClient
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
@@ -395,15 +367,12 @@ class AppContainer(
         userMessenger
     )
     fun createReviewViewModel() = ReviewViewModel(sessionRepository, publishStudentReview)
-
     fun createAccountViewModel() = AccountViewModel(sessionRepository, signOutUser, softDeleteProfile, userMessenger)
-
     fun createPasswordRecoveryViewModel() = PasswordRecoveryViewModel(
         requestPasswordResetUseCase = requestPasswordReset,
         verifyPasswordResetCodeUseCase = verifyPasswordResetCode,
         updatePasswordUseCase = updatePassword,
         signOutUser = signOutUser
     )
-
     fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }
