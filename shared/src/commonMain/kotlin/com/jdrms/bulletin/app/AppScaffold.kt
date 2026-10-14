@@ -16,6 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.di.blockedUsersViewModelFactory
+import com.jdrms.bulletin.app.di.createAccountViewModel
+import com.jdrms.bulletin.app.di.createEditProfileViewModel
+import com.jdrms.bulletin.app.di.createHomeViewModel
+import com.jdrms.bulletin.app.di.createListingsViewModel
+import com.jdrms.bulletin.app.di.createMarketplaceUserReportViewModel
+import com.jdrms.bulletin.app.di.createMarketplaceViewModel
+import com.jdrms.bulletin.app.di.createMessagesViewModel
+import com.jdrms.bulletin.app.di.createProfileViewModel
+import com.jdrms.bulletin.app.di.createSellerProfileViewModel
+import com.jdrms.bulletin.app.di.marketplaceUserBlockViewModelFactory
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile

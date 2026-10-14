@@ -21,6 +21,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.di.createPasswordRecoveryViewModel
+import com.jdrms.bulletin.app.di.createRegistrationViewModel
+import com.jdrms.bulletin.app.di.createSignInViewModel
+import com.jdrms.bulletin.app.di.createThemeViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.domain.profile.application.SessionState

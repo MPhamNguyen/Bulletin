@@ -15,14 +15,12 @@ import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserBlocker
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserReporter
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
-import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.FlowUserMessenger
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemoryHomeRepository
-import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
@@ -32,8 +30,6 @@ import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplac
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
-import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
-import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModelSessionDependencies
 import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
@@ -48,11 +44,6 @@ import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceReposi
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
-import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
@@ -70,7 +61,6 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseInbo
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
-import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.BlockUser
 import com.jdrms.bulletin.domain.profile.application.GetBlockedUsers
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
@@ -109,15 +99,6 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfi
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserBlockRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserReportRepository
-import com.jdrms.bulletin.domain.profile.presentation.AccountViewModel
-import com.jdrms.bulletin.domain.profile.presentation.BlockedUsersViewModel
-import com.jdrms.bulletin.domain.profile.presentation.EditProfileViewModel
-import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
-import com.jdrms.bulletin.domain.profile.presentation.ProfileBookmarksDependencies
-import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
-import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
-import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
-import com.jdrms.bulletin.domain.profile.presentation.SignInViewModel
 import io.github.jan.supabase.SupabaseClient
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
@@ -126,7 +107,7 @@ class AppContainer(
     themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
     private val providedSupabaseClient: SupabaseClient? = null
 ) {
-    private val themePreferenceStore = themePreferenceStore
+    internal val themePreferenceStore = themePreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     val supabaseClient: SupabaseClient? by lazy {
         if (providedSupabaseClient != null) {
@@ -272,7 +253,7 @@ class AppContainer(
         )
     }
     val submitMarketplaceReview by lazy { SubmitMarketplaceReview(marketplaceRepository) }
-    private val viewMarketplaceSellerProfile by lazy {
+    internal val viewMarketplaceSellerProfile by lazy {
         createMarketplaceSellerProfileView(
             marketplaceSellerProfileProvider,
             marketplaceListingSource,
@@ -281,13 +262,13 @@ class AppContainer(
     }
 
     private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
-    private val reportMarketplaceUser by lazy {
+    internal val reportMarketplaceUser by lazy {
         ReportMarketplaceUser(ProfileMarketplaceUserReporter(submitUserReport))
     }
     private val blockUser by lazy { BlockUser(authRepository, userBlockRepository) }
-    private val blockMarketplaceUser by lazy { BlockMarketplaceUser(ProfileMarketplaceUserBlocker(blockUser)) }
-    private val unblockUser by lazy { UnblockUser(authRepository, userBlockRepository) }
-    private val getBlockedUsers by lazy { GetBlockedUsers(authRepository, userBlockRepository, profileRepository) }
+    internal val blockMarketplaceUser by lazy { BlockMarketplaceUser(ProfileMarketplaceUserBlocker(blockUser)) }
+    internal val unblockUser by lazy { UnblockUser(authRepository, userBlockRepository) }
+    internal val getBlockedUsers by lazy { GetBlockedUsers(authRepository, userBlockRepository, profileRepository) }
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
     val markListingSold by lazy { MarkListingSold(listingsRepository) }
@@ -297,7 +278,7 @@ class AppContainer(
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
-    private val recentListingBuyersProvider by lazy { createRecentListingBuyersProvider(getConversations) }
+    internal val recentListingBuyersProvider by lazy { createRecentListingBuyersProvider(getConversations) }
     val hideConversation by lazy { HideConversation(messagesRepository, currentMessageSenderProvider) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
@@ -331,7 +312,7 @@ class AppContainer(
     val profileSoldListingsProvider by lazy { ListingsSoldListingsCountProvider(listingsRepository) }
     val getProfileOverview by lazy { GetProfileOverview(profileRepository, profileActiveListingsProvider) }
     val getProfileActivity by lazy { GetProfileActivity(profileActiveListingsProvider) }
-    private val marketplaceProfileBookmarks by lazy {
+    internal val marketplaceProfileBookmarks by lazy {
         MarketplaceProfileBookmarkedListingsProvider(
             getMarketplaceListingBookmarks,
             removeMarketplaceListingBookmark,
@@ -340,82 +321,4 @@ class AppContainer(
     }
     val profileBookmarkedListingsProvider: ProfileBookmarkedListingsProvider by lazy { marketplaceProfileBookmarks }
     val profileBookmarkedListingRemover: ProfileBookmarkedListingRemover by lazy { marketplaceProfileBookmarks }
-    fun createHomeViewModel() = HomeViewModel(
-        getPersonalizedFeed = getPersonalizedFeed,
-        updateUserPreferences = updateUserPreferences
-    )
-    fun createMarketplaceViewModel() = MarketplaceViewModel(
-        searchMarketplace = searchMarketplace,
-        bookmarks = MarketplaceBookmarkDependencies(
-            add = bookmarkMarketplaceListing,
-            remove = removeMarketplaceListingBookmark,
-            get = getMarketplaceListingBookmarks
-        ),
-        viewMarketplaceListing = viewMarketplaceListing,
-        submitMarketplaceReview = submitMarketplaceReview,
-        listingChangedSignal = listingChangedSignal,
-        currentUserIdProvider = createCurrentUserIdProvider(authRepository)
-    )
-    fun createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
-    val marketplaceUserBlockViewModelFactory: () -> MarketplaceUserBlockViewModel = {
-        MarketplaceUserBlockViewModel(blockMarketplaceUser)
-    }
-    val blockedUsersViewModelFactory: () -> BlockedUsersViewModel = {
-        BlockedUsersViewModel(getBlockedUsers, unblockUser, listingChangedSignal)
-    }
-    fun createSellerProfileViewModel() = SellerProfileViewModel(viewMarketplaceSellerProfile)
-    fun createListingsViewModel() = ListingsViewModel(
-        createListing = createListing,
-        manageListing = manageListing,
-        markListingSold = markListingSold,
-        recentListingBuyersProvider = recentListingBuyersProvider,
-        restoreListingToMarketplace = restoreListingToMarketplace,
-        deleteListing = deleteListing,
-        getSellerListings = getSellerListings,
-        session = ListingsViewModelSessionDependencies(
-            currentSellerProvider = currentListingSellerProvider,
-            listingChangedSignal = listingChangedSignal
-        )
-    )
-    fun createMessagesViewModel() = MessagesViewModel(
-        inbox = inboxStateOwner,
-        getConversationMessages = getConversationMessages,
-        observeConversationMessages = observeConversationMessages,
-        sendMessage = sendMessage,
-        reportMessage = reportMessage,
-        hideConversation = hideConversation
-    )
-    fun createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)
-    fun createRegistrationViewModel() = RegistrationViewModel(
-        registerStudent,
-        verifyStudentEmail,
-        resendVerificationCode,
-        sessionRepository
-    )
-    fun createProfileViewModel() = ProfileViewModel(
-        sessionRepository = sessionRepository,
-        getProfileOverview = getProfileOverview,
-        getProfileActivity = getProfileActivity,
-        listingChangedSignal = listingChangedSignal,
-        soldListingsProvider = profileSoldListingsProvider,
-        bookmarks = ProfileBookmarksDependencies(
-            provider = profileBookmarkedListingsProvider,
-            remover = profileBookmarkedListingRemover
-        )
-    )
-    fun createEditProfileViewModel() = EditProfileViewModel(
-        sessionRepository,
-        updateStudentProfile,
-        uploadProfilePhoto,
-        userMessenger
-    )
-    fun createReviewViewModel() = ReviewViewModel(sessionRepository, publishStudentReview)
-    fun createAccountViewModel() = AccountViewModel(sessionRepository, signOutUser, softDeleteProfile, userMessenger)
-    fun createPasswordRecoveryViewModel() = PasswordRecoveryViewModel(
-        requestPasswordResetUseCase = requestPasswordReset,
-        verifyPasswordResetCodeUseCase = verifyPasswordResetCode,
-        updatePasswordUseCase = updatePassword,
-        signOutUser = signOutUser
-    )
-    fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }
