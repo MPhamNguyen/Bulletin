@@ -1,11 +1,14 @@
 package com.jdrms.bulletin.domain.messages
 
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
@@ -80,6 +83,54 @@ class MessagesViewModelBasicsTest {
         viewModel.openConversation(requested.id)
         advanceUntilIdle()
         assertEquals(requested.id, viewModel.uiState.value.selectedConversationId)
+    }
+
+    @Test
+    fun removingSelectedConversationKeepsOtherConversationAndSelectsIt() = runTest {
+        val other = conversation(ConversationId("other"))
+        val repository = messagesRepository(listOf(conversation(), other), listOf(message()))
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.hideConversationFromInbox(conversationId)
+        advanceUntilIdle()
+
+        assertEquals(listOf(other.id), viewModel.uiState.value.conversations.map { it.id })
+        assertEquals(other.id, viewModel.uiState.value.selectedConversationId)
+        assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow().filter { it.id == conversationId })
+        assertTrue(repository.getConversations(carol.id).getOrThrow().any { it.id == conversationId })
+        assertEquals(listOf(message()), repository.getMessages(carol.id, conversationId).getOrThrow())
+    }
+
+    @Test
+    fun removingUnselectedConversationKeepsCurrentSelection() = runTest {
+        val other = conversation(ConversationId("other"))
+        val viewModel = viewModel(messagesRepository(listOf(conversation(), other)))
+        advanceUntilIdle()
+
+        viewModel.hideConversationFromInbox(other.id)
+        advanceUntilIdle()
+
+        assertEquals(listOf(conversationId), viewModel.uiState.value.conversations.map { it.id })
+        assertEquals(conversationId, viewModel.uiState.value.selectedConversationId)
+    }
+
+    @Test
+    fun failedRemovalLeavesConversationVisibleWithError() = runTest {
+        val backing = messagesRepository()
+        val repository = object : MessagesRepository by backing {
+            override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
+                Result.Error(IllegalStateException("Storage unavailable"))
+        }
+        val viewModel = viewModel(repository, backing)
+        advanceUntilIdle()
+
+        viewModel.hideConversationFromInbox(conversationId)
+        advanceUntilIdle()
+
+        assertEquals(listOf(conversationId), viewModel.uiState.value.conversations.map { it.id })
+        assertEquals(conversationId, viewModel.uiState.value.selectedConversationId)
+        assertNotNull(viewModel.uiState.value.errorMessage)
     }
 
     @Test
@@ -161,6 +212,7 @@ class MessagesViewModelBasicsTest {
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
-        ReportMessage(repository, provider)
+        ReportMessage(repository, provider),
+        HideConversation(repository, provider)
     ).also { it.onDestinationActiveChanged(true) }
 }

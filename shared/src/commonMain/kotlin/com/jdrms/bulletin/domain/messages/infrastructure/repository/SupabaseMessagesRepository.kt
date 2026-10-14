@@ -26,6 +26,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.buildJsonObject
@@ -43,6 +44,17 @@ class SupabaseMessagesRepository internal constructor(
             .sortedByDescending(Conversation::updatedAtMillis)
     }
 
+    override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
+        repositoryCall {
+            val viewerId = requireAuthenticatedUser(userId)
+            val conversation = messagesTable.findConversation(conversationId.value)
+                ?: throw ConversationAccessException()
+            val participants = messagesTable.getParticipants(conversationId.value)
+            SupabaseMessagesMapper.toConversation(conversation, participants, null)
+                .authorizeHiding(viewerId).getOrThrow()
+            if (!messagesTable.hideConversation(conversationId.value)) throw ConversationAccessException()
+        }
+
     override suspend fun getOrCreateConversation(
         requesterId: SenderId,
         otherParticipant: ConversationParticipant,
@@ -54,6 +66,7 @@ class SupabaseMessagesRepository internal constructor(
             otherParticipant.id.value,
             listingId.value
         )
+        if (!messagesTable.restoreConversation(conversationId)) throw ConversationAccessException()
         loadConversation(conversationId)
     }
 
@@ -150,7 +163,12 @@ internal interface SupabaseConversationCreationTable {
     suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String
 }
 
-internal interface SupabaseMessagesTable : SupabaseConversationCreationTable {
+internal interface SupabaseConversationVisibilityTable {
+    suspend fun hideConversation(conversationId: String): Boolean
+    suspend fun restoreConversation(conversationId: String): Boolean
+}
+
+internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, SupabaseConversationVisibilityTable {
     suspend fun getAuthenticatedUserId(): String?
     suspend fun getConversationIds(userId: String): List<String>
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
@@ -163,7 +181,7 @@ internal interface SupabaseMessagesTable : SupabaseConversationCreationTable {
     suspend fun insertReport(report: SupabaseMessageReportInsertDto)
 }
 
-private class PostgrestSupabaseMessagesTable(
+internal class PostgrestSupabaseMessagesTable(
     private val supabase: SupabaseClient
 ) : SupabaseMessagesTable {
     override suspend fun getAuthenticatedUserId(): String? {
@@ -174,12 +192,27 @@ private class PostgrestSupabaseMessagesTable(
     override suspend fun getConversationIds(userId: String): List<String> {
         return supabase.from(SupabaseMessagesRepository.PARTICIPANTS_TABLE)
             .select(columns = MEMBERSHIP_COLUMNS) {
-                filter { eq("user_id", userId) }
+                filter {
+                    eq("user_id", userId)
+                    filter("deleted_at", FilterOperator.IS, "null")
+                }
             }
             .decodeList<SupabaseConversationMembershipDto>()
             .map(SupabaseConversationMembershipDto::conversationId)
             .distinct()
     }
+
+    override suspend fun hideConversation(conversationId: String): Boolean =
+        supabase.postgrest.rpc(
+            "hide_conversation",
+            parameters = buildJsonObject { put("p_conversation_id", conversationId) }
+        ).decodeAs<Boolean>()
+
+    override suspend fun restoreConversation(conversationId: String): Boolean =
+        supabase.postgrest.rpc(
+            "restore_conversation",
+            parameters = buildJsonObject { put("p_conversation_id", conversationId) }
+        ).decodeAs<Boolean>()
 
     override suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String {
         return supabase.postgrest.rpc(

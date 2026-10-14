@@ -27,7 +27,7 @@ internal fun openSentListingConversation(
     messagesViewModel: MessagesViewModel
 ) {
     if (result.sent) {
-        result.conversationId?.let(messagesViewModel::openConversation)
+        result.conversationId?.let(messagesViewModel.openConversation)
     }
 }
 
@@ -81,5 +81,5 @@ internal suspend fun openListingConversation(
     listingId: String,
     sellerId: String
 ) {
-    findListingConversation(container, listingId, sellerId)?.let(messagesViewModel::openConversation)
+    findListingConversation(container, listingId, sellerId)?.let(messagesViewModel.openConversation)
 }

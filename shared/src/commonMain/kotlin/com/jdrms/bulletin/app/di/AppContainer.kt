@@ -51,6 +51,7 @@ import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ObserveInboxInvalidations
@@ -134,7 +135,6 @@ class AppContainer(
         }
     }
 
-    // Repositories
     val homeRepository by lazy { InMemoryHomeRepository() }
     val marketplaceRepository: MarketplaceRepository by lazy {
         val client = supabaseClient
@@ -271,6 +271,7 @@ class AppContainer(
     // Use Cases - Messages
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    val hideConversation by lazy { HideConversation(messagesRepository, currentMessageSenderProvider) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
     val observeConversationMessages by lazy {
@@ -286,7 +287,6 @@ class AppContainer(
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
 
-    // Use Cases - Profile
     val signInUser by lazy { SignInUser(authRepository) }
     val registerStudent by lazy { RegisterStudent(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
@@ -315,7 +315,6 @@ class AppContainer(
     val profileBookmarkedListingsProvider: ProfileBookmarkedListingsProvider by lazy { marketplaceProfileBookmarks }
     val profileBookmarkedListingRemover: ProfileBookmarkedListingRemover by lazy { marketplaceProfileBookmarks }
 
-    // ViewModels
     fun createHomeViewModel() = HomeViewModel(
         getPersonalizedFeed = getPersonalizedFeed,
         updateUserPreferences = updateUserPreferences
@@ -358,7 +357,8 @@ class AppContainer(
         getConversationMessages = getConversationMessages,
         observeConversationMessages = observeConversationMessages,
         sendMessage = sendMessage,
-        reportMessage = reportMessage
+        reportMessage = reportMessage,
+        hideConversation = hideConversation
     )
 
     fun createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)
