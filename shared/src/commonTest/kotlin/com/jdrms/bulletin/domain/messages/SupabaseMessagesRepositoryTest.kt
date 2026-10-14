@@ -16,16 +16,25 @@ import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProf
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportInsertDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportMarkerDto
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.MessagesPersistenceException
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.PostgrestSupabaseMessagesTable
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesTable
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() {
@@ -35,6 +44,31 @@ class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() 
 }
 
 class SupabaseMessagesRepositoryTest {
+    @Test
+    fun conversationVisibilityRpcsDecodeScalarBooleanResponses() = runTest {
+        val requestedPaths = mutableListOf<String>()
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                requestedPaths += request.url.encodedPath
+                val body = if (request.url.encodedPath.endsWith("hide_conversation")) "true" else "false"
+                respond(body, HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
+            }
+        }
+
+        try {
+            val table = PostgrestSupabaseMessagesTable(client)
+            assertTrue(table.hideConversation(conversationId.value))
+            assertFalse(table.restoreConversation(conversationId.value))
+            assertEquals(
+                listOf("/rest/v1/rpc/hide_conversation", "/rest/v1/rpc/restore_conversation"),
+                requestedPaths
+            )
+        } finally {
+            client.close()
+        }
+    }
+
     @Test
     fun sendWritesTransportFieldsWithoutClientControlledIdentity() = runTest {
         val table = FakeSupabaseMessagesTable(listOf(conversation()))

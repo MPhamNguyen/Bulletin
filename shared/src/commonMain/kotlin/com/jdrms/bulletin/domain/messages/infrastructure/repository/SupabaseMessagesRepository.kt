@@ -181,7 +181,7 @@ internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, Su
     suspend fun insertReport(report: SupabaseMessageReportInsertDto)
 }
 
-private class PostgrestSupabaseMessagesTable(
+internal class PostgrestSupabaseMessagesTable(
     private val supabase: SupabaseClient
 ) : SupabaseMessagesTable {
     override suspend fun getAuthenticatedUserId(): String? {
@@ -206,13 +206,13 @@ private class PostgrestSupabaseMessagesTable(
         supabase.postgrest.rpc(
             "hide_conversation",
             parameters = buildJsonObject { put("p_conversation_id", conversationId) }
-        ).decodeSingle<Boolean>()
+        ).decodeAs<Boolean>()
 
     override suspend fun restoreConversation(conversationId: String): Boolean =
         supabase.postgrest.rpc(
             "restore_conversation",
             parameters = buildJsonObject { put("p_conversation_id", conversationId) }
-        ).decodeSingle<Boolean>()
+        ).decodeAs<Boolean>()
 
     override suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String {
         return supabase.postgrest.rpc(
