@@ -105,11 +105,20 @@ fun MyListingsScreen(
         }
         uiState.pendingSold?.let { listing ->
             ListingSoldConfirmationDialog(
-                listing = listing,
-                isMarkingSold = uiState.isMarkingSold,
-                errorMessage = uiState.errorMessage,
-                onDismiss = viewModel::cancelMarkListingSold,
-                onConfirm = viewModel::confirmMarkListingSold
+                state = ListingSoldConfirmationState(
+                    listing = listing,
+                    isMarkingSold = uiState.isMarkingSold,
+                    recentBuyers = uiState.recentSoldBuyers,
+                    selectedBuyerId = uiState.selectedBuyerId,
+                    soldOnAnotherPlatform = uiState.soldOnAnotherPlatform,
+                    errorMessage = uiState.errorMessage
+                ),
+                actions = ListingSoldConfirmationActions(
+                    onDismiss = viewModel::cancelMarkListingSold,
+                    onConfirm = viewModel::confirmMarkListingSold,
+                    onBuyerSelected = viewModel::selectSoldBuyer,
+                    onSoldOnAnotherPlatform = viewModel::selectSoldOnAnotherPlatform
+                )
             )
         }
         uiState.pendingRestoration?.let { listing ->

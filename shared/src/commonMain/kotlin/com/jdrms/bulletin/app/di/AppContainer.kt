@@ -34,6 +34,7 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryList
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
+import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModelSessionDependencies
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
@@ -41,8 +42,8 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryLi
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
+import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
-import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
@@ -215,6 +216,7 @@ class AppContainer(
         }
     }
     val sessionRepository by lazy { AuthSessionRepository(authRepository) }
+
     val userMessenger by lazy { FlowUserMessenger() }
     val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }
     val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
@@ -228,6 +230,15 @@ class AppContainer(
             blockedUserProvider = marketplaceBlockedUserProvider
         )
     }
+
+    // Use Cases - Home
+
+    val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }
+    val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
+
+    // Use Cases - Marketplace
+
+    val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val bookmarkMarketplaceListing by lazy { BookmarkMarketplaceListing(marketplaceRepository) }
     val getMarketplaceListingBookmarks by lazy { GetMarketplaceListingBookmarks(marketplaceRepository) }
     val removeMarketplaceListingBookmark by lazy { RemoveMarketplaceListingBookmark(marketplaceRepository) }
@@ -239,13 +250,15 @@ class AppContainer(
             blockedUserProvider = marketplaceBlockedUserProvider
         )
     }
+    val submitMarketplaceReview by lazy { SubmitMarketplaceReview(marketplaceRepository) }
     private val viewMarketplaceSellerProfile by lazy {
-        ViewMarketplaceSellerProfile(
+        createMarketplaceSellerProfileView(
             marketplaceSellerProfileProvider,
             marketplaceListingSource,
             ListingsMarketplaceSellerSalesProvider(listingsRepository)
         )
     }
+
     private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
     private val reportMarketplaceUser by lazy {
         ReportMarketplaceUser(ProfileMarketplaceUserReporter(submitUserReport))
@@ -263,6 +276,7 @@ class AppContainer(
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    private val recentListingBuyersProvider by lazy { createRecentListingBuyersProvider(getConversations) }
     val hideConversation by lazy { HideConversation(messagesRepository, currentMessageSenderProvider) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
@@ -317,13 +331,9 @@ class AppContainer(
             get = getMarketplaceListingBookmarks
         ),
         viewMarketplaceListing = viewMarketplaceListing,
+        submitMarketplaceReview = submitMarketplaceReview,
         listingChangedSignal = listingChangedSignal,
-        currentUserIdProvider = {
-            when (val result = authRepository.getCurrentUserId()) {
-                is com.jdrms.bulletin.core.common.Result.Success -> result.data?.value
-                is com.jdrms.bulletin.core.common.Result.Error -> null
-            }
-        }
+        currentUserIdProvider = createCurrentUserIdProvider(authRepository)
     )
     fun createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
     val marketplaceUserBlockViewModelFactory: () -> MarketplaceUserBlockViewModel = {
@@ -337,11 +347,14 @@ class AppContainer(
         createListing = createListing,
         manageListing = manageListing,
         markListingSold = markListingSold,
+        recentListingBuyersProvider = recentListingBuyersProvider,
         restoreListingToMarketplace = restoreListingToMarketplace,
         deleteListing = deleteListing,
         getSellerListings = getSellerListings,
-        currentSellerProvider = currentListingSellerProvider,
-        listingChangedSignal = listingChangedSignal
+        session = ListingsViewModelSessionDependencies(
+            currentSellerProvider = currentListingSellerProvider,
+            listingChangedSignal = listingChangedSignal
+        )
     )
     fun createMessagesViewModel() = MessagesViewModel(
         inbox = inboxStateOwner,

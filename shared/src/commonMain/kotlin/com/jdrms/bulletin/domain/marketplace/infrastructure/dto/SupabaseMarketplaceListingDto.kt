@@ -14,6 +14,8 @@ data class SupabaseMarketplaceListingDto(
     @SerialName("description") val description: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("is_sold") val isSold: Boolean = false,
+    @SerialName("seller_profile") val sellerProfile: SupabaseMarketplaceProfileDto? = null,
+    @SerialName("buyer_id") val buyerId: String? = null,
     @SerialName("profiles") val profile: SupabaseMarketplaceProfileDto? = null
 )
 

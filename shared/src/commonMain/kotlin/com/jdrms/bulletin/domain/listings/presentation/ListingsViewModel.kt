@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
+import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
 import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -26,19 +27,28 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+data class ListingsViewModelSessionDependencies(
+    val currentSellerProvider: CurrentListingSellerProvider,
+    val listingChangedSignal: RefreshSignal? = null
+)
+
 class ListingsViewModel(
     private val createListing: CreateListing,
     private val manageListing: ManageListing,
     private val markListingSold: MarkListingSold? = null,
+    private val recentListingBuyersProvider: RecentListingBuyersProvider =
+        RecentListingBuyersProvider { _, _ -> emptyList() },
     private val restoreListingToMarketplace: RestoreListingToMarketplace? = null,
     private val deleteListing: DeleteListing,
     private val getSellerListings: GetSellerListings,
-    private val currentSellerProvider: CurrentListingSellerProvider,
-    private val listingChangedSignal: RefreshSignal? = null
+    private val session: ListingsViewModelSessionDependencies
 ) : ViewModel() {
+    private val currentSellerProvider get() = session.currentSellerProvider
+    private val listingChangedSignal get() = session.listingChangedSignal
     internal val _uiState = MutableStateFlow(ListingsUiState())
     val uiState: StateFlow<ListingsUiState> = _uiState.asStateFlow()
     internal var flashNotificationJob: Job? = null
+    private var recentSoldBuyersJob: Job? = null
     internal val notificationScope get() = viewModelScope
     init {
         loadMyListings()
@@ -154,11 +164,50 @@ class ListingsViewModel(
     }
 
     fun requestMarkListingSold(listing: Listing) {
-        _uiState.update { it.copy(pendingSold = listing, errorMessage = null) }
+        recentSoldBuyersJob?.cancel()
+        _uiState.update {
+            it.copy(
+                pendingSold = listing,
+                recentSoldBuyers = emptyList(),
+                selectedBuyerId = null,
+                soldOnAnotherPlatform = true,
+                errorMessage = null
+            )
+        }
+        recentSoldBuyersJob = viewModelScope.launch {
+            val seller = currentSellerProvider.getCurrentSeller()
+            val buyers = if (seller is Result.Success) {
+                recentListingBuyersProvider.getRecentBuyers(listing.id, seller.data.id.value)
+            } else {
+                emptyList()
+            }
+            if (_uiState.value.pendingSold?.id != listing.id) return@launch
+            _uiState.update {
+                if (it.pendingSold?.id == listing.id) {
+                    it.copy(
+                        recentSoldBuyers = buyers,
+                        selectedBuyerId = buyers.singleOrNull()?.id,
+                        soldOnAnotherPlatform = buyers.isEmpty(),
+                        errorMessage = null
+                    )
+                } else {
+                    it
+                }
+            }
+        }
     }
 
     fun cancelMarkListingSold() {
-        _uiState.update { it.copy(pendingSold = null) }
+        recentSoldBuyersJob?.cancel()
+        _uiState.update { it.copy(pendingSold = null, recentSoldBuyers = emptyList(), selectedBuyerId = null) }
+    }
+
+    fun selectSoldBuyer(id: String?) {
+        _uiState.update { it.copy(selectedBuyerId = id, soldOnAnotherPlatform = false, errorMessage = null) }
+    }
+
+    fun selectSoldOnAnotherPlatform() {
+        _uiState.update { it.copy(selectedBuyerId = null, soldOnAnotherPlatform = true, errorMessage = null) }
     }
 
     fun requestRestoreListing(listing: Listing) {
@@ -211,41 +260,68 @@ class ListingsViewModel(
 
     fun confirmMarkListingSold() {
         val markSold = markListingSold ?: return
+        val listing = claimPendingSoldListing() ?: return
+        viewModelScope.launch { performMarkListingSold(markSold, listing) }
+    }
+
+    private fun claimPendingSoldListing(): Listing? {
         var pendingListing: Listing? = null
         while (pendingListing == null) {
             val state = _uiState.value
-            val listing = state.pendingSold ?: return
-            if (state.isMarkingSold) return
+            val listing = state.pendingSold ?: return null
+            if (state.isMarkingSold) return null
             if (_uiState.compareAndSet(state, state.copy(isMarkingSold = true, errorMessage = null))) {
                 pendingListing = listing
             }
         }
-        val listing = checkNotNull(pendingListing)
-        viewModelScope.launch {
-            when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
-                is Result.Success -> {
-                    when (val result = markSold(listing.id, sellerResult.data.id)) {
-                        is Result.Success -> {
-                            _uiState.update { it.copy(pendingSold = null, isMarkingSold = false) }
-                            showFlashNotification("Listing marked as sold!")
-                            loadMyListings(sellerResult.data)
-                            listingChangedSignal?.emit()
-                        }
-                        is Result.Error -> _uiState.update {
+        return pendingListing
+    }
+
+    private suspend fun performMarkListingSold(markSold: MarkListingSold, listing: Listing) {
+        when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
+            is Result.Success -> {
+                val buyerId = _uiState.value.selectedBuyerId
+                if (buyerId == null && !_uiState.value.soldOnAnotherPlatform) {
+                    showSoldSelectionError()
+                    return
+                }
+                when (val result = markSold(listing.id, sellerResult.data.id, buyerId)) {
+                    is Result.Success -> {
+                        _uiState.update {
                             it.copy(
-                                isMarkingSold = false,
-                                errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
+                                pendingSold = null,
+                                recentSoldBuyers = emptyList(),
+                                selectedBuyerId = null,
+                                isMarkingSold = false
                             )
                         }
+                        showFlashNotification("Listing marked as sold!")
+                        loadMyListings(sellerResult.data)
+                        listingChangedSignal?.emit()
+                    }
+                    is Result.Error -> _uiState.update {
+                        it.copy(
+                            isMarkingSold = false,
+                            errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
+                        )
                     }
                 }
-                is Result.Error -> _uiState.update {
-                    it.copy(
-                        isMarkingSold = false,
-                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
-                    )
-                }
             }
+            is Result.Error -> _uiState.update {
+                it.copy(
+                    isMarkingSold = false,
+                    errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
+                )
+            }
+        }
+    }
+
+    private fun showSoldSelectionError() {
+        _uiState.update {
+            it.copy(
+                isMarkingSold = false,
+                errorMessage = "Choose who bought this listing."
+            )
         }
     }
 

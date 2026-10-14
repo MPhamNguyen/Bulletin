@@ -8,15 +8,18 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceReviewInsertDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ReviewScoreDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -58,7 +61,7 @@ class SupabaseMarketplaceRepository(
         val databaseListingId = normalizeListingId(id.value)
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
-                val dto = supabase.from(LISTINGS_TABLE).select {
+                val dto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
                     filter {
                         eq("id", databaseListingId)
                     }
@@ -76,7 +79,7 @@ class SupabaseMarketplaceRepository(
         val databaseListingId = normalizeListingId(listingID)
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
-                val listingDto = supabase.from(LISTINGS_TABLE).select {
+                val listingDto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
                     filter {
                         eq("id", databaseListingId)
                     }
@@ -151,11 +154,48 @@ class SupabaseMarketplaceRepository(
         return bookmarks.getPage(userId, cursor, pageSize)
     }
 
+    override suspend fun hasReviewForListing(listingId: MarketplaceItemId, reviewerId: String): Boolean {
+        return runCatching {
+            supabase.from(REVIEWS_TABLE).select {
+                filter {
+                    eq("listing_id", normalizeListingId(listingId.value))
+                    eq("reviewer_id", reviewerId)
+                }
+            }.decodeList<MarketplaceReviewInsertDto>().isNotEmpty()
+        }.getOrElse { error ->
+            error.rethrowIfCancellation()
+            false
+        }
+    }
+
+    override suspend fun submitReview(review: MarketplaceReview): Result<Unit> {
+        return runCatching {
+            supabase.from(REVIEWS_TABLE).insert(
+                MarketplaceReviewInsertDto(
+                    listingId = normalizeListingId(review.listingId.value),
+                    reviewerId = review.reviewerId,
+                    revieweeId = review.revieweeId,
+                    score = review.score,
+                    comment = review.comment.trim()
+                )
+            )
+        }.fold(
+            onSuccess = { Result.Success(Unit) },
+            onFailure = { error ->
+                error.rethrowIfCancellation()
+                Result.Error(error)
+            }
+        )
+    }
+
     companion object {
         const val LISTINGS_TABLE = "listings"
         const val REVIEWS_TABLE = "reviews"
         const val TIMEOUT_MILLIS = 2000L
         const val LISTING_ID_PREFIX = "listing:"
+        val LISTING_COLUMNS = Columns.raw(
+            "*, seller_profile:profiles!listings_user_id_fkey ( full_name )"
+        )
 
         fun normalizeListingId(listingId: String): String {
             return listingId.removePrefix(LISTING_ID_PREFIX)

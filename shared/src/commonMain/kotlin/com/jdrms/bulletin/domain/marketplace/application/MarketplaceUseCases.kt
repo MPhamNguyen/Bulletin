@@ -148,6 +148,11 @@ class ViewMarketplaceListing(
 ) {
     suspend fun viewListing(listingID: String, viewerId: String? = null): Listing {
         val result = invoke(listingID, viewerId)
+    suspend fun hasReview(listingId: String, reviewerId: String): Boolean =
+        repository.hasReviewForListing(MarketplaceItemId(listingId.removePrefix("listing:")), reviewerId)
+
+    suspend fun viewListing(listingID: String): Listing {
+        val result = repository.viewListing(listingID)
         return when (result) {
             is Result.Success -> result.data
             is Result.Error -> throw result.exception
