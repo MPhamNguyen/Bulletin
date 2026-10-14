@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.messages
 
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
@@ -14,11 +16,21 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class MessagesDomainTest {
 
     private val policy = MessagesPolicy()
+
+    @Test
+    fun onlyConversationParticipantsMayHideItFromTheirInbox() {
+        val conversation = conversation()
+        assertEquals(Result.Success(Unit), conversation.authorizeHiding(alice.id))
+        assertIs<ConversationAccessException>(
+            assertIs<Result.Error>(conversation.authorizeHiding(bob.id)).exception
+        )
+    }
 
     @Test
     fun testValidMessagePasses() {
