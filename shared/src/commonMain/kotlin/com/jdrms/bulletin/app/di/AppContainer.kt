@@ -6,6 +6,7 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
@@ -135,6 +136,7 @@ class AppContainer(
     }
 
     // Repositories
+
     val homeRepository by lazy { InMemoryHomeRepository() }
     val marketplaceRepository: MarketplaceRepository by lazy {
         val client = supabaseClient
@@ -169,7 +171,6 @@ class AppContainer(
             )
         }
     }
-
     val messagesRepository: MessagesRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -229,13 +230,16 @@ class AppContainer(
         }
     }
     val sessionRepository by lazy { AuthSessionRepository(authRepository) }
+
     val userMessenger by lazy { FlowUserMessenger() }
 
     // Use Cases - Home
+
     val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }
     val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
 
     // Use Cases - Marketplace
+
     val searchMarketplace by lazy { SearchMarketplace(marketplaceRepository, marketplaceListingSource) }
     val bookmarkMarketplaceListing by lazy { BookmarkMarketplaceListing(marketplaceRepository) }
     val getMarketplaceListingBookmarks by lazy { GetMarketplaceListingBookmarks(marketplaceRepository) }
@@ -249,8 +253,13 @@ class AppContainer(
     }
     val submitMarketplaceReview by lazy { SubmitMarketplaceReview(marketplaceRepository) }
     private val viewMarketplaceSellerProfile by lazy {
-        createMarketplaceSellerProfileView(marketplaceSellerProfileProvider, marketplaceListingSource)
+        createMarketplaceSellerProfileView(
+            marketplaceSellerProfileProvider,
+            marketplaceListingSource,
+            ListingsMarketplaceSellerSalesProvider(listingsRepository)
+        )
     }
+
     private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
     private val reportMarketplaceUser by lazy {
         ReportMarketplaceUser(ProfileMarketplaceUserReporter(submitUserReport))
@@ -331,11 +340,8 @@ class AppContainer(
         listingChangedSignal = listingChangedSignal,
         currentUserIdProvider = createCurrentUserIdProvider(authRepository)
     )
-
     fun createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
-
     fun createSellerProfileViewModel() = SellerProfileViewModel(viewMarketplaceSellerProfile)
-
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
@@ -349,7 +355,6 @@ class AppContainer(
             listingChangedSignal = listingChangedSignal
         )
     )
-
     fun createMessagesViewModel() = MessagesViewModel(
         inbox = inboxStateOwner,
         getConversationMessages = getConversationMessages,
@@ -357,16 +362,13 @@ class AppContainer(
         sendMessage = sendMessage,
         reportMessage = reportMessage
     )
-
     fun createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)
-
     fun createRegistrationViewModel() = RegistrationViewModel(
         registerStudent,
         verifyStudentEmail,
         resendVerificationCode,
         sessionRepository
     )
-
     fun createProfileViewModel() = ProfileViewModel(
         sessionRepository = sessionRepository,
         getProfileOverview = getProfileOverview,
@@ -378,18 +380,14 @@ class AppContainer(
             remover = profileBookmarkedListingRemover
         )
     )
-
     fun createEditProfileViewModel() = EditProfileViewModel(
         sessionRepository,
         updateStudentProfile,
         uploadProfilePhoto,
         userMessenger
     )
-
     fun createReviewViewModel() = ReviewViewModel(sessionRepository, publishStudentReview)
-
     fun createAccountViewModel() = AccountViewModel(sessionRepository, signOutUser, softDeleteProfile, userMessenger)
-
     fun createPasswordRecoveryViewModel() = PasswordRecoveryViewModel(
         requestPasswordResetUseCase = requestPasswordReset,
         verifyPasswordResetCodeUseCase = verifyPasswordResetCode,

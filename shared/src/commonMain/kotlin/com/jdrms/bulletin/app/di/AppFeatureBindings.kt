@@ -5,6 +5,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerSalesProvider
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
@@ -29,8 +30,10 @@ internal fun createRecentListingBuyersProvider(
 
 internal fun createMarketplaceSellerProfileView(
     sellerProfileProvider: ProfileMarketplaceSellerNameProvider,
-    listingSource: MarketplaceListingSource
-): ViewMarketplaceSellerProfile = ViewMarketplaceSellerProfile(sellerProfileProvider, listingSource)
+    listingSource: MarketplaceListingSource,
+    sellerSalesProvider: MarketplaceSellerSalesProvider
+): ViewMarketplaceSellerProfile =
+    ViewMarketplaceSellerProfile(sellerProfileProvider, listingSource, sellerSalesProvider)
 
 internal fun createCurrentUserIdProvider(
     authRepository: AuthRepository
