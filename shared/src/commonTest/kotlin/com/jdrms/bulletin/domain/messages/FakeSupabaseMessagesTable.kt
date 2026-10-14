@@ -16,7 +16,7 @@ import kotlin.time.Instant
 internal class FakeSupabaseMessagesTable(
     conversations: List<Conversation>,
     messages: List<Message> = emptyList(),
-    private val authenticatedUserId: String? = alice.id.value
+    var authenticatedUserId: String? = alice.id.value
 ) : SupabaseMessagesTable {
     private val conversationRows = conversations.associate { conversation ->
         conversation.id.value to SupabaseConversationDto(
@@ -130,6 +130,7 @@ internal class FakeSupabaseMessagesTable(
         )
         val conversation = conversationRows.getValue(message.conversationId)
         conversationRows[message.conversationId] = conversation.copy(updatedAt = message.createdAt)
+        hiddenBy.remove(message.conversationId)
     }
 
     override suspend fun insertReport(report: SupabaseMessageReportInsertDto) {

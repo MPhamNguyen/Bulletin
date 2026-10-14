@@ -114,6 +114,7 @@ class InMemoryMessagesRepository(
                 is Result.Success -> {
                     messagesByConvId.getOrPut(message.conversationId) { mutableListOf() }.add(message)
                     conversations[message.conversationId] = updated.data
+                    hiddenBy.remove(message.conversationId)
                     Result.Success(message)
                 }
             }

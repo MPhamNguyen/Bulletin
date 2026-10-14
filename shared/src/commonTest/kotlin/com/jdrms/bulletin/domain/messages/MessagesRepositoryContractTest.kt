@@ -50,6 +50,18 @@ abstract class MessagesRepositoryContractTest {
     }
 
     @Test
+    fun newMessageRestoresConversationForParticipantsWhoPreviouslyHidIt() = runTest {
+        val repository = createRepository(listOf(conversation()))
+
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
+
+        repository.sendMessage(message()).getOrThrow()
+
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
     fun hidingUnknownConversationOrAsOutsiderIsDenied() = runTest {
         val repository = createRepository(listOf(conversation()))
 

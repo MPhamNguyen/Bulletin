@@ -38,6 +38,20 @@ class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() 
 
 class SupabaseMessagesRepositoryTest {
     @Test
+    fun incomingMessageResurfacesConversationForParticipantWhoHidIt() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+        val repository = SupabaseMessagesRepository(table)
+
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
+
+        table.authenticatedUserId = carol.id.value
+        repository.sendMessage(message(carol)).getOrThrow()
+
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
     fun conversationVisibilityRpcsDecodeScalarBooleanResponses() = runTest {
         val requestedPaths = mutableListOf<String>()
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
