@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnaps
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerSalesProvider
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import kotlinx.coroutines.CompletableDeferred
@@ -40,11 +41,12 @@ class ViewMarketplaceSellerProfileTest {
                 MarketplaceListingPage(listOf(listing("second", "seller-a")), null)
             }
         }
-        val query = ViewMarketplaceSellerProfile({ sellerProfile(it) }, source)
+        val query = ViewMarketplaceSellerProfile({ sellerProfile(it) }, source, MarketplaceSellerSalesProvider { 3 })
 
         val details = query("seller-a")
 
         assertEquals(listOf("first", "second"), details?.listings?.map { it.id.value })
+        assertEquals(3, details?.soldListingsCount)
         assertEquals(listOf<String?>("seller-a", "seller-a"), requestedSellerIds)
     }
 
@@ -56,7 +58,7 @@ class ViewMarketplaceSellerProfileTest {
             MarketplaceListingPage(emptyList(), null)
         }
 
-        val details = ViewMarketplaceSellerProfile({ null }, source)("missing")
+        val details = ViewMarketplaceSellerProfile({ null }, source, MarketplaceSellerSalesProvider { 0 })("missing")
 
         assertNull(details)
         assertEquals(0, listingLoadCount)
@@ -73,7 +75,8 @@ class SellerProfileViewModelTest {
                 profileProvider = { sellerProfile(it) },
                 listingSource = MarketplaceListingSource {
                     MarketplaceListingPage(listOf(listing("available", "seller-a")), null)
-                }
+                },
+                sellerSalesProvider = MarketplaceSellerSalesProvider { 4 }
             )
             val viewModel = SellerProfileViewModel(query)
 
@@ -83,6 +86,7 @@ class SellerProfileViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals("Seller A", viewModel.uiState.value.profile?.name)
             assertEquals(listOf("available"), viewModel.uiState.value.listings.map { it.id.value })
+            assertEquals(4, viewModel.uiState.value.soldListingsCount)
         } finally {
             Dispatchers.resetMain()
         }
@@ -94,7 +98,8 @@ class SellerProfileViewModelTest {
         try {
             val query = ViewMarketplaceSellerProfile(
                 profileProvider = { sellerProfile(it) },
-                listingSource = MarketplaceListingSource { error("offline") }
+                listingSource = MarketplaceListingSource { error("offline") },
+                sellerSalesProvider = MarketplaceSellerSalesProvider { 0 }
             )
             val viewModel = SellerProfileViewModel(query)
 
@@ -130,7 +135,8 @@ class SellerProfileViewModelTest {
                 },
                 listingSource = MarketplaceListingSource { request ->
                     MarketplaceListingPage(listOf(listing("available", request.sellerId.orEmpty())), null)
-                }
+                },
+                sellerSalesProvider = MarketplaceSellerSalesProvider { 1 }
             )
             val viewModel = SellerProfileViewModel(query)
 

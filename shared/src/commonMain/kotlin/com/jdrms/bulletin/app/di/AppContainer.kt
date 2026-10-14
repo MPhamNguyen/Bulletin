@@ -5,6 +5,7 @@ import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
+import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
@@ -239,7 +240,11 @@ class AppContainer(
         )
     }
     private val viewMarketplaceSellerProfile by lazy {
-        ViewMarketplaceSellerProfile(marketplaceSellerProfileProvider, marketplaceListingSource)
+        ViewMarketplaceSellerProfile(
+            marketplaceSellerProfileProvider,
+            marketplaceListingSource,
+            ListingsMarketplaceSellerSalesProvider(listingsRepository)
+        )
     }
     private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
     private val reportMarketplaceUser by lazy {
