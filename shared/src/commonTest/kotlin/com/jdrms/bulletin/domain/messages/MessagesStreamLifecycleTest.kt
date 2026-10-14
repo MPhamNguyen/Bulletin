@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.messages
 import androidx.lifecycle.ViewModelStore
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
-import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSender
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages

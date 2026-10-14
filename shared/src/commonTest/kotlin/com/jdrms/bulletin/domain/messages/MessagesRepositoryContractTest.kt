@@ -56,6 +56,9 @@ abstract class MessagesRepositoryContractTest {
         assertAccessDenied(repository.hideConversation(bob.id, conversationId))
         assertAccessDenied(repository.hideConversation(alice.id, ConversationId("missing")))
         assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
     fun conversationCreationIsListingScopedAndIdempotent() = runTest {
         val repository = createRepository(emptyList())
         val seller = ConversationParticipant(carol.id, carol.displayName)

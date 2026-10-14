@@ -139,7 +139,18 @@ class SupabaseMessagesRepositoryTest {
 
     @Test
     fun startingSameListingConversationAgainRestoresRequestersInbox() = runTest {
-        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+        val existing = conversation()
+        val table = FakeSupabaseMessagesTable(
+            listOf(
+                Conversation(
+                    existing.id,
+                    existing.participants,
+                    existing.lastMessage,
+                    existing.updatedAtMillis,
+                    ListingReferenceId("listing-a")
+                )
+            )
+        )
         val repository = SupabaseMessagesRepository(table)
         repository.hideConversation(alice.id, conversationId).getOrThrow()
 
