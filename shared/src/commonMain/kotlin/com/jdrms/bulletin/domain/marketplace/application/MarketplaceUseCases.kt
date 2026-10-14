@@ -146,13 +146,11 @@ class ViewMarketplaceListing(
     private val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider,
     private val blockedUserProvider: MarketplaceBlockedUserProvider? = null
 ) {
-    suspend fun viewListing(listingID: String, viewerId: String? = null): Listing {
-        val result = invoke(listingID, viewerId)
     suspend fun hasReview(listingId: String, reviewerId: String): Boolean =
         repository.hasReviewForListing(MarketplaceItemId(listingId.removePrefix("listing:")), reviewerId)
 
-    suspend fun viewListing(listingID: String): Listing {
-        val result = repository.viewListing(listingID)
+    suspend fun viewListing(listingID: String, viewerId: String? = null): Listing {
+        val result = invoke(listingID, viewerId)
         return when (result) {
             is Result.Success -> result.data
             is Result.Error -> throw result.exception

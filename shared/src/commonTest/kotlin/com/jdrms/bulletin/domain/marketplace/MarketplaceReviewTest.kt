@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
+import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
@@ -9,9 +10,24 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryM
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class MarketplaceReviewTest {
+    @Test
+    fun listingReviewLookupUsesCanonicalListingId() = runTest {
+        val repository = InMemoryMarketplaceRepository()
+        val submitReview = SubmitMarketplaceReview(repository)
+        val viewListing = ViewMarketplaceListing(repository)
+        val listing = soldListing(buyerId = "buyer-1")
+
+        assertIs<Result.Success<Unit>>(submitReview(listing, "buyer-1", 5, "Smooth transaction"))
+
+        assertTrue(viewListing.hasReview("listing:listing-1", "buyer-1"))
+        assertFalse(viewListing.hasReview("listing:listing-1", "buyer-2"))
+    }
+
     @Test
     fun buyerCanReviewSoldListingAndCannotSubmitTwice() = runTest {
         val useCase = SubmitMarketplaceReview(InMemoryMarketplaceRepository())
