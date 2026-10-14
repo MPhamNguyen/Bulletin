@@ -79,7 +79,7 @@ data class MarketplaceItemPage(
     val nextCursor: MarketplacePageCursor?
 )
 
-private fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
+internal fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
     return MarketplaceItem(
         id = MarketplaceItemId(id),
         sellerId = sellerId,
@@ -130,7 +130,7 @@ class RemoveMarketplaceListingBookmark(
 
 class ViewMarketplaceListing(
     private val repository: MarketplaceRepository,
-    private val sellerProfileProvider: MarketplaceSellerProfileProvider? = null
+    private val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider
 ) {
     suspend fun viewListing(listingID: String): Listing {
         val result = repository.viewListing(listingID)
@@ -147,12 +147,8 @@ class ViewMarketplaceListing(
         }
     }
 
-    suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile? {
-        return sellerProfileProvider?.getSellerProfile(sellerId)
-    }
-
     private suspend fun Listing.withResolvedSellerName(): Listing {
-        val profile = sellerProfileProvider?.getSellerProfile(sellerId)
+        val profile = sellerProfileProvider.getSellerProfile(sellerId)
         return if (profile != null) {
             copy(
                 sellerName = profile.name?.takeIf(String::isNotBlank) ?: sellerName,
@@ -184,6 +180,10 @@ data class MarketplaceSellerProfile(
 /** Provides seller profile details without coupling marketplace to a profile implementation. */
 fun interface MarketplaceSellerProfileProvider {
     suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile?
+}
+
+object EmptyMarketplaceSellerProfileProvider : MarketplaceSellerProfileProvider {
+    override suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile? = null
 }
 
 const val DEFAULT_BOOKMARKS_PAGE_SIZE = 20

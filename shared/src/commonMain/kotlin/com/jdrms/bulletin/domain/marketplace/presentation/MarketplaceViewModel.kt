@@ -9,7 +9,6 @@ import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +21,7 @@ class MarketplaceViewModel(
     bookmarks: MarketplaceBookmarkDependencies,
     private val viewMarketplaceListing: ViewMarketplaceListing,
     private val listingChangedSignal: RefreshSignal? = null,
-    private val currentUserIdProvider: suspend () -> String? = { DEFAULT_USER_ID }
+    private val currentUserIdProvider: suspend () -> String? = { null }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
@@ -195,60 +194,11 @@ class MarketplaceViewModel(
         }
     }
 
-    fun onSellerClicked(sellerId: String) {
-        _uiState.update {
-            it.copy(
-                detail = it.detail.copy(isOpen = false),
-                isSellerProfileOpen = true,
-                isSellerProfileLoading = true,
-                sellerProfileErrorMessage = null,
-                selectedSellerProfile = null
-            )
-        }
-        viewModelScope.launch {
-            try {
-                val profile = viewMarketplaceListing.getSellerProfile(sellerId)
-                _uiState.update {
-                    it.copy(
-                        isSellerProfileLoading = false,
-                        sellerProfileErrorMessage = if (profile == null) {
-                            "Seller profile is currently unavailable."
-                        } else {
-                            null
-                        },
-                        selectedSellerProfile = profile
-                    )
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isSellerProfileLoading = false,
-                        sellerProfileErrorMessage = "Unable to load the seller profile. Please try again."
-                    )
-                }
-            }
-        }
-    }
-
-    fun dismissSellerProfile() {
-        _uiState.update {
-            it.copy(
-                isSellerProfileOpen = false,
-                selectedSellerProfile = null,
-                sellerProfileErrorMessage = null,
-                detail = it.detail.copy(isOpen = it.detail.listing != null)
-            )
-        }
-    }
-
     fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) {
         bookmarkController.toggle(itemId, userId)
     }
 
     private companion object {
-        const val DEFAULT_USER_ID = "student_user"
         const val SEARCH_DEBOUNCE_MILLIS = 300L
     }
 }
