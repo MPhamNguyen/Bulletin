@@ -25,6 +25,7 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
         onDispose { viewModel.onDestinationActiveChanged(false) }
     }
     val state by viewModel.uiState.collectAsState()
+    val inboxState by viewModel.inboxState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         SectionHeader(
@@ -32,7 +33,9 @@ fun MessagesScreen(viewModel: MessagesViewModel) {
             subtitle = "Conversations with campus buyers and sellers"
         )
         Spacer(modifier = Modifier.height(8.dp))
-        if (state.connectionState == MessageConnectionState.DISCONNECTED) {
+        if (state.connectionState == MessageConnectionState.DISCONNECTED ||
+            inboxState.connectionState == InboxConnectionState.DISCONNECTED
+        ) {
             Text(
                 text = "Live updates unavailable. Recent messages may be delayed.",
                 color = MaterialTheme.colorScheme.error,

@@ -17,11 +17,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemePreference
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import com.jdrms.bulletin.domain.profile.presentation.ChangePasswordScreen
@@ -36,12 +37,16 @@ import kotlinx.coroutines.cancel
 fun App(appContainer: AppContainer? = null) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
+    DisposableEffect(container) {
+        onDispose { container.inboxStateOwner.close() }
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { container.inboxStateOwner.onForeground() }
     val systemDarkTheme = isSystemInDarkTheme()
     val themeViewModel = remember { container.createThemeViewModel() }
     val themePreference by themeViewModel.themePreference.collectAsState()
     val isDarkTheme = resolveIsDarkTheme(themePreference, systemDarkTheme)
 
-    BulletinTheme(darkTheme = isDarkTheme) {
+    com.jdrms.bulletin.core.designsystem.BulletinTheme(darkTheme = isDarkTheme) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
         val sessionState by container.sessionRepository.state.collectAsState()
         val authSessionState = sessionState.toAuthSessionState()
@@ -87,7 +92,9 @@ fun App(appContainer: AppContainer? = null) {
                             onClearMessages = signInViewModel::clearError,
                             onSignIn = signInViewModel::signIn,
                             onForgotPassword = { passwordRecoveryViewModel.beginPasswordReset() },
-                            onCreateAccount = { currentRootScreen = AppRootScreen.CREATE_PROFILE }
+                            onCreateAccount = {
+                                currentRootScreen = AppRootScreen.CREATE_PROFILE
+                            }
                         )
                         PasswordRecoveryStage.ENTER_EMAIL -> ForgotPasswordScreen(
                             errorMessage = passwordRecoveryUiState.errorMessage,
@@ -131,12 +138,14 @@ fun App(appContainer: AppContainer? = null) {
                         }
                     )
                 }
-                AppRootScreen.MAIN -> MainAppScaffold(
-                    appContainer = container,
-                    themeViewModel = themeViewModel,
-                    darkTheme = isDarkTheme,
-                    onSignOut = { currentRootScreen = AppRootScreen.SIGN_IN }
-                )
+                AppRootScreen.MAIN -> {
+                    MainAppScaffold(
+                        appContainer = container,
+                        themeViewModel = themeViewModel,
+                        darkTheme = isDarkTheme,
+                        onSignOut = { currentRootScreen = AppRootScreen.SIGN_IN }
+                    )
+                }
             }
         }
     }
@@ -145,13 +154,15 @@ fun App(appContainer: AppContainer? = null) {
 internal fun resolveRootScreen(
     currentRootScreen: AppRootScreen,
     authSessionState: AuthSessionState
-): AppRootScreen = when (authSessionState) {
-    AuthSessionState.CHECKING -> currentRootScreen
-    AuthSessionState.AUTHENTICATED -> {
-        if (currentRootScreen == AppRootScreen.CREATE_PROFILE) AppRootScreen.CREATE_PROFILE else AppRootScreen.MAIN
-    }
-    AuthSessionState.UNAUTHENTICATED -> {
-        if (currentRootScreen == AppRootScreen.MAIN) AppRootScreen.SIGN_IN else currentRootScreen
+): AppRootScreen {
+    return when (authSessionState) {
+        AuthSessionState.CHECKING -> currentRootScreen
+        AuthSessionState.AUTHENTICATED -> {
+            if (currentRootScreen == AppRootScreen.CREATE_PROFILE) AppRootScreen.CREATE_PROFILE else AppRootScreen.MAIN
+        }
+        AuthSessionState.UNAUTHENTICATED -> {
+            if (currentRootScreen == AppRootScreen.MAIN) AppRootScreen.SIGN_IN else currentRootScreen
+        }
     }
 }
 
@@ -169,5 +180,3 @@ internal fun resolveIsDarkTheme(
     ThemePreference.LIGHT -> false
     ThemePreference.DARK -> true
 }
-
-internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()

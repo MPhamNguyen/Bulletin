@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎓 Bulletin
+# ?? Bulletin
 ### Campus Connect Marketplace
 
 **A student-focused marketplace for buying, selling, and connecting safely within a university community.**
@@ -14,7 +14,7 @@
 
 ---
 
-## 📖 About Bulletin
+## ?? About Bulletin
 
 **Bulletin** is a mobile campus marketplace designed to make peer-to-peer transactions between university students safer, simpler, and more convenient.
 
@@ -26,46 +26,46 @@ Students can discover nearby campus listings, buy, sell, or rent items, communic
 
 ---
 
-## ✨ Core Features
+## ? Core Features
 
 | Feature | Description |
 | --- | --- |
-| 🎓 **Student Verification** | Account creation using a university-issued email and verification flow. |
-| 🛍️ **Campus Marketplace** | Create, browse, search, view, and edit marketplace listings. |
-| 🔎 **Search & Filters** | Find listings using keywords, category, price, condition, distance, and sorting options. |
-| 🔖 **Saved Listings** | Bookmark listings for quick access later. |
-| 💬 **Real-Time Messaging** | Contact other students and access conversation history. |
-| ⭐ **Ratings & Reviews** | Build community trust through user reputation and reviews. |
-| 👤 **Student Profiles** | View and edit profiles containing campus and student information. |
-| 🚩 **Reporting** | Report inappropriate messages for moderation. |
-| ✨ **Personalized Recommendations** | Surface listings based on campus, browsing history, saved items, preferences, and interactions. |
-| 📍 **Proximity Awareness** | Support campus-relevant and proximity-based discovery without exposing precise locations to other users. |
+| ?? **Student Verification** | Account creation using a university-issued email and verification flow. |
+| ??? **Campus Marketplace** | Create, browse, search, view, and edit marketplace listings. |
+| ?? **Search & Filters** | Find listings using keywords, category, price, condition, distance, and sorting options. |
+| ?? **Saved Listings** | Bookmark listings for quick access later. |
+| ?? **Real-Time Messaging** | Contact other students and access conversation history. |
+| ? **Ratings & Reviews** | Build community trust through user reputation and reviews. |
+| ?? **Student Profiles** | View and edit profiles containing campus and student information. |
+| ?? **Reporting** | Report inappropriate messages for moderation. |
+| ? **Personalized Recommendations** | Surface listings based on campus, browsing history, saved items, preferences, and interactions. |
+| ?? **Proximity Awareness** | Support campus-relevant and proximity-based discovery without exposing precise locations to other users. |
 
 ---
 
-## 📱 User Experience
+## ?? User Experience
 
 The planned application flow includes:
 
 ```text
 University Verification
-        ↓
+        ?
 Account / Login
-        ↓
+        ?
        Home
-   ┌────┼──────────────┐
-   ↓    ↓              ↓
+   +----+--------------+
+   ?    ?              ?
 Browse  Recommendations  Profile
-   ↓                    ↓
+   ?                    ?
 Listing Details      User Search
-   ↓                    ↓
-Save / Message ←→ Student Profile
-        ↓
+   ?                    ?
+Save / Message ?? Student Profile
+        ?
    Ratings & Reviews
 ```
 ---
 
-## 🧩 Functional Scope
+## ?? Functional Scope
 
 ### Account & Identity
 - Create an account using a school email
@@ -106,7 +106,7 @@ When personalization data is insufficient, a future fallback may use popular or 
 
 ---
 
-## 🏗️ Technical Direction
+## ??? Technical Direction
 
 The requirements describe the following planned technology direction:
 
@@ -117,27 +117,27 @@ The requirements describe the following planned technology direction:
 | **Backend / Cloud** | Supabase, AWS, or Firebase |
 | **API Integration** | AWS APIs / AWS Amplify |
 | **Real-Time Communication** | Secure WebSockets (`WSS`) |
-| **Client–Server Traffic** | HTTPS |
+| **Client�Server Traffic** | HTTPS |
 | **Email Verification** | SMTP or secure transactional email API |
 | **Notifications** | Firebase Cloud Messaging or Apple Push Notification Service |
 | **Location** | Mobile OS geolocation services with privacy-conscious proximity data |
 
 ---
 
-## 🏛️ Repository Architecture
+## ??? Repository Architecture
 
 Bulletin follows a **DDD-inspired + Feature-First Clean Architecture**:
 
 ```text
 shared/src/commonMain/kotlin/com/jdrms/bulletin/
-├── app/                  # Application composition, root Navigation, and manual DI (AppContainer)
-├── core/                 # Shared technical concerns (common, designsystem, network, database)
-└── domain/               # Business domains (bounded contexts)
-    ├── home/             # Personalized Feed, Ranking Engine, User Preferences
-    ├── marketplace/      # Marketplace Catalog, Search, Categories, Saved Items
-    ├── listings/         # Create, Post, Publish, and Manage Student Listings
-    ├── messages/         # Real-Time Chat, Inbox, Message Reporting
-    └── profile/          # Student Profile, Identity, .edu Verification, Reputation
++-- app/                  # Application composition, root Navigation, and manual DI (AppContainer)
++-- core/                 # Shared technical concerns (common, designsystem, network, database)
++-- domain/               # Business domains (bounded contexts)
+    +-- home/             # Personalized Feed, Ranking Engine, User Preferences
+    +-- marketplace/      # Marketplace Catalog, Search, Categories, Saved Items
+    +-- listings/         # Create, Post, Publish, and Manage Student Listings
+    +-- messages/         # Real-Time Chat, Inbox, Message Reporting
+    +-- profile/          # Student Profile, Identity, .edu Verification, Reputation
 ```
 
 Each business domain adheres to a 4-layer structure:
@@ -148,45 +148,56 @@ Each business domain adheres to a 4-layer structure:
 
 ### Backend status
 
-| Context / repository | Current binding | Verification |
-| --- | --- | --- |
-| Profile user blocks | Supabase adapter when configured; in-memory fallback for local inspection/tests | Adapter and migration are versioned; live Supabase verification is still pending |
+`AppContainer` selects the Supabase adapter when a client is configured and the in-memory adapter for inspection or
+local fallback. Adapter bindings describe code paths, not verification against a deployed Supabase project.
+
+| Repository or port | Configured Supabase client | Local fallback | Live project verification |
+| --- | --- | --- | --- |
+| Home repository | In-memory | In-memory | Not applicable |
+| Marketplace repository and listing source | Supabase adapters | In-memory/composite adapters | Not verified here |
+| Listings repository | Supabase adapter | In-memory adapter | Not verified here |
+| Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
+| Profile repository | Supabase adapter | In-memory adapter | Not verified here |
+| User report repository | Supabase adapter | In-memory adapter | Not verified here |
+| User block repository | Supabase adapter | In-memory adapter | Not verified here |
+| Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
+| Auth and session repositories | Supabase Auth adapter | In-memory auth adapter | Not verified here |
 
 
-## 🔐 Security & Privacy
+## ?? Security & Privacy
 
 Bulletin is intended to prioritize trust and student privacy.
 
-- 🔒 HTTPS for client–server communication
-- 🔑 Secure password hashing and storage
-- 🎓 University-email-based student verification
-- 🛡️ Role-based access control for sensitive functionality
-- 💬 WSS for secure real-time messaging
-- 📍 Only necessary proximity data should be transmitted; precise locations should not be exposed to other users
-- 🗃️ Sensitive data should be encrypted at rest and in transit
-- 🧹 Users should be able to request account deletion
-- ⭐ Rating mechanisms should resist fake reviews and manipulation
-- 🚩 Content/message reporting supports moderation
-- 📜 The system is intended to account for applicable university policies and student privacy requirements
+- ?? HTTPS for client�server communication
+- ?? Secure password hashing and storage
+- ?? University-email-based student verification
+- ??? Role-based access control for sensitive functionality
+- ?? WSS for secure real-time messaging
+- ?? Only necessary proximity data should be transmitted; precise locations should not be exposed to other users
+- ??? Sensitive data should be encrypted at rest and in transit
+- ?? Users should be able to request account deletion
+- ? Rating mechanisms should resist fake reviews and manipulation
+- ?? Content/message reporting supports moderation
+- ?? The system is intended to account for applicable university policies and student privacy requirements
 
 ---
 
-## ⚡ Performance Goals
+## ? Performance Goals
 
 | Operation | Target |
 | --- | ---: |
 | App launch | `< 2 seconds` |
-| Listing/search/profile/recommendation results | `≤ 2 seconds` |
-| Rating/report submissions | `≤ 3 seconds` |
-| Account creation/authentication | `≤ 5 seconds` |
-| Listing/account/profile-related updates | `≤ 5 seconds` |
+| Listing/search/profile/recommendation results | `= 2 seconds` |
+| Rating/report submissions | `= 3 seconds` |
+| Account creation/authentication | `= 5 seconds` |
+| Listing/account/profile-related updates | `= 5 seconds` |
 | API responses | `< 200 ms` |
 
 Personalized results should also refresh as user behavior changes without noticeable lag.
 
 ---
 
-## 🗺️ Development Roadmap
+## ??? Development Roadmap
 
 - [ ] Finalize production backend/cloud provider
 - [ ] Validate email ownership verification with the deployed email provider (see setup below)
@@ -206,7 +217,7 @@ Personalized results should also refresh as user behavior changes without notice
 
 ---
 
-## 🧪 Testing Priorities
+## ?? Testing Priorities
 
 Testing should cover both successful workflows and documented failure cases, including:
 
@@ -224,7 +235,7 @@ Testing should cover both successful workflows and documented failure cases, inc
 
 ---
 
-## 👥 Team JDRMS
+## ?? Team JDRMS
 
 | Role | Member |
 | --- | --- |
@@ -238,9 +249,9 @@ Testing should cover both successful workflows and documented failure cases, inc
 
 <div align="center">
 
-### 🎓 Built for students. Designed around campus trust.
+### ?? Built for students. Designed around campus trust.
 
-**Bulletin — connect locally, transact confidently.**
+**Bulletin � connect locally, transact confidently.**
 
 </div>
 

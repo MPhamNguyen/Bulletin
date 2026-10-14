@@ -76,6 +76,9 @@ private class PostgrestMarketplaceListingTable(
 }
 
 internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplacePageRequest) {
+    request.sellerId?.let { sellerId ->
+        eq("user_id", sellerId)
+    }
     request.category?.let { category ->
         ilike("category", category.name)
     }

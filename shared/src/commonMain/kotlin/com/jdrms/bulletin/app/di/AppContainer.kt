@@ -1,5 +1,5 @@
 package com.jdrms.bulletin.app.di
-
+import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
@@ -40,25 +40,32 @@ import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListin
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
+import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
+import com.jdrms.bulletin.domain.messages.application.ObserveInboxInvalidations
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.domain.repository.InboxObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseInboxObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
+import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.BlockUser
 import com.jdrms.bulletin.domain.profile.application.GetBlockedUsers
@@ -108,7 +115,6 @@ import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignInViewModel
 import io.github.jan.supabase.SupabaseClient
-
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
@@ -188,6 +194,9 @@ class AppContainer(
             messagesRepository as InMemoryMessagesRepository
         }
     }
+    val inboxObserver: InboxObserver by lazy {
+        supabaseClient?.let(::SupabaseInboxObserver) ?: (messagesRepository as InMemoryMessagesRepository)
+    }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -247,12 +256,16 @@ class AppContainer(
     val bookmarkMarketplaceListing by lazy { BookmarkMarketplaceListing(marketplaceRepository) }
     val getMarketplaceListingBookmarks by lazy { GetMarketplaceListingBookmarks(marketplaceRepository) }
     val removeMarketplaceListingBookmark by lazy { RemoveMarketplaceListingBookmark(marketplaceRepository) }
+    private val marketplaceSellerProfileProvider by lazy { ProfileMarketplaceSellerNameProvider(profileRepository) }
     val viewMarketplaceListing by lazy {
         ViewMarketplaceListing(
             repository = marketplaceRepository,
-            sellerProfileProvider = ProfileMarketplaceSellerNameProvider(profileRepository),
+            sellerProfileProvider = marketplaceSellerProfileProvider,
             blockedUserProvider = marketplaceBlockedUserProvider
         )
+    }
+    private val viewMarketplaceSellerProfile by lazy {
+        ViewMarketplaceSellerProfile(marketplaceSellerProfileProvider, marketplaceListingSource)
     }
     private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
     private val reportMarketplaceUser by lazy {
@@ -269,7 +282,6 @@ class AppContainer(
     val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
-
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
@@ -278,6 +290,10 @@ class AppContainer(
         val observer = messagesObserver
         val sender = currentMessageSenderProvider
         ObserveConversationMessages(observer, sender)
+    }
+    val observeInboxInvalidations by lazy { ObserveInboxInvalidations(inboxObserver) }
+    val inboxStateOwner by lazy {
+        InboxStateOwner(getConversations, observeInboxInvalidations, AuthInboxIdentity(sessionRepository))
     }
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
@@ -313,7 +329,6 @@ class AppContainer(
         getPersonalizedFeed = getPersonalizedFeed,
         updateUserPreferences = updateUserPreferences
     )
-
     fun createMarketplaceViewModel() = MarketplaceViewModel(
         searchMarketplace = searchMarketplace,
         bookmarks = MarketplaceBookmarkDependencies(
@@ -330,14 +345,14 @@ class AppContainer(
             }
         }
     )
-
     fun createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
-
-    fun createMarketplaceUserBlockViewModel() =
-        com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel(blockMarketplaceUser)
+    val marketplaceUserBlockViewModelFactory: () -> MarketplaceUserBlockViewModel = {
+        MarketplaceUserBlockViewModel(blockMarketplaceUser)
+    }
     val blockedUsersViewModelFactory: () -> BlockedUsersViewModel = {
         BlockedUsersViewModel(getBlockedUsers, unblockUser, listingChangedSignal)
     }
+    fun createSellerProfileViewModel() = SellerProfileViewModel(viewMarketplaceSellerProfile)
     fun createListingsViewModel() = ListingsViewModel(
         createListing = createListing,
         manageListing = manageListing,
@@ -348,24 +363,20 @@ class AppContainer(
         currentSellerProvider = currentListingSellerProvider,
         listingChangedSignal = listingChangedSignal
     )
-
     fun createMessagesViewModel() = MessagesViewModel(
-        getConversations = getConversations,
+        inbox = inboxStateOwner,
         getConversationMessages = getConversationMessages,
         observeConversationMessages = observeConversationMessages,
         sendMessage = sendMessage,
         reportMessage = reportMessage
     )
-
     fun createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)
-
     fun createRegistrationViewModel() = RegistrationViewModel(
         registerStudent,
         verifyStudentEmail,
         resendVerificationCode,
         sessionRepository
     )
-
     fun createProfileViewModel() = ProfileViewModel(
         sessionRepository = sessionRepository,
         getProfileOverview = getProfileOverview,
@@ -377,14 +388,12 @@ class AppContainer(
             remover = profileBookmarkedListingRemover
         )
     )
-
     fun createEditProfileViewModel() = EditProfileViewModel(
         sessionRepository,
         updateStudentProfile,
         uploadProfilePhoto,
         userMessenger
     )
-
     fun createReviewViewModel() = ReviewViewModel(sessionRepository, publishStudentReview)
 
     fun createAccountViewModel() = AccountViewModel(sessionRepository, signOutUser, softDeleteProfile, userMessenger)

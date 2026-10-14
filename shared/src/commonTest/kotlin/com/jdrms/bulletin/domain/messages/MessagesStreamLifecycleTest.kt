@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.messages
 import androidx.lifecycle.ViewModelStore
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
-import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.MessageSender
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
@@ -171,7 +170,7 @@ class MessagesStreamLifecycleTest {
         repository: MessagesRepository,
         observer: MessagesObserver = repository as? MessagesObserver ?: messagesRepository()
     ) = MessagesViewModel(
-        GetConversations(repository, provider),
+        testInboxOwner(repository, provider, dispatcher),
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
