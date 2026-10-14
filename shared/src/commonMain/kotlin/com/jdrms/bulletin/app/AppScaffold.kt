@@ -17,41 +17,29 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
-<<<<<<< HEAD
-import com.jdrms.bulletin.app.navigation.MainNavigationState
-=======
->>>>>>> 29b7ba90074f9c54e742d003673b8525745708e9
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
-<<<<<<< HEAD
-import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
-import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
-import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
-=======
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
+import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
->>>>>>> 29b7ba90074f9c54e742d003673b8525745708e9
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.cancel
-<<<<<<< HEAD
-=======
 import com.jdrms.bulletin.app.navigation.MainNavigationState as NavigationSnapshot
 
 internal class MainNavigationState {
@@ -77,11 +65,11 @@ private class ProfilePresentation(
 private class MainScaffoldModels(
     val home: HomeViewModel,
     val marketplace: MarketplaceViewModel,
+    val sellerProfile: SellerProfileViewModel,
     val marketplaceUserReport: MarketplaceUserReportViewModel,
     val listings: ListingsViewModel,
     val messages: MessagesViewModel
 )
->>>>>>> 29b7ba90074f9c54e742d003673b8525745708e9
 
 @Composable
 fun MainAppScaffold(
@@ -93,25 +81,12 @@ fun MainAppScaffold(
 ) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
-<<<<<<< HEAD
-
-    BulletinTheme(darkTheme = darkTheme) {
-        var navigationState by remember { mutableStateOf(MainNavigationState()) }
-        var editReturnDestination by remember { mutableStateOf(ProfileDestination.PROFILE) }
-
-        val homeViewModel = remember { container.createHomeViewModel() }
-        val marketplaceViewModel = remember { container.createMarketplaceViewModel() }
-        val sellerProfileViewModel = remember { container.createSellerProfileViewModel() }
-        val marketplaceUserReportViewModel = remember { container.createMarketplaceUserReportViewModel() }
-        val listingsViewModel = remember { container.createListingsViewModel() }
-        val messagesViewModel = remember { container.createMessagesViewModel() }
-
-=======
     val navigation = remember { MainNavigationState() }
     val models = remember(container) {
         MainScaffoldModels(
             container.createHomeViewModel(),
             container.createMarketplaceViewModel(),
+            container.createSellerProfileViewModel(),
             container.createMarketplaceUserReportViewModel(),
             container.createListingsViewModel(),
             container.createMessagesViewModel()
@@ -120,175 +95,23 @@ fun MainAppScaffold(
     val profilePresentation = ProfilePresentation(profileViewModel, themeViewModel, onSignOut)
 
     BulletinTheme(darkTheme = darkTheme) {
->>>>>>> 29b7ba90074f9c54e742d003673b8525745708e9
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
             bottomBar = {
                 BulletinBottomNavigationBar(
-<<<<<<< HEAD
-                    currentDestination = navigationState.currentDestination,
-                    onDestinationSelected = { destination ->
-                        if (destination == AppDestination.MESSAGES) messagesViewModel.loadConversations()
-                        if (destination != AppDestination.PROFILE) {
-                            listingsViewModel.cancelEditing()
-                            listingsViewModel.clearMessages()
-                        }
-                        navigationState = navigationState.selectBottomNavigationDestination(destination)
-                    }
-=======
                     currentDestination = navigation.currentDestination,
                     onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) }
->>>>>>> 29b7ba90074f9c54e742d003673b8525745708e9
                 )
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-<<<<<<< HEAD
-                when (navigationState.currentDestination) {
-                    AppDestination.HOME -> HomeScreen(homeViewModel)
-                    AppDestination.MARKETPLACE -> MarketplaceScreen(
-                        viewModel = marketplaceViewModel,
-                        sellerProfileViewModel = sellerProfileViewModel,
-                        userReportViewModel = marketplaceUserReportViewModel,
-                        actions = MarketplaceScreenActions(
-                            onMessageSeller = { listingId, sellerId, sellerName, content ->
-                                val sendResult = sendListingMessage(
-                                    container,
-                                    navigationState,
-                                    ListingMessageRequest(listingId, sellerId, sellerName, content)
-                                )
-                                openSentListingConversation(sendResult, messagesViewModel)
-                                navigationState = sendResult.navigationState
-                                sendResult.sent
-                            },
-                            hasExistingConversation = { listingId, sellerId ->
-                                hasListingConversation(container, listingId, sellerId)
-                            },
-                            onSeeChat = { listingId, sellerId ->
-                                openListingConversation(container, messagesViewModel, listingId, sellerId)
-                                navigationState = navigationState.selectBottomNavigationDestination(
-                                    AppDestination.MESSAGES
-                                )
-                            }
-                        )
-                    )
-                    AppDestination.LISTINGS -> ListingsScreen(listingsViewModel)
-                    AppDestination.MESSAGES -> MessagesScreen(messagesViewModel)
-                    AppDestination.PROFILE -> {
-                        if (navigationState.profileDestination == ProfileDestination.MY_LISTINGS ||
-                            navigationState.profileDestination == ProfileDestination.EDIT_LISTING
-                        ) {
-                            MyListingsScreen(
-                                viewModel = listingsViewModel,
-                                onBack = {
-                                    listingsViewModel.clearMessages()
-                                    listingsViewModel.cancelEditing()
-                                    navigationState = navigationState.copy(
-                                        profileDestination = backFromProfile(navigationState.profileDestination)
-                                    )
-                                },
-                                onEditListing = {
-                                    navigationState = navigationState.copy(
-                                        profileDestination = ProfileDestination.EDIT_LISTING
-                                    )
-                                }
-                            )
-                        } else {
-                            val resolvedProfileViewModel = remember(
-                                profileViewModel,
-                                container,
-                                navigationState.profileDestination
-                            ) {
-                                resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
-                            }
-                            val profileFlows = remember(container, navigationState.profileDestination) {
-                                ProfileScreenFlows(
-                                    editing = container.createEditProfileViewModel(),
-                                    account = container.createAccountViewModel(),
-                                    messenger = container.userMessenger
-                                )
-                            }
-                            DisposableEffect(profileFlows, resolvedProfileViewModel) {
-                                onDispose {
-                                    profileFlows.editing.viewModelScope.cancel()
-                                    profileFlows.account.viewModelScope.cancel()
-                                    if (profileViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
-                                }
-                            }
-                            ProfileScreen(
-                                viewModel = resolvedProfileViewModel,
-                                flows = profileFlows,
-                                destination = navigationState.profileDestination,
-                                callbacks = ProfileScreenCallbacks(
-                                    onNavigate = { destination ->
-                                        if (destination == ProfileDestination.EDIT_ACCOUNT) {
-                                            editReturnDestination = navigationState.profileDestination
-                                        }
-                                        navigationState = navigationState.copy(profileDestination = destination)
-                                    },
-                                    onBack = {
-                                        navigationState = navigationState.copy(
-                                            profileDestination = backFromProfileDestination(
-                                                navigationState.profileDestination,
-                                                editReturnDestination
-                                            )
-                                        )
-                                    },
-                                    onSignOut = onSignOut,
-                                    onMyListingsClick = {
-                                        listingsViewModel.clearMessages()
-                                        navigationState = navigationState.copy(
-                                            profileDestination = ProfileDestination.MY_LISTINGS
-                                        )
-                                    },
-                                    onCreateListingClick = {
-                                        listingsViewModel.clearMessages()
-                                        navigationState = navigationState.copy(
-                                            currentDestination = AppDestination.LISTINGS
-                                        )
-                                    },
-                                    onMessageSeller = { listingId, sellerId, sellerName, content ->
-                                        val sendResult = sendListingMessage(
-                                            container,
-                                            navigationState,
-                                            ListingMessageRequest(listingId, sellerId, sellerName, content)
-                                        )
-                                        openSentListingConversation(sendResult, messagesViewModel)
-                                        navigationState = sendResult.navigationState
-                                        sendResult.sent
-                                    },
-                                    onMessageSent = {
-                                        navigationState = navigationState.selectBottomNavigationDestination(
-                                            AppDestination.MESSAGES
-                                        )
-                                    },
-                                    onSeeChat = { listingId, sellerId ->
-                                        openListingConversation(container, messagesViewModel, listingId, sellerId)
-                                        navigationState = navigationState.selectBottomNavigationDestination(
-                                            AppDestination.MESSAGES
-                                        )
-                                    },
-                                    hasExistingConversation = { listingId, sellerId ->
-                                        hasListingConversation(container, listingId, sellerId)
-                                    }
-                                ),
-                                themeViewModel = themeViewModel
-                            )
-                        }
-                    }
-                }
-=======
                 MainAppContent(container, navigation, models, profilePresentation)
->>>>>>> 29b7ba90074f9c54e742d003673b8525745708e9
             }
         }
     }
 }
 
-<<<<<<< HEAD
-internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()
-=======
 private fun navigateTo(destination: AppDestination, navigation: MainNavigationState, listings: ListingsViewModel) {
     if (destination != AppDestination.PROFILE || navigation.profileDestination != ProfileDestination.PROFILE) {
         listings.cancelEditing()
@@ -309,26 +132,29 @@ private fun MainAppContent(
         AppDestination.HOME -> HomeScreen(models.home)
         AppDestination.MARKETPLACE -> MarketplaceScreen(
             viewModel = models.marketplace,
+            sellerProfileViewModel = models.sellerProfile,
             userReportViewModel = models.marketplaceUserReport,
-            onMessageSeller = { listingId, sellerId, sellerName, content ->
-                val result = sendListingMessage(
-                    container,
-                    navigation.snapshot(),
-                    ListingMessageRequest(listingId, sellerId, sellerName, content)
-                )
-                openSentListingConversation(result, models.messages)
-                navigation.apply(result.navigationState)
-                result.sent
-            },
-            hasExistingConversation = { listingId, sellerId ->
-                hasListingConversation(container, listingId, sellerId)
-            },
-            onSeeChat = { listingId, sellerId ->
-                openListingConversation(container, models.messages, listingId, sellerId)
-                navigation.apply(
-                    navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES)
-                )
-            }
+            actions = MarketplaceScreenActions(
+                onMessageSeller = { listingId, sellerId, sellerName, content ->
+                    val result = sendListingMessage(
+                        container,
+                        navigation.snapshot(),
+                        ListingMessageRequest(listingId, sellerId, sellerName, content)
+                    )
+                    openSentListingConversation(result, models.messages)
+                    navigation.apply(result.navigationState)
+                    result.sent
+                },
+                hasExistingConversation = { listingId, sellerId ->
+                    hasListingConversation(container, listingId, sellerId)
+                },
+                onSeeChat = { listingId, sellerId ->
+                    openListingConversation(container, models.messages, listingId, sellerId)
+                    navigation.apply(
+                        navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES)
+                    )
+                }
+            )
         )
         AppDestination.LISTINGS -> ListingsScreen(models.listings)
         AppDestination.MESSAGES -> MessagesScreen(models.messages)
@@ -463,4 +289,5 @@ private fun profileCallbacks(
 private fun MainNavigationState.openMessages() {
     apply(snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))
 }
->>>>>>> 29b7ba90074f9c54e742d003673b8525745708e9
+
+internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()
