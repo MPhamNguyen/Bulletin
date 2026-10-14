@@ -25,6 +25,7 @@ interface MessagesRepository {
         listingId: ListingReferenceId
     ): Result<Conversation>
     suspend fun getConversations(userId: SenderId): Result<List<Conversation>>
+    suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit>
     suspend fun getMessagePage(
         userId: SenderId,
         conversationId: ConversationId,

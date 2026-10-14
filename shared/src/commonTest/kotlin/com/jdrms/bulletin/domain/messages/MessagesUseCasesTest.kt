@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.messages.application.CurrentMessageSenderProvid
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
@@ -30,6 +31,21 @@ import kotlin.test.assertTrue
 class MessagesUseCasesTest {
     private val provider = MutableMessageSenderProvider()
     private val repository = RecordingMessagesRepository()
+
+    @Test
+    fun hideUsesCurrentIdentityAndPropagatesFailures() = runTest {
+        val hide = HideConversation(repository, provider)
+        assertEquals(Result.Success(Unit), hide(conversationId))
+        assertEquals(alice.id, repository.callers.single())
+        provider.result = Result.Success(bob)
+        val failure = Result.Error(IllegalStateException("unavailable"))
+        repository.failure = failure
+        assertEquals(failure, hide(conversationId))
+        assertEquals(bob.id, repository.callers.last())
+        provider.result = Result.Error(MessagingAuthenticationRequiredException())
+        assertTrue(hide(conversationId) is Result.Error)
+        assertEquals(2, repository.callers.size)
+    }
 
     @Test
     fun sendBuildsMessageFromCurrentIdentityWithFullGeneratedId() = runTest {
@@ -185,6 +201,11 @@ class MessagesUseCasesTest {
         override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> {
             callers.add(userId)
             return failure ?: Result.Success(conversations.filter { it.includes(userId) })
+        }
+
+        override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> {
+            callers.add(userId)
+            return failure ?: Result.Success(Unit)
         }
 
         override suspend fun getMessagePage(
