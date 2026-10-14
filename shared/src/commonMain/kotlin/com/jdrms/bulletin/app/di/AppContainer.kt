@@ -276,6 +276,7 @@ class AppContainer(
     // Use Cases - Messages
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    private val recentListingBuyersProvider by lazy { createRecentListingBuyersProvider(getConversations) }
     val hideConversation by lazy { HideConversation(messagesRepository, currentMessageSenderProvider) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
