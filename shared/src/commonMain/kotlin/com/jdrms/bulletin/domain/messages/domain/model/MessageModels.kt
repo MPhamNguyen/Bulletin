@@ -79,27 +79,23 @@ class Conversation(
     }
 
     fun recordMessage(message: Message): Result<Conversation> {
-        return if (message.conversationId != id || !includes(message.senderId)) {
-            Result.Error(ConversationAccessException())
-        } else {
-            Result.Success(
-                Conversation(
-                    id = id,
-                    participants = participants,
-                    lastMessage = message,
-                    updatedAtMillis = message.timestampMillis,
-                    listingId = listingId
-                )
-            )
-            val current = lastMessage
-            val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
-                (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
-            if (isNewer) {
-                Result.Success(Conversation(id, participants, message, maxOf(updatedAtMillis, message.timestampMillis)))
-            } else {
-                Result.Success(this)
-            }
+        if (message.conversationId != id || !includes(message.senderId)) {
+            return Result.Error(ConversationAccessException())
         }
+        val current = lastMessage
+        val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
+            (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
+        if (!isNewer) return Result.Success(this)
+
+        return Result.Success(
+            Conversation(
+                id = id,
+                participants = participants,
+                lastMessage = message,
+                updatedAtMillis = maxOf(updatedAtMillis, message.timestampMillis),
+                listingId = listingId
+            )
+        )
     }
 }
 

@@ -253,12 +253,34 @@ private class FakeSupabaseMessagesTable(
     private val authenticatedUserId: String? = alice.id.value
 ) : SupabaseMessagesTable {
     override suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String {
-        return conversationRows.keys.firstOrNull() ?: "created-conversation"
+        val members = setOf(requesterId, sellerId)
+        val existingId = conversationRows.values.firstOrNull { row ->
+            row.listingId == listingId && participantRows
+                .filter { it.conversationId == row.id }
+                .map { it.userId }
+                .toSet() == members
+        }?.id
+        if (existingId != null) return existingId
+
+        val createdId = "created-conversation-${conversationRows.size + 1}"
+        conversationRows[createdId] = SupabaseConversationDto(createdId, listingId = listingId)
+        participantRows += SupabaseConversationParticipantDto(
+            conversationId = createdId,
+            userId = requesterId,
+            profile = SupabaseMessageProfileDto("Student")
+        )
+        participantRows += SupabaseConversationParticipantDto(
+            conversationId = createdId,
+            userId = sellerId,
+            profile = SupabaseMessageProfileDto("Carol")
+        )
+        return createdId
     }
     private val conversationRows = conversations.associate { conversation ->
         conversation.id.value to SupabaseConversationDto(
             id = conversation.id.value,
-            updatedAt = Instant.fromEpochMilliseconds(conversation.updatedAtMillis).toString()
+            updatedAt = Instant.fromEpochMilliseconds(conversation.updatedAtMillis).toString(),
+            listingId = conversation.listingId?.value
         )
     }.toMutableMap()
     private val participantRows = conversations.flatMap { conversation ->
@@ -345,7 +367,8 @@ private class FakeSupabaseMessagesTable(
             createdAt = message.createdAt,
             senderProfile = participant.profile
         )
-        conversationRows[message.conversationId] = SupabaseConversationDto(message.conversationId, message.createdAt)
+        val conversation = conversationRows.getValue(message.conversationId)
+        conversationRows[message.conversationId] = conversation.copy(updatedAt = message.createdAt)
     }
 
     override suspend fun insertReport(report: SupabaseMessageReportInsertDto) {

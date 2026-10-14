@@ -111,7 +111,7 @@ class MessagesReportingViewModelTest {
         assertFalse(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
         assertEquals(emptyList(), viewModel.uiState.value.currentMessages)
         assertEquals(
-            "Unable to complete the messaging request. Please try again.",
+            "Sign in to access your messages.",
             viewModel.uiState.value.errorMessage
         )
     }
@@ -142,7 +142,7 @@ class MessagesReportingViewModelTest {
     }
 
     private fun viewModel(repository: MessagesRepository): MessagesViewModel = MessagesViewModel(
-        GetConversations(repository, provider),
+        testInboxOwner(repository, provider, dispatcher),
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(repository as? MessagesObserver ?: messagesRepository(), provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),

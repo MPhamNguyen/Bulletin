@@ -56,6 +56,22 @@ abstract class MessagesRepositoryContractTest {
         assertAccessDenied(repository.hideConversation(bob.id, conversationId))
         assertAccessDenied(repository.hideConversation(alice.id, ConversationId("missing")))
         assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    fun conversationCreationIsListingScopedAndIdempotent() = runTest {
+        val repository = createRepository(emptyList())
+        val seller = ConversationParticipant(carol.id, carol.displayName)
+        val firstListing = ListingReferenceId("listing-one")
+        val secondListing = ListingReferenceId("listing-two")
+
+        val first = repository.getOrCreateConversation(alice.id, seller, firstListing).getOrThrow()
+        val repeated = repository.getOrCreateConversation(alice.id, seller, firstListing).getOrThrow()
+        val second = repository.getOrCreateConversation(alice.id, seller, secondListing).getOrThrow()
+
+        assertEquals(first.id, repeated.id)
+        assertEquals(firstListing, repeated.listingId)
+        assertTrue(first.id != second.id)
+        assertEquals(secondListing, second.listingId)
+        assertEquals(2, repository.getConversations(alice.id).getOrThrow().size)
+        assertEquals(2, repository.getConversations(carol.id).getOrThrow().size)
     }
 
     @Test
@@ -75,6 +91,16 @@ abstract class MessagesRepositoryContractTest {
         val updated = repository.getConversations(alice.id).getOrThrow().single()
         assertEquals(sent, updated.lastMessage)
         assertEquals(sent.timestampMillis, updated.updatedAtMillis)
+    }
+
+    @Test
+    fun sendingMessageKeepsListingReferenceInInboxSummary() = runTest {
+        val listingId = ListingReferenceId("listing-a")
+        val repository = createRepository(listOf(conversation().withListing(listingId)))
+
+        repository.sendMessage(message()).getOrThrow()
+
+        assertEquals(listingId, repository.getConversations(alice.id).getOrThrow().single().listingId)
     }
 
     @Test
@@ -155,6 +181,9 @@ abstract class MessagesRepositoryContractTest {
         assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
     }
 }
+
+private fun Conversation.withListing(listingId: ListingReferenceId) =
+    Conversation(id, participants, lastMessage, updatedAtMillis, listingId)
 
 class InMemoryMessagesRepositoryTest : MessagesRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository =

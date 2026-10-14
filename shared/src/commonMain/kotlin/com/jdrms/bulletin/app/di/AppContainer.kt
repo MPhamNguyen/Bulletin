@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
@@ -52,13 +53,17 @@ import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
+import com.jdrms.bulletin.domain.messages.application.ObserveInboxInvalidations
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.domain.repository.InboxObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseInboxObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
+import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
 import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
@@ -184,6 +189,9 @@ class AppContainer(
             messagesRepository as InMemoryMessagesRepository
         }
     }
+    val inboxObserver: InboxObserver by lazy {
+        supabaseClient?.let(::SupabaseInboxObserver) ?: (messagesRepository as InMemoryMessagesRepository)
+    }
     val profileRepository: ProfileRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -267,6 +275,10 @@ class AppContainer(
         val sender = currentMessageSenderProvider
         ObserveConversationMessages(observer, sender)
     }
+    val observeInboxInvalidations by lazy { ObserveInboxInvalidations(inboxObserver) }
+    val inboxStateOwner by lazy {
+        InboxStateOwner(getConversations, observeInboxInvalidations, AuthInboxIdentity(sessionRepository))
+    }
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
@@ -339,7 +351,7 @@ class AppContainer(
     )
 
     fun createMessagesViewModel() = MessagesViewModel(
-        getConversations = getConversations,
+        inbox = inboxStateOwner,
         getConversationMessages = getConversationMessages,
         observeConversationMessages = observeConversationMessages,
         sendMessage = sendMessage,

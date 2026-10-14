@@ -146,6 +146,22 @@ Each business domain adheres to a 4-layer structure:
 * `infrastructure/`: Repository implementations, DTOs, and mappers.
 * `presentation/`: Compose screens, ViewModels, UI State, and feature UI components.
 
+### Backend status
+
+`AppContainer` selects the Supabase adapter when a client is configured and the in-memory adapter for inspection or
+local fallback. Adapter bindings describe code paths, not verification against a deployed Supabase project.
+
+| Repository or port | Configured Supabase client | Local fallback | Live project verification |
+| --- | --- | --- | --- |
+| Home repository | In-memory | In-memory | Not applicable |
+| Marketplace repository and listing source | Supabase adapters | In-memory/composite adapters | Not verified here |
+| Listings repository | Supabase adapter | In-memory adapter | Not verified here |
+| Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
+| Profile repository | Supabase adapter | In-memory adapter | Not verified here |
+| User report repository | Supabase adapter | In-memory adapter | Not verified here |
+| Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
+| Auth and session repositories | Supabase Auth adapter | In-memory auth adapter | Not verified here |
+
 
 ## 🔐 Security & Privacy
 

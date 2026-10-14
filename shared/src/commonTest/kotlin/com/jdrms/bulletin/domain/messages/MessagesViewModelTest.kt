@@ -389,7 +389,7 @@ class MessagesViewModelTest {
         repository: MessagesRepository,
         observer: MessagesObserver = repository as? MessagesObserver ?: messagesRepository()
     ) = MessagesViewModel(
-        GetConversations(repository, provider),
+        testInboxOwner(repository, provider, dispatcher),
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
