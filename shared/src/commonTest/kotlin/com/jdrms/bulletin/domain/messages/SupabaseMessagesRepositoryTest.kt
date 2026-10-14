@@ -158,6 +158,30 @@ class SupabaseMessagesRepositoryTest {
     }
 
     @Test
+    fun startingAlreadyVisibleListingConversationSucceeds() = runTest {
+        val existing = conversation()
+        val table = FakeSupabaseMessagesTable(
+            listOf(
+                Conversation(
+                    existing.id,
+                    existing.participants,
+                    existing.lastMessage,
+                    existing.updatedAtMillis,
+                    ListingReferenceId("listing-a")
+                )
+            )
+        )
+
+        val result = SupabaseMessagesRepository(table).getOrCreateConversation(
+            alice.id,
+            ConversationParticipant(carol.id, carol.displayName),
+            ListingReferenceId("listing-a")
+        )
+
+        assertEquals(conversationId, result.getOrThrow().id)
+    }
+
+    @Test
     fun reportWritesAuthenticatedReporterAndReason() = runTest {
         val table = FakeSupabaseMessagesTable(
             conversations = listOf(conversation()),
