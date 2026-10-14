@@ -396,6 +396,5 @@ class AppContainer(
         updatePasswordUseCase = updatePassword,
         signOutUser = signOutUser
     )
-
     fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }
