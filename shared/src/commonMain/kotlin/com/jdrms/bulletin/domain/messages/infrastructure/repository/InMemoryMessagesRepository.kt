@@ -36,13 +36,27 @@ class InMemoryMessagesRepository(
     private val conversations = initialConversations.map {
         MessagesMapper.toDomain(it)
     }.associateBy { it.id }.toMutableMap()
+    private val hiddenBy = mutableMapOf<ConversationId, MutableSet<SenderId>>()
     private val messagesByConvId = initialMessages.mapKeys { ConversationId(it.key) }.mapValues { entry ->
         entry.value.map { MessagesMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
 
     override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = mutex.withLock {
-        Result.Success(conversations.values.filter { it.includes(userId) })
+        Result.Success(conversations.values.filter { it.includes(userId) && userId !in hiddenBy[it.id].orEmpty() })
     }
+
+    override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
+        mutex.withLock {
+            val conversation = conversations[conversationId]
+                ?: return@withLock Result.Error(ConversationAccessException())
+            when (val authorized = conversation.authorizeHiding(userId)) {
+                is Result.Error -> authorized
+                is Result.Success -> {
+                    hiddenBy.getOrPut(conversationId) { mutableSetOf() }.add(userId)
+                    Result.Success(Unit)
+                }
+            }
+        }
 
     override suspend fun getOrCreateConversation(
         requesterId: SenderId,
@@ -53,7 +67,10 @@ class InMemoryMessagesRepository(
             conversation.listingId == listingId &&
                 conversation.includes(requesterId) && conversation.includes(otherParticipant.id)
         }
-        if (existing != null) return@withLock Result.Success(existing)
+        if (existing != null) {
+            hiddenBy[existing.id]?.remove(requesterId)
+            return@withLock Result.Success(existing)
+        }
         val conversation = Conversation(
             id = ConversationId("conversation-${conversations.size + 1}"),
             participants = listOf(ConversationParticipant(requesterId, "Student"), otherParticipant),
@@ -97,6 +114,7 @@ class InMemoryMessagesRepository(
                 is Result.Success -> {
                     messagesByConvId.getOrPut(message.conversationId) { mutableListOf() }.add(message)
                     conversations[message.conversationId] = updated.data
+                    hiddenBy.remove(message.conversationId)
                     Result.Success(message)
                 }
             }

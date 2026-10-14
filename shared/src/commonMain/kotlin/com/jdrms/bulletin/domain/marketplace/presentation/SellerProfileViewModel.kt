@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 data class SellerProfileUiState(
     val profile: MarketplaceSellerProfile? = null,
     val listings: List<MarketplaceItem> = emptyList(),
+    val soldListingsCount: Int = 0,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
@@ -37,7 +38,11 @@ class SellerProfileViewModel(
                     if (details == null) {
                         SellerProfileUiState(errorMessage = "Seller profile is currently unavailable.")
                     } else {
-                        SellerProfileUiState(profile = details.profile, listings = details.listings)
+                        SellerProfileUiState(
+                            profile = details.profile,
+                            listings = details.listings,
+                            soldListingsCount = details.soldListingsCount
+                        )
                     }
                 }
             } catch (error: CancellationException) {
