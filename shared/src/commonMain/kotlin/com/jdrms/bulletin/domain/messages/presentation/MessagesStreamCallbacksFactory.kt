@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.update
 
 internal class MessagesStreamCallbacksFactory(
     private val uiState: MutableStateFlow<MessagesUiState>,
+    private val inbox: InboxStateOwner,
     private val reloadSelectedConversation: (ConversationId) -> Unit,
     private val showFailure: (Result.Error) -> Unit,
     private val shouldReloadAfterFailure: () -> Boolean
@@ -22,14 +23,16 @@ internal class MessagesStreamCallbacksFactory(
             uiState.update { it.copy(connectionState = connectionState) }
         },
         onReceived = { message ->
-            val senderName = uiState.value.conversations
-                .firstOrNull { it.id == conversationId }
+            val senderName = inbox.state.value.conversations.firstOrNull { it.id == conversationId }
                 ?.participants
                 ?.firstOrNull { it.id == message.senderId }
                 ?.displayName
             val resolvedMessage = senderName?.let { message.copy(senderName = it) } ?: message
-            uiState.update {
-                it.copy(currentMessages = MessageTimeline.merge(it.currentMessages, listOf(resolvedMessage)))
+            when (val recorded = inbox.recordMessage(resolvedMessage)) {
+                is Result.Error -> showFailure(recorded)
+                is Result.Success -> uiState.update {
+                    it.copy(currentMessages = MessageTimeline.merge(it.currentMessages, listOf(resolvedMessage)))
+                }
             }
         },
         onFailed = { cause, terminal ->

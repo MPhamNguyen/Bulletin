@@ -11,6 +11,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.domain.repository.InboxInvalidation
+import com.jdrms.bulletin.domain.messages.domain.repository.InboxObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessageStreamEvent
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
@@ -28,7 +30,7 @@ import kotlinx.coroutines.sync.withLock
 class InMemoryMessagesRepository(
     initialConversations: List<ConversationDto> = emptyList(),
     initialMessages: Map<String, List<MessageDto>> = emptyMap()
-) : MessagesRepository, MessagesObserver {
+) : MessagesRepository, MessagesObserver, InboxObserver {
     private val mutex = Mutex()
     private val inserts = MutableSharedFlow<Message>(extraBufferCapacity = 64)
     private val conversations = initialConversations.map {
@@ -135,6 +137,14 @@ class InMemoryMessagesRepository(
         emit(MessageStreamEvent.Connected)
         inserts.collect { message ->
             if (message.conversationId == conversationId) emit(MessageStreamEvent.Received(message))
+        }
+    }
+
+    override fun observe(userId: SenderId): Flow<InboxInvalidation> = flow {
+        emit(InboxInvalidation.Subscribed)
+        inserts.collect { message ->
+            val allowed = mutex.withLock { conversations[message.conversationId]?.includes(userId) == true }
+            if (allowed) emit(InboxInvalidation.Changed(message.conversationId))
         }
     }
 }

@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -93,6 +94,24 @@ class ConversationTest {
         assertEquals(message, updated.lastMessage)
         assertEquals(42L, updated.updatedAtMillis)
         assertEquals(null, conversation.lastMessage)
+    }
+
+    @Test
+    fun recordingMessagePreservesListingAndDoesNotRegressSummary() {
+        val listingId = ListingReferenceId("listing-42")
+        val latest = message().copy(id = MessageId("latest"), timestampMillis = 50L)
+        val conversation = Conversation(conversationId, listOf(participant), latest, 55L, listingId)
+
+        val unchanged = conversation.recordMessage(message()).getOrThrow()
+        val advanced = conversation.recordMessage(latest.copy(id = MessageId("newest"), timestampMillis = 60L))
+            .getOrThrow()
+
+        assertEquals(latest, unchanged.lastMessage)
+        assertEquals(listingId, unchanged.listingId)
+        assertEquals(55L, unchanged.updatedAtMillis)
+        assertEquals("newest", advanced.lastMessage?.id?.value)
+        assertEquals(listingId, advanced.listingId)
+        assertEquals(60L, advanced.updatedAtMillis)
     }
 
     @Test

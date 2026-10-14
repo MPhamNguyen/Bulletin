@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.messages
 
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
-import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
@@ -158,7 +157,7 @@ class MessagesViewModelBasicsTest {
         repository: MessagesRepository,
         observer: MessagesObserver = repository as? MessagesObserver ?: messagesRepository()
     ): MessagesViewModel = MessagesViewModel(
-        GetConversations(repository, provider),
+        testInboxOwner(repository, provider, dispatcher),
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
