@@ -47,7 +47,10 @@ object SupabaseMarketplaceListingMapper {
         return Listing(
             id = MarketplaceItemId("listing:${dto.id}"),
             sellerId = sellerId,
-            sellerName = (dto.sellerProfile ?: dto.profile)?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
+            sellerName = (dto.sellerProfile ?: dto.profile)
+                ?.fullName
+                ?.takeIf(String::isNotBlank)
+                ?: DEFAULT_SELLER_NAME,
             buyerId = dto.buyerId,
             title = title,
             description = description,
@@ -72,7 +75,10 @@ object SupabaseMarketplaceListingMapper {
         return MarketplaceListingSnapshot(
             id = "listing:${dto.id}",
             sellerId = sellerId,
-            sellerName = (dto.sellerProfile ?: dto.profile)?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
+            sellerName = (dto.sellerProfile ?: dto.profile)
+                ?.fullName
+                ?.takeIf(String::isNotBlank)
+                ?: DEFAULT_SELLER_NAME,
             title = title,
             description = dto.description.orEmpty(),
             priceAmount = price.coerceAtLeast(0.0),

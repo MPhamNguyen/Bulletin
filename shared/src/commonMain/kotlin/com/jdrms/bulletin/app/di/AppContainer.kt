@@ -30,6 +30,7 @@ import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
+import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModelSessionDependencies
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
@@ -343,8 +344,10 @@ class AppContainer(
         restoreListingToMarketplace = restoreListingToMarketplace,
         deleteListing = deleteListing,
         getSellerListings = getSellerListings,
-        currentSellerProvider = currentListingSellerProvider,
-        listingChangedSignal = listingChangedSignal
+        session = ListingsViewModelSessionDependencies(
+            currentSellerProvider = currentListingSellerProvider,
+            listingChangedSignal = listingChangedSignal
+        )
     )
 
     fun createMessagesViewModel() = MessagesViewModel(

@@ -64,7 +64,7 @@ class ListingsViewModelTestPart1 {
             deleteListing = DeleteListing(repository, policy),
             markListingSold = MarkListingSold(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
     }
 
@@ -144,7 +144,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
         advanceUntilIdle()
         duplicateSaveViewModel.startEditing(listing)
@@ -270,7 +270,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(failingRepository),
             deleteListing = DeleteListing(failingRepository),
             getSellerListings = GetSellerListings(failingRepository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
         val listing = testListing(sellerId)
         repository.createListing(listing)
@@ -298,7 +298,7 @@ class ListingsViewModelTestPart1 {
             restoreListingToMarketplace = restore,
             deleteListing = DeleteListing(repository),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
         advanceUntilIdle()
 
@@ -353,7 +353,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
         val listing = testListing(sellerId)
         repository.createListing(listing)
@@ -380,7 +380,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
         val listing = testListing(sellerId)
         repository.createListing(listing)
@@ -404,7 +404,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
         val listing = testListing(sellerId)
         repository.createListing(listing)
@@ -427,8 +427,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(repository),
             deleteListing = DeleteListing(repository),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider,
-            listingChangedSignal = signal
+            session = ListingsViewModelSessionDependencies(sellerProvider, signal)
         )
         var signalCount = 0
         val collector = launch { signal.events.collect { signalCount++ } }
@@ -685,8 +684,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider,
-            listingChangedSignal = signal
+            session = ListingsViewModelSessionDependencies(sellerProvider, signal)
         )
         advanceUntilIdle()
 
@@ -721,8 +719,7 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider,
-            listingChangedSignal = signal
+            session = ListingsViewModelSessionDependencies(sellerProvider, signal)
         )
         advanceUntilIdle()
 

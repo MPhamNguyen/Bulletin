@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
-import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
+import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -22,7 +22,9 @@ class MarketplaceViewModel(
     bookmarks: MarketplaceBookmarkDependencies,
     private val viewMarketplaceListing: ViewMarketplaceListing,
     private val submitMarketplaceReview: SubmitMarketplaceReview =
-        SubmitMarketplaceReview(com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()),
+        SubmitMarketplaceReview(
+            com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
+        ),
     private val listingChangedSignal: RefreshSignal? = null,
     private val currentUserIdProvider: suspend () -> String? = { null }
 ) : ViewModel() {
@@ -42,6 +44,7 @@ class MarketplaceViewModel(
         bookmarks,
         currentUserIdProvider
     )
+    val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
         refreshListings()
@@ -198,31 +201,6 @@ class MarketplaceViewModel(
     fun dismissListingDetail() {
         _uiState.update {
             it.copy(detail = MarketplaceDetailState())
-        }
-    }
-
-    fun openReviewDialog() {
-        _uiState.update { it.copy(detail = it.detail.copy(isReviewDialogOpen = true, reviewErrorMessage = null)) }
-    }
-
-    fun dismissReviewDialog() {
-        _uiState.update { it.copy(detail = it.detail.copy(isReviewDialogOpen = false, reviewErrorMessage = null)) }
-    }
-
-    fun submitReview(score: Int, comment: String) {
-        val detail = _uiState.value.detail
-        val listing = detail.listing ?: return
-        val reviewerId = _uiState.value.currentUserId ?: return
-        _uiState.update { it.copy(detail = detail.copy(isSubmittingReview = true, reviewErrorMessage = null)) }
-        viewModelScope.launch {
-            when (val result = submitMarketplaceReview(listing, reviewerId, score, comment)) {
-                is com.jdrms.bulletin.core.common.Result.Success -> _uiState.update {
-                    it.copy(detail = it.detail.copy(hasReview = true, isReviewDialogOpen = false, isSubmittingReview = false))
-                }
-                is com.jdrms.bulletin.core.common.Result.Error -> _uiState.update {
-                    it.copy(detail = it.detail.copy(isSubmittingReview = false, reviewErrorMessage = result.exception.message))
-                }
-            }
         }
     }
 

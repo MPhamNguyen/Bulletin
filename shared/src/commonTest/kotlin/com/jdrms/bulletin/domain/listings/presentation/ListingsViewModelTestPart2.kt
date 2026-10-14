@@ -58,7 +58,7 @@ class ListingsViewModelTestPart2 {
             manageListing = ManageListing(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider
+            session = ListingsViewModelSessionDependencies(sellerProvider)
         )
     }
 
@@ -308,8 +308,7 @@ class ListingsViewModelTestPart2 {
             manageListing = ManageListing(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider,
-            listingChangedSignal = signal
+            session = ListingsViewModelSessionDependencies(sellerProvider, signal)
         )
         advanceUntilIdle()
 
@@ -343,8 +342,7 @@ class ListingsViewModelTestPart2 {
             manageListing = ManageListing(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            currentSellerProvider = sellerProvider,
-            listingChangedSignal = signal
+            session = ListingsViewModelSessionDependencies(sellerProvider, signal)
         )
         advanceUntilIdle()
 

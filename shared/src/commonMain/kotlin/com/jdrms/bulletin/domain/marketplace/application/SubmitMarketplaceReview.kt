@@ -17,27 +17,37 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
         score: Int,
         comment: String
     ): Result<Unit> {
-        val eligibilityError = when {
+        val canonicalListingId = MarketplaceItemId(listingId.removePrefix("listing:"))
+        val validationError = when {
             !isSold -> "Reviews are available after a listing is sold."
             buyerId != reviewerId -> "Only the buyer can review this seller."
             else -> null
         }
-        if (eligibilityError != null) return Result.Error(IllegalArgumentException(eligibilityError))
-        if (comment.isBlank()) return Result.Error(IllegalArgumentException("Please add a comment to your review."))
-        if (score !in 1..5) return Result.Error(IllegalArgumentException("Choose a rating from 1 to 5 stars."))
-        val canonicalListingId = MarketplaceItemId(listingId.removePrefix("listing:"))
-        if (repository.hasReviewForListing(canonicalListingId, reviewerId)) {
-            return Result.Error(IllegalStateException("A review has already been submitted for this listing."))
+        val error = validationError ?: when {
+            comment.isBlank() -> "Please add a comment to your review."
+            score !in 1..5 -> "Choose a rating from 1 to 5 stars."
+            repository.hasReviewForListing(canonicalListingId, reviewerId) ->
+                "A review has already been submitted for this listing."
+            else -> null
         }
-        return repository.submitReview(
-            MarketplaceReview(
-                listingId = canonicalListingId,
-                reviewerId = reviewerId,
-                revieweeId = sellerId,
-                score = score,
-                comment = comment.trim()
+        return if (error != null) {
+            val exception = if (error.startsWith("A review")) {
+                IllegalStateException(error)
+            } else {
+                IllegalArgumentException(error)
+            }
+            Result.Error(exception)
+        } else {
+            repository.submitReview(
+                MarketplaceReview(
+                    listingId = canonicalListingId,
+                    reviewerId = reviewerId,
+                    revieweeId = sellerId,
+                    score = score,
+                    comment = comment.trim()
+                )
             )
-        )
+        }
     }
 
     suspend operator fun invoke(

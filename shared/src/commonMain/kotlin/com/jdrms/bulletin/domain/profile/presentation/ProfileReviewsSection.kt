@@ -36,7 +36,7 @@ internal fun ProfileReviewsSection(reputation: StudentReputation) {
                     ) {
                         Text(review.reviewerName, style = MaterialTheme.typography.labelLarge)
                         Row {
-                            (1..5).forEach { value ->
+                            for (value in 1..5) {
                                 Icon(
                                     imageVector = Icons.Filled.Star,
                                     contentDescription = null,

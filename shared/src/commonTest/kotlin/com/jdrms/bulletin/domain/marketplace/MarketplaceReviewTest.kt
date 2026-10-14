@@ -3,10 +3,8 @@ package com.jdrms.bulletin.domain.marketplace
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
-import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -46,7 +44,7 @@ class MarketplaceReviewTest {
         title = "Sold textbook",
         description = "A used textbook",
         price = MarketplacePrice(10.0),
-        category = MarketplaceCategory.TEXTBOOKS,
+        category = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory.TEXTBOOKS,
         status = "SOLD",
         isSold = true
     )

@@ -1,9 +1,9 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
-import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 
 enum class ListingsLoadState {
     INITIAL,

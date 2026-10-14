@@ -67,7 +67,7 @@ fun ReviewSubmissionDialog(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            (1..5).forEach { value ->
+                            for (value in 1..5) {
                                 IconButton(
                                     onClick = { score = value },
                                     enabled = !isSubmitting
