@@ -103,7 +103,7 @@ private fun VerifiedBadge() {
 }
 
 @Composable
-internal fun SellerProfileStats(profile: MarketplaceSellerProfile) {
+internal fun SellerProfileStats(profile: MarketplaceSellerProfile, soldListingsCount: Int) {
     BulletinCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -111,7 +111,7 @@ internal fun SellerProfileStats(profile: MarketplaceSellerProfile) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             SellerStat("Reputation", formatReputationScore(profile.reputationScore), showStar = true)
-            SellerStat("Listings sold", "—", showStar = false)
+            SellerStat("Listings sold", soldListingsCount.toString(), showStar = false)
         }
     }
 }
