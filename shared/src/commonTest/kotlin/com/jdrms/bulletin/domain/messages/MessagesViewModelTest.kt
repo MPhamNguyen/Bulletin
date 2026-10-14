@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
@@ -392,6 +393,7 @@ class MessagesViewModelTest {
         GetConversationMessages(repository, provider),
         ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
-        ReportMessage(repository, provider)
+        ReportMessage(repository, provider),
+        HideConversation(repository, provider)
     ).also { it.onDestinationActiveChanged(true) }
 }

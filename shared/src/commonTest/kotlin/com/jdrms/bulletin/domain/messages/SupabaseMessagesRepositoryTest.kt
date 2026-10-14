@@ -3,6 +3,8 @@ package com.jdrms.bulletin.domain.messages
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
@@ -76,6 +78,45 @@ class SupabaseMessagesRepositoryTest {
 
         assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
         assertNull(table.insertedMessage)
+    }
+
+    @Test
+    fun hideRejectsClaimedIdentityThatDoesNotMatchSession() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+
+        val result = SupabaseMessagesRepository(table).hideConversation(carol.id, conversationId)
+
+        assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
+        assertEquals(listOf(conversationId.value), table.getConversationIds(alice.id.value))
+    }
+
+    @Test
+    fun hideReturnsPersistenceFailureWithoutChangingInboxWhenStorageFails() = runTest {
+        val table = object : SupabaseMessagesTable by FakeSupabaseMessagesTable(listOf(conversation())) {
+            override suspend fun hideConversation(conversationId: String): Boolean {
+                error("storage unavailable")
+            }
+        }
+
+        val result = SupabaseMessagesRepository(table).hideConversation(alice.id, conversationId)
+
+        assertIs<MessagesPersistenceException>(assertIs<Result.Error>(result).exception)
+    }
+
+    @Test
+    fun startingSameListingConversationAgainRestoresRequestersInbox() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+        val repository = SupabaseMessagesRepository(table)
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+
+        val reopened = repository.getOrCreateConversation(
+            alice.id,
+            ConversationParticipant(carol.id, carol.displayName),
+            ListingReferenceId("listing-a")
+        )
+
+        assertEquals(conversationId, reopened.getOrThrow().id)
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
     }
 
     @Test
@@ -196,6 +237,7 @@ private class FakeSupabaseMessagesTable(
         }
     }.toMutableList()
     private val messageRows = messages.map(::toMessageDto).toMutableList()
+    private val hiddenBy = mutableMapOf<String, MutableSet<String>>()
 
     var insertedMessage: SupabaseMessageInsertDto? = null
     var insertedReport: SupabaseMessageReportInsertDto? = null
@@ -203,7 +245,22 @@ private class FakeSupabaseMessagesTable(
     override suspend fun getAuthenticatedUserId(): String? = authenticatedUserId
 
     override suspend fun getConversationIds(userId: String): List<String> {
-        return participantRows.filter { it.userId == userId }.map { it.conversationId }.distinct()
+        return participantRows.filter { it.userId == userId && userId !in hiddenBy[it.conversationId].orEmpty() }
+            .map { it.conversationId }.distinct()
+    }
+
+    override suspend fun hideConversation(conversationId: String): Boolean {
+        val viewerId = authenticatedUserId ?: return false
+        if (!isParticipant(conversationId, viewerId)) return false
+        hiddenBy.getOrPut(conversationId) { mutableSetOf() }.add(viewerId)
+        return true
+    }
+
+    override suspend fun restoreConversation(conversationId: String): Boolean {
+        val viewerId = authenticatedUserId ?: return false
+        if (!isParticipant(conversationId, viewerId)) return false
+        hiddenBy[conversationId]?.remove(viewerId)
+        return true
     }
 
     override suspend fun findConversation(conversationId: String): SupabaseConversationDto? {

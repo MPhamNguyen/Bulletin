@@ -62,6 +62,9 @@ class Conversation(
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
 
+    fun authorizeHiding(viewerId: SenderId): Result<Unit> =
+        if (includes(viewerId)) Result.Success(Unit) else Result.Error(ConversationAccessException())
+
     fun otherParticipantNames(viewerId: SenderId): List<String> {
         require(includes(viewerId)) { "Viewer must be a participant." }
         return participants.filterNot { it.id == viewerId }.map { it.displayName }

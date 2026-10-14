@@ -4,6 +4,8 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
@@ -34,6 +36,26 @@ abstract class MessagesRepositoryContractTest {
     fun emptyRepositoryDoesNotExposeDemoConversations() = runTest {
         val repository = createRepository(emptyList())
         assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
+    }
+
+    @Test
+    fun hidingConversationAffectsOnlyRequestingParticipantsInbox() = runTest {
+        val repository = createRepository(listOf(conversation()), listOf(message()))
+
+        assertEquals(Result.Success(Unit), repository.hideConversation(alice.id, conversationId))
+        assertEquals(Result.Success(Unit), repository.hideConversation(alice.id, conversationId))
+        assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
+        assertEquals(listOf(conversationId), repository.getConversations(carol.id).getOrThrow().map { it.id })
+        assertEquals(listOf(message()), repository.getMessages(alice.id, conversationId).getOrThrow())
+    }
+
+    @Test
+    fun hidingUnknownConversationOrAsOutsiderIsDenied() = runTest {
+        val repository = createRepository(listOf(conversation()))
+
+        assertAccessDenied(repository.hideConversation(bob.id, conversationId))
+        assertAccessDenied(repository.hideConversation(alice.id, ConversationId("missing")))
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
     }
 
     @Test
@@ -137,6 +159,33 @@ abstract class MessagesRepositoryContractTest {
 class InMemoryMessagesRepositoryTest : MessagesRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository =
         messagesRepository(conversations, messages)
+
+    @Test
+    fun startingSameListingConversationAgainRestoresOnlyRequestersInbox() = runTest {
+        val listingId = ListingReferenceId("listing-a")
+        val repository = createRepository(
+            listOf(
+                Conversation(
+                    conversationId,
+                    listOf(
+                        ConversationParticipant(alice.id, alice.displayName),
+                        ConversationParticipant(carol.id, carol.displayName)
+                    ),
+                    listingId = listingId
+                )
+            )
+        )
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        repository.hideConversation(carol.id, conversationId).getOrThrow()
+
+        val otherParticipant = ConversationParticipant(carol.id, carol.displayName)
+        assertEquals(
+            conversationId,
+            repository.getOrCreateConversation(alice.id, otherParticipant, listingId).getOrThrow().id
+        )
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+        assertEquals(emptyList(), repository.getConversations(carol.id).getOrThrow())
+    }
 
     @Test
     fun fetchedMessagesAreOrderedOldestToNewestWithStableTimestampTies() = runTest {

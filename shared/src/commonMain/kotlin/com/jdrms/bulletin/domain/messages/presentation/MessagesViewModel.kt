@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
@@ -12,7 +13,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,28 +24,33 @@ class MessagesViewModel(
     private val getConversationMessages: GetConversationMessages,
     private val observeConversationMessages: ObserveConversationMessages,
     private val sendMessage: SendMessage,
-    private val reportMessage: ReportMessage
+    private val reportMessage: ReportMessage,
+    private val hideConversation: HideConversation
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MessagesUiState())
     val uiState: StateFlow<MessagesUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
     private var requestedConversationId: ConversationId? = null
-    private var olderJob: Job? = null
+    private var hideJob: Job? = null
     private var observeJob: Job? = null
     private var destinationActive = false
     private var initialPageLoaded = false
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
+    private val olderHistory = MessagesOlderHistoryLoader(
+        _uiState,
+        getConversationMessages,
+        viewModelScope,
+        ::showFailure
+    )
     private val streamCallbacks = MessagesStreamCallbacksFactory(
         _uiState,
-        ::reloadSelectedConversation,
+        { conversationId ->
+            loadJob?.cancel()
+            loadJob = viewModelScope.launch { loadMessages(conversationId) }
+        },
         ::showFailure,
         { !initialPageLoaded }
     )
-    override fun onCleared() {
-        viewModelScope.cancel()
-        super.onCleared()
-    }
-
     init { loadConversations() }
     fun loadConversations() = refreshConversations()
 
@@ -62,7 +67,7 @@ class MessagesViewModel(
 
     private fun refreshConversations(statusMessage: String? = null) {
         loadJob?.cancel()
-        olderJob?.cancel()
+        olderHistory.cancel()
         observeJob?.cancel()
         initialPageLoaded = false
         val previousSelection = _uiState.value.selectedConversationId
@@ -94,7 +99,7 @@ class MessagesViewModel(
     fun selectConversation(conversationId: ConversationId) {
         if (_uiState.value.conversations.none { it.id == conversationId }) return
         loadJob?.cancel()
-        olderJob?.cancel()
+        olderHistory.cancel()
         observeJob?.cancel()
         initialPageLoaded = false
         _uiState.update {
@@ -119,11 +124,6 @@ class MessagesViewModel(
             conversationId,
             streamCallbacks.forConversation(conversationId)
         )
-    }
-
-    private fun reloadSelectedConversation(conversationId: ConversationId) {
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch { loadMessages(conversationId) }
     }
 
     fun openConversation(conversationId: ConversationId) = run {
@@ -162,24 +162,13 @@ class MessagesViewModel(
         }
     }
 
-    fun loadOlderMessages() {
-        val selected = _uiState.value.selectedConversationId ?: return
-        val cursor = _uiState.value.olderCursor ?: return
-        if (olderJob?.isActive == true) return
-        _uiState.update { it.copy(isLoadingOlder = true) }
-        olderJob = viewModelScope.launch {
-            when (val result = getConversationMessages(selected, cursor)) {
-                is Result.Success -> _uiState.update {
-                    if (it.selectedConversationId == selected && it.olderCursor == cursor) {
-                        it.copy(
-                            currentMessages = MessageTimeline.merge(it.currentMessages, result.data.messages),
-                            olderCursor = result.data.olderCursor,
-                            isLoadingOlder = false
-                        )
-                    } else {
-                        it
-                    }
-                }
+    fun loadOlderMessages() = olderHistory.load()
+
+    fun hideConversationFromInbox(conversationId: ConversationId) {
+        if (_uiState.value.conversations.none { it.id == conversationId } || hideJob?.isActive == true) return
+        hideJob = viewModelScope.launch {
+            when (val result = hideConversation(conversationId)) {
+                is Result.Success -> refreshConversations("Conversation removed from your inbox.")
                 is Result.Error -> showFailure(result)
             }
         }
@@ -242,7 +231,7 @@ class MessagesViewModel(
         val presented = _uiState.value.withFailure(error)
         if (presented.identityUnavailable) {
             loadJob?.cancel()
-            olderJob?.cancel()
+            olderHistory.cancel()
             observeJob?.cancel()
         }
         _uiState.update { presented.state }
