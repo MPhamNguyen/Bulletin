@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfil
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,10 +25,12 @@ class SellerProfileViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SellerProfileUiState())
     val uiState: StateFlow<SellerProfileUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     fun load(sellerId: String) {
+        loadJob?.cancel()
         _uiState.value = SellerProfileUiState(isLoading = true)
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             try {
                 val details = viewSellerProfile(sellerId)
                 _uiState.update {

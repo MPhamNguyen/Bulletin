@@ -161,11 +161,13 @@ class SupabaseMarketplaceListingSourceTest {
         builder.applyMarketplaceSearch(
             MarketplacePageRequest(
                 query = query,
+                sellerId = "seller-42",
                 category = MarketplaceCategory.TEXTBOOKS,
                 condition = MarketplaceCondition.LIKE_NEW
             )
         )
 
+        assertEquals(listOf("eq.seller-42"), builder.params["user_id"])
         assertEquals(listOf("ilike.TEXTBOOKS"), builder.params["category"])
         assertEquals(listOf("ilike.LIKE_NEW"), builder.params["condition"])
         assertEquals(listOf("fts.desk:* & lamp:*"), builder.params["name"])

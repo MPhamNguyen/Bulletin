@@ -7,11 +7,14 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
@@ -23,12 +26,14 @@ import kotlin.time.Instant
 
 class ViewMarketplaceSellerProfileTest {
     @Test
-    fun queryReturnsOnlyTheSellersListingsAcrossAllPages() = runTest {
+    fun queryRequestsOnlyTheSellersListingsAcrossAllPages() = runTest {
         val cursor = MarketplacePageCursor(Instant.fromEpochMilliseconds(10L), "cursor")
+        val requestedSellerIds = mutableListOf<String?>()
         val source = MarketplaceListingSource { request ->
+            requestedSellerIds += request.sellerId
             if (request.cursor == null) {
                 MarketplaceListingPage(
-                    listOf(listing("first", "seller-a"), listing("other", "seller-b")),
+                    listOf(listing("first", "seller-a")),
                     cursor
                 )
             } else {
@@ -40,6 +45,7 @@ class ViewMarketplaceSellerProfileTest {
         val details = query("seller-a")
 
         assertEquals(listOf("first", "second"), details?.listings?.map { it.id.value })
+        assertEquals(listOf<String?>("seller-a", "seller-a"), requestedSellerIds)
     }
 
     @Test
@@ -101,6 +107,41 @@ class SellerProfileViewModelTest {
                 "Unable to load the seller profile. Please try again.",
                 viewModel.uiState.value.errorMessage
             )
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun openingAnotherSellerCancelsThePreviousRequest() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val firstRequestCancelled = CompletableDeferred<Unit>()
+            val query = ViewMarketplaceSellerProfile(
+                profileProvider = { sellerId ->
+                    if (sellerId == "seller-a") {
+                        try {
+                            awaitCancellation()
+                        } finally {
+                            firstRequestCancelled.complete(Unit)
+                        }
+                    }
+                    sellerProfile(sellerId)
+                },
+                listingSource = MarketplaceListingSource { request ->
+                    MarketplaceListingPage(listOf(listing("available", request.sellerId.orEmpty())), null)
+                }
+            )
+            val viewModel = SellerProfileViewModel(query)
+
+            viewModel.load("seller-a")
+            runCurrent()
+            viewModel.load("seller-b")
+            advanceUntilIdle()
+
+            assertTrue(firstRequestCancelled.isCompleted)
+            assertEquals("seller-b", viewModel.uiState.value.profile?.sellerId)
+            assertEquals("seller-b", viewModel.uiState.value.listings.single().sellerId)
         } finally {
             Dispatchers.resetMain()
         }

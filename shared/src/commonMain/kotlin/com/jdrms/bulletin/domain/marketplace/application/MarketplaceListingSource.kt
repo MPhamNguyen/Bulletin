@@ -25,6 +25,7 @@ data class MarketplacePageCursor(
 
 data class MarketplacePageRequest(
     val query: String = "",
+    val sellerId: String? = null,
     val category: MarketplaceCategory? = null,
     val condition: MarketplaceCondition? = null,
     val cursor: MarketplacePageCursor? = null,
@@ -76,6 +77,7 @@ class MarketplaceRepositoryListingSource(
 fun List<MarketplaceListingSnapshot>.pageFor(request: MarketplacePageRequest): MarketplaceListingPage {
     val keywords = request.query.trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
     val matchingListings = asSequence()
+        .filter { listing -> request.sellerId == null || listing.sellerId == request.sellerId }
         .filter { listing -> request.category == null || listing.category == request.category }
         .filter { listing -> request.condition == null || listing.condition == request.condition }
         .filter { listing ->

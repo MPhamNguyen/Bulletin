@@ -21,10 +21,13 @@ class ViewMarketplaceSellerProfile(
         var cursor: MarketplacePageCursor? = null
         do {
             val page = listingSource.getAvailableListings(
-                MarketplacePageRequest(cursor = cursor, pageSize = MAX_MARKETPLACE_PAGE_SIZE)
+                MarketplacePageRequest(
+                    sellerId = sellerId,
+                    cursor = cursor,
+                    pageSize = MAX_MARKETPLACE_PAGE_SIZE
+                )
             )
             listings += page.listings
-                .filter { it.sellerId == sellerId }
                 .map { it.toMarketplaceItem() }
             cursor = page.nextCursor
         } while (cursor != null)
