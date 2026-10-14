@@ -15,14 +15,27 @@ import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPol
 class SearchMarketplace(
     private val repository: MarketplaceRepository,
     private val listingSource: MarketplaceListingSource = MarketplaceRepositoryListingSource(repository),
-    private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy()
+    private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy(),
+    private val blockedUserProvider: MarketplaceBlockedUserProvider? = null
 ) {
     suspend fun getPage(request: MarketplacePageRequest): MarketplaceItemPage {
-        val page = listingSource.getAvailableListings(request)
-        return MarketplaceItemPage(
-            items = page.listings.map { it.toMarketplaceItem() },
+        val hiddenUserIds = request.viewerId?.let { viewerId ->
+            blockedUserProvider?.getHiddenUserIds(viewerId).orEmpty()
+        }.orEmpty()
+        val visibleItems = mutableListOf<MarketplaceItem>()
+        var cursor = request.cursor
+        var nextCursor: MarketplacePageCursor?
+        do {
+            val page = listingSource.getAvailableListings(request.copy(cursor = cursor))
+            visibleItems += page.listings
+                .asSequence()
+                .filterNot { it.sellerId in hiddenUserIds }
+                .map { it.toMarketplaceItem() }
+                .take(request.pageSize - visibleItems.size)
             nextCursor = page.nextCursor
-        )
+            cursor = nextCursor
+        } while (visibleItems.size < request.pageSize && nextCursor != null)
+        return MarketplaceItemPage(visibleItems, nextCursor)
     }
 
     suspend fun getCatalog(): List<MarketplaceItem> {
@@ -130,22 +143,36 @@ class RemoveMarketplaceListingBookmark(
 
 class ViewMarketplaceListing(
     private val repository: MarketplaceRepository,
-    private val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider
+    private val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider,
+    private val blockedUserProvider: MarketplaceBlockedUserProvider? = null
 ) {
     suspend fun hasReview(listingId: String, reviewerId: String): Boolean =
         repository.hasReviewForListing(MarketplaceItemId(listingId.removePrefix("listing:")), reviewerId)
 
-    suspend fun viewListing(listingID: String): Listing {
-        val result = repository.viewListing(listingID)
+    suspend fun viewListing(listingID: String, viewerId: String? = null): Listing {
+        val result = invoke(listingID, viewerId)
         return when (result) {
-            is Result.Success -> result.data.withResolvedSellerName()
+            is Result.Success -> result.data
             is Result.Error -> throw result.exception
         }
     }
 
-    suspend operator fun invoke(listingID: String): Result<Listing> {
+    suspend operator fun invoke(listingID: String, viewerId: String? = null): Result<Listing> {
         return when (val result = repository.viewListing(listingID)) {
-            is Result.Success -> Result.Success(result.data.withResolvedSellerName())
+            is Result.Success -> {
+                val isHidden = try {
+                    viewerId != null && blockedUserProvider
+                        ?.getHiddenUserIds(viewerId)
+                        ?.contains(result.data.sellerId) == true
+                } catch (exception: IllegalStateException) {
+                    return Result.Error(exception)
+                }
+                if (isHidden) {
+                    Result.Error(IllegalStateException("This listing is unavailable."))
+                } else {
+                    Result.Success(result.data.withResolvedSellerName())
+                }
+            }
             is Result.Error -> result
         }
     }

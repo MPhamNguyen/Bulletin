@@ -14,6 +14,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,14 +31,21 @@ fun SellerProfileScreen(
     messageActions: MessageSellerQuickActionActions?,
     onListingClick: (String) -> Unit,
     onBack: () -> Unit,
-    onReportUser: () -> Unit
+    onReportUser: () -> Unit,
+    onBlockUser: () -> Unit,
+    blockState: SellerProfileBlockState = SellerProfileBlockState()
 ) {
+    var showBlockConfirmation by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        SellerProfileTopBar(onBack = onBack, onReportUser = onReportUser)
+        SellerProfileTopBar(
+            onBack = onBack,
+            onReportUser = onReportUser,
+            onBlockUser = { showBlockConfirmation = true }
+        )
         when {
             state.isLoading -> SellerProfileLoading()
             state.errorMessage != null -> SellerProfileError(state.errorMessage)
@@ -73,6 +84,14 @@ fun SellerProfileScreen(
             }
         }
     }
+    if (showBlockConfirmation) {
+        BlockUserConfirmationDialog(
+            isBlocking = blockState.isBlocking,
+            onConfirm = onBlockUser,
+            onDismiss = { if (!blockState.isBlocking) showBlockConfirmation = false }
+        )
+    }
+    BlockUserErrorMessage(blockState.errorMessage)
 }
 
 @Composable

@@ -27,7 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-internal fun SellerProfileTopBar(onBack: () -> Unit, onReportUser: () -> Unit) {
+internal fun SellerProfileTopBar(
+    onBack: () -> Unit,
+    onReportUser: () -> Unit,
+    onBlockUser: () -> Unit
+) {
     var menuExpanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -59,6 +63,13 @@ internal fun SellerProfileTopBar(onBack: () -> Unit, onReportUser: () -> Unit) {
                     onClick = {
                         menuExpanded = false
                         onReportUser()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Block user", color = MaterialTheme.colorScheme.error) },
+                    onClick = {
+                        menuExpanded = false
+                        onBlockUser()
                     }
                 )
             }

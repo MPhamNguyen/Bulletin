@@ -32,14 +32,15 @@ internal class MarketplaceFirstPageLoader(
         if (debounceMillis > 0L) delay(debounceMillis)
         val filters = state.value.filters
         runCatching {
+            val resolvedUserId = userId ?: currentUserId()
             val page = search.getPage(
                 MarketplacePageRequest(
                     query = filters.query,
                     category = filters.category,
-                    condition = filters.condition
+                    condition = filters.condition,
+                    viewerId = resolvedUserId
                 )
             )
-            val resolvedUserId = userId ?: currentUserId()
             val bookmarkedIds = resolvedUserId?.let { bookmarks.get.getBookmarkedIds(it) }.orEmpty()
             FirstPageResult(page, bookmarkedIds)
         }.fold(

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,15 +24,17 @@ fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
     userReportViewModel: MarketplaceUserReportViewModel,
+    userBlockViewModel: MarketplaceUserBlockViewModel,
     actions: MarketplaceScreenActions = MarketplaceScreenActions()
 ) {
     val state by viewModel.uiState.collectAsState()
     val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
+    val blockState by userBlockViewModel.uiState.collectAsState()
     var destination by remember { mutableStateOf(MarketplaceDestination.CATALOG) }
 
-    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, destination)
-    val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel)
+    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, destination)
+    val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel, userBlockViewModel)
     if (!MarketplaceSellerProfileFlow(flowState, flowViewModels, actions) { destination = it }) {
         MarketplaceCatalogContent(
             state = state,
@@ -213,8 +216,24 @@ private fun MarketplaceSellerProfileFlow(
         onReportUser = {
             state.sellerProfileState.profile?.sellerId?.let(viewModels.report::begin)
             if (state.sellerProfileState.profile != null) onNavigate(MarketplaceDestination.REPORT_USER)
-        }
+        },
+        onBlockUser = viewModels.block::submit,
+        blockState = SellerProfileBlockState(
+            errorMessage = state.blockState.errorMessage,
+            isBlocking = state.blockState.isBlocking
+        )
     )
+    LaunchedEffect(state.sellerProfileState.profile?.sellerId) {
+        state.sellerProfileState.profile?.sellerId?.let(viewModels.block::begin)
+            ?: viewModels.block.reset()
+    }
+    LaunchedEffect(state.blockState.blocked, state.blockState.blockedUserId) {
+        if (state.blockState.blocked) {
+            viewModels.marketplace.dismissListingDetail()
+            onNavigate(MarketplaceDestination.CATALOG)
+            viewModels.marketplace.refreshListings()
+        }
+    }
     return true
 }
 
@@ -222,6 +241,7 @@ private data class MarketplaceSellerFlowUiState(
     val marketplaceState: MarketplaceUiState,
     val sellerProfileState: SellerProfileUiState,
     val reportState: MarketplaceUserReportUiState,
+    val blockState: MarketplaceUserBlockUiState,
     val destination: MarketplaceDestination
 ) {
     fun messageActions(actions: MarketplaceScreenActions): MessageSellerQuickActionActions? {
@@ -247,7 +267,8 @@ private data class MarketplaceSellerFlowUiState(
 
 private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
-    val report: MarketplaceUserReportViewModel
+    val report: MarketplaceUserReportViewModel,
+    val block: MarketplaceUserBlockViewModel
 )
 
 data class MarketplaceScreenActions(

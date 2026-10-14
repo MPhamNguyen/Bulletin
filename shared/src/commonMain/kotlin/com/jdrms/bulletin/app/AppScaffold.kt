@@ -16,6 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.di.blockedUsersViewModelFactory
+import com.jdrms.bulletin.app.di.createAccountViewModel
+import com.jdrms.bulletin.app.di.createEditProfileViewModel
+import com.jdrms.bulletin.app.di.createHomeViewModel
+import com.jdrms.bulletin.app.di.createListingsViewModel
+import com.jdrms.bulletin.app.di.createMarketplaceUserReportViewModel
+import com.jdrms.bulletin.app.di.createMarketplaceViewModel
+import com.jdrms.bulletin.app.di.createMessagesViewModel
+import com.jdrms.bulletin.app.di.createProfileViewModel
+import com.jdrms.bulletin.app.di.createSellerProfileViewModel
+import com.jdrms.bulletin.app.di.marketplaceUserBlockViewModelFactory
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
@@ -30,6 +41,7 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
@@ -68,6 +80,7 @@ private class MainScaffoldModels(
     val marketplace: MarketplaceViewModel,
     val sellerProfile: SellerProfileViewModel,
     val marketplaceUserReport: MarketplaceUserReportViewModel,
+    val marketplaceUserBlock: MarketplaceUserBlockViewModel,
     val listings: ListingsViewModel,
     val messages: MessagesViewModel
 )
@@ -89,6 +102,7 @@ fun MainAppScaffold(
             container.createMarketplaceViewModel(),
             container.createSellerProfileViewModel(),
             container.createMarketplaceUserReportViewModel(),
+            container.marketplaceUserBlockViewModelFactory(),
             container.createListingsViewModel(),
             container.createMessagesViewModel()
         )
@@ -135,6 +149,7 @@ private fun MainAppContent(
             viewModel = models.marketplace,
             sellerProfileViewModel = models.sellerProfile,
             userReportViewModel = models.marketplaceUserReport,
+            userBlockViewModel = models.marketplaceUserBlock,
             actions = MarketplaceScreenActions(
                 onMessageSeller = { listingId, sellerId, sellerName, content ->
                     val result = sendListingMessage(
@@ -216,13 +231,15 @@ private fun StudentProfileDestination(
         ProfileScreenFlows(
             editing = container.createEditProfileViewModel(),
             account = container.createAccountViewModel(),
-            messenger = container.userMessenger
+            messenger = container.userMessenger,
+            blockedUsers = container.blockedUsersViewModelFactory()
         )
     }
     DisposableEffect(profileFlows, resolvedProfileViewModel) {
         onDispose {
             profileFlows.editing.viewModelScope.cancel()
             profileFlows.account.viewModelScope.cancel()
+            profileFlows.blockedUsers.viewModelScope.cancel()
             if (profilePresentation.providedViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
         }
     }
