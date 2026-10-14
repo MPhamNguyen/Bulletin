@@ -16,6 +16,15 @@ import kotlin.test.assertTrue
 
 class SupabaseListingBookmarksTest {
     @Test
+    fun bookmarkedListingQueryUsesTheSellerForeignKeyExplicitly() {
+        val columns = SupabaseListingBookmarks.BOOKMARKED_LISTING_COLUMNS.toString()
+
+        assertTrue(columns.contains("profiles!listings_user_id_fkey"))
+        assertTrue(columns.contains("buyer_id"))
+        assertTrue(columns.contains("is_sold"))
+    }
+
+    @Test
     fun bookmarkMembershipIsCachedUntilItsTtlExpires() = runTest {
         var nowMillis = 0L
         var fetchCount = 0
