@@ -92,6 +92,7 @@ class MarketplaceViewModel(
                         query = filters.query,
                         category = filters.category,
                         condition = filters.condition,
+                        viewerId = currentUserIdProvider(),
                         cursor = cursor
                     )
                 )
@@ -158,7 +159,7 @@ class MarketplaceViewModel(
 
     private fun loadListingDetail(listingId: String) {
         viewModelScope.launch {
-            when (val result = viewMarketplaceListing(listingId)) {
+            when (val result = viewMarketplaceListing(listingId, currentUserIdProvider())) {
                 is com.jdrms.bulletin.core.common.Result.Success -> {
                     val listing = result.data
                     val canonicalId = MarketplaceItemId(listingId)

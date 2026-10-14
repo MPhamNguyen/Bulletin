@@ -28,6 +28,7 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
@@ -64,6 +65,7 @@ private class MainScaffoldModels(
     val home: HomeViewModel,
     val marketplace: MarketplaceViewModel,
     val marketplaceUserReport: MarketplaceUserReportViewModel,
+    val marketplaceUserBlock: MarketplaceUserBlockViewModel,
     val listings: ListingsViewModel,
     val messages: MessagesViewModel
 )
@@ -84,6 +86,7 @@ fun MainAppScaffold(
             container.createHomeViewModel(),
             container.createMarketplaceViewModel(),
             container.createMarketplaceUserReportViewModel(),
+            container.createMarketplaceUserBlockViewModel(),
             container.createListingsViewModel(),
             container.createMessagesViewModel()
         )
@@ -129,6 +132,7 @@ private fun MainAppContent(
         AppDestination.MARKETPLACE -> MarketplaceScreen(
             viewModel = models.marketplace,
             userReportViewModel = models.marketplaceUserReport,
+            userBlockViewModel = models.marketplaceUserBlock,
             onMessageSeller = { listingId, sellerId, sellerName, content ->
                 val result = sendListingMessage(
                     container,
@@ -208,13 +212,15 @@ private fun StudentProfileDestination(
         ProfileScreenFlows(
             editing = container.createEditProfileViewModel(),
             account = container.createAccountViewModel(),
-            messenger = container.userMessenger
+            messenger = container.userMessenger,
+            blockedUsers = container.blockedUsersViewModelFactory()
         )
     }
     DisposableEffect(profileFlows, resolvedProfileViewModel) {
         onDispose {
             profileFlows.editing.viewModelScope.cancel()
             profileFlows.account.viewModelScope.cancel()
+            profileFlows.blockedUsers.viewModelScope.cancel()
             if (profilePresentation.providedViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
         }
     }

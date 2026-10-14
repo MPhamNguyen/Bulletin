@@ -24,6 +24,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,16 +45,21 @@ fun SellerProfileScreen(
     isLoading: Boolean,
     errorMessage: String?,
     onBack: () -> Unit,
-    onReportUser: () -> Unit
+    onReportUser: () -> Unit,
+    onBlockUser: () -> Unit,
+    blockState: SellerProfileBlockState = SellerProfileBlockState()
 ) {
+    var showBlockConfirmation by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top Bar
-        SellerProfileTopBar(onBack = onBack, onReportUser = onReportUser)
-
+        SellerProfileTopBar(
+            onBack = onBack,
+            onReportUser = onReportUser,
+            onBlockUser = { showBlockConfirmation = true }
+        )
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -85,14 +94,12 @@ fun SellerProfileScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Seller Hero Card
                 BulletinCard {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Avatar
                         if (profile.avatarUrl != null) {
                             AsyncImage(
                                 model = profile.avatarUrl,
@@ -121,7 +128,6 @@ fun SellerProfileScreen(
                             }
                         }
 
-                        // Name & Verified Badge
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -158,7 +164,6 @@ fun SellerProfileScreen(
                             }
                         }
 
-                        // School & Major Subtitle
                         val schoolInfo = listOfNotNull(
                             profile.major?.takeIf(String::isNotBlank),
                             profile.school?.takeIf(String::isNotBlank)
@@ -174,7 +179,6 @@ fun SellerProfileScreen(
                     }
                 }
 
-                // Reputation Card
                 BulletinCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -221,7 +225,6 @@ fun SellerProfileScreen(
                     }
                 }
 
-                // About / Bio Card
                 BulletinCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
@@ -239,7 +242,6 @@ fun SellerProfileScreen(
                     }
                 }
 
-                // Campus Verification Trust Card
                 BulletinCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -278,6 +280,14 @@ fun SellerProfileScreen(
             }
         }
     }
+    if (showBlockConfirmation) {
+        BlockUserConfirmationDialog(
+            isBlocking = blockState.isBlocking,
+            onConfirm = onBlockUser,
+            onDismiss = { if (!blockState.isBlocking) showBlockConfirmation = false }
+        )
+    }
+    BlockUserErrorMessage(blockState.errorMessage)
 }
 
 private fun profileInitials(fullName: String): String {

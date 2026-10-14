@@ -146,6 +146,12 @@ Each business domain adheres to a 4-layer structure:
 * `infrastructure/`: Repository implementations, DTOs, and mappers.
 * `presentation/`: Compose screens, ViewModels, UI State, and feature UI components.
 
+### Backend status
+
+| Context / repository | Current binding | Verification |
+| --- | --- | --- |
+| Profile user blocks | Supabase adapter when configured; in-memory fallback for local inspection/tests | Adapter and migration are versioned; live Supabase verification is still pending |
+
 
 ## 🔐 Security & Privacy
 

@@ -27,6 +27,7 @@ data class MarketplacePageRequest(
     val query: String = "",
     val category: MarketplaceCategory? = null,
     val condition: MarketplaceCondition? = null,
+    val viewerId: String? = null,
     val cursor: MarketplacePageCursor? = null,
     val pageSize: Int = DEFAULT_MARKETPLACE_PAGE_SIZE
 ) {

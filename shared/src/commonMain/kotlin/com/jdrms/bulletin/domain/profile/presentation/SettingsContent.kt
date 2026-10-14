@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
@@ -52,6 +53,7 @@ internal data class SettingsActions(
     val onViewPublicProfile: () -> Unit,
     val onNotifications: () -> Unit,
     val onPrivacy: () -> Unit,
+    val onBlockedUsers: () -> Unit = {},
     val onHelpSupport: () -> Unit,
     val onTermsConditions: () -> Unit,
     val onSignOut: () -> Unit,
@@ -133,6 +135,12 @@ internal fun SettingsView(
                 title = "Privacy",
                 description = "Control profile visibility, campus verification, and student email",
                 onClick = actions.onPrivacy
+            )
+            SettingsActionCard(
+                icon = Icons.Outlined.Block,
+                title = "Blocked Users",
+                description = "Review users you have blocked and restore access to their listings",
+                onClick = actions.onBlockedUsers
             )
 
             // Section: Support & Legal

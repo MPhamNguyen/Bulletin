@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +30,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
     userReportViewModel: MarketplaceUserReportViewModel,
+    userBlockViewModel: MarketplaceUserBlockViewModel,
     onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
         { _, _, _, _ -> false },
     hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
@@ -37,10 +39,11 @@ fun MarketplaceScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
+    val blockState by userBlockViewModel.uiState.collectAsState()
     var isReportScreenOpen by remember { mutableStateOf(false) }
 
-    val flowState = MarketplaceSellerFlowUiState(state, reportState, isReportScreenOpen)
-    val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel)
+    val flowState = MarketplaceSellerFlowUiState(state, reportState, blockState, isReportScreenOpen)
+    val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel, userBlockViewModel)
     if (!MarketplaceSellerProfileFlow(flowState, flowViewModels) { isReportScreenOpen = it }) {
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
@@ -188,20 +191,38 @@ private fun MarketplaceSellerProfileFlow(
         onReportUser = {
             state.marketplaceState.selectedSellerProfile?.sellerId?.let(viewModels.report::begin)
             onReportScreenOpen(state.marketplaceState.selectedSellerProfile != null)
-        }
+        },
+        onBlockUser = viewModels.block::submit,
+        blockState = SellerProfileBlockState(
+            errorMessage = state.blockState.errorMessage,
+            isBlocking = state.blockState.isBlocking
+        )
     )
+    LaunchedEffect(state.marketplaceState.isSellerProfileOpen, state.marketplaceState.selectedSellerProfile?.sellerId) {
+        state.marketplaceState.selectedSellerProfile?.sellerId?.let(viewModels.block::begin)
+            ?: viewModels.block.reset()
+    }
+    LaunchedEffect(state.blockState.blocked, state.blockState.blockedUserId) {
+        if (state.blockState.blocked) {
+            viewModels.marketplace.dismissListingDetail()
+            viewModels.marketplace.dismissSellerProfile()
+            viewModels.marketplace.refreshListings()
+        }
+    }
     return true
 }
 
 private data class MarketplaceSellerFlowUiState(
     val marketplaceState: MarketplaceUiState,
     val reportState: MarketplaceUserReportUiState,
+    val blockState: MarketplaceUserBlockUiState,
     val isReportScreenOpen: Boolean
 )
 
 private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
-    val report: MarketplaceUserReportViewModel
+    val report: MarketplaceUserReportViewModel,
+    val block: MarketplaceUserBlockViewModel
 )
 
 @Composable

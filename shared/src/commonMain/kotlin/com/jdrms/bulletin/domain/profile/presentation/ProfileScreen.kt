@@ -20,7 +20,8 @@ import com.jdrms.bulletin.core.common.UserMessenger
 data class ProfileScreenFlows(
     val editing: EditProfileViewModel,
     val account: AccountViewModel,
-    val messenger: UserMessenger
+    val messenger: UserMessenger,
+    val blockedUsers: BlockedUsersViewModel
 )
 
 data class ProfileScreenCallbacks(
@@ -59,6 +60,9 @@ fun ProfileScreen(
     LaunchedEffect(destination) {
         if (destination == ProfileDestination.BOOKMARKED_LISTINGS) {
             viewModel.loadBookmarkedListings()
+        }
+        if (destination == ProfileDestination.BLOCKED_USERS) {
+            flows.blockedUsers.load()
         }
     }
     LaunchedEffect(flows.messenger) {
@@ -128,6 +132,12 @@ private fun ProfileDestinationContent(
                 )
             }
         }
+        ProfileDestination.BLOCKED_USERS -> BlockedUsersView(
+            state = flows.blockedUsers.uiState.collectAsState().value,
+            onUnblock = flows.blockedUsers::unblock,
+            onRefresh = flows.blockedUsers::load,
+            onBack = callbacks.onBack
+        )
         ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
         ProfileDestination.PRIVACY -> PrivacyView(callbacks.onBack)
         ProfileDestination.HELP_AND_SUPPORT -> HelpAndSupportView(callbacks.onBack)
@@ -195,6 +205,7 @@ private fun ProfileSettingsDestination(
             onViewPublicProfile = { callbacks.onNavigate(ProfileDestination.PUBLIC_PROFILE) },
             onNotifications = { callbacks.onNavigate(ProfileDestination.NOTIFICATIONS) },
             onPrivacy = { callbacks.onNavigate(ProfileDestination.PRIVACY) },
+            onBlockedUsers = { callbacks.onNavigate(ProfileDestination.BLOCKED_USERS) },
             onHelpSupport = { callbacks.onNavigate(ProfileDestination.HELP_AND_SUPPORT) },
             onTermsConditions = { callbacks.onNavigate(ProfileDestination.TERMS_AND_CONDITIONS) },
             onSignOut = { flows.account.signOut(callbacks.onSignOut) },
