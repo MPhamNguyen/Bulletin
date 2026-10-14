@@ -170,7 +170,11 @@ internal fun PublicProfileView(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
-                                        text = "${(rep.averageRating * 10).toInt() / 10.0} / 5.0",
+                                        text = if (rep.totalReviews == 0) {
+                                            "No ratings yet"
+                                        } else {
+                                            "${(rep.averageRating * 10).toInt() / 10.0} / 5.0"
+                                        },
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -192,6 +196,8 @@ internal fun PublicProfileView(
                         }
                     }
                 }
+
+                profile.reputation?.let { reputation -> ProfileReviewsSection(reputation) }
 
                 if (profile.bio.isNotBlank()) {
                     BulletinCard(modifier = Modifier.fillMaxWidth()) {

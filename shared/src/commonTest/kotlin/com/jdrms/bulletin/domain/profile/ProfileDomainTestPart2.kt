@@ -93,6 +93,14 @@ class ProfileDomainTestPart2 {
     }
 
     @Test
+    fun calculateReputationUsesNoAverageWhenThereAreNoReviews() {
+        val reputation = ProfileValidationPolicy().calculateReputation(UserId("user-1"), emptyList())
+
+        assertEquals(0.0, reputation.averageRating)
+        assertEquals(0, reputation.totalReviews)
+    }
+
+    @Test
     fun testMapperScoreClamping() {
         val dto = ReviewDto(
             id = "dto_r1",

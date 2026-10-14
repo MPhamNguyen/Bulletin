@@ -283,7 +283,18 @@ private fun profileCallbacks(
         openListingConversation(container, messagesViewModel, listingId, sellerId)
         navigation.openMessages()
     },
-    hasExistingConversation = { listingId, sellerId -> hasListingConversation(container, listingId, sellerId) }
+    hasExistingConversation = { listingId, sellerId -> hasListingConversation(container, listingId, sellerId) },
+    onSubmitReview = { listing, reviewerId, score, comment ->
+        container.submitMarketplaceReview.submitForSoldListing(
+            listingId = listing.id,
+            buyerId = listing.buyerId,
+            sellerId = listing.sellerId,
+            isSold = listing.isSold,
+            reviewerId = reviewerId,
+            score = score,
+            comment = comment
+        )
+    }
 )
 
 private fun MainNavigationState.openMessages() {

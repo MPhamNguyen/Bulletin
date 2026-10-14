@@ -11,11 +11,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.UserMessenger
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
+import kotlinx.coroutines.launch
 
 data class ProfileScreenFlows(
     val editing: EditProfileViewModel,
@@ -34,7 +42,13 @@ data class ProfileScreenCallbacks(
     val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
         { _, _ -> false },
     val onMessageSent: () -> Unit = {},
-    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
+    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> },
+    val onSubmitReview: suspend (
+        listing: ProfileBookmarkedListing,
+        reviewerId: String,
+        score: Int,
+        comment: String
+    ) -> Result<Unit> = { _, _, _, _ -> Result.Error(UnsupportedOperationException("Review submission unavailable.")) }
 )
 
 private data class ProfileDestinationStates(
@@ -54,6 +68,10 @@ fun ProfileScreen(
     val profileState by viewModel.uiState.collectAsState()
     val editState by flows.editing.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var reviewListing by remember { mutableStateOf<ProfileBookmarkedListing?>(null) }
+    var reviewError by remember { mutableStateOf<String?>(null) }
+    var isSubmittingReview by remember { mutableStateOf(false) }
+    val reviewScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { viewModel.refreshActiveListings() }
     LaunchedEffect(destination) {
@@ -71,8 +89,34 @@ fun ProfileScreen(
             ProfileDestinationStates(profileState, editState, viewModel),
             flows,
             callbacks,
-            themeViewModel
+            themeViewModel,
+            onLeaveReview = { reviewListing = it }
         )
+        reviewListing?.let { listing ->
+            ReviewSubmissionDialog(
+                isSubmitting = isSubmittingReview,
+                errorMessage = reviewError,
+                onDismiss = { if (!isSubmittingReview) reviewListing = null },
+                onSubmit = { score, comment ->
+                    profileState.profile?.id?.value?.let { reviewerId ->
+                        reviewScope.launch {
+                            isSubmittingReview = true
+                            reviewError = null
+                            when (val result = callbacks.onSubmitReview(listing, reviewerId, score, comment)) {
+                                is Result.Success -> {
+                                    isSubmittingReview = false
+                                    reviewListing = null
+                                }
+                                is Result.Error -> {
+                                    isSubmittingReview = false
+                                    reviewError = result.exception.message
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+        }
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
     }
 }
@@ -83,7 +127,8 @@ private fun ProfileDestinationContent(
     states: ProfileDestinationStates,
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
-    themeViewModel: ThemeViewModel?
+    themeViewModel: ThemeViewModel?,
+    onLeaveReview: (ProfileBookmarkedListing) -> Unit
 ) {
     when (destination) {
         ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, flows.editing, callbacks)
@@ -116,6 +161,8 @@ private fun ProfileDestinationContent(
                         onDismiss = states.viewModel::dismissBookmarkedListing,
                         onRemoveBookmark = { states.viewModel.removeBookmarkedListing(listing.id) },
                         canMessageSeller = states.profile.profile?.id?.value != listing.sellerId,
+                        canLeaveReview = listing.isSold && listing.buyerId == states.profile.profile?.id?.value,
+                        onLeaveReview = { onLeaveReview(listing) },
                         onMessageSeller = { content ->
                             callbacks.onMessageSeller(listing.id, listing.sellerId, listing.sellerName, content)
                         },
