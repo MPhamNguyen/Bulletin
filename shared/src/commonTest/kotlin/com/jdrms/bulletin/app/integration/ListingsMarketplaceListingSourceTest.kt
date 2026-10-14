@@ -42,6 +42,19 @@ class ListingsMarketplaceListingSourceTest {
     }
 
     @Test
+    fun sellerRequestReturnsOnlyThatSellersAvailableListings() = runTest {
+        val repository = InMemoryListingsRepository(initialListings = emptyList())
+        repository.createListing(listing(id = "requested", sellerId = "seller_1"))
+        repository.createListing(listing(id = "other", sellerId = "seller_2"))
+
+        val snapshots = ListingsMarketplaceListingSource(repository)
+            .getAvailableListings(MarketplacePageRequest(sellerId = "seller_1"))
+            .listings
+
+        assertEquals(listOf("listing:requested"), snapshots.map { it.id })
+    }
+
+    @Test
     fun compositeSourceMergesStablePagesAcrossItsSources() = runTest {
         val source = CompositeMarketplaceListingSource(
             StaticMarketplaceListingSource(listOf(snapshot(5), snapshot(3), snapshot(1))),
@@ -79,10 +92,14 @@ class ListingsMarketplaceListingSourceTest {
         assertEquals(continuation, page.nextCursor)
     }
 
-    private fun listing(id: String, status: ListingStatus): Listing {
+    private fun listing(
+        id: String,
+        status: ListingStatus = ListingStatus.AVAILABLE,
+        sellerId: String = "seller_1"
+    ): Listing {
         return Listing(
             id = ListingId(id),
-            sellerId = SellerId("seller_1"),
+            sellerId = SellerId(sellerId),
             sellerName = "Campus Seller",
             title = "Campus Sofa",
             description = "Compact sofa in good condition",

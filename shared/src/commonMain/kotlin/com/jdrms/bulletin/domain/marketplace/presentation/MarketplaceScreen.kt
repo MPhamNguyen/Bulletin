@@ -1,12 +1,8 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -16,32 +12,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.SectionHeader
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
+    sellerProfileViewModel: SellerProfileViewModel,
     userReportViewModel: MarketplaceUserReportViewModel,
-    onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
-        { _, _, _, _ -> false },
-    hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
-        { _, _ -> false },
-    onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
+    actions: MarketplaceScreenActions = MarketplaceScreenActions()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
-    var isReportScreenOpen by remember { mutableStateOf(false) }
+    var destination by remember { mutableStateOf(MarketplaceDestination.CATALOG) }
 
-    val flowState = MarketplaceSellerFlowUiState(state, reportState, isReportScreenOpen)
+    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, destination)
     val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel)
-    if (!MarketplaceSellerProfileFlow(flowState, flowViewModels) { isReportScreenOpen = it }) {
+    if (!MarketplaceSellerProfileFlow(flowState, flowViewModels, actions) { destination = it }) {
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -151,10 +142,13 @@ fun MarketplaceScreen(
                         onToggleBookmark = {
                             state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
                         },
-                        onSellerClick = viewModel::onSellerClicked,
-                        onMessageSeller = onMessageSeller,
-                        hasExistingConversation = hasExistingConversation,
-                        onSeeChat = onSeeChat
+                        onSellerClick = { sellerId ->
+                            sellerProfileViewModel.load(sellerId)
+                            destination = MarketplaceDestination.SELLER_PROFILE
+                        },
+                        onMessageSeller = actions.onMessageSeller,
+                        hasExistingConversation = actions.hasExistingConversation,
+                        onSeeChat = actions.onSeeChat
                     )
                 )
             }
@@ -166,28 +160,32 @@ fun MarketplaceScreen(
 private fun MarketplaceSellerProfileFlow(
     state: MarketplaceSellerFlowUiState,
     viewModels: MarketplaceSellerFlowViewModels,
-    onReportScreenOpen: (Boolean) -> Unit
+    actions: MarketplaceScreenActions,
+    onNavigate: (MarketplaceDestination) -> Unit
 ): Boolean {
-    if (state.isReportScreenOpen) {
+    if (state.destination == MarketplaceDestination.REPORT_USER) {
         ReportMarketplaceUserScreen(
             state = state.reportState,
             onReasonSelected = viewModels.report::selectReason,
             onDescriptionChanged = viewModels.report::updateDescription,
             onSubmit = viewModels.report::submit,
-            onBack = { onReportScreenOpen(false) }
+            onBack = { onNavigate(MarketplaceDestination.SELLER_PROFILE) }
         )
         return true
     }
-    if (!state.marketplaceState.isSellerProfileOpen) return false
+    if (state.destination != MarketplaceDestination.SELLER_PROFILE) return false
 
     SellerProfileScreen(
-        profile = state.marketplaceState.selectedSellerProfile,
-        isLoading = state.marketplaceState.isSellerProfileLoading,
-        errorMessage = state.marketplaceState.sellerProfileErrorMessage,
-        onBack = viewModels.marketplace::dismissSellerProfile,
+        state = state.sellerProfileState,
+        messageActions = state.messageActions(actions),
+        onListingClick = { listingId ->
+            onNavigate(MarketplaceDestination.CATALOG)
+            viewModels.marketplace.onListingClicked(listingId)
+        },
+        onBack = { onNavigate(MarketplaceDestination.CATALOG) },
         onReportUser = {
-            state.marketplaceState.selectedSellerProfile?.sellerId?.let(viewModels.report::begin)
-            onReportScreenOpen(state.marketplaceState.selectedSellerProfile != null)
+            state.sellerProfileState.profile?.sellerId?.let(viewModels.report::begin)
+            if (state.sellerProfileState.profile != null) onNavigate(MarketplaceDestination.REPORT_USER)
         }
     )
     return true
@@ -195,70 +193,50 @@ private fun MarketplaceSellerProfileFlow(
 
 private data class MarketplaceSellerFlowUiState(
     val marketplaceState: MarketplaceUiState,
+    val sellerProfileState: SellerProfileUiState,
     val reportState: MarketplaceUserReportUiState,
-    val isReportScreenOpen: Boolean
-)
+    val destination: MarketplaceDestination
+) {
+    fun messageActions(actions: MarketplaceScreenActions): MessageSellerQuickActionActions? {
+        val profile = sellerProfileState.profile ?: return null
+        val listing = marketplaceState.detail.listing ?: return null
+        val canMessage = canMessageMarketplaceSeller(
+            marketplaceState.currentUserId,
+            profile.sellerId,
+            listing.sellerId
+        )
+        if (!canMessage) return null
+        return MessageSellerQuickActionActions(
+            conversationKey = "${listing.id.value}:${profile.sellerId}",
+            hasExistingConversation = { actions.hasExistingConversation(listing.id.value, profile.sellerId) },
+            onSend = { content ->
+                actions.onMessageSeller(listing.id.value, profile.sellerId, profile.name ?: listing.sellerName, content)
+            },
+            onSent = {},
+            onSeeChat = { actions.onSeeChat(listing.id.value, profile.sellerId) }
+        )
+    }
+}
 
 private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
     val report: MarketplaceUserReportViewModel
 )
 
-@Composable
-private fun MarketplaceItemCard(
-    item: MarketplaceItem,
-    isBookmarked: Boolean,
-    onCardClick: () -> Unit,
-    onToggleBookmark: () -> Unit
-) {
-    BulletinCard(modifier = Modifier.clickable(onClick = onCardClick)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = item.price.formatted,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Seller: ${item.sellerName} • Category: ${item.category.name}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = item.description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = formatRelativeTime(item.createdAtMillis, currentTimeMillis()),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            OutlinedButton(onClick = onToggleBookmark) {
-                Icon(
-                    imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(if (isBookmarked) "Bookmarked" else "Bookmark")
-            }
-        }
-    }
+data class MarketplaceScreenActions(
+    val onMessageSeller: suspend (String, String, String, String) -> Boolean = { _, _, _, _ -> false },
+    val hasExistingConversation: suspend (String, String) -> Boolean = { _, _ -> false },
+    val onSeeChat: suspend (String, String) -> Unit = { _, _ -> }
+)
+
+private enum class MarketplaceDestination {
+    CATALOG,
+    SELLER_PROFILE,
+    REPORT_USER
 }
+
+internal fun canMessageMarketplaceSeller(
+    currentUserId: String?,
+    profileSellerId: String,
+    listingSellerId: String
+): Boolean = currentUserId != null && currentUserId != profileSellerId && listingSellerId == profileSellerId
