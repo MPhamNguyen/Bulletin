@@ -134,7 +134,8 @@ fun MarketplaceScreen(
                         isBookmarked = state.detail.listing?.let {
                             it.id in state.bookmarkedItemIds
                         } ?: false,
-                        currentUserId = state.currentUserId
+                        currentUserId = state.currentUserId,
+                        hasReview = state.detail.hasReview
                     ),
                     actions = MarketplaceDetailSheetActions(
                         onDismiss = viewModel::dismissListingDetail,
@@ -142,6 +143,7 @@ fun MarketplaceScreen(
                         onToggleBookmark = {
                             state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
                         },
+                        onLeaveReview = viewModel::openReviewDialog,
                         onSellerClick = { sellerId ->
                             sellerProfileViewModel.load(sellerId)
                             destination = MarketplaceDestination.SELLER_PROFILE
@@ -151,6 +153,14 @@ fun MarketplaceScreen(
                         onSeeChat = actions.onSeeChat
                     )
                 )
+                if (state.detail.isReviewDialogOpen) {
+                    MarketplaceReviewDialog(
+                        isSubmitting = state.detail.isSubmittingReview,
+                        errorMessage = state.detail.reviewErrorMessage,
+                        onDismiss = viewModel::dismissReviewDialog,
+                        onSubmit = viewModel::submitReview
+                    )
+                }
             }
         }
     }

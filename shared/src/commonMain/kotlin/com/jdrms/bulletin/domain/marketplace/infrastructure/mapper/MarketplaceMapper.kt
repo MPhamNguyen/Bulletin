@@ -52,6 +52,7 @@ object MarketplaceMapper {
         return Listing(
             id = MarketplaceItemId(dto.id),
             sellerId = dto.sellerId,
+            buyerId = dto.buyerId,
             sellerName = dto.sellerName.ifBlank { "Student Seller" },
             title = dto.title,
             description = dto.description.ifBlank { "No description provided." },
@@ -59,6 +60,7 @@ object MarketplaceMapper {
             category = category,
             condition = dto.condition,
             status = dto.status,
+            isSold = dto.status.equals("SOLD", ignoreCase = true),
             photos = dto.photos,
             sellerReputationScore = score,
             isBookmarked = isBookmarked,
@@ -70,6 +72,7 @@ object MarketplaceMapper {
         return MarketplaceListingDto(
             id = domain.id.value,
             sellerId = domain.sellerId,
+            buyerId = domain.buyerId,
             sellerName = domain.sellerName,
             title = domain.title,
             description = domain.description,
