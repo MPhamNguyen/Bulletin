@@ -25,8 +25,6 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
-import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
-import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
 import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
@@ -41,7 +39,6 @@ import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
-import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
@@ -251,7 +248,7 @@ class AppContainer(
     }
     val submitMarketplaceReview by lazy { SubmitMarketplaceReview(marketplaceRepository) }
     private val viewMarketplaceSellerProfile by lazy {
-        ViewMarketplaceSellerProfile(marketplaceSellerProfileProvider, marketplaceListingSource)
+        createMarketplaceSellerProfileView(marketplaceSellerProfileProvider, marketplaceListingSource)
     }
     private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
     private val reportMarketplaceUser by lazy {
@@ -270,21 +267,7 @@ class AppContainer(
     // Use Cases - Messages
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
-    private val recentListingBuyersProvider by lazy {
-        RecentListingBuyersProvider { listingId, sellerId ->
-            when (val result = getConversations()) {
-                is com.jdrms.bulletin.core.common.Result.Success -> result.data.conversations
-                    .asSequence()
-                    .filter { it.listingId?.value == listingId.value }
-                    .flatMap { conversation -> conversation.participants.asSequence() }
-                    .filter { it.id.value != sellerId }
-                    .distinctBy { it.id }
-                    .map { RecentListingBuyer(it.id.value, it.displayName) }
-                    .toList()
-                is com.jdrms.bulletin.core.common.Result.Error -> emptyList()
-            }
-        }
-    }
+    private val recentListingBuyersProvider by lazy { createRecentListingBuyersProvider(getConversations) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
     val observeConversationMessages by lazy {
@@ -345,12 +328,7 @@ class AppContainer(
         viewMarketplaceListing = viewMarketplaceListing,
         submitMarketplaceReview = submitMarketplaceReview,
         listingChangedSignal = listingChangedSignal,
-        currentUserIdProvider = {
-            when (val result = authRepository.getCurrentUserId()) {
-                is com.jdrms.bulletin.core.common.Result.Success -> result.data?.value
-                is com.jdrms.bulletin.core.common.Result.Error -> null
-            }
-        }
+        currentUserIdProvider = createCurrentUserIdProvider(authRepository)
     )
 
     fun createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
