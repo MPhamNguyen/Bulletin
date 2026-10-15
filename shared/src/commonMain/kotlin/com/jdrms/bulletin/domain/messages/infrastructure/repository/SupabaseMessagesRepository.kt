@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
+import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
@@ -22,6 +23,7 @@ import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageRepo
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseMessagesMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -106,9 +108,16 @@ class SupabaseMessagesRepository internal constructor(
         if (messagesTable.findMessage(conversationId.value, messageId.value) == null) {
             throw ConversationAccessException()
         }
-        messagesTable.insertReport(
-            SupabaseMessagesMapper.toReportInsertDto(messageId, authenticatedReporterId, reason)
-        )
+        submitReport(messageId, authenticatedReporterId)
+    }
+
+    private suspend fun submitReport(messageId: MessageId, reporterId: SenderId) {
+        try {
+            messagesTable.insertReport(SupabaseMessagesMapper.toReportInsertDto(messageId, reporterId))
+        } catch (exception: PostgrestRestException) {
+            if (exception.code == "23505") throw MessageReportAlreadySubmittedException()
+            throw exception
+        }
     }
 
     private suspend fun loadConversation(conversationId: String): Conversation {
@@ -143,6 +152,8 @@ class SupabaseMessagesRepository internal constructor(
             throw exception
         } catch (exception: ConversationAccessException) {
             Result.Error(exception)
+        } catch (exception: MessageReportAlreadySubmittedException) {
+            Result.Error(exception)
         } catch (exception: Throwable) {
             Result.Error(MessagesPersistenceException(exception))
         }
@@ -152,7 +163,7 @@ class SupabaseMessagesRepository internal constructor(
         const val CONVERSATIONS_TABLE = "conversations"
         const val PARTICIPANTS_TABLE = "conversation_participants"
         const val MESSAGES_TABLE = "messages"
-        const val REPORTS_TABLE = "message_reports"
+        const val REPORTS_TABLE = "reports"
     }
 }
 
@@ -313,7 +324,7 @@ internal class PostgrestSupabaseMessagesTable(
         val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id")
         val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name)")
         val MESSAGE_COLUMNS = Columns.raw(
-            "id,conversation_id,sender_id,body,created_at,profiles(full_name),message_reports(id)"
+            "id,conversation_id,sender_id,body,created_at,profiles(full_name),reports(id,status)"
         )
     }
 }

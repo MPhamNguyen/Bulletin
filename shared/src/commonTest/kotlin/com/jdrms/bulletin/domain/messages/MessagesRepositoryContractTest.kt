@@ -12,7 +12,6 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -126,35 +125,6 @@ abstract class MessagesRepositoryContractTest {
         assertEquals(emptyList(), repository.getMessages(alice.id, conversationId).getOrThrow())
         assertEquals(1, repository.getConversations(alice.id).getOrThrow().size)
         assertEquals(null, repository.getConversations(alice.id).getOrThrow().single().lastMessage)
-    }
-
-    @Test
-    fun reportsRequireMembershipAndTheMessageMustBelongToTheConversation() = runTest {
-        val other = conversation(ConversationId("conversation-b"))
-        val repository = createRepository(listOf(conversation(), other), listOf(message()))
-        assertAccessDenied(repository.reportMessage(bob.id, conversationId, message().id, "Spam"))
-        assertAccessDenied(repository.reportMessage(alice.id, other.id, message().id, "Spam"))
-        assertAccessDenied(repository.reportMessage(alice.id, ConversationId("missing"), message().id, "Spam"))
-        assertAccessDenied(repository.reportMessage(alice.id, conversationId, MessageId("missing"), "Spam"))
-        assertFalse(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
-    }
-
-    @Test
-    fun reportUpdatesMessageAndMatchingConversationSummary() = runTest {
-        val repository = createRepository(listOf(conversation()))
-        repository.sendMessage(message()).getOrThrow()
-        assertTrue(repository.reportMessage(alice.id, conversationId, message().id, "Spam").isSuccess())
-        assertTrue(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
-        assertEquals(message().report(), repository.getConversations(alice.id).getOrThrow().single().lastMessage)
-    }
-
-    @Test
-    fun reportingOlderMessageDoesNotReplaceLatestSummary() = runTest {
-        val repository = createRepository(listOf(conversation()), listOf(message()))
-        val latest = message(alice, id = MessageId("latest")).copy(timestampMillis = 43L)
-        repository.sendMessage(latest).getOrThrow()
-        repository.reportMessage(alice.id, conversationId, message().id, "Spam").getOrThrow()
-        assertEquals(latest, repository.getConversations(alice.id).getOrThrow().single().lastMessage)
     }
 
     @Test

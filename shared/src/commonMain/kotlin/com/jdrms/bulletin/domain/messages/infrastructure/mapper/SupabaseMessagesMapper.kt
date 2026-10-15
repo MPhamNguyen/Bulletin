@@ -7,11 +7,13 @@ import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInsertDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportInsertDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportType
 import kotlin.time.Instant
 
 object SupabaseMessagesMapper {
@@ -66,13 +68,15 @@ object SupabaseMessagesMapper {
 
     fun toReportInsertDto(
         messageId: MessageId,
-        reporterId: SenderId,
-        reason: String
+        reporterId: SenderId
     ): SupabaseMessageReportInsertDto {
+        // Message-report reason selection is not implemented; persist the agreed placeholder for now.
         return SupabaseMessageReportInsertDto(
             messageId = messageId.value,
             reporterId = reporterId.value,
-            reason = reason
+            reason = MessagesPolicy.DEFAULT_REPORT_REASON,
+            type = SupabaseMessageReportType.MESSAGE,
+            description = null
         )
     }
 

@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
+import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.InboxInvalidation
 import com.jdrms.bulletin.domain.messages.domain.repository.InboxObserver
@@ -37,6 +38,7 @@ class InMemoryMessagesRepository(
         MessagesMapper.toDomain(it)
     }.associateBy { it.id }.toMutableMap()
     private val hiddenBy = mutableMapOf<ConversationId, MutableSet<SenderId>>()
+    private val reports = mutableSetOf<Pair<SenderId, MessageId>>()
     private val messagesByConvId = initialMessages.mapKeys { ConversationId(it.key) }.mapValues { entry ->
         entry.value.map { MessagesMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
@@ -137,6 +139,9 @@ class InMemoryMessagesRepository(
         val index = messages?.indexOfFirst { it.id == messageId } ?: -1
         if (messages == null || index == -1) {
             return@withLock Result.Error(ConversationAccessException())
+        }
+        if (!reports.add(userId to messageId)) {
+            return@withLock Result.Error(MessageReportAlreadySubmittedException())
         }
         val reported = messages[index].report()
         messages[index] = reported

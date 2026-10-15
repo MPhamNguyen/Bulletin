@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversatio
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProfileDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportMarkerDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportType
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseMessagesMapper
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SupabaseMessagesMapperTest {
@@ -90,12 +92,14 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
-    fun reportMappingPreservesReporterMessageAndReason() {
-        val report = SupabaseMessagesMapper.toReportInsertDto(message().id, carol.id, "Spam")
+    fun reportMappingUsesMessageTypeAndPlaceholderReasonWithoutDescription() {
+        val report = SupabaseMessagesMapper.toReportInsertDto(message().id, carol.id)
 
         assertEquals("message-a", report.messageId)
         assertEquals("carol-id", report.reporterId)
-        assertEquals("Spam", report.reason)
+        assertEquals("Innapropriate Content", report.reason)
+        assertEquals(SupabaseMessageReportType.MESSAGE, report.type)
+        assertNull(report.description)
     }
 
     private fun participantDto(

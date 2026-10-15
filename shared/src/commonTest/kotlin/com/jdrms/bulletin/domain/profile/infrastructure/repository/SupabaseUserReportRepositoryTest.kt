@@ -5,12 +5,15 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmittedException
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportReason
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.SupabaseUserReportType
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.UserReportInsertDto
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
@@ -42,7 +45,8 @@ class SupabaseUserReportRepositoryTest {
                 reporterId = "reporter-id",
                 reportedUserId = "target-id",
                 reason = "Scam or Fraud",
-                description = "Details"
+                description = "Details",
+                type = SupabaseUserReportType.USER
             )
         )
 
@@ -61,7 +65,8 @@ class SupabaseUserReportRepositoryTest {
                 reporterId = "reporter-id",
                 reportedUserId = "target-id",
                 reason = "Scam or Fraud",
-                description = "Details"
+                description = "Details",
+                type = SupabaseUserReportType.USER
             ),
             table.inserted
         )
@@ -103,11 +108,64 @@ class SupabaseUserReportRepositoryTest {
         )
     }
 
-    private fun report() = UserReport.create(
+    @Test
+    fun preservesEveryUserReportReasonWhenWritingTheUserReportType() = runTest {
+        val table = FakeTable("reporter-id")
+        val repository = SupabaseUserReportRepository(table)
+
+        UserReportReason.entries.forEach { reason ->
+            val report = UserReport.create(UserId("reporter-id"), UserId("target-id"), reason, "Details")
+                .getOrThrow()
+
+            repository.submit(report).getOrThrow()
+
+            assertEquals(reason.label, table.inserted?.reason)
+            assertEquals(SupabaseUserReportType.USER, table.inserted?.type)
+            assertEquals("reporter-id", table.inserted?.reporterId)
+            assertEquals("target-id", table.inserted?.reportedUserId)
+        }
+    }
+
+    @Test
+    fun preservesEmptyAndMaximumLengthDescriptions() = runTest {
+        val table = FakeTable("reporter-id")
+        val repository = SupabaseUserReportRepository(table)
+
+        listOf("", "x".repeat(UserReport.MAX_DESCRIPTION_LENGTH)).forEach { description ->
+            repository.submit(report(description)).getOrThrow()
+
+            assertEquals(description, table.inserted?.description)
+            assertEquals(SupabaseUserReportType.USER, table.inserted?.type)
+        }
+    }
+
+    @Test
+    fun blankAuthenticatedIdentityDoesNotWriteAReport() = runTest {
+        val table = FakeTable("  ")
+
+        val result = SupabaseUserReportRepository(table).submit(report())
+
+        assertIs<Result.Error>(result)
+        assertNull(table.inserted)
+    }
+
+    @Test
+    fun cancellationIsRethrownWithoutRecordingAReport() = runTest {
+        val table = object : FakeTable("reporter-id") {
+            override suspend fun insert(report: UserReportInsertDto) {
+                throw CancellationException("Submission cancelled")
+            }
+        }
+
+        assertFailsWith<CancellationException> { SupabaseUserReportRepository(table).submit(report()) }
+        assertNull(table.inserted)
+    }
+
+    private fun report(description: String = "Details") = UserReport.create(
         UserId("reporter-id"),
         UserId("target-id"),
         UserReportReason.SCAM_OR_FRAUD,
-        "Details"
+        description
     ).getOrThrow()
 
     private open class FakeTable(private val sessionUserId: String?) : SupabaseUserReportsTable {

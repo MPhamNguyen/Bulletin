@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInsertDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportInsertDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportType
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.MessagesPersistenceException
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.PostgrestSupabaseMessagesTable
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
@@ -196,7 +197,7 @@ class SupabaseMessagesRepositoryTest {
     }
 
     @Test
-    fun reportWritesAuthenticatedReporterAndReason() = runTest {
+    fun reportWritesAuthenticatedReporterWithPlaceholderReason() = runTest {
         val table = FakeSupabaseMessagesTable(
             conversations = listOf(conversation()),
             messages = listOf(message()),
@@ -207,7 +208,13 @@ class SupabaseMessagesRepositoryTest {
         repository.reportMessage(carol.id, conversationId, message().id, "Harassment").getOrThrow()
 
         assertEquals(
-            SupabaseMessageReportInsertDto("message-a", "carol-id", "Harassment"),
+            SupabaseMessageReportInsertDto(
+                "message-a",
+                "carol-id",
+                "Innapropriate Content",
+                SupabaseMessageReportType.MESSAGE,
+                null
+            ),
             table.insertedReport
         )
     }
