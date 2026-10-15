@@ -24,7 +24,7 @@ class SupabaseMessagesMapperTest {
                     "message_id":"message-id",
                     "reporter_id":"reporter-id",
                     "type":"message",
-                    "reason":"Innapropriate Content",
+                    "reason":"Inappropriate Content",
                     "description":null
                 }"""
             ),

@@ -46,7 +46,7 @@ class SupabaseMessageReportsTableTest {
                 assertEquals("message", body.getValue("type").jsonPrimitive.content)
                 assertEquals("message-a", body.getValue("message_id").jsonPrimitive.content)
                 assertEquals("alice-id", body.getValue("reporter_id").jsonPrimitive.content)
-                assertEquals("Innapropriate Content", body.getValue("reason").jsonPrimitive.content)
+                assertEquals("Inappropriate Content", body.getValue("reason").jsonPrimitive.content)
                 assertEquals(JsonNull, body.getValue("description"))
                 assertFalse("listing_id" in body)
                 assertFalse("status" in body)

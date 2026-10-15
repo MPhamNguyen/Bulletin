@@ -4,7 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 
 class MessagesPolicy {
     companion object {
-        const val DEFAULT_REPORT_REASON = "Innapropriate Content"
+        const val DEFAULT_REPORT_REASON = "Inappropriate Content"
     }
 
     fun validateMessageContent(content: String): Result<Unit> {

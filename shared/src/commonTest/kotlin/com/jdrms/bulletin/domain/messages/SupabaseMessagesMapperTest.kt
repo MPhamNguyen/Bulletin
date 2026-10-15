@@ -97,7 +97,7 @@ class SupabaseMessagesMapperTest {
 
         assertEquals("message-a", report.messageId)
         assertEquals("carol-id", report.reporterId)
-        assertEquals("Innapropriate Content", report.reason)
+        assertEquals("Inappropriate Content", report.reason)
         assertEquals(SupabaseMessageReportType.MESSAGE, report.type)
         assertNull(report.description)
     }
