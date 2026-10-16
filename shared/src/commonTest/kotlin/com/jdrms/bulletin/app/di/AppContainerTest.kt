@@ -59,8 +59,7 @@ class AppContainerTest {
     fun testAppContainerRejectsInMemoryFallbackWhenDisabled() {
         val container = AppContainer(
             supabaseConfig = SupabaseConfig(isConnected = false),
-            isInspectionMode = false,
-            allowInMemoryFallback = false
+            isInspectionMode = false
         )
 
         assertFailsWith<IllegalStateException> {
@@ -73,6 +72,10 @@ class AppContainerTest {
 
         assertFailsWith<IllegalStateException> {
             container.messagesRepository
+        }
+
+        assertFailsWith<IllegalStateException> {
+            container.profilePhotoRepository
         }
     }
 }

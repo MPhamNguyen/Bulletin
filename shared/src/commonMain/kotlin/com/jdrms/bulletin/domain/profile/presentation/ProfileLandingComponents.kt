@@ -10,17 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,7 +31,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 
 @Composable
@@ -79,8 +73,6 @@ internal fun ProfileHero(
     major: String,
     university: String,
     isVerified: Boolean,
-    onEditProfileClick: () -> Unit,
-    onChangePhotoClick: () -> Unit,
     avatarUrl: String? = null
 ) {
     val academicDetails = listOf(major, university)
@@ -93,43 +85,13 @@ internal fun ProfileHero(
             .padding(top = 8.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(modifier = Modifier.size(110.dp)) {
-            Surface(
-                onClick = onChangePhotoClick,
-                modifier = Modifier
-                    .size(104.dp)
-                    .align(Alignment.TopCenter),
-                shape = CircleShape,
-                color = Color.Transparent
-            ) {
-                ProfileAvatarImage(
-                    avatarUrl = avatarUrl,
-                    fullName = fullName,
-                    size = 104.dp,
-                    backgroundColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-            Surface(
-                onClick = onChangePhotoClick,
-                modifier = Modifier
-                    .size(34.dp)
-                    .align(Alignment.BottomEnd)
-                    .offset(x = (-1).dp, y = (-1).dp)
-                    .border(3.dp, MaterialTheme.colorScheme.background, CircleShape),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.inverseSurface,
-                contentColor = MaterialTheme.colorScheme.inverseOnSurface
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Outlined.CameraAlt,
-                        contentDescription = "Change profile photo",
-                        modifier = Modifier.size(15.dp)
-                    )
-                }
-            }
-        }
+        ProfileAvatarImage(
+            avatarUrl = avatarUrl,
+            fullName = fullName,
+            size = 104.dp,
+            backgroundColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
         Row(
@@ -154,23 +116,6 @@ internal fun ProfileHero(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-        }
-        Spacer(modifier = Modifier.height(18.dp))
-        Button(
-            onClick = onEditProfileClick,
-            modifier = Modifier
-                .widthIn(min = 184.dp)
-                .height(48.dp),
-            shape = MaterialTheme.shapes.medium,
-            colors = BulletinButtonDefaults.buttonColors()
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Edit,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.size(8.dp))
-            Text("Edit profile")
         }
     }
 }

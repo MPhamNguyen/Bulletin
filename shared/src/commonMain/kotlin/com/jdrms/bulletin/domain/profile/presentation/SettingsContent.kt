@@ -52,10 +52,10 @@ internal data class SettingsActions(
     val onEditAccount: () -> Unit,
     val onViewPublicProfile: () -> Unit,
     val onNotifications: () -> Unit,
-    val onPrivacy: () -> Unit,
+    val onPrivacy: () -> Unit = {},
     val onBlockedUsers: () -> Unit = {},
-    val onHelpSupport: () -> Unit,
-    val onTermsConditions: () -> Unit,
+    val onHelpSupport: () -> Unit = {},
+    val onTermsConditions: () -> Unit = {},
     val onSignOut: () -> Unit,
     val onDeleteProfile: () -> Unit = {},
     val onConfirmDeleteProfile: () -> Unit = {}
