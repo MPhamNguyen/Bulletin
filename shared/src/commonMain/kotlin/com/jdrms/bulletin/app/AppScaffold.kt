@@ -1,9 +1,12 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -12,7 +15,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
@@ -110,19 +116,24 @@ fun MainAppScaffold(
     val profilePresentation = ProfilePresentation(profileViewModel, themeViewModel, onSignOut)
 
     BulletinTheme(darkTheme = darkTheme) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            bottomBar = {
-                BulletinBottomNavigationBar(
-                    currentDestination = navigation.currentDestination,
-                    onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) }
-                )
+        Box(Modifier.fillMaxSize()) {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground
+            ) { paddingValues ->
+                Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+                    MainAppContent(container, navigation, models, profilePresentation)
+                }
             }
-        ) { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                MainAppContent(container, navigation, models, profilePresentation)
-            }
+            Navbar(
+                currentDestination = navigation.currentDestination,
+                onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .zIndex(100f)
+            )
         }
     }
 }
@@ -132,8 +143,7 @@ private fun navigateTo(destination: AppDestination, navigation: MainNavigationSt
         listings.cancelEditing()
         listings.clearMessages()
     }
-    navigation.profileDestination = ProfileDestination.PROFILE
-    navigation.currentDestination = destination
+    navigation.apply(navigation.snapshot().selectBottomNavigationDestination(destination))
 }
 
 @Composable
