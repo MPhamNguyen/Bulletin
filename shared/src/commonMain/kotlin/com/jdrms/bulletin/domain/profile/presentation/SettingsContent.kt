@@ -19,12 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,10 +52,10 @@ internal data class SettingsActions(
     val onEditAccount: () -> Unit,
     val onViewPublicProfile: () -> Unit,
     val onNotifications: () -> Unit,
-    val onPrivacy: () -> Unit,
+    val onPrivacy: () -> Unit = {},
     val onBlockedUsers: () -> Unit = {},
-    val onHelpSupport: () -> Unit,
-    val onTermsConditions: () -> Unit,
+    val onHelpSupport: () -> Unit = {},
+    val onTermsConditions: () -> Unit = {},
     val onSignOut: () -> Unit,
     val onDeleteProfile: () -> Unit = {},
     val onConfirmDeleteProfile: () -> Unit = {}

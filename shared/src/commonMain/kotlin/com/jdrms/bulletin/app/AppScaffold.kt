@@ -282,10 +282,6 @@ private fun profileCallbacks(
         listingsViewModel.clearMessages()
         navigation.profileDestination = ProfileDestination.MY_LISTINGS
     },
-    onCreateListingClick = {
-        listingsViewModel.clearMessages()
-        navigation.currentDestination = AppDestination.LISTINGS
-    },
     onMessageSeller = { listingId, sellerId, sellerName, content ->
         val result = sendListingMessage(
             container,
