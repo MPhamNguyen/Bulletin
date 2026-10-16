@@ -27,11 +27,14 @@ class MarketplaceHomeRepository(
     ): HomeFeedPage {
         val page = marketplaceListingSource.getAvailableListings(
             MarketplacePageRequest(
+                viewerId = userId,
                 cursor = cursor?.toMarketplaceCursor(),
                 pageSize = pageSize
             )
         )
-        val feedItems = page.listings.map { listing ->
+        val feedItems = page.listings
+            .filterNot { listing -> userId != null && listing.sellerId == userId }
+            .map { listing ->
             HomeFeedItem(
                 id = HomeItemId(listing.id),
                 title = listing.title,
@@ -40,7 +43,7 @@ class MarketplaceHomeRepository(
                 category = HomeFeedCategory.valueOf(listing.category.name),
                 createdAtMillis = listing.createdAtMillis
             )
-        }
+            }
         val preferences = getPreferences(userId)
         return HomeFeedPage(
             items = rankingPolicy.rankItems(feedItems, preferences),
