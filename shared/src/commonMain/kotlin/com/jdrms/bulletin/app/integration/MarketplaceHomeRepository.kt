@@ -35,14 +35,14 @@ class MarketplaceHomeRepository(
         val feedItems = page.listings
             .filterNot { listing -> userId != null && listing.sellerId == userId }
             .map { listing ->
-            HomeFeedItem(
-                id = HomeItemId(listing.id),
-                title = listing.title,
-                description = listing.description,
-                price = HomePrice(listing.priceAmount, listing.priceCurrency),
-                category = HomeFeedCategory.valueOf(listing.category.name),
-                createdAtMillis = listing.createdAtMillis
-            )
+                HomeFeedItem(
+                    id = HomeItemId(listing.id),
+                    title = listing.title,
+                    description = listing.description,
+                    price = HomePrice(listing.priceAmount, listing.priceCurrency),
+                    category = HomeFeedCategory.valueOf(listing.category.name),
+                    createdAtMillis = listing.createdAtMillis
+                )
             }
         val preferences = getPreferences(userId)
         return HomeFeedPage(
