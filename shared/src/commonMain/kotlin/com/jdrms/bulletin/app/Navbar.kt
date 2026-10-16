@@ -1,20 +1,20 @@
 package com.jdrms.bulletin.app
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -57,8 +57,7 @@ fun Navbar(
                 alpha = 1f - hiddenFraction.value
             }
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .widthIn(max = 360.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
             .fillMaxWidth()
             .semantics { if (!isVisible) hideFromAccessibility() },
         contentAlignment = Alignment.Center
@@ -68,12 +67,12 @@ fun Navbar(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp)
+                    .height(72.dp)
                     .padding(6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -106,24 +105,46 @@ private fun DestinationItem(
     onClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val itemColor = animateColorAsState(
+        targetValue = if (selected) colorScheme.primary.copy(alpha = 0.2f) else colorScheme.surfaceContainer,
+        animationSpec = tween(durationMillis = 220),
+        label = "navigation item background"
+    )
+    val contentColor = animateColorAsState(
+        targetValue = if (selected) colorScheme.primary else colorScheme.onSurfaceVariant,
+        animationSpec = tween(durationMillis = 220),
+        label = "navigation item content"
+    )
+    val iconScale = animateFloatAsState(
+        targetValue = if (selected) 1.1f else 1f,
+        animationSpec = tween(durationMillis = 220),
+        label = "navigation item icon scale"
+    )
     Surface(
         onClick = onClick,
         modifier = modifier
-            .height(52.dp)
+            .height(60.dp)
             .semantics { this.selected = selected },
         shape = CircleShape,
-        color = if (selected) colorScheme.primaryContainer else colorScheme.surfaceContainer,
-        contentColor = if (selected) colorScheme.onPrimaryContainer else colorScheme.onSecondaryContainer
+        color = itemColor.value,
+        contentColor = contentColor.value
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(imageVector = destination.icon, contentDescription = null)
+            Icon(
+                imageVector = if (selected) destination.selectedIcon else destination.icon,
+                contentDescription = null,
+                modifier = Modifier.graphicsLayer {
+                    scaleX = iconScale.value
+                    scaleY = iconScale.value
+                }
+            )
             Text(
                 text = destination.label,
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
             )
         }
     }
@@ -134,7 +155,7 @@ private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = modifier
-            .height(52.dp)
+            .height(60.dp)
             .semantics { contentDescription = "Create listing" },
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainer
