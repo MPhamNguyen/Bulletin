@@ -1,12 +1,9 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -16,6 +13,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -102,6 +103,27 @@ fun MainAppScaffold(
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     val navigation = remember { MainNavigationState() }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val navbarScrollBehavior = remember(density) {
+        NavbarScrollBehavior(with(density) { 8.dp.toPx() })
+    }
+    val navbarNestedScrollConnection = remember(navbarScrollBehavior) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                navbarScrollBehavior.onScrollDelta(-available.y)
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (available.y > 0f && consumed.y == 0f) navbarScrollBehavior.reveal()
+                return Offset.Zero
+            }
+        }
+    }
     val models = remember(container) {
         MainScaffoldModels(
             container.createHomeViewModel(),
@@ -121,18 +143,21 @@ fun MainAppScaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onBackground
             ) { paddingValues ->
-                Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize()
+                        .nestedScroll(navbarNestedScrollConnection)
+                ) {
                     MainAppContent(container, navigation, models, profilePresentation)
                 }
             }
             Navbar(
                 currentDestination = navigation.currentDestination,
+                isVisible = navbarScrollBehavior.isVisible,
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .zIndex(100f)
+                onFocused = navbarScrollBehavior::reveal,
+                modifier = Modifier.align(Alignment.BottomCenter).zIndex(100f)
             )
         }
     }
