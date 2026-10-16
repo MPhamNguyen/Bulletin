@@ -1,8 +1,10 @@
 package com.jdrms.bulletin.core.common
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /** A coroutine-safe, in-memory LRU cache with expiration and per-key load de-duplication. */
 internal class BoundedMemoryCache<K : Any, V : Any>(
@@ -34,12 +36,14 @@ internal class BoundedMemoryCache<K : Any, V : Any>(
         if (!owner) return deferred.await()
 
         val result = runCatching { loader() }
-        mutex.withLock {
-            result.onSuccess { value ->
-                if (value != null && generation == loadGeneration) putLocked(key, value)
-                if (pending[key] === deferred) pending.remove(key)?.complete(value)
-            }.onFailure { error ->
-                if (pending[key] === deferred) pending.remove(key)?.completeExceptionally(error)
+        withContext(NonCancellable) {
+            mutex.withLock {
+                result.onSuccess { value ->
+                    if (value != null && generation == loadGeneration) putLocked(key, value)
+                    if (pending[key] === deferred) pending.remove(key)?.complete(value)
+                }.onFailure { error ->
+                    if (pending[key] === deferred) pending.remove(key)?.completeExceptionally(error)
+                }
             }
         }
         return result.getOrThrow()

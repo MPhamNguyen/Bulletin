@@ -1,5 +1,8 @@
 package com.jdrms.bulletin.core.common
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -64,5 +67,22 @@ class BoundedMemoryCacheTest {
         assertFailsWith<IllegalStateException> { cache.getOrLoad("missing") { error("failure") } }
         assertEquals("original", cache.getOrLoad("key") { "replacement" })
         assertNull(cache.getOrLoad("missing") { null })
+    }
+
+    @Test
+    fun cancelledLoadIsRemovedSoLaterCallerCanRetry() = runTest {
+        val cache = BoundedMemoryCache<String, String>(2, 100, { 0L })
+        val loaderStarted = CompletableDeferred<Unit>()
+        val owner = launch {
+            cache.getOrLoad("key") {
+                loaderStarted.complete(Unit)
+                CompletableDeferred<String>().await()
+            }
+        }
+        loaderStarted.await()
+
+        owner.cancelAndJoin()
+
+        assertEquals("reloaded", cache.getOrLoad("key") { "reloaded" })
     }
 }
