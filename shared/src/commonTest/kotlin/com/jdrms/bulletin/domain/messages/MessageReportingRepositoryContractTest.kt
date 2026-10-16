@@ -81,9 +81,32 @@ abstract class MessageReportingRepositoryContractTest {
 class InMemoryMessageReportingRepositoryTest : MessageReportingRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository =
         messagesRepository(conversations, messages)
+
+    @Test
+    fun resolvedOrDismissedReportAllowsAnotherReportWhileMessageStaysHidden() = runTest {
+        val repository = messagesRepository(listOf(conversation()), listOf(message()))
+        repository.reportMessage(alice.id, conversationId, message().id, "Spam").getOrThrow()
+
+        assertTrue(repository.closeReport(alice.id, message().id))
+        repository.reportMessage(alice.id, conversationId, message().id, "Harassment").getOrThrow()
+
+        assertTrue(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
+    }
 }
 
 class SupabaseMessageReportingRepositoryTest : MessageReportingRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository =
         SupabaseMessagesRepository(FakeSupabaseMessagesTable(conversations, messages))
+
+    @Test
+    fun resolvedOrDismissedReportAllowsAnotherReportWhileMessageStaysHidden() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()), listOf(message()))
+        val repository = SupabaseMessagesRepository(table)
+        repository.reportMessage(alice.id, conversationId, message().id, "Spam").getOrThrow()
+
+        assertTrue(table.closeReport(alice.id.value, message().id.value))
+        repository.reportMessage(alice.id, conversationId, message().id, "Harassment").getOrThrow()
+
+        assertTrue(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
+    }
 }

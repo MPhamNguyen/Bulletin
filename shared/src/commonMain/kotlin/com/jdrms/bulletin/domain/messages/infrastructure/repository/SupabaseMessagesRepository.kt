@@ -115,10 +115,13 @@ class SupabaseMessagesRepository internal constructor(
         try {
             messagesTable.insertReport(SupabaseMessagesMapper.toReportInsertDto(messageId, reporterId))
         } catch (exception: PostgrestRestException) {
-            if (exception.code == "23505") throw MessageReportAlreadySubmittedException()
+            if (exception.isDuplicateMessageReport()) throw MessageReportAlreadySubmittedException()
             throw exception
         }
     }
+
+    private fun PostgrestRestException.isDuplicateMessageReport(): Boolean =
+        code == UNIQUE_VIOLATION_CODE && message?.contains(MESSAGE_REPORT_UNIQUE_CONSTRAINT) == true
 
     private suspend fun loadConversation(conversationId: String): Conversation {
         val conversation = messagesTable.findConversation(conversationId) ?: throw ConversationAccessException()
@@ -164,6 +167,8 @@ class SupabaseMessagesRepository internal constructor(
         const val PARTICIPANTS_TABLE = "conversation_participants"
         const val MESSAGES_TABLE = "messages"
         const val REPORTS_TABLE = "reports"
+        private const val UNIQUE_VIOLATION_CODE = "23505"
+        private const val MESSAGE_REPORT_UNIQUE_CONSTRAINT = "reports_active_message_unique"
     }
 }
 

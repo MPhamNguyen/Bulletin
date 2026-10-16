@@ -38,7 +38,7 @@ class InMemoryMessagesRepository(
         MessagesMapper.toDomain(it)
     }.associateBy { it.id }.toMutableMap()
     private val hiddenBy = mutableMapOf<ConversationId, MutableSet<SenderId>>()
-    private val reports = mutableSetOf<Pair<SenderId, MessageId>>()
+    private val activeReports = mutableSetOf<Pair<SenderId, MessageId>>()
     private val messagesByConvId = initialMessages.mapKeys { ConversationId(it.key) }.mapValues { entry ->
         entry.value.map { MessagesMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
@@ -140,7 +140,7 @@ class InMemoryMessagesRepository(
         if (messages == null || index == -1) {
             return@withLock Result.Error(ConversationAccessException())
         }
-        if (!reports.add(userId to messageId)) {
+        if (!activeReports.add(userId to messageId)) {
             return@withLock Result.Error(MessageReportAlreadySubmittedException())
         }
         val reported = messages[index].report()
@@ -149,6 +149,10 @@ class InMemoryMessagesRepository(
             conversations[conversationId] = conversation.recordMessage(reported).getOrThrow()
         }
         Result.Success(Unit)
+    }
+
+    internal suspend fun closeReport(userId: SenderId, messageId: MessageId): Boolean = mutex.withLock {
+        activeReports.remove(userId to messageId)
     }
 
     override fun observe(userId: SenderId, conversationId: ConversationId): Flow<MessageStreamEvent> = flow {

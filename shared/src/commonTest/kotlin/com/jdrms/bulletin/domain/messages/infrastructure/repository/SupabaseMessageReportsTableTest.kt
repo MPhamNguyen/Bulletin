@@ -124,10 +124,29 @@ class SupabaseMessageReportsTableTest {
 
     @Test
     fun duplicateMessageReportReturnsDomainFailure() = runTest {
-        val client = failingClient(HttpStatusCode.Conflict, "23505")
+        val client = failingClient(
+            HttpStatusCode.Conflict,
+            "23505",
+            "duplicate key value violates unique constraint reports_active_message_unique"
+        )
         try {
             val result = repository(client).reportMessage(alice.id, conversationId, message().id, "Spam")
             assertIs<MessageReportAlreadySubmittedException>(assertIs<Result.Error>(result).exception)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun unrelatedUniqueConstraintViolationRemainsPersistenceFailure() = runTest {
+        val client = failingClient(
+            HttpStatusCode.Conflict,
+            "23505",
+            "duplicate key value violates unique constraint another_unique_constraint"
+        )
+        try {
+            val result = repository(client).reportMessage(alice.id, conversationId, message().id, "Spam")
+            assertIs<MessagesPersistenceException>(assertIs<Result.Error>(result).exception)
         } finally {
             client.close()
         }
@@ -144,12 +163,16 @@ class SupabaseMessageReportsTableTest {
         return SupabaseMessagesRepository(table)
     }
 
-    private fun failingClient(status: HttpStatusCode, code: String = "42501") =
+    private fun failingClient(
+        status: HttpStatusCode,
+        code: String = "42501",
+        message: String = "private backend detail"
+    ) =
         createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine {
                 respond(
-                    """{"code":"$code","message":"private backend detail"}""",
+                    """{"code":"$code","message":"$message"}""",
                     status,
                     headersOf("Content-Type", "application/json")
                 )
