@@ -10,17 +10,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.UserMessenger
+import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
+import kotlinx.coroutines.launch
 
 data class ProfileScreenFlows(
     val editing: EditProfileViewModel,
     val account: AccountViewModel,
-    val messenger: UserMessenger
+    val messenger: UserMessenger,
+    val blockedUsers: BlockedUsersViewModel
 )
 
 data class ProfileScreenCallbacks(
@@ -33,7 +41,13 @@ data class ProfileScreenCallbacks(
     val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
         { _, _ -> false },
     val onMessageSent: () -> Unit = {},
-    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
+    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> },
+    val onSubmitReview: suspend (
+        listing: ProfileBookmarkedListing,
+        reviewerId: String,
+        score: Int,
+        comment: String
+    ) -> Result<Unit> = { _, _, _, _ -> Result.Error(UnsupportedOperationException("Review submission unavailable.")) }
 )
 
 private data class ProfileDestinationStates(
@@ -53,11 +67,18 @@ fun ProfileScreen(
     val profileState by viewModel.uiState.collectAsState()
     val editState by flows.editing.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var reviewListing by remember { mutableStateOf<ProfileBookmarkedListing?>(null) }
+    var reviewError by remember { mutableStateOf<String?>(null) }
+    var isSubmittingReview by remember { mutableStateOf(false) }
+    val reviewScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { viewModel.refreshActiveListings() }
     LaunchedEffect(destination) {
         if (destination == ProfileDestination.BOOKMARKED_LISTINGS) {
             viewModel.loadBookmarkedListings()
+        }
+        if (destination == ProfileDestination.BLOCKED_USERS) {
+            flows.blockedUsers.load()
         }
     }
     LaunchedEffect(flows.messenger) {
@@ -70,8 +91,34 @@ fun ProfileScreen(
             ProfileDestinationStates(profileState, editState, viewModel),
             flows,
             callbacks,
-            themeViewModel
+            themeViewModel,
+            onLeaveReview = { reviewListing = it }
         )
+        reviewListing?.let { listing ->
+            ReviewSubmissionDialog(
+                isSubmitting = isSubmittingReview,
+                errorMessage = reviewError,
+                onDismiss = { if (!isSubmittingReview) reviewListing = null },
+                onSubmit = { score, comment ->
+                    profileState.profile?.id?.value?.let { reviewerId ->
+                        reviewScope.launch {
+                            isSubmittingReview = true
+                            reviewError = null
+                            when (val result = callbacks.onSubmitReview(listing, reviewerId, score, comment)) {
+                                is Result.Success -> {
+                                    isSubmittingReview = false
+                                    reviewListing = null
+                                }
+                                is Result.Error -> {
+                                    isSubmittingReview = false
+                                    reviewError = result.exception.message
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+        }
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
     }
 }
@@ -82,7 +129,8 @@ private fun ProfileDestinationContent(
     states: ProfileDestinationStates,
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
-    themeViewModel: ThemeViewModel?
+    themeViewModel: ThemeViewModel?,
+    onLeaveReview: (ProfileBookmarkedListing) -> Unit
 ) {
     when (destination) {
         ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks)
@@ -115,6 +163,8 @@ private fun ProfileDestinationContent(
                         onDismiss = states.viewModel::dismissBookmarkedListing,
                         onRemoveBookmark = { states.viewModel.removeBookmarkedListing(listing.id) },
                         canMessageSeller = states.profile.profile?.id?.value != listing.sellerId,
+                        canLeaveReview = listing.isSold && listing.buyerId == states.profile.profile?.id?.value,
+                        onLeaveReview = { onLeaveReview(listing) },
                         onMessageSeller = { content ->
                             callbacks.onMessageSeller(listing.id, listing.sellerId, listing.sellerName, content)
                         },
@@ -127,8 +177,15 @@ private fun ProfileDestinationContent(
                 )
             }
         }
+        ProfileDestination.BLOCKED_USERS -> BlockedUsersView(
+            state = flows.blockedUsers.uiState.collectAsState().value,
+            onUnblock = flows.blockedUsers::unblock,
+            onRefresh = flows.blockedUsers::load,
+            onBack = callbacks.onBack
+        )
         ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
         ProfileDestination.PRIVACY -> PrivacyView(callbacks.onBack)
+        ProfileDestination.HELP_AND_SUPPORT -> HelpAndSupportView(callbacks.onBack)
         ProfileDestination.TERMS_AND_CONDITIONS -> TermsAndConditionsView(callbacks.onBack)
         ProfileDestination.PUBLIC_PROFILE -> PublicProfileView(states.profile.profile, callbacks.onBack)
         ProfileDestination.MY_LISTINGS, ProfileDestination.EDIT_LISTING -> Unit
@@ -184,6 +241,10 @@ private fun ProfileSettingsDestination(
             onEditAccount = { callbacks.onNavigate(ProfileDestination.EDIT_ACCOUNT) },
             onViewPublicProfile = { callbacks.onNavigate(ProfileDestination.PUBLIC_PROFILE) },
             onNotifications = { callbacks.onNavigate(ProfileDestination.NOTIFICATIONS) },
+            onPrivacy = { callbacks.onNavigate(ProfileDestination.PRIVACY) },
+            onBlockedUsers = { callbacks.onNavigate(ProfileDestination.BLOCKED_USERS) },
+            onHelpSupport = { callbacks.onNavigate(ProfileDestination.HELP_AND_SUPPORT) },
+            onTermsConditions = { callbacks.onNavigate(ProfileDestination.TERMS_AND_CONDITIONS) },
             onSignOut = { flows.account.signOut(callbacks.onSignOut) },
             onConfirmDeleteProfile = { flows.account.deleteProfile(callbacks.onSignOut) }
         ),

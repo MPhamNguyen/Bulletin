@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,9 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -23,18 +19,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.domain.messages.domain.model.Conversation
-import com.jdrms.bulletin.domain.messages.domain.model.Message
-import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
 internal fun MessagesContent(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
@@ -73,72 +68,9 @@ private fun MessagesConversationLayout(state: MessagesUiState, viewModel: Messag
 }
 
 @Composable
-private fun ConversationList(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(state.conversations, key = { it.id.value }) { conversation ->
-            ConversationCard(
-                conversation = conversation,
-                viewerId = state.viewerId,
-                isSelected = conversation.id == state.selectedConversationId,
-                onClick = { viewModel.selectConversation(conversation.id) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun ConversationCard(
-    conversation: Conversation,
-    viewerId: SenderId?,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val selectedColor = if (isSelected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
-            contentColor = selectedColor
-        )
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(
-                text = conversationTitle(conversation, viewerId),
-                fontWeight = FontWeight.Bold,
-                color = selectedColor
-            )
-            Text(
-                text = conversationPreviewText(conversation),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
-            conversation.lastMessage?.let { message ->
-                Text(
-                    text = formatRelativeTime(message.timestampMillis, currentTimeMillis()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun MessageThread(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
     Column(modifier = modifier) {
-        val messageListState = rememberLazyListState()
+        val messageListState = rememberMessageHistoryListState(viewModel, state)
         if (state.isLoadingMessages) {
             MessageThreadLoading()
         } else {
@@ -161,20 +93,21 @@ private fun MessageList(
     messageListState: androidx.compose.foundation.lazy.LazyListState,
     modifier: Modifier
 ) {
-    LaunchedEffect(
-        state.selectedConversationId,
-        state.currentMessages.lastOrNull()?.id,
-        state.currentMessages.size
-    ) {
-        if (state.currentMessages.isNotEmpty()) {
-            messageListState.scrollToItem(state.currentMessages.lastIndex)
-        }
-    }
     LazyColumn(
         modifier = modifier,
         state = messageListState,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        if (state.olderCursor != null) {
+            item {
+                TextButton(
+                    onClick = viewModel::loadOlderMessages,
+                    enabled = !state.isLoadingOlder
+                ) {
+                    Text(if (state.isLoadingOlder) "Loading..." else "Load older messages")
+                }
+            }
+        }
         items(state.currentMessages, key = { it.id.value }) { message ->
             MessageItemCard(
                 message = message,
@@ -185,6 +118,43 @@ private fun MessageList(
             )
         }
     }
+}
+
+@Composable
+private fun rememberMessageHistoryListState(
+    viewModel: MessagesViewModel,
+    state: MessagesUiState
+): androidx.compose.foundation.lazy.LazyListState {
+    val listState = rememberLazyListState()
+    var positioned by remember(state.selectedConversationId) { mutableStateOf(false) }
+    LaunchedEffect(state.selectedConversationId, state.currentMessages.lastOrNull()?.id) {
+        val targetIndex = messageScrollTargetIndex(state.currentMessages.size, state.olderCursor != null)
+        if (targetIndex != null) {
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            if (shouldScrollToLatest(
+                    isInitialPosition = !positioned,
+                    lastVisibleItemIndex = lastVisibleItemIndex,
+                    totalItemsCount = layoutInfo.totalItemsCount
+                )
+            ) {
+                listState.scrollToItem(targetIndex)
+            }
+            positioned = true
+        }
+    }
+    LaunchedEffect(state.selectedConversationId, state.olderCursor, positioned) {
+        if (positioned && state.olderCursor != null) {
+            var previousFirstVisible: Int? = null
+            snapshotFlow { listState.firstVisibleItemIndex }.collect { firstVisible ->
+                if (shouldLoadOlderAfterScroll(previousFirstVisible, firstVisible)) {
+                    viewModel.loadOlderMessages()
+                }
+                previousFirstVisible = firstVisible
+            }
+        }
+    }
+    return listState
 }
 
 @Composable
@@ -227,84 +197,4 @@ private fun MessagesFeedback(state: MessagesUiState, onRetry: () -> Unit) {
         Text(status, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.height(8.dp))
     }
-}
-
-@Composable
-private fun MessageItemCard(
-    message: Message,
-    isRevealed: Boolean,
-    canReport: Boolean,
-    onReport: () -> Unit,
-    onToggleVisibility: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (message.isReported) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-            contentColor = if (message.isReported) {
-                MaterialTheme.colorScheme.onErrorContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            MessageMetadataText(
-                text = message.senderName,
-                isReported = message.isReported,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = messageBodyText(message, isRevealed),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (message.isReported) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
-            MessageMetadataText(
-                text = formatRelativeTime(message.timestampMillis, currentTimeMillis()),
-                isReported = message.isReported,
-                fontWeight = null
-            )
-            if (message.isReported) {
-                Text(
-                    text = "[Reported for moderation]",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-                TextButton(onClick = onToggleVisibility) {
-                    Text(if (isRevealed) "Hide message" else "Show message")
-                }
-            } else {
-                TextButton(
-                    onClick = onReport,
-                    enabled = canReport,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Report", style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MessageMetadataText(text: String, isReported: Boolean, fontWeight: FontWeight?) {
-    val color = if (isReported) {
-        MaterialTheme.colorScheme.onErrorContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = fontWeight,
-        color = color
-    )
 }

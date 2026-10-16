@@ -7,6 +7,9 @@ import kotlin.jvm.JvmInline
 @JvmInline
 value class MarketplaceItemId(val value: String)
 
+@JvmInline
+value class MarketplaceSellerId(val value: String)
+
 enum class MarketplaceCategory {
     TEXTBOOKS,
     ELECTRONICS,
@@ -14,6 +17,20 @@ enum class MarketplaceCategory {
     CLOTHING,
     HOUSING,
     OTHER
+}
+
+enum class MarketplaceCondition {
+    NEW,
+    LIKE_NEW,
+    GOOD,
+    FAIR,
+    POOR,
+    UNKNOWN;
+
+    companion object {
+        val knownValues: List<MarketplaceCondition>
+            get() = entries.filterNot { it == UNKNOWN }
+    }
 }
 
 data class MarketplacePrice(
@@ -39,6 +56,7 @@ data class MarketplaceItem(
     val description: String,
     val price: MarketplacePrice,
     val category: MarketplaceCategory,
+    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
     val isBookmarked: Boolean = false,
     val createdAtMillis: Long = 0L
 ) {
@@ -53,13 +71,15 @@ typealias MarketplaceListing = Listing
 data class Listing(
     val id: MarketplaceItemId,
     val sellerId: String,
+    val buyerId: String? = null,
     val sellerName: String,
     val title: String,
     val description: String,
     val price: MarketplacePrice,
     val category: MarketplaceCategory,
-    val condition: String = "GOOD",
+    val condition: String = "UNKNOWN",
     val status: String = "AVAILABLE",
+    val isSold: Boolean = false,
     val photos: List<String> = emptyList(),
     val sellerReputationScore: Double? = null,
     val isBookmarked: Boolean = false,
@@ -83,5 +103,25 @@ data class Listing(
         photos.forEach { photoUrl ->
             require(photoUrl.isNotBlank()) { "Photo URL cannot be blank." }
         }
+    }
+}
+
+@JvmInline
+value class MarketplaceReviewId(val value: String)
+
+data class MarketplaceReview(
+    val id: MarketplaceReviewId = MarketplaceReviewId(""),
+    val listingId: MarketplaceItemId,
+    val reviewerId: String,
+    val revieweeId: String,
+    val score: Int,
+    val comment: String
+) {
+    init {
+        require(listingId.value.isNotBlank()) { "Review listing ID cannot be blank." }
+        require(reviewerId.isNotBlank()) { "Review reviewer ID cannot be blank." }
+        require(revieweeId.isNotBlank()) { "Review reviewee ID cannot be blank." }
+        require(score in 1..5) { "Review score must be between 1 and 5." }
+        require(comment.isNotBlank()) { "Review comment cannot be blank." }
     }
 }

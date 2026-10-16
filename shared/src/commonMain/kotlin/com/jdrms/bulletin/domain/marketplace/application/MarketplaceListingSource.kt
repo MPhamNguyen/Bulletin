@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import kotlin.time.Instant
 
@@ -13,7 +14,8 @@ data class MarketplaceListingSnapshot(
     val priceAmount: Double,
     val priceCurrency: String,
     val category: MarketplaceCategory,
-    val createdAtMillis: Long
+    val createdAtMillis: Long,
+    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN
 )
 
 data class MarketplacePageCursor(
@@ -23,7 +25,10 @@ data class MarketplacePageCursor(
 
 data class MarketplacePageRequest(
     val query: String = "",
+    val sellerId: String? = null,
     val category: MarketplaceCategory? = null,
+    val condition: MarketplaceCondition? = null,
+    val viewerId: String? = null,
     val cursor: MarketplacePageCursor? = null,
     val pageSize: Int = DEFAULT_MARKETPLACE_PAGE_SIZE
 ) {
@@ -39,7 +44,7 @@ data class MarketplaceListingPage(
     val nextCursor: MarketplacePageCursor?
 )
 
-interface MarketplaceListingSource {
+fun interface MarketplaceListingSource {
     suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage
 }
 
@@ -63,7 +68,8 @@ class MarketplaceRepositoryListingSource(
                 priceAmount = item.price.amount,
                 priceCurrency = item.price.currency,
                 category = item.category,
-                createdAtMillis = item.createdAtMillis
+                createdAtMillis = item.createdAtMillis,
+                condition = item.condition
             )
         }.pageFor(request)
     }
@@ -72,7 +78,9 @@ class MarketplaceRepositoryListingSource(
 fun List<MarketplaceListingSnapshot>.pageFor(request: MarketplacePageRequest): MarketplaceListingPage {
     val keywords = request.query.trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
     val matchingListings = asSequence()
+        .filter { listing -> request.sellerId == null || listing.sellerId == request.sellerId }
         .filter { listing -> request.category == null || listing.category == request.category }
+        .filter { listing -> request.condition == null || listing.condition == request.condition }
         .filter { listing ->
             val searchableText = "${listing.title.lowercase()} ${listing.category.name.lowercase()}"
             keywords.all(searchableText::contains)

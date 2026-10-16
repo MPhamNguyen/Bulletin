@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.integration
 
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
@@ -14,6 +15,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,6 +38,20 @@ class ListingsMarketplaceListingSourceTest {
         assertEquals("listing:available", snapshots.single().id)
         assertEquals("Campus Sofa", snapshots.single().title)
         assertEquals(MarketplaceCategory.FURNITURE, snapshots.single().category)
+        assertEquals(MarketplaceCondition.FAIR, snapshots.single().condition)
+    }
+
+    @Test
+    fun sellerRequestReturnsOnlyThatSellersAvailableListings() = runTest {
+        val repository = InMemoryListingsRepository(initialListings = emptyList())
+        repository.createListing(listing(id = "requested", sellerId = "seller_1"))
+        repository.createListing(listing(id = "other", sellerId = "seller_2"))
+
+        val snapshots = ListingsMarketplaceListingSource(repository)
+            .getAvailableListings(MarketplacePageRequest(sellerId = "seller_1"))
+            .listings
+
+        assertEquals(listOf("listing:requested"), snapshots.map { it.id })
     }
 
     @Test
@@ -76,15 +92,20 @@ class ListingsMarketplaceListingSourceTest {
         assertEquals(continuation, page.nextCursor)
     }
 
-    private fun listing(id: String, status: ListingStatus): Listing {
+    private fun listing(
+        id: String,
+        status: ListingStatus = ListingStatus.AVAILABLE,
+        sellerId: String = "seller_1"
+    ): Listing {
         return Listing(
             id = ListingId(id),
-            sellerId = SellerId("seller_1"),
+            sellerId = SellerId(sellerId),
             sellerName = "Campus Seller",
             title = "Campus Sofa",
             description = "Compact sofa in good condition",
             price = ListingPrice(75.0),
             category = ListingCategory.FURNITURE,
+            condition = ListingCondition.FAIR,
             status = status
         )
     }

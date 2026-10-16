@@ -7,7 +7,9 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
@@ -24,10 +26,12 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.time.Instant
 
 class SupabaseMessagesRepository internal constructor(
     private val messagesTable: SupabaseMessagesTable
@@ -40,6 +44,17 @@ class SupabaseMessagesRepository internal constructor(
             .sortedByDescending(Conversation::updatedAtMillis)
     }
 
+    override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
+        repositoryCall {
+            val viewerId = requireAuthenticatedUser(userId)
+            val conversation = messagesTable.findConversation(conversationId.value)
+                ?: throw ConversationAccessException()
+            val participants = messagesTable.getParticipants(conversationId.value)
+            SupabaseMessagesMapper.toConversation(conversation, participants, null)
+                .authorizeHiding(viewerId).getOrThrow()
+            if (!messagesTable.hideConversation(conversationId.value)) throw ConversationAccessException()
+        }
+
     override suspend fun getOrCreateConversation(
         requesterId: SenderId,
         otherParticipant: ConversationParticipant,
@@ -51,15 +66,26 @@ class SupabaseMessagesRepository internal constructor(
             otherParticipant.id.value,
             listingId.value
         )
+        if (!messagesTable.restoreConversation(conversationId)) throw ConversationAccessException()
         loadConversation(conversationId)
     }
 
-    override suspend fun getMessages(
+    override suspend fun getMessagePage(
         userId: SenderId,
-        conversationId: ConversationId
-    ): Result<List<Message>> = repositoryCall {
+        conversationId: ConversationId,
+        before: MessageCursor?,
+        limit: Int
+    ): Result<MessagePage> = repositoryCall {
+        require(limit > 0)
         requireParticipant(userId, conversationId)
-        messagesTable.getMessages(conversationId.value).map(SupabaseMessagesMapper::toMessage)
+        val rows = messagesTable.getMessagePage(conversationId.value, before, limit + 1)
+        val visible = rows.take(limit)
+        MessagePage(
+            messages = visible.map(SupabaseMessagesMapper::toMessage).reversed(),
+            olderCursor = visible.lastOrNull()?.takeIf { rows.size > limit }?.let {
+                MessageCursor(Instant.parse(it.createdAt), MessageId(it.id))
+            }
+        )
     }
 
     override suspend fun sendMessage(message: Message): Result<Message> = repositoryCall {
@@ -137,20 +163,25 @@ internal interface SupabaseConversationCreationTable {
     suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String
 }
 
-internal interface SupabaseMessagesTable : SupabaseConversationCreationTable {
+internal interface SupabaseConversationVisibilityTable {
+    suspend fun hideConversation(conversationId: String): Boolean
+    suspend fun restoreConversation(conversationId: String): Boolean
+}
+
+internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, SupabaseConversationVisibilityTable {
     suspend fun getAuthenticatedUserId(): String?
     suspend fun getConversationIds(userId: String): List<String>
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
     suspend fun isParticipant(conversationId: String, userId: String): Boolean
     suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto>
-    suspend fun getMessages(conversationId: String): List<SupabaseMessageDto>
+    suspend fun getMessagePage(conversationId: String, before: MessageCursor?, limit: Int): List<SupabaseMessageDto>
     suspend fun findLatestMessage(conversationId: String): SupabaseMessageDto?
     suspend fun findMessage(conversationId: String, messageId: String): SupabaseMessageDto?
     suspend fun insertMessage(message: SupabaseMessageInsertDto)
     suspend fun insertReport(report: SupabaseMessageReportInsertDto)
 }
 
-private class PostgrestSupabaseMessagesTable(
+internal class PostgrestSupabaseMessagesTable(
     private val supabase: SupabaseClient
 ) : SupabaseMessagesTable {
     override suspend fun getAuthenticatedUserId(): String? {
@@ -161,12 +192,27 @@ private class PostgrestSupabaseMessagesTable(
     override suspend fun getConversationIds(userId: String): List<String> {
         return supabase.from(SupabaseMessagesRepository.PARTICIPANTS_TABLE)
             .select(columns = MEMBERSHIP_COLUMNS) {
-                filter { eq("user_id", userId) }
+                filter {
+                    eq("user_id", userId)
+                    filter("deleted_at", FilterOperator.IS, "null")
+                }
             }
             .decodeList<SupabaseConversationMembershipDto>()
             .map(SupabaseConversationMembershipDto::conversationId)
             .distinct()
     }
+
+    override suspend fun hideConversation(conversationId: String): Boolean =
+        supabase.postgrest.rpc(
+            "hide_conversation",
+            parameters = buildJsonObject { put("p_conversation_id", conversationId) }
+        ).decodeAs<Boolean>()
+
+    override suspend fun restoreConversation(conversationId: String): Boolean =
+        supabase.postgrest.rpc(
+            "restore_conversation",
+            parameters = buildJsonObject { put("p_conversation_id", conversationId) }
+        ).decodeAs<Boolean>()
 
     override suspend fun getOrCreateConversation(requesterId: String, sellerId: String, listingId: String): String {
         return supabase.postgrest.rpc(
@@ -207,12 +253,28 @@ private class PostgrestSupabaseMessagesTable(
             .decodeList()
     }
 
-    override suspend fun getMessages(conversationId: String): List<SupabaseMessageDto> {
+    override suspend fun getMessagePage(
+        conversationId: String,
+        before: MessageCursor?,
+        limit: Int
+    ): List<SupabaseMessageDto> {
         return supabase.from(SupabaseMessagesRepository.MESSAGES_TABLE)
             .select(columns = MESSAGE_COLUMNS) {
-                filter { eq("conversation_id", conversationId) }
-                order("created_at", Order.ASCENDING)
-                order("id", Order.ASCENDING)
+                filter {
+                    eq("conversation_id", conversationId)
+                    if (before != null) {
+                        or {
+                            lt("created_at", before.createdAt.toString())
+                            and {
+                                eq("created_at", before.createdAt.toString())
+                                lt("id", before.id.value)
+                            }
+                        }
+                    }
+                }
+                order("created_at", Order.DESCENDING)
+                order("id", Order.DESCENDING)
+                limit(limit.toLong())
             }
             .decodeList()
     }

@@ -48,7 +48,9 @@ internal fun MarketplaceProfileView(
             MarketplaceActivityStatsCard(
                 activeListings = uiState.activeListingsCount,
                 itemsSold = uiState.itemsSoldCount,
-                rating = uiState.reputation?.averageRating
+                rating = uiState.reputation
+                    ?.takeIf { it.totalReviews > 0 }
+                    ?.averageRating
             )
 
             ProfileAboutCard(

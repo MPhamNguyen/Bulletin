@@ -2,13 +2,15 @@ package com.jdrms.bulletin.domain.messages
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
-import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
+import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import kotlinx.coroutines.Dispatchers
@@ -108,7 +110,7 @@ class MessagesReportingViewModelTest {
         assertFalse(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
         assertEquals(emptyList(), viewModel.uiState.value.currentMessages)
         assertEquals(
-            "Unable to complete the messaging request. Please try again.",
+            "Sign in to access your messages.",
             viewModel.uiState.value.errorMessage
         )
     }
@@ -138,10 +140,12 @@ class MessagesReportingViewModelTest {
         assertNotNull(viewModel.uiState.value.errorMessage)
     }
 
-    private fun viewModel(repository: MessagesRepository) = MessagesViewModel(
-        GetConversations(repository, provider),
+    private fun viewModel(repository: MessagesRepository): MessagesViewModel = MessagesViewModel(
+        testInboxOwner(repository, provider, dispatcher),
         GetConversationMessages(repository, provider),
+        ObserveConversationMessages(repository as? MessagesObserver ?: messagesRepository(), provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
-        ReportMessage(repository, provider)
-    )
+        ReportMessage(repository, provider),
+        HideConversation(repository, provider)
+    ).also { it.onDestinationActiveChanged(true) }
 }

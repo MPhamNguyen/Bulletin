@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
@@ -44,6 +45,7 @@ class MarketplaceInfrastructureTest {
         assertEquals(45.0, listing?.price?.amount)
         assertEquals(false, listing?.isBookmarked)
         assertEquals(4.5, listing?.sellerReputationScore)
+        assertEquals("GOOD", listing?.condition)
     }
 
     @Test
@@ -60,6 +62,42 @@ class MarketplaceInfrastructureTest {
 
         assertEquals("listing:listing-42", item?.id?.value)
         assertEquals("Campus desk", item?.title)
+        assertEquals(MarketplaceCondition.UNKNOWN, item?.condition)
+    }
+
+    @Test
+    fun unrecognizedSupabaseConditionRemainsUnknown() {
+        val item = SupabaseMarketplaceListingMapper.toItem(
+            SupabaseMarketplaceListingDto(
+                id = "listing-unknown-condition",
+                name = "Campus desk",
+                userId = "seller-42",
+                category = "FURNITURE",
+                condition = "refurbished",
+                price = 25.0
+            )
+        )
+
+        assertEquals(MarketplaceCondition.UNKNOWN, item?.condition)
+    }
+
+    @Test
+    fun inMemoryRepositoryKeepsUnrecognizedConditionUnknown() = runTest {
+        val repository = InMemoryMarketplaceRepository(
+            initialListings = listOf(
+                MarketplaceListingDto(
+                    id = "mkt_unknown_condition",
+                    sellerId = "seller-42",
+                    title = "Campus desk",
+                    description = "Solid wood",
+                    price = 25.0,
+                    category = "FURNITURE",
+                    condition = "refurbished"
+                )
+            )
+        )
+
+        assertEquals(MarketplaceCondition.UNKNOWN, repository.getCatalog().single().condition)
     }
 
     @Test
@@ -99,6 +137,7 @@ class MarketplaceInfrastructureTest {
         assertEquals("mkt_map_1", domain.id.value)
         assertEquals("Sean Gallagher", domain.sellerName)
         assertEquals(MarketplaceCategory.ELECTRONICS, domain.category)
+        assertEquals("LIKE_NEW", domain.condition)
         assertEquals(4.9, domain.sellerReputationScore)
         assertEquals(true, domain.isBookmarked)
         assertEquals(1, domain.photos.size)

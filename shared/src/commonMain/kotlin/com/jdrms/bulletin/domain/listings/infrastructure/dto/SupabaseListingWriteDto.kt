@@ -11,5 +11,7 @@ data class SupabaseListingWriteDto(
     @SerialName("category") val category: String,
     @SerialName("condition") val condition: String,
     @SerialName("price") val price: Double,
-    @SerialName("description") val description: String
+    @SerialName("description") val description: String,
+    @SerialName("is_sold") val isSold: Boolean,
+    @SerialName("buyer_id") val buyerId: String? = null
 )

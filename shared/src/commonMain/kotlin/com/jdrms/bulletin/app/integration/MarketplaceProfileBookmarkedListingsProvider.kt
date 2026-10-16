@@ -66,6 +66,8 @@ class MarketplaceProfileBookmarkedListingsProvider(
         condition = condition,
         photos = photos,
         sellerReputationScore = sellerReputationScore,
+        buyerId = buyerId,
+        isSold = isSold,
         createdAtMillis = createdAtMillis
     )
 
@@ -81,6 +83,8 @@ class MarketplaceProfileBookmarkedListingsProvider(
         description = description,
         condition = condition.name,
         photos = images,
+        buyerId = buyerId,
+        isSold = status == com.jdrms.bulletin.domain.listings.domain.model.ListingStatus.SOLD,
         createdAtMillis = createdAtMillis
     )
 }

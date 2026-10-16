@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.mapper
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
@@ -20,6 +21,7 @@ object MarketplaceMapper {
             description = dto.description,
             price = MarketplacePrice(dto.price.coerceAtLeast(0.0)),
             category = category,
+            condition = dto.condition.toMarketplaceCondition(),
             isBookmarked = isBookmarked,
             createdAtMillis = dto.createdAtMillis
         )
@@ -34,6 +36,7 @@ object MarketplaceMapper {
             description = domain.description,
             price = domain.price.amount,
             category = domain.category.name,
+            condition = domain.condition.name,
             createdAtMillis = domain.createdAtMillis
         )
     }
@@ -49,6 +52,7 @@ object MarketplaceMapper {
         return Listing(
             id = MarketplaceItemId(dto.id),
             sellerId = dto.sellerId,
+            buyerId = dto.buyerId,
             sellerName = dto.sellerName.ifBlank { "Student Seller" },
             title = dto.title,
             description = dto.description.ifBlank { "No description provided." },
@@ -56,6 +60,7 @@ object MarketplaceMapper {
             category = category,
             condition = dto.condition,
             status = dto.status,
+            isSold = dto.status.equals("SOLD", ignoreCase = true),
             photos = dto.photos,
             sellerReputationScore = score,
             isBookmarked = isBookmarked,
@@ -67,6 +72,7 @@ object MarketplaceMapper {
         return MarketplaceListingDto(
             id = domain.id.value,
             sellerId = domain.sellerId,
+            buyerId = domain.buyerId,
             sellerName = domain.sellerName,
             title = domain.title,
             description = domain.description,
@@ -79,4 +85,9 @@ object MarketplaceMapper {
             createdAtMillis = domain.createdAtMillis
         )
     }
+}
+
+internal fun String?.toMarketplaceCondition(): MarketplaceCondition {
+    return runCatching { MarketplaceCondition.valueOf(orEmpty().uppercase().replace(' ', '_')) }
+        .getOrDefault(MarketplaceCondition.UNKNOWN)
 }

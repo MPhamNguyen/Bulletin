@@ -124,7 +124,8 @@ internal class SupabaseListingBookmarks internal constructor(
         const val PAGE_SIZE = 500L
         const val LISTING_ID_PREFIX = "listing:"
         val BOOKMARKED_LISTING_COLUMNS = Columns.raw(
-            "listing_id,listings(id,name,user_id,category,condition,price,description,created_at,profiles(full_name))"
+            "listing_id,listings(id,name,user_id,buyer_id,is_sold,category,condition,price,description,created_at," +
+                "seller_profile:profiles!listings_user_id_fkey ( full_name ))"
         )
     }
 

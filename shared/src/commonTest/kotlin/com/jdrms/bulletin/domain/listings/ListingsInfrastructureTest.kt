@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
+import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingProfileDto
@@ -40,6 +41,56 @@ class ListingsInfrastructureTest {
         assertEquals(18.5, listing?.price?.amount)
         assertEquals("Adjustable lamp", listing?.description)
         assertTrue((listing?.createdAtMillis ?: 0L) > 0L)
+    }
+
+    @Test
+    fun mapsSoldSupabaseListingToSoldDomainStatus() {
+        val listing = SupabaseListingMapper.toDomain(
+            SupabaseListingDto(
+                id = "listing-sold",
+                name = "Desk Lamp",
+                userId = "seller-42",
+                price = 18.5,
+                isSold = true
+            )
+        )
+
+        assertEquals(ListingStatus.SOLD, listing?.status)
+    }
+
+    @Test
+    fun preservesPendingAndArchivedSupabaseStatusesWhenNotSold() {
+        val statuses = listOf(ListingStatus.PENDING, ListingStatus.ARCHIVED)
+
+        statuses.forEach { status ->
+            val listing = SupabaseListingMapper.toDomain(
+                SupabaseListingDto(
+                    id = "listing-${status.name.lowercase()}",
+                    name = "Desk Lamp",
+                    userId = "seller-42",
+                    price = 18.5,
+                    status = status.name.lowercase()
+                )
+            )
+
+            assertEquals(status, listing?.status)
+        }
+    }
+
+    @Test
+    fun soldFlagOverridesSupabaseStatus() {
+        val listing = SupabaseListingMapper.toDomain(
+            SupabaseListingDto(
+                id = "listing-sold",
+                name = "Desk Lamp",
+                userId = "seller-42",
+                price = 18.5,
+                status = ListingStatus.PENDING.name,
+                isSold = true
+            )
+        )
+
+        assertEquals(ListingStatus.SOLD, listing?.status)
     }
 
     @Test
@@ -87,5 +138,6 @@ class ListingsInfrastructureTest {
         assertEquals("ELECTRONICS", dto.category)
         assertEquals("LIKE_NEW", dto.condition)
         assertEquals(18.5, dto.price)
+        assertEquals(false, dto.isSold)
     }
 }

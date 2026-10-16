@@ -12,6 +12,7 @@ data class MarketplaceItemDto(
     @SerialName("description") val description: String = "",
     @SerialName("price") val price: Double,
     @SerialName("category") val category: String = "OTHER",
+    @SerialName("condition") val condition: String? = null,
     @SerialName("created_at_millis") val createdAtMillis: Long = 0L
 )
 
@@ -24,11 +25,31 @@ data class MarketplaceListingDto(
     @SerialName("description") val description: String = "",
     @SerialName("price") val price: Double,
     @SerialName("category") val category: String = "OTHER",
-    @SerialName("condition") val condition: String = "GOOD",
+    @SerialName("condition") val condition: String = "UNKNOWN",
     @SerialName("status") val status: String = "AVAILABLE",
     @SerialName("photos") val photos: List<String> = emptyList(),
     @SerialName("reputation_score") val reputationScore: Double? = null,
-    @SerialName("created_at_millis") val createdAtMillis: Long = 0L
+    @SerialName("created_at_millis") val createdAtMillis: Long = 0L,
+    @SerialName("buyer_id") val buyerId: String? = null
+)
+
+@Serializable
+data class MarketplaceReviewDto(
+    @SerialName("id") val id: String = "",
+    @SerialName("listing_id") val listingId: String,
+    @SerialName("reviewer_id") val reviewerId: String,
+    @SerialName("reviewee_id") val revieweeId: String,
+    @SerialName("score") val score: Int,
+    @SerialName("comment") val comment: String
+)
+
+@Serializable
+data class MarketplaceReviewInsertDto(
+    @SerialName("listing_id") val listingId: String,
+    @SerialName("reviewer_id") val reviewerId: String,
+    @SerialName("reviewee_id") val revieweeId: String,
+    @SerialName("score") val score: Int,
+    @SerialName("comment") val comment: String
 )
 
 @Serializable

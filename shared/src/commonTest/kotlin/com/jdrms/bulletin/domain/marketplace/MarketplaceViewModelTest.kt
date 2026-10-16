@@ -66,15 +66,15 @@ class MarketplaceViewModelTest {
         viewModel.onListingClicked("mkt_1")
 
         // Sheet is immediately opened with loading
-        assertTrue(viewModel.uiState.value.isDetailSheetOpen)
-        assertEquals("mkt_1", viewModel.uiState.value.selectedListingId)
+        assertTrue(viewModel.uiState.value.detail.isOpen)
+        assertEquals("mkt_1", viewModel.uiState.value.detail.listingId)
 
         // Advance coroutines
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.isDetailLoading)
-        assertNull(viewModel.uiState.value.detailErrorMessage)
-        val selected = viewModel.uiState.value.selectedListing
+        assertFalse(viewModel.uiState.value.detail.isLoading)
+        assertNull(viewModel.uiState.value.detail.errorMessage)
+        val selected = viewModel.uiState.value.detail.listing
         assertNotNull(selected)
         assertEquals("Calculus: Early Transcendentals (8th Ed)", selected.title)
         assertEquals("Dominic Alfonso", selected.sellerName)
@@ -85,12 +85,12 @@ class MarketplaceViewModelTest {
     fun testDismissListingDetailClosesSheet() = runTest {
         viewModel.onListingClicked("mkt_1")
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.isDetailSheetOpen)
+        assertTrue(viewModel.uiState.value.detail.isOpen)
 
         viewModel.dismissListingDetail()
-        assertFalse(viewModel.uiState.value.isDetailSheetOpen)
-        assertNull(viewModel.uiState.value.selectedListing)
-        assertNull(viewModel.uiState.value.selectedListingId)
+        assertFalse(viewModel.uiState.value.detail.isOpen)
+        assertNull(viewModel.uiState.value.detail.listing)
+        assertNull(viewModel.uiState.value.detail.listingId)
     }
 
     @Test
@@ -98,9 +98,9 @@ class MarketplaceViewModelTest {
         viewModel.onListingClicked("missing_item_999")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.isDetailSheetOpen)
-        assertFalse(viewModel.uiState.value.isDetailLoading)
-        assertNull(viewModel.uiState.value.selectedListing)
-        assertNotNull(viewModel.uiState.value.detailErrorMessage)
+        assertTrue(viewModel.uiState.value.detail.isOpen)
+        assertFalse(viewModel.uiState.value.detail.isLoading)
+        assertNull(viewModel.uiState.value.detail.listing)
+        assertNotNull(viewModel.uiState.value.detail.errorMessage)
     }
 }

@@ -2,15 +2,28 @@ package com.jdrms.bulletin.domain.messages
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.CurrentMessageSenderProvider
+import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.InboxIdentity
 import com.jdrms.bulletin.domain.messages.application.MessageSender
+import com.jdrms.bulletin.domain.messages.application.ObserveInboxInvalidations
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.domain.repository.InboxInvalidation
+import com.jdrms.bulletin.domain.messages.domain.repository.InboxObserver
+import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.MessagesMapper
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 
 internal val alice = MessageSender(SenderId("alice-id"), "Student")
 internal val bob = MessageSender(SenderId("bob-id"), "Student")
@@ -39,7 +52,30 @@ internal fun messagesRepository(
 )
 
 internal class MutableMessageSenderProvider(
-    var result: Result<MessageSender> = Result.Success(alice)
-) : CurrentMessageSenderProvider {
+    initialResult: Result<MessageSender> = Result.Success(alice)
+) : CurrentMessageSenderProvider, InboxIdentity {
+    private val userIds = MutableStateFlow((initialResult as? Result.Success)?.data?.id)
+    var result: Result<MessageSender> = initialResult
+        set(value) {
+            field = value
+            userIds.value = (value as? Result.Success)?.data?.id
+        }
+
     override suspend fun getCurrentSender(): Result<MessageSender> = result
+    override val currentUserId: SenderId? get() = (result as? Result.Success)?.data?.id
+    override fun observeUserIds(): Flow<SenderId?> = userIds
+}
+
+internal fun testInboxOwner(
+    repository: MessagesRepository,
+    provider: MutableMessageSenderProvider,
+    dispatcher: CoroutineDispatcher
+): InboxStateOwner {
+    val observer = repository as? InboxObserver ?: InboxObserver { flowOf(InboxInvalidation.Subscribed) }
+    return InboxStateOwner(
+        GetConversations(repository, provider),
+        ObserveInboxInvalidations(observer),
+        provider,
+        CoroutineScope(SupervisorJob() + dispatcher)
+    )
 }

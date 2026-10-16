@@ -47,7 +47,8 @@ data class MarketplaceDetailSheetState(
     val errorMessage: String?,
     val bookmarkErrorMessage: String?,
     val isBookmarked: Boolean,
-    val currentUserId: String?
+    val currentUserId: String?,
+    val hasReview: Boolean
 )
 
 data class MarketplaceDetailSheetActions(
@@ -59,6 +60,7 @@ data class MarketplaceDetailSheetActions(
         { _, _, _, _ -> false },
     val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
         { _, _ -> false },
+    val onLeaveReview: () -> Unit = {},
     val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
 )
 
@@ -79,6 +81,7 @@ fun MarketplaceDetailBottomSheet(
     val onSellerClick = actions.onSellerClick
     val onMessageSeller = actions.onMessageSeller
     val hasExistingConversation = actions.hasExistingConversation
+    val onLeaveReview = actions.onLeaveReview
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -249,6 +252,16 @@ fun MarketplaceDetailBottomSheet(
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
+
+                    if (listing.isSold && listing.buyerId == state.currentUserId && !state.hasReview) {
+                        Button(
+                            onClick = onLeaveReview,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = BulletinButtonDefaults.buttonColors()
+                        ) {
+                            Text("Leave Review for Seller")
+                        }
+                    }
 
                     if (state.currentUserId != listing.sellerId) {
                         MessageSellerQuickAction(

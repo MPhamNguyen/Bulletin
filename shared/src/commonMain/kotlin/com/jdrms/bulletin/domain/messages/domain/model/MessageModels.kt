@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.messages.domain.model
 
 import com.jdrms.bulletin.core.common.Result
 import kotlin.jvm.JvmInline
+import kotlin.time.Instant
 
 @JvmInline
 value class ConversationId(val value: String)
@@ -30,8 +31,10 @@ data class Message(
     val senderName: String,
     val content: String,
     val timestampMillis: Long = 0L,
-    val isReported: Boolean = false
+    val isReported: Boolean = false,
+    val preciseCreatedAt: Instant? = null
 ) {
+    val orderingTimestamp: Instant get() = preciseCreatedAt ?: Instant.fromEpochMilliseconds(timestampMillis)
     init {
         require(content.isNotBlank()) { "Message content cannot be blank." }
         require(content.length <= 1000) { "Message cannot exceed 1000 characters." }
@@ -59,6 +62,9 @@ class Conversation(
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
 
+    fun authorizeHiding(viewerId: SenderId): Result<Unit> =
+        if (includes(viewerId)) Result.Success(Unit) else Result.Error(ConversationAccessException())
+
     fun otherParticipantNames(viewerId: SenderId): List<String> {
         require(includes(viewerId)) { "Viewer must be a participant." }
         return participants.filterNot { it.id == viewerId }.map { it.displayName }
@@ -73,27 +79,23 @@ class Conversation(
     }
 
     fun recordMessage(message: Message): Result<Conversation> {
-        return if (message.conversationId != id || !includes(message.senderId)) {
-            Result.Error(ConversationAccessException())
-        } else {
-            Result.Success(
-                Conversation(
-                    id = id,
-                    participants = participants,
-                    lastMessage = message,
-                    updatedAtMillis = message.timestampMillis,
-                    listingId = listingId
-                )
-            )
-            val current = lastMessage
-            val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
-                (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
-            if (isNewer) {
-                Result.Success(Conversation(id, participants, message, maxOf(updatedAtMillis, message.timestampMillis)))
-            } else {
-                Result.Success(this)
-            }
+        if (message.conversationId != id || !includes(message.senderId)) {
+            return Result.Error(ConversationAccessException())
         }
+        val current = lastMessage
+        val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
+            (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
+        if (!isNewer) return Result.Success(this)
+
+        return Result.Success(
+            Conversation(
+                id = id,
+                participants = participants,
+                lastMessage = message,
+                updatedAtMillis = maxOf(updatedAtMillis, message.timestampMillis),
+                listingId = listingId
+            )
+        )
     }
 }
 

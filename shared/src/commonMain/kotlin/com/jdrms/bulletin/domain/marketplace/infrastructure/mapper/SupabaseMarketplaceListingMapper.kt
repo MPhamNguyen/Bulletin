@@ -21,6 +21,7 @@ object SupabaseMarketplaceListingMapper {
             description = snapshot.description,
             price = MarketplacePrice(snapshot.priceAmount, snapshot.priceCurrency),
             category = snapshot.category,
+            condition = snapshot.condition,
             createdAtMillis = snapshot.createdAtMillis
         )
     }
@@ -41,12 +42,16 @@ object SupabaseMarketplaceListingMapper {
         val price = dto.price ?: return null
         val description = dto.description?.takeIf(String::isNotBlank) ?: DEFAULT_DESCRIPTION
         val category = dto.category.orEmpty().uppercase().ifBlank { "OTHER" }
-        val condition = dto.condition.orEmpty().uppercase().ifBlank { "GOOD" }
+        val condition = dto.condition.toMarketplaceCondition().name
 
         return Listing(
             id = MarketplaceItemId("listing:${dto.id}"),
             sellerId = sellerId,
-            sellerName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
+            sellerName = (dto.sellerProfile ?: dto.profile)
+                ?.fullName
+                ?.takeIf(String::isNotBlank)
+                ?: DEFAULT_SELLER_NAME,
+            buyerId = dto.buyerId,
             title = title,
             description = description,
             price = MarketplacePrice(price.coerceAtLeast(0.0)),
@@ -54,6 +59,7 @@ object SupabaseMarketplaceListingMapper {
                 .getOrDefault(MarketplaceCategory.OTHER),
             condition = condition,
             status = "AVAILABLE",
+            isSold = dto.isSold,
             sellerReputationScore = reputationScore,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
         )
@@ -65,16 +71,21 @@ object SupabaseMarketplaceListingMapper {
         val price = dto.price ?: return null
         val category = runCatching { MarketplaceCategory.valueOf(dto.category.orEmpty().uppercase()) }
             .getOrDefault(MarketplaceCategory.OTHER)
+        val condition = dto.condition.toMarketplaceCondition()
         return MarketplaceListingSnapshot(
             id = "listing:${dto.id}",
             sellerId = sellerId,
-            sellerName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_SELLER_NAME,
+            sellerName = (dto.sellerProfile ?: dto.profile)
+                ?.fullName
+                ?.takeIf(String::isNotBlank)
+                ?: DEFAULT_SELLER_NAME,
             title = title,
             description = dto.description.orEmpty(),
             priceAmount = price.coerceAtLeast(0.0),
             priceCurrency = "USD",
             category = category,
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            condition = condition
         )
     }
 

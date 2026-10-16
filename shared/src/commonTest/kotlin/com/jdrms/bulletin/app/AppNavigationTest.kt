@@ -43,6 +43,7 @@ class AppNavigationTest {
     fun profileSubscreenBackRoutesAreOwnedByNavigation() {
         assertEquals(ProfileDestination.PROFILE, backFromProfile(ProfileDestination.SETTINGS))
         assertEquals(ProfileDestination.PROFILE, backFromProfile(ProfileDestination.BOOKMARKED_LISTINGS))
+        assertEquals(ProfileDestination.SETTINGS, backFromProfile(ProfileDestination.BLOCKED_USERS))
         assertEquals(ProfileDestination.SETTINGS, backFromProfile(ProfileDestination.NOTIFICATIONS))
         assertEquals(ProfileDestination.SETTINGS, backFromProfile(ProfileDestination.PUBLIC_PROFILE))
         assertEquals(

@@ -1,9 +1,11 @@
 package com.jdrms.bulletin.domain.marketplace
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceBlockedUserProvider
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfileProvider
@@ -18,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class MarketplaceApplicationTest {
 
@@ -54,9 +57,11 @@ class MarketplaceApplicationTest {
 
     @Test
     fun viewListingUsesTheSellerProfileNameWhenItIsAvailable() = runTest {
+        var profileRequests = 0
         val listingViewer = ViewMarketplaceListing(
             repository = repository,
             sellerProfileProvider = MarketplaceSellerProfileProvider { sellerId ->
+                profileRequests++
                 if (sellerId == "seller_101") {
                     MarketplaceSellerProfile(
                         name = "Alex Johnson",
@@ -78,6 +83,7 @@ class MarketplaceApplicationTest {
         assertEquals("https://example.com/alex.jpg", listing.sellerAvatarUrl)
         assertEquals("Computer Science", listing.sellerMajor)
         assertEquals(24, listing.sellerReviewCount)
+        assertEquals(1, profileRequests)
     }
 
     @Test
@@ -105,6 +111,50 @@ class MarketplaceApplicationTest {
         val categoryResults = searchMarketplace.search("furniture", null)
         assertEquals(listOf("Adjustable Desk Lamp"), categoryResults.map { it.title })
     }
+
+    @Test
+    fun searchFillsPageAfterSkippingHiddenListings() = runTest {
+        val firstCursor = MarketplacePageCursor(Instant.fromEpochMilliseconds(1), "listing-2")
+        val requests = mutableListOf<MarketplacePageRequest>()
+        val source = MarketplaceListingSource { request ->
+            requests += request
+            if (request.cursor == null) {
+                MarketplaceListingPage(
+                    listings = listOf(snapshot("listing-1", "seller_101"), snapshot("listing-2", "seller_102")),
+                    nextCursor = firstCursor
+                )
+            } else {
+                MarketplaceListingPage(
+                    listings = listOf(snapshot("listing-3", "seller_103")),
+                    nextCursor = null
+                )
+            }
+        }
+        val search = SearchMarketplace(
+            repository = InMemoryMarketplaceRepository(initialListings = emptyList()),
+            listingSource = source,
+            blockedUserProvider = MarketplaceBlockedUserProvider { setOf("seller_101") }
+        )
+
+        val page = search.getPage(MarketplacePageRequest(viewerId = "viewer", pageSize = 2))
+
+        assertEquals(listOf("listing-2", "listing-3"), page.items.map { it.id.value })
+        assertEquals(2, requests.size)
+        assertEquals(firstCursor, requests[1].cursor)
+        assertEquals(null, page.nextCursor)
+    }
+
+    private fun snapshot(id: String, sellerId: String) = MarketplaceListingSnapshot(
+        id = id,
+        sellerId = sellerId,
+        sellerName = sellerId,
+        title = "Listing $id",
+        description = "Description for $id",
+        priceAmount = 10.0,
+        priceCurrency = "USD",
+        category = MarketplaceCategory.OTHER,
+        createdAtMillis = 1L
+    )
 
     @Test
     fun browseReturnsStablePagesWithoutLoadingTheWholeCatalog() = runTest {

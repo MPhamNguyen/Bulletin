@@ -1,27 +1,18 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.core.common.RefreshSignal
-import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
-import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
-import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
-import com.jdrms.bulletin.domain.marketplace.application.pageFor
-import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -55,15 +46,7 @@ class MarketplaceViewModelTestPart1 {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val repository = CountingMarketplaceRepository(InMemoryMarketplaceRepository())
-            val viewModel = MarketplaceViewModel(
-                searchMarketplace = SearchMarketplace(repository),
-                bookmarks = MarketplaceBookmarkDependencies(
-                    add = BookmarkMarketplaceListing(repository),
-                    remove = RemoveMarketplaceListingBookmark(repository),
-                    get = GetMarketplaceListingBookmarks(repository)
-                ),
-                viewMarketplaceListing = ViewMarketplaceListing(repository)
-            )
+            val viewModel = marketplaceViewModel(repository)
             advanceUntilIdle()
             val itemId = MarketplaceItemId("mkt_1")
 
@@ -82,13 +65,13 @@ class MarketplaceViewModelTestPart1 {
 
             viewModel.onListingClicked(itemId.value)
             advanceUntilIdle()
-            assertTrue(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+            assertTrue(viewModel.uiState.value.detail.listing?.isBookmarked == true)
 
             viewModel.toggleBookmark(itemId)
             advanceUntilIdle()
             assertEquals(emptySet(), repository.getBookmarkedItemIds("student_user"))
             assertEquals(2, repository.bookmarkMutationCount)
-            assertFalse(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+            assertFalse(viewModel.uiState.value.detail.listing?.isBookmarked == true)
         } finally {
             Dispatchers.resetMain()
         }
@@ -112,15 +95,16 @@ class MarketplaceViewModelTestPart1 {
                     remove = RemoveMarketplaceListingBookmark(repository),
                     get = GetMarketplaceListingBookmarks(repository)
                 ),
-                viewMarketplaceListing = ViewMarketplaceListing(repository)
+                viewMarketplaceListing = ViewMarketplaceListing(repository),
+                currentUserIdProvider = { "student_user" }
             )
             advanceUntilIdle()
 
             viewModel.onListingClicked(itemId.value)
             advanceUntilIdle()
 
-            assertEquals(itemId, viewModel.uiState.value.selectedListing?.id)
-            assertTrue(viewModel.uiState.value.selectedListing?.isBookmarked == true)
+            assertEquals(itemId, viewModel.uiState.value.detail.listing?.id)
+            assertTrue(viewModel.uiState.value.detail.listing?.isBookmarked == true)
         } finally {
             Dispatchers.resetMain()
         }
@@ -139,7 +123,8 @@ class MarketplaceViewModelTestPart1 {
                     remove = RemoveMarketplaceListingBookmark(repository),
                     get = GetMarketplaceListingBookmarks(repository)
                 ),
-                viewMarketplaceListing = ViewMarketplaceListing(repository)
+                viewMarketplaceListing = ViewMarketplaceListing(repository),
+                currentUserIdProvider = { "student_user" }
             )
             advanceUntilIdle()
             val itemId = MarketplaceItemId("mkt_1")
@@ -220,7 +205,7 @@ class MarketplaceViewModelTestPart1 {
 
             assertTrue(source.loadCount >= 2)
             assertEquals(detailLoadsBeforeChange + 1, repository.detailLoadCount)
-            assertEquals("Updated Calculator", viewModel.uiState.value.selectedListing?.title)
+            assertEquals("Updated Calculator", viewModel.uiState.value.detail.listing?.title)
         } finally {
             Dispatchers.resetMain()
         }
@@ -271,233 +256,22 @@ class MarketplaceViewModelTestPart1 {
             viewModel.onListingClicked("missing-listing")
             advanceUntilIdle()
 
-            assertTrue(viewModel.uiState.value.isDetailSheetOpen)
-            assertFalse(viewModel.uiState.value.isDetailLoading)
-            assertEquals("Listing not found with ID: missing-listing", viewModel.uiState.value.detailErrorMessage)
-        } finally {
-            Dispatchers.resetMain()
-        }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun returningFromSellerProfileReopensTheViewedListing() = runTest {
-        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        try {
-            val repository = InMemoryMarketplaceRepository()
-            val viewModel = MarketplaceViewModel(
-                searchMarketplace = SearchMarketplace(repository),
-                bookmarks = MarketplaceBookmarkDependencies(
-                    add = BookmarkMarketplaceListing(repository),
-                    remove = RemoveMarketplaceListingBookmark(repository),
-                    get = GetMarketplaceListingBookmarks(repository)
-                ),
-                viewMarketplaceListing = ViewMarketplaceListing(repository)
-            )
-            advanceUntilIdle()
-
-            viewModel.onListingClicked("mkt_1")
-            advanceUntilIdle()
-            val viewedListingId = viewModel.uiState.value.selectedListing?.id?.value
-
-            viewModel.onSellerClicked("seller_101")
-            advanceUntilIdle()
-
-            assertTrue(viewModel.uiState.value.isSellerProfileOpen)
-            assertFalse(viewModel.uiState.value.isDetailSheetOpen)
-            assertEquals(viewedListingId, viewModel.uiState.value.selectedListing?.id?.value)
-
-            viewModel.dismissSellerProfile()
-
-            assertFalse(viewModel.uiState.value.isSellerProfileOpen)
-            assertTrue(viewModel.uiState.value.isDetailSheetOpen)
-            assertEquals(viewedListingId, viewModel.uiState.value.selectedListing?.id?.value)
-        } finally {
-            Dispatchers.resetMain()
-        }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun unavailableSellerProfileExposesErrorWithoutFabricatingProfileData() = runTest {
-        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        try {
-            val repository = InMemoryMarketplaceRepository()
-            val viewModel = MarketplaceViewModel(
-                searchMarketplace = SearchMarketplace(repository),
-                bookmarks = MarketplaceBookmarkDependencies(
-                    add = BookmarkMarketplaceListing(repository),
-                    remove = RemoveMarketplaceListingBookmark(repository),
-                    get = GetMarketplaceListingBookmarks(repository)
-                ),
-                viewMarketplaceListing = ViewMarketplaceListing(
-                    repository,
-                    sellerProfileProvider = { null }
-                )
-            )
-            advanceUntilIdle()
-
-            viewModel.onListingClicked("mkt_1")
-            advanceUntilIdle()
-            viewModel.onSellerClicked("seller_101")
-            advanceUntilIdle()
-
-            assertFalse(viewModel.uiState.value.isSellerProfileLoading)
-            assertEquals("Seller profile is currently unavailable.", viewModel.uiState.value.sellerProfileErrorMessage)
-            assertEquals(null, viewModel.uiState.value.selectedSellerProfile)
+            assertTrue(viewModel.uiState.value.detail.isOpen)
+            assertFalse(viewModel.uiState.value.detail.isLoading)
+            assertEquals("Listing not found with ID: missing-listing", viewModel.uiState.value.detail.errorMessage)
         } finally {
             Dispatchers.resetMain()
         }
     }
 }
 
-internal object FailingListingSource : MarketplaceListingSource {
-    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
-        error("Database unavailable")
-    }
-}
-
-internal class MutableListingSource : MarketplaceListingSource {
-    val listings = mutableListOf<MarketplaceListingSnapshot>()
-    var loadCount = 0
-
-    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
-        loadCount += 1
-        return listings.pageFor(request)
-    }
-}
-
-internal class RetryableNextPageSource(
-    private val listings: List<MarketplaceListingSnapshot>
-) : MarketplaceListingSource {
-    private var shouldFailNextPage = true
-
-    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
-        if (request.cursor != null && shouldFailNextPage) {
-            shouldFailNextPage = false
-            error("Temporary database failure")
-        }
-        return listings.pageFor(request)
-    }
-}
-
-internal class EmptyIntermediatePageSource(
-    private val firstPageListings: List<MarketplaceListingSnapshot>,
-    private val finalListing: MarketplaceListingSnapshot
-) : MarketplaceListingSource {
-    private val firstCursor = MarketplacePageCursor(
-        createdAt = kotlin.time.Instant.fromEpochMilliseconds(1L),
-        itemId = "first-cursor"
-    )
-    private val secondCursor = MarketplacePageCursor(
-        createdAt = kotlin.time.Instant.fromEpochMilliseconds(0L),
-        itemId = "second-cursor"
-    )
-
-    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
-        return when (request.cursor) {
-            null -> MarketplaceListingPage(firstPageListings, firstCursor)
-            firstCursor -> MarketplaceListingPage(emptyList(), secondCursor)
-            secondCursor -> MarketplaceListingPage(listOf(finalListing), null)
-            else -> error("Unexpected page cursor: ${request.cursor}")
-        }
-    }
-}
-
-internal class CancellableFirstRequestSource(
-    private val listing: MarketplaceListingSnapshot
-) : MarketplaceListingSource {
-    private var requestCount = 0
-
-    override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
-        requestCount += 1
-        if (requestCount == 1) awaitCancellation()
-        return listOf(listing).pageFor(request)
-    }
-}
-
-internal class CountingMarketplaceRepository(
-    private val delegate: MarketplaceRepository
-) : MarketplaceRepository {
-    var detailLoadCount = 0
-    var detailTitle = "Graphing Calculator"
-    var bookmarkMutationCount = 0
-
-    override suspend fun getCatalog(): List<MarketplaceItem> = delegate.getCatalog()
-
-    override suspend fun search(
-        query: String,
-        category: MarketplaceCategory?
-    ): List<MarketplaceItem> = delegate.search(query, category)
-
-    override suspend fun getItem(id: MarketplaceItemId): MarketplaceItem? = delegate.getItem(id)
-
-    override suspend fun viewListing(listingID: String): Result<Listing> {
-        detailLoadCount += 1
-        return when (val result = delegate.viewListing(listingID)) {
-            is Result.Success -> Result.Success(result.data.copy(title = detailTitle))
-            is Result.Error -> result
-        }
-    }
-
-    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
-        bookmarkMutationCount += 1
-        return delegate.bookmarkListing(userId, itemId)
-    }
-
-    override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> {
-        bookmarkMutationCount += 1
-        return delegate.removeListingBookmark(userId, itemId)
-    }
-
-    override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> =
-        delegate.getBookmarkedItemIds(userId)
-
-    override suspend fun getBookmarkedListingsPage(
-        userId: String,
-        cursor: com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor?,
-        pageSize: Int
-    ): com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage =
-        delegate.getBookmarkedListingsPage(userId, cursor, pageSize)
-}
-
-private class RawSupabaseIdMarketplaceRepository(
-    private val delegate: InMemoryMarketplaceRepository = InMemoryMarketplaceRepository()
-) : MarketplaceRepository by delegate {
-    override suspend fun viewListing(listingID: String): Result<Listing> {
-        return Result.Success(
-            Listing(
-                id = MarketplaceItemId(listingID.removePrefix("listing:")),
-                sellerId = "seller-42",
-                sellerName = "Student",
-                title = "Campus desk",
-                description = "Compact desk for a dorm room.",
-                price = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice(25.0),
-                category = MarketplaceCategory.FURNITURE
-            )
-        )
-    }
-}
-
-private class BookmarkRefreshFailingRepository(
-    private val delegate: InMemoryMarketplaceRepository = InMemoryMarketplaceRepository()
-) : MarketplaceRepository by delegate {
-    private var failReads = false
-    var bookmarkReadCount = 0
-
-    override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
-        val result = delegate.bookmarkListing(userId, itemId)
-        failReads = true
-        return result
-    }
-
-    override suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId> {
-        bookmarkReadCount += 1
-        if (failReads) error("Bookmark refresh unavailable")
-        return delegate.getBookmarkedItemIds(userId)
-    }
-
-    suspend fun persistedBookmarks(): Set<MarketplaceItemId> {
-        return delegate.getBookmarkedItemIds("student_user")
-    }
-}
+private fun marketplaceViewModel(repository: MarketplaceRepository) = MarketplaceViewModel(
+    searchMarketplace = SearchMarketplace(repository),
+    bookmarks = MarketplaceBookmarkDependencies(
+        add = BookmarkMarketplaceListing(repository),
+        remove = RemoveMarketplaceListingBookmark(repository),
+        get = GetMarketplaceListingBookmarks(repository)
+    ),
+    viewMarketplaceListing = ViewMarketplaceListing(repository),
+    currentUserIdProvider = { "student_user" }
+)

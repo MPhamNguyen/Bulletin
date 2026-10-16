@@ -5,10 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
+import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,8 +21,12 @@ class MarketplaceViewModel(
     private val searchMarketplace: SearchMarketplace,
     bookmarks: MarketplaceBookmarkDependencies,
     private val viewMarketplaceListing: ViewMarketplaceListing,
+    private val submitMarketplaceReview: SubmitMarketplaceReview =
+        SubmitMarketplaceReview(
+            com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
+        ),
     private val listingChangedSignal: RefreshSignal? = null,
-    private val currentUserIdProvider: suspend () -> String? = { DEFAULT_USER_ID }
+    private val currentUserIdProvider: suspend () -> String? = { null }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
@@ -39,13 +44,14 @@ class MarketplaceViewModel(
         bookmarks,
         currentUserIdProvider
     )
+    val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
         refreshListings()
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
                 refreshListings()
-                _uiState.value.selectedListingId?.let(::loadListingDetail)
+                _uiState.value.detail.listingId?.let(::loadListingDetail)
             }
         }
     }
@@ -62,12 +68,17 @@ class MarketplaceViewModel(
     }
 
     fun onSearchQueryChanged(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { it.copy(filters = it.filters.copy(query = query)) }
         loadFirstPage(userId = null, debounceMillis = SEARCH_DEBOUNCE_MILLIS)
     }
 
     fun onCategorySelected(category: MarketplaceCategory?) {
-        _uiState.update { it.copy(selectedCategory = category) }
+        _uiState.update { it.copy(filters = it.filters.copy(category = category)) }
+        loadFirstPage(userId = null, debounceMillis = 0L)
+    }
+
+    fun onConditionSelected(condition: MarketplaceCondition?) {
+        _uiState.update { it.copy(filters = it.filters.copy(condition = condition)) }
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
@@ -79,13 +90,14 @@ class MarketplaceViewModel(
         _uiState.update { it.copy(isLoadingMore = true, errorMessage = null) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            val query = currentState.searchQuery
-            val category = currentState.selectedCategory
+            val filters = currentState.filters
             runCatching {
                 searchMarketplace.getPage(
                     MarketplacePageRequest(
-                        query = query,
-                        category = category,
+                        query = filters.query,
+                        category = filters.category,
+                        condition = filters.condition,
+                        viewerId = currentUserIdProvider(),
                         cursor = cursor
                     )
                 )
@@ -93,8 +105,7 @@ class MarketplaceViewModel(
                 onSuccess = { page ->
                     _uiState.update { state ->
                         if (
-                            state.searchQuery == query &&
-                            state.selectedCategory == category &&
+                            state.filters == filters &&
                             state.nextCursor == cursor
                         ) {
                             state.copy(
@@ -112,8 +123,7 @@ class MarketplaceViewModel(
                     error.rethrowCancellation()
                     _uiState.update { state ->
                         if (
-                            state.searchQuery == query &&
-                            state.selectedCategory == category &&
+                            state.filters == filters &&
                             state.nextCursor == cursor
                         ) {
                             state.copy(
@@ -139,41 +149,38 @@ class MarketplaceViewModel(
 
     fun onListingClicked(listingId: String) {
         _uiState.update {
-            it.copy(
-                selectedListingId = listingId,
-                selectedListing = null,
-                isDetailLoading = true,
-                detailErrorMessage = null,
-                isDetailSheetOpen = true
-            )
+            it.copy(detail = MarketplaceDetailState(listingId = listingId, isLoading = true, isOpen = true))
         }
         loadListingDetail(listingId)
     }
 
     fun retryLoadListingDetail() {
-        val listingId = _uiState.value.selectedListingId ?: return
+        val listingId = _uiState.value.detail.listingId ?: return
         _uiState.update {
-            it.copy(isDetailLoading = true, detailErrorMessage = null)
+            it.copy(detail = it.detail.copy(isLoading = true, errorMessage = null))
         }
         loadListingDetail(listingId)
     }
 
     private fun loadListingDetail(listingId: String) {
         viewModelScope.launch {
-            when (val result = viewMarketplaceListing(listingId)) {
+            when (val result = viewMarketplaceListing(listingId, currentUserIdProvider())) {
                 is com.jdrms.bulletin.core.common.Result.Success -> {
                     val listing = result.data
                     val canonicalId = MarketplaceItemId(listingId)
                     val isBookmarked = _uiState.value.bookmarkedItemIds.contains(canonicalId)
                     val currentUserId = currentUserIdProvider()
+                    val hasReview = currentUserId?.let {
+                        viewMarketplaceListing.hasReview(listing.id.value, it)
+                    } ?: false
                     _uiState.update {
                         it.copy(
-                            selectedListing = listing.copy(
-                                id = canonicalId,
-                                isBookmarked = isBookmarked
+                            detail = it.detail.copy(
+                                listing = listing.copy(id = canonicalId, isBookmarked = isBookmarked),
+                                isLoading = false,
+                                errorMessage = null,
+                                hasReview = hasReview
                             ),
-                            isDetailLoading = false,
-                            detailErrorMessage = null,
                             currentUserId = currentUserId
                         )
                     }
@@ -181,8 +188,10 @@ class MarketplaceViewModel(
                 is com.jdrms.bulletin.core.common.Result.Error -> {
                     _uiState.update {
                         it.copy(
-                            isDetailLoading = false,
-                            detailErrorMessage = result.exception.message ?: "Failed to load listing details."
+                            detail = it.detail.copy(
+                                isLoading = false,
+                                errorMessage = result.exception.message ?: "Failed to load listing details."
+                            )
                         )
                     }
                 }
@@ -192,61 +201,7 @@ class MarketplaceViewModel(
 
     fun dismissListingDetail() {
         _uiState.update {
-            it.copy(
-                isDetailSheetOpen = false,
-                selectedListing = null,
-                selectedListingId = null,
-                detailErrorMessage = null,
-                isDetailLoading = false
-            )
-        }
-    }
-
-    fun onSellerClicked(sellerId: String) {
-        _uiState.update {
-            it.copy(
-                isDetailSheetOpen = false,
-                isSellerProfileOpen = true,
-                isSellerProfileLoading = true,
-                sellerProfileErrorMessage = null,
-                selectedSellerProfile = null
-            )
-        }
-        viewModelScope.launch {
-            try {
-                val profile = viewMarketplaceListing.getSellerProfile(sellerId)
-                _uiState.update {
-                    it.copy(
-                        isSellerProfileLoading = false,
-                        sellerProfileErrorMessage = if (profile == null) {
-                            "Seller profile is currently unavailable."
-                        } else {
-                            null
-                        },
-                        selectedSellerProfile = profile
-                    )
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isSellerProfileLoading = false,
-                        sellerProfileErrorMessage = "Unable to load the seller profile. Please try again."
-                    )
-                }
-            }
-        }
-    }
-
-    fun dismissSellerProfile() {
-        _uiState.update {
-            it.copy(
-                isSellerProfileOpen = false,
-                selectedSellerProfile = null,
-                sellerProfileErrorMessage = null,
-                isDetailSheetOpen = it.selectedListing != null
-            )
+            it.copy(detail = MarketplaceDetailState())
         }
     }
 
@@ -255,7 +210,6 @@ class MarketplaceViewModel(
     }
 
     private companion object {
-        const val DEFAULT_USER_ID = "student_user"
         const val SEARCH_DEBOUNCE_MILLIS = 300L
     }
 }

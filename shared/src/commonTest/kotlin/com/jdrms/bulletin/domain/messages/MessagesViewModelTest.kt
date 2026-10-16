@@ -2,22 +2,28 @@ package com.jdrms.bulletin.domain.messages
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
-import com.jdrms.bulletin.domain.messages.application.GetConversations
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
+import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.domain.repository.MessageStreamEvent
+import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
+import com.jdrms.bulletin.domain.messages.presentation.MessageConnectionState
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
-import com.jdrms.bulletin.domain.messages.presentation.conversationTitle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -49,64 +55,37 @@ class MessagesViewModelTest {
     }
 
     @Test
-    fun previewTitleShowsOnlyOtherParticipantAndHasSafeEmptyFallback() {
-        assertEquals("Carol", conversationTitle(conversation(), alice.id))
-        assertEquals("Conversation", conversationTitle(conversation(), null))
-        assertEquals("Conversation", conversationTitle(conversation(senders = listOf(alice)), alice.id))
+    fun insertDuringInitialPageLoadIsNotLostOrDuplicated() = runTest {
+        val backing = messagesRepository()
+        val repository = object : MessagesRepository by backing {
+            override suspend fun getMessagePage(
+                userId: SenderId,
+                conversationId: ConversationId,
+                before: MessageCursor?,
+                limit: Int
+            ): Result<MessagePage> {
+                delay(1000)
+                return backing.getMessagePage(userId, conversationId, before, limit)
+            }
+        }
+        val viewModel = viewModel(repository, backing)
+        runCurrent()
+        backing.sendMessage(message())
+        advanceUntilIdle()
+
+        assertEquals(listOf(message()), viewModel.uiState.value.currentMessages)
     }
 
     @Test
-    fun loadsOnlyAuthenticatedParticipantsConversationsAndMessages() = runTest {
-        val repository = messagesRepository(
-            listOf(conversation(), conversation(ConversationId("other"), listOf(bob, carol))),
-            listOf(message())
-        )
-        val viewModel = viewModel(repository)
-        assertTrue(viewModel.uiState.value.isLoading)
-        advanceUntilIdle()
-        val state = viewModel.uiState.value
-        assertEquals(listOf(conversationId), state.conversations.map { it.id })
-        assertEquals(alice.id, state.viewerId)
-        assertEquals(
-            listOf(carol.displayName),
-            state.conversations.single().otherParticipantNames(assertNotNull(state.viewerId))
-        )
-        assertEquals(listOf(message()), state.currentMessages)
-        assertEquals(conversationId, state.selectedConversationId)
-        assertFalse(state.isLoading)
-        assertFalse(state.isLoadingMessages)
-    }
-
-    @Test
-    fun openingConversationAfterSendSelectsTheRequestedThread() = runTest {
-        val existing = conversation()
-        val requested = conversation(ConversationId("requested"))
-        val viewModel = viewModel(messagesRepository(listOf(existing, requested)))
+    fun streamFailureShowsDisconnectedStateAndStillLoadsHistory() = runTest {
+        val backing = messagesRepository(messages = listOf(message()))
+        val observer = MessagesObserver { _, _ -> flowOf(MessageStreamEvent.Failed(IllegalStateException())) }
+        val viewModel = viewModel(backing, observer)
+        viewModel.onDestinationActiveChanged(true)
         advanceUntilIdle()
 
-        viewModel.openConversation(requested.id)
-        advanceUntilIdle()
-
-        assertEquals(requested.id, viewModel.uiState.value.selectedConversationId)
-    }
-
-    @Test
-    fun sendUsesAuthenticatedIdentityAndRefreshesSelectedConversation() = runTest {
-        val repository = messagesRepository()
-        val viewModel = viewModel(repository)
-        advanceUntilIdle()
-        viewModel.onMessageInputChanged(" Hello ")
-        viewModel.sendCurrentMessage()
-        advanceUntilIdle()
-        val sent = repository.getMessages(alice.id, conversationId).getOrThrow().single()
-        assertEquals(alice.id, sent.senderId)
-        assertEquals(alice.displayName, sent.senderName)
-        assertEquals("Hello", sent.content)
-        assertEquals("", viewModel.uiState.value.messageInput)
-        assertEquals(conversationId, viewModel.uiState.value.selectedConversationId)
-        assertEquals(listOf(sent), viewModel.uiState.value.currentMessages)
-        assertEquals("Message sent.", viewModel.uiState.value.statusMessage)
-        assertFalse(viewModel.uiState.value.isSending)
+        assertEquals(MessageConnectionState.DISCONNECTED, viewModel.uiState.value.connectionState)
+        assertEquals(listOf(message()), viewModel.uiState.value.currentMessages)
     }
 
     @Test
@@ -243,8 +222,12 @@ class MessagesViewModelTest {
         val backing = messagesRepository(listOf(stale), listOf(own))
         var fetchedMessages = listOf(own)
         val repository = object : MessagesRepository by backing {
-            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> =
-                Result.Success(fetchedMessages)
+            override suspend fun getMessagePage(
+                userId: SenderId,
+                conversationId: ConversationId,
+                before: MessageCursor?,
+                limit: Int
+            ): Result<MessagePage> = Result.Success(MessagePage(fetchedMessages, null))
         }
         val viewModel = viewModel(repository)
         advanceUntilIdle()
@@ -296,9 +279,14 @@ class MessagesViewModelTest {
         val other = conversation(ConversationId("other"))
         val backing = messagesRepository(listOf(conversation(), other))
         val repository = object : MessagesRepository by backing {
-            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+            override suspend fun getMessagePage(
+                userId: SenderId,
+                conversationId: ConversationId,
+                before: MessageCursor?,
+                limit: Int
+            ): Result<MessagePage> {
                 delay(1000)
-                return backing.getMessages(userId, conversationId)
+                return backing.getMessagePage(userId, conversationId, before, limit)
             }
         }
         val viewModel = viewModel(repository)
@@ -317,12 +305,17 @@ class MessagesViewModelTest {
             listOf(message(), message(inConversation = other.id))
         )
         val repository = object : MessagesRepository by backing {
-            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+            override suspend fun getMessagePage(
+                userId: SenderId,
+                conversationId: ConversationId,
+                before: MessageCursor?,
+                limit: Int
+            ): Result<MessagePage> {
                 if (conversationId != other.id) delay(1000)
-                return backing.getMessages(userId, conversationId)
+                return backing.getMessagePage(userId, conversationId, before, limit)
             }
         }
-        val viewModel = viewModel(repository)
+        val viewModel = viewModel(repository, backing)
         runCurrent()
         viewModel.selectConversation(other.id)
         advanceUntilIdle()
@@ -341,11 +334,13 @@ class MessagesViewModelTest {
         lateinit var viewModel: MessagesViewModel
         var switchedDuringFirstLoad = false
         val repository = object : MessagesRepository by backing {
-            override suspend fun getMessages(
+            override suspend fun getMessagePage(
                 userId: SenderId,
-                conversationId: ConversationId
-            ): Result<List<Message>> {
-                val result = backing.getMessages(userId, conversationId)
+                conversationId: ConversationId,
+                before: MessageCursor?,
+                limit: Int
+            ): Result<MessagePage> {
+                val result = backing.getMessagePage(userId, conversationId, before, limit)
                 if (conversationId == first.id && !switchedDuringFirstLoad) {
                     switchedDuringFirstLoad = true
                     viewModel.selectConversation(other.id)
@@ -355,7 +350,7 @@ class MessagesViewModelTest {
                 return result
             }
         }
-        viewModel = viewModel(repository)
+        viewModel = viewModel(repository, backing)
 
         runCurrent()
 
@@ -370,12 +365,17 @@ class MessagesViewModelTest {
     fun identityFailureCancelsOutstandingLoadsSoTheyCannotRestorePrivateMessages() = runTest {
         val backing = messagesRepository(messages = listOf(message()))
         val repository = object : MessagesRepository by backing {
-            override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+            override suspend fun getMessagePage(
+                userId: SenderId,
+                conversationId: ConversationId,
+                before: MessageCursor?,
+                limit: Int
+            ): Result<MessagePage> {
                 delay(1000)
-                return backing.getMessages(userId, conversationId)
+                return backing.getMessagePage(userId, conversationId, before, limit)
             }
         }
-        val viewModel = viewModel(repository)
+        val viewModel = viewModel(repository, backing)
         runCurrent()
         provider.result = Result.Error(MessagingAuthenticationRequiredException())
         viewModel.report(message().id)
@@ -384,10 +384,15 @@ class MessagesViewModelTest {
         assertEquals(emptyList(), viewModel.uiState.value.conversations)
     }
 
-    private fun viewModel(repository: MessagesRepository) = MessagesViewModel(
-        GetConversations(repository, provider),
+    private fun viewModel(
+        repository: MessagesRepository,
+        observer: MessagesObserver = repository as? MessagesObserver ?: messagesRepository()
+    ) = MessagesViewModel(
+        testInboxOwner(repository, provider, dispatcher),
         GetConversationMessages(repository, provider),
+        ObserveConversationMessages(observer, provider),
         SendMessage(repository, provider, nextMessageId = { MessageId("new-message") }, nowMillis = { 123L }),
-        ReportMessage(repository, provider)
-    )
+        ReportMessage(repository, provider),
+        HideConversation(repository, provider)
+    ).also { it.onDestinationActiveChanged(true) }
 }

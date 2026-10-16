@@ -14,7 +14,9 @@ data class SupabaseListingDto(
     @SerialName("description") val description: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("status") val status: String? = null,
-    @SerialName("profiles") val profile: SupabaseListingProfileDto? = null
+    @SerialName("is_sold") val isSold: Boolean = false,
+    @SerialName("seller_profile") val profile: SupabaseListingProfileDto? = null,
+    @SerialName("buyer_id") val buyerId: String? = null
 )
 
 @Serializable

@@ -57,6 +57,7 @@ data class ListingPrice(
 data class Listing(
     val id: ListingId,
     val sellerId: SellerId,
+    val buyerId: String? = null,
     val sellerName: String,
     val title: String,
     val description: String,
@@ -75,6 +76,18 @@ data class Listing(
     }
 
     fun isOwnedBy(sellerId: SellerId): Boolean = this.sellerId == sellerId
+
+    fun markSold(sellerId: SellerId, buyerId: String? = null): Listing {
+        require(isOwnedBy(sellerId)) { "Only the owner can mark this listing as sold." }
+        require(status == ListingStatus.AVAILABLE) { "Only available listings can be marked as sold." }
+        return copy(status = ListingStatus.SOLD, buyerId = buyerId)
+    }
+
+    fun restoreToMarketplace(sellerId: SellerId): Listing {
+        require(isOwnedBy(sellerId)) { "Only the owner can restore this listing." }
+        require(status == ListingStatus.SOLD) { "Only sold listings can be restored to the marketplace." }
+        return copy(status = ListingStatus.AVAILABLE)
+    }
 
     fun updateDetails(
         editorSellerId: SellerId,

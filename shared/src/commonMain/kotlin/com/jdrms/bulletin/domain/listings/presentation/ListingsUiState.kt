@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -30,5 +31,12 @@ data class ListingsUiState(
     val editCondition: ListingCondition = ListingCondition.GOOD,
     val isUpdating: Boolean = false,
     val pendingDeletion: Listing? = null,
-    val isDeleting: Boolean = false
+    val isDeleting: Boolean = false,
+    val pendingSold: Listing? = null,
+    val recentSoldBuyers: List<RecentListingBuyer> = emptyList(),
+    val selectedBuyerId: String? = null,
+    val soldOnAnotherPlatform: Boolean = false,
+    val isMarkingSold: Boolean = false,
+    val pendingRestoration: Listing? = null,
+    val isRestoring: Boolean = false
 )

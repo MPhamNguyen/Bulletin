@@ -27,8 +27,10 @@ enum class ProfileDestination {
     SETTINGS,
     EDIT_ACCOUNT,
     BOOKMARKED_LISTINGS,
+    BLOCKED_USERS,
     NOTIFICATIONS,
     PRIVACY,
+    HELP_AND_SUPPORT,
     TERMS_AND_CONDITIONS,
     PUBLIC_PROFILE,
     MY_LISTINGS,
@@ -51,8 +53,10 @@ fun backFromProfile(destination: ProfileDestination): ProfileDestination {
         ProfileDestination.SETTINGS -> ProfileDestination.PROFILE
         ProfileDestination.EDIT_ACCOUNT -> ProfileDestination.PROFILE
         ProfileDestination.BOOKMARKED_LISTINGS -> ProfileDestination.PROFILE
+        ProfileDestination.BLOCKED_USERS -> ProfileDestination.SETTINGS
         ProfileDestination.NOTIFICATIONS,
         ProfileDestination.PRIVACY,
+        ProfileDestination.HELP_AND_SUPPORT,
         ProfileDestination.TERMS_AND_CONDITIONS,
         ProfileDestination.PUBLIC_PROFILE -> ProfileDestination.SETTINGS
         ProfileDestination.MY_LISTINGS -> ProfileDestination.PROFILE

@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.messages.application.CurrentMessageSenderProvid
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
@@ -15,7 +16,9 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import kotlinx.coroutines.CancellationException
@@ -28,6 +31,21 @@ import kotlin.test.assertTrue
 class MessagesUseCasesTest {
     private val provider = MutableMessageSenderProvider()
     private val repository = RecordingMessagesRepository()
+
+    @Test
+    fun hideUsesCurrentIdentityAndPropagatesFailures() = runTest {
+        val hide = HideConversation(repository, provider)
+        assertEquals(Result.Success(Unit), hide(conversationId))
+        assertEquals(alice.id, repository.callers.single())
+        provider.result = Result.Success(bob)
+        val failure = Result.Error(IllegalStateException("unavailable"))
+        repository.failure = failure
+        assertEquals(failure, hide(conversationId))
+        assertEquals(bob.id, repository.callers.last())
+        provider.result = Result.Error(MessagingAuthenticationRequiredException())
+        assertTrue(hide(conversationId) is Result.Error)
+        assertEquals(2, repository.callers.size)
+    }
 
     @Test
     fun sendBuildsMessageFromCurrentIdentityWithFullGeneratedId() = runTest {
@@ -185,9 +203,19 @@ class MessagesUseCasesTest {
             return failure ?: Result.Success(conversations.filter { it.includes(userId) })
         }
 
-        override suspend fun getMessages(userId: SenderId, conversationId: ConversationId): Result<List<Message>> {
+        override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> {
             callers.add(userId)
-            return failure ?: Result.Success(emptyList())
+            return failure ?: Result.Success(Unit)
+        }
+
+        override suspend fun getMessagePage(
+            userId: SenderId,
+            conversationId: ConversationId,
+            before: MessageCursor?,
+            limit: Int
+        ): Result<MessagePage> {
+            callers.add(userId)
+            return failure ?: Result.Success(MessagePage(emptyList(), null))
         }
 
         override suspend fun sendMessage(message: Message): Result<Message> {

@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketpl
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
 import io.github.jan.supabase.postgrest.query.filter.TextSearchType
@@ -45,9 +46,10 @@ private class PostgrestMarketplaceListingTable(
     private val supabase: SupabaseClient
 ) : MarketplaceListingTable {
     override suspend fun getListings(request: MarketplacePageRequest): List<SupabaseMarketplaceListingDto> {
-        return supabase.from(LISTINGS_TABLE).select {
+        return supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
             filter {
                 applyMarketplaceSearch(request)
+                eq("is_sold", false)
 
                 request.cursor?.let { cursor ->
                     val cursorTimestamp = cursor.createdAt.toString()
@@ -71,12 +73,21 @@ private class PostgrestMarketplaceListingTable(
     private companion object {
         const val LISTINGS_TABLE = "listings"
         const val LISTING_ID_PREFIX = "listing:"
+        val LISTING_COLUMNS = Columns.raw(
+            "*, seller_profile:profiles!listings_user_id_fkey ( full_name )"
+        )
     }
 }
 
 internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplacePageRequest) {
+    request.sellerId?.let { sellerId ->
+        eq("user_id", sellerId)
+    }
     request.category?.let { category ->
         ilike("category", category.name)
+    }
+    request.condition?.let { condition ->
+        ilike("condition", condition.name)
     }
     request.query.toSafePrefixSearchQuery()?.let { query ->
         textSearch("name", query, TextSearchType.NONE)
