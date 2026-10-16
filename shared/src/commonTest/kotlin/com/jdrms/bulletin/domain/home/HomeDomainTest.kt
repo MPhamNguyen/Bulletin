@@ -57,7 +57,7 @@ class HomeDomainTest {
     }
 
     @Test
-    fun testRankingPolicyPrioritizesPreferredCategory() {
+    fun rankingKeeps_newest_listing_first_even_when_older_listing_matches_preferences() {
         val prefs = UserPreferences(
             preferredCategories = listOf(HomeFeedCategory.TEXTBOOKS),
             maxPrice = 50.0
@@ -67,19 +67,21 @@ class HomeDomainTest {
             title = "Algorithms Book",
             description = "Good condition",
             price = HomePrice(30.0),
-            category = HomeFeedCategory.TEXTBOOKS
+            category = HomeFeedCategory.TEXTBOOKS,
+            createdAtMillis = 100L
         )
         val furniture = HomeFeedItem(
             id = HomeItemId("h_fn"),
             title = "Desk Lamp",
             description = "Bright LED",
             price = HomePrice(20.0),
-            category = HomeFeedCategory.FURNITURE
+            category = HomeFeedCategory.FURNITURE,
+            createdAtMillis = 200L
         )
 
         val ranked = rankingPolicy.rankItems(listOf(furniture, textbook), prefs)
-        assertEquals("h_tb", ranked.first().id.value)
-        assertTrue(ranked.first().score > ranked.last().score)
+        assertEquals("h_fn", ranked.first().id.value)
+        assertTrue(ranked.last().score > ranked.first().score)
     }
 
     @Test

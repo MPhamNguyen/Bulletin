@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 class MarketplaceHomeRepositoryTest {
@@ -43,7 +44,32 @@ class MarketplaceHomeRepositoryTest {
         assertNull(second.nextCursor)
     }
 
-    private fun snapshot(id: String, title: String) = MarketplaceListingSnapshot(
+    @Test
+    fun feed_keeps_newest_listing_first_when_older_listing_matches_preferences() = runTest {
+        val source = RecordingMarketplaceListingSource(
+            listOf(
+                MarketplaceListingPage(
+                    listings = listOf(
+                        snapshot("newest", "Newest item", MarketplaceCategory.OTHER, 200),
+                        snapshot("older", "Older book", MarketplaceCategory.TEXTBOOKS, 100)
+                    ),
+                    nextCursor = null
+                )
+            )
+        )
+
+        val feed = MarketplaceHomeRepository(source).getFeed(userId = null, cursor = null, pageSize = 10)
+
+        assertEquals(listOf("newest", "older"), feed.items.map { it.id.value })
+        assertTrue(feed.items.last().score > feed.items.first().score)
+    }
+
+    private fun snapshot(
+        id: String,
+        title: String,
+        category: MarketplaceCategory = MarketplaceCategory.TEXTBOOKS,
+        createdAtMillis: Long = 100
+    ) = MarketplaceListingSnapshot(
         id = id,
         sellerId = "seller",
         sellerName = "Seller",
@@ -51,8 +77,8 @@ class MarketplaceHomeRepositoryTest {
         description = "Good condition",
         priceAmount = 25.0,
         priceCurrency = "USD",
-        category = MarketplaceCategory.TEXTBOOKS,
-        createdAtMillis = 100
+        category = category,
+        createdAtMillis = createdAtMillis
     )
 }
 
