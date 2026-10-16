@@ -18,12 +18,14 @@ import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
     userReportViewModel: MarketplaceUserReportViewModel,
+    listingReportViewModel: ListingReportViewModel,
     userBlockViewModel: MarketplaceUserBlockViewModel,
     actions: MarketplaceScreenActions = MarketplaceScreenActions()
 ) {
@@ -40,6 +42,7 @@ fun MarketplaceScreen(
             state = state,
             viewModel = viewModel,
             sellerProfileViewModel = sellerProfileViewModel,
+            listingReportViewModel = listingReportViewModel,
             actions = actions,
             onNavigate = { destination = it }
         )
@@ -51,6 +54,7 @@ private fun MarketplaceCatalogContent(
     state: MarketplaceUiState,
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
+    listingReportViewModel: ListingReportViewModel,
     actions: MarketplaceScreenActions,
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
@@ -165,6 +169,7 @@ private fun MarketplaceCatalogContent(
                         state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
                     },
                     onLeaveReview = viewModel.reviewActions::openReviewDialog,
+                    onReportListing = { beginListingReport(listingReportViewModel, state.detail.listing) },
                     onSellerClick = { sellerId ->
                         sellerProfileViewModel.load(sellerId)
                         onNavigate(MarketplaceDestination.SELLER_PROFILE)
@@ -174,6 +179,11 @@ private fun MarketplaceCatalogContent(
                     onSeeChat = actions.onSeeChat
                 )
             )
+            MarketplaceListingReportFlow(listingReportViewModel) {
+                listingReportViewModel.dismiss()
+                viewModel.dismissListingDetail()
+                viewModel.refreshListings()
+            }
             if (state.detail.isReviewDialogOpen) {
                 MarketplaceReviewDialog(
                     isSubmitting = state.detail.isSubmittingReview,
@@ -184,6 +194,10 @@ private fun MarketplaceCatalogContent(
             }
         }
     }
+}
+
+private fun beginListingReport(viewModel: ListingReportViewModel, listing: Listing?) {
+    listing?.let { viewModel.begin(it.id.value, it.sellerId) }
 }
 
 @Composable

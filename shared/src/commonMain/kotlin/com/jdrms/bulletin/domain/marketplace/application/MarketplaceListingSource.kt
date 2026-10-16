@@ -2,6 +2,8 @@ package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import kotlin.time.Instant
 
@@ -37,6 +39,14 @@ data class MarketplacePageRequest(
             "Marketplace page size must be between 1 and $MAX_MARKETPLACE_PAGE_SIZE."
         }
     }
+}
+
+fun interface MarketplaceReportedListingProvider {
+    suspend fun getReportedListingIds(reporterId: MarketplaceReporterId): Set<MarketplaceItemId>
+}
+
+object EmptyMarketplaceReportedListingProvider : MarketplaceReportedListingProvider {
+    override suspend fun getReportedListingIds(reporterId: MarketplaceReporterId): Set<MarketplaceItemId> = emptySet()
 }
 
 data class MarketplaceListingPage(

@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
+import com.jdrms.bulletin.app.integration.AuthMarketplaceReportIdentity
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
@@ -33,15 +34,20 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseList
 import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
+import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceReportedListings
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
+import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
@@ -237,7 +243,8 @@ class AppContainer(
         SearchMarketplace(
             repository = marketplaceRepository,
             listingSource = marketplaceListingSource,
-            blockedUserProvider = marketplaceBlockedUserProvider
+            blockedUserProvider = marketplaceBlockedUserProvider,
+            reportedListingProvider = marketplaceReportedListingProvider
         )
     }
 
@@ -245,11 +252,29 @@ class AppContainer(
     val getMarketplaceListingBookmarks by lazy { GetMarketplaceListingBookmarks(marketplaceRepository) }
     val removeMarketplaceListingBookmark by lazy { RemoveMarketplaceListingBookmark(marketplaceRepository) }
     private val marketplaceSellerProfileProvider by lazy { ProfileMarketplaceSellerNameProvider(profileRepository) }
+    private val listingReportRepository: ListingReportRepository by lazy {
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseListingReportRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            }
+            InMemoryListingReportRepository()
+        }
+    }
+    private val marketplaceReportedListingProvider by lazy {
+        GetMarketplaceReportedListings(AuthMarketplaceReportIdentity(authRepository), listingReportRepository)
+    }
+    val reportMarketplaceListing by lazy {
+        ReportMarketplaceListing(AuthMarketplaceReportIdentity(authRepository), listingReportRepository)
+    }
     val viewMarketplaceListing by lazy {
         ViewMarketplaceListing(
             repository = marketplaceRepository,
             sellerProfileProvider = marketplaceSellerProfileProvider,
-            blockedUserProvider = marketplaceBlockedUserProvider
+            blockedUserProvider = marketplaceBlockedUserProvider,
+            reportedListingProvider = marketplaceReportedListingProvider
         )
     }
     val submitMarketplaceReview by lazy { SubmitMarketplaceReview(marketplaceRepository) }
