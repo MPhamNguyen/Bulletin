@@ -64,14 +64,35 @@ class MarketplaceHomeRepositoryTest {
         assertTrue(feed.items.last().score > feed.items.first().score)
     }
 
+    @Test
+    fun feed_omits_listings_created_by_the_viewer() = runTest {
+        val source = RecordingMarketplaceListingSource(
+            listOf(
+                MarketplaceListingPage(
+                    listings = listOf(
+                        snapshot("mine", "My listing", sellerId = "viewer"),
+                        snapshot("theirs", "Another listing", sellerId = "seller")
+                    ),
+                    nextCursor = null
+                )
+            )
+        )
+
+        val feed = MarketplaceHomeRepository(source).getFeed("viewer", null, 10)
+
+        assertEquals(listOf("theirs"), feed.items.map { it.id.value })
+        assertEquals("viewer", source.requests.single().viewerId)
+    }
+
     private fun snapshot(
         id: String,
         title: String,
         category: MarketplaceCategory = MarketplaceCategory.TEXTBOOKS,
-        createdAtMillis: Long = 100
+        createdAtMillis: Long = 100,
+        sellerId: String = "seller"
     ) = MarketplaceListingSnapshot(
         id = id,
-        sellerId = "seller",
+        sellerId = sellerId,
         sellerName = "Seller",
         title = title,
         description = "Good condition",
