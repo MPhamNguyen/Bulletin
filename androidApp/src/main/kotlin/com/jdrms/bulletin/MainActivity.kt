@@ -28,7 +28,6 @@ class MainActivity : ComponentActivity() {
 
         val appContainer = AppContainer(
             supabaseConfig = supabaseConfig,
-            allowInMemoryFallback = BuildConfig.DEBUG,
             themePreferenceStore = AndroidThemePreferenceStore(applicationContext)
         )
 

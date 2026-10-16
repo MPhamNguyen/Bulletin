@@ -69,15 +69,14 @@ Save / Message ?? Student Profile
 
 ## Backend status
 
-The app binds Supabase adapters when a Supabase client is configured. In-memory adapters remain available as a local
-development fallback and in tests; they are not evidence of a live backend integration.
+The Android app requires a configured Supabase client for backend-backed contexts. In-memory adapters remain available for tests, previews, and explicit local development; they are not the Android app's runtime fallback.
 
 | Context / data | Configured backend | Local fallback / kept in memory |
 | --- | --- | --- |
-| Marketplace listings and bookmarks | Supabase `listings`, `reviews`, and bookmark storage | In-memory marketplace repository when no client is configured |
-| Seller listings | Supabase `listings` | In-memory listings repository when no client is configured |
-| Messages and reports | Supabase messages repository | In-memory messages repository when no client is configured |
-| Auth, profiles, reviews, and profile photos | Supabase Auth, profile/review tables, and profile photo storage | In-memory repositories when no client is configured |
+| Marketplace listings and bookmarks | Supabase `listings`, `reviews`, and bookmark storage | In-memory repository for tests, previews, or explicit local development |
+| Seller listings | Supabase `listings` | In-memory repository for tests, previews, or explicit local development |
+| Messages and reports | Supabase messages repository | In-memory repository for tests, previews, or explicit local development |
+| Auth, profiles, reviews, and profile photos | Supabase Auth, profile/review tables, and profile photo storage | In-memory repositories for tests, previews, or explicit local development |
 | Home / FYP | Not migrated | In-memory Home repository, intentionally retained |
 | Theme preference | Platform preference store on Android | In-memory preference store for common/preview use |
 
@@ -164,20 +163,21 @@ Each business domain adheres to a 4-layer structure:
 
 ### Backend status
 
-`AppContainer` selects the Supabase adapter when a client is configured and the in-memory adapter for inspection or
-local fallback. Adapter bindings describe code paths, not verification against a deployed Supabase project.
+`AppContainer` selects the Supabase adapter when a client is configured. In-memory repository fallback is disabled by
+default and can be enabled explicitly for local development; inspection mode and tests can still use in-memory fakes.
+Adapter bindings describe code paths, not verification against a deployed Supabase project.
 
 | Repository or port | Configured Supabase client | Local fallback | Live project verification |
 | --- | --- | --- | --- |
 | Home repository | In-memory | In-memory | Not applicable |
-| Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters | Not verified here |
-| Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter | Not verified here |
-| Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
-| Profile repository | Supabase adapter | In-memory adapter | Not verified here |
-| User report repository | Supabase adapter | In-memory adapter | Not verified here |
-| User block repository | Supabase adapter | In-memory adapter | Not verified here |
-| Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
-| Auth and session repositories | Supabase Auth adapter | In-memory auth adapter | Not verified here |
+| Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters for tests, previews, or explicit local development | Not verified here |
+| Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter for tests, previews, or explicit local development | Not verified here |
+| Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers for tests, previews, or explicit local development | Inbox broadcast tested locally; not verified against the live project |
+| Profile repository | Supabase adapter | In-memory adapter for tests, previews, or explicit local development | Not verified here |
+| User report repository | Supabase adapter | In-memory adapter for tests, previews, or explicit local development | Not verified here |
+| User block repository | Supabase adapter | In-memory adapter for tests, previews, or explicit local development | Not verified here |
+| Profile photo repository | Supabase adapter | In-memory adapter for tests, previews, or explicit local development | Not verified here |
+| Auth and session repositories | Supabase Auth adapter | In-memory auth adapter for tests, previews, or explicit local development | Not verified here |
 
 
 ## ?? Security & Privacy

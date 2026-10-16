@@ -103,7 +103,7 @@ import io.github.jan.supabase.SupabaseClient
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
-    private val allowInMemoryFallback: Boolean = true,
+    private val allowInMemoryFallback: Boolean = false,
     themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
     private val providedSupabaseClient: SupabaseClient? = null
 ) {
@@ -134,7 +134,7 @@ class AppContainer(
             SupabaseMarketplaceRepository(client)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+                error("Supabase client is not configured and in-memory fallback is disabled.")
             }
             InMemoryMarketplaceRepository()
         }
@@ -145,7 +145,7 @@ class AppContainer(
             SupabaseListingsRepository(client)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+                error("Supabase client is not configured and in-memory fallback is disabled.")
             }
             InMemoryListingsRepository()
         }
@@ -167,7 +167,7 @@ class AppContainer(
             SupabaseMessagesRepository(client)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+                error("Supabase client is not configured and in-memory fallback is disabled.")
             }
             InMemoryMessagesRepository()
         }
@@ -189,7 +189,7 @@ class AppContainer(
             SupabaseProfileRepository(client)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+                error("Supabase client is not configured and in-memory fallback is disabled.")
             }
             InMemoryProfileRepository()
         }
@@ -200,19 +200,27 @@ class AppContainer(
             SupabaseUserReportRepository(client)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+                error("Supabase client is not configured and in-memory fallback is disabled.")
             }
             InMemoryUserReportRepository()
         }
     }
     private val userBlockRepository: UserBlockRepository by lazy {
         if (supabaseClient == null && !allowInMemoryFallback && !isInspectionMode) {
-            error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+            error("Supabase client is not configured and in-memory fallback is disabled.")
         }
         supabaseClient?.let(::SupabaseUserBlockRepository) ?: InMemoryUserBlockRepository()
     }
     val profilePhotoRepository: ProfilePhotoRepository by lazy {
-        supabaseClient?.let(::SupabaseProfilePhotoRepository) ?: InMemoryProfilePhotoRepository()
+        val client = supabaseClient
+        if (client != null) {
+            SupabaseProfilePhotoRepository(client)
+        } else {
+            if (!allowInMemoryFallback && !isInspectionMode) {
+                error("Supabase client is not configured and in-memory fallback is disabled.")
+            }
+            InMemoryProfilePhotoRepository()
+        }
     }
     val authRepository: AuthRepository by lazy {
         val client = supabaseClient
@@ -220,7 +228,7 @@ class AppContainer(
             SupabaseAuthRepository(client, profileRepository)
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
+                error("Supabase client is not configured and in-memory fallback is disabled.")
             }
             InMemoryAuthRepository(profileRepository)
         }
