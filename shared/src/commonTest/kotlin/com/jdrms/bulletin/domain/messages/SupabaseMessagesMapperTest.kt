@@ -92,7 +92,7 @@ class SupabaseMessagesMapperTest {
                     "body":"Hello",
                     "created_at":"1970-01-01T00:00:00.042Z",
                     "profiles":{"full_name":"Alice"},
-                    "message_reports":[]
+                    "reports":[]
                 }]
             }
             """.trimIndent()

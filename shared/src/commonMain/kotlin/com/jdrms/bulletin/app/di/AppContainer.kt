@@ -45,8 +45,8 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryM
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.MarketplaceReadCache
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
-import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
+import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.HideConversation

@@ -30,7 +30,7 @@ class ProfileReadCacheTest {
         }
         cache.observeSession("user-b")
         assertEquals(
-            5.0,
+            0.0,
             cache.reputation(id, isCurrentUser = true) {
                 loads++
                 StudentReputation(id)

@@ -127,10 +127,11 @@ class SupabaseMessagesRepositoryTest {
     fun hideRejectsClaimedIdentityThatDoesNotMatchSession() = runTest {
         val table = FakeSupabaseMessagesTable(listOf(conversation()))
 
-        val result = SupabaseMessagesRepository(table).hideConversation(carol.id, conversationId)
+        val repository = SupabaseMessagesRepository(table)
+        val result = repository.hideConversation(carol.id, conversationId)
 
         assertIs<ConversationAccessException>(assertIs<Result.Error>(result).exception)
-        assertEquals(listOf(conversationId.value), table.getConversationIds(alice.id.value))
+        assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
     }
 
     @Test
