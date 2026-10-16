@@ -9,6 +9,7 @@ import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
+import com.jdrms.bulletin.app.integration.MarketplaceHomeRepository
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceBlockedUserProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
@@ -21,7 +22,6 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
-import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemoryHomeRepository
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
@@ -142,7 +142,7 @@ class AppContainer(
         }
     }
 
-    val homeRepository by lazy { InMemoryHomeRepository() }
+    val homeRepository by lazy { MarketplaceHomeRepository(marketplaceListingSource) }
     val marketplaceRepository: MarketplaceRepository by lazy {
         val client = supabaseClient
         if (client != null) {

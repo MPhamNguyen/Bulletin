@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 
 @Composable
 private fun FeedCardBackground(
@@ -120,7 +121,7 @@ private fun FeedCardBackground(
 
 @Composable
 fun HomeFeedCard(
-    item: LoremCardItem,
+    item: HomeFeedItem,
     modifier: Modifier = Modifier,
     cardIndex: Int = 0
 ) {
@@ -223,7 +224,7 @@ fun HomeFeedCard(
                         color = Color.Black.copy(alpha = 0.35f)
                     ) {
                         Text(
-                            text = item.tag,
+                            text = item.category.name,
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -232,7 +233,7 @@ fun HomeFeedCard(
                     }
 
                     Text(
-                        text = item.price,
+                        text = item.price.formatted,
                         style = MaterialTheme.typography.titleLarge.copy(shadow = textShadow),
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -249,7 +250,7 @@ fun HomeFeedCard(
                 )
 
                 Text(
-                    text = item.subtitle,
+                    text = item.reason,
                     style = MaterialTheme.typography.titleSmall.copy(shadow = textShadow),
                     fontWeight = FontWeight.Medium,
                     color = Color.White.copy(alpha = 0.9f)
