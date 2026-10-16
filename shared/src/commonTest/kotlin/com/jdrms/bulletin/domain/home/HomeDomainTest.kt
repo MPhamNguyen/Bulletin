@@ -84,9 +84,19 @@ class HomeDomainTest {
 
     @Test
     fun testRepositoryFeedAndPreferences() = runTest {
-        val repo = InMemoryHomeRepository()
-        val feed = repo.getFeed("student_1")
-        assertTrue(feed.isNotEmpty())
+        val repo = InMemoryHomeRepository(
+            initialItems = listOf(
+                HomeFeedItemDto(
+                    id = "h_1",
+                    title = "Algorithms Book",
+                    description = "Good condition",
+                    price = 30.0,
+                    category = "TEXTBOOKS"
+                )
+            )
+        )
+        val feedPage = repo.getFeed("student_1", null, 10)
+        assertEquals(1, feedPage.items.size)
 
         val newPrefs = UserPreferences(
             preferredCategories = listOf(HomeFeedCategory.ELECTRONICS),
@@ -98,6 +108,28 @@ class HomeDomainTest {
         val updatedPrefs = repo.getPreferences("student_1")
         assertEquals(100.0, updatedPrefs.maxPrice)
         assertEquals(listOf(HomeFeedCategory.ELECTRONICS), updatedPrefs.preferredCategories)
+    }
+
+    @Test
+    fun inMemoryRepositoryPagesInStableOrderWithoutRepeatingCursorItem() = runTest {
+        val repo = InMemoryHomeRepository(
+            initialItems = listOf("a", "b", "c").map { id ->
+                HomeFeedItemDto(
+                    id = id,
+                    title = "Listing $id",
+                    description = "Available",
+                    price = 20.0,
+                    category = "TEXTBOOKS"
+                )
+            }
+        )
+
+        val firstPage = repo.getFeed(null, null, 2)
+        val secondPage = repo.getFeed(null, firstPage.nextCursor, 2)
+
+        assertEquals(listOf("c", "b"), firstPage.items.map { it.id.value })
+        assertEquals(listOf("a"), secondPage.items.map { it.id.value })
+        assertEquals(null, secondPage.nextCursor)
     }
 
     @Test

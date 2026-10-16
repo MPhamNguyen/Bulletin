@@ -19,7 +19,11 @@ import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignInViewModel
 
-fun AppContainer.createHomeViewModel() = HomeViewModel(getPersonalizedFeed, updateUserPreferences)
+fun AppContainer.createHomeViewModel() = HomeViewModel(
+    getPersonalizedFeed,
+    updateUserPreferences,
+    sessionRepository
+)
 
 fun AppContainer.createMarketplaceViewModel() = MarketplaceViewModel(
     searchMarketplace,
