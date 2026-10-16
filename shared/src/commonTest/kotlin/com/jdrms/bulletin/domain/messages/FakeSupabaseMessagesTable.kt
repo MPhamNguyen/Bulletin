@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
@@ -36,6 +37,7 @@ internal class FakeSupabaseMessagesTable(
     }.toMutableList()
     private val messageRows = messages.map(::toMessageDto).toMutableList()
     private val hiddenBy = mutableMapOf<String, MutableSet<String>>()
+    private val activeReports = mutableSetOf<Pair<String, String>>()
 
     var insertedMessage: SupabaseMessageInsertDto? = null
     var insertedReport: SupabaseMessageReportInsertDto? = null
@@ -134,9 +136,10 @@ internal class FakeSupabaseMessagesTable(
     }
 
     override suspend fun insertReport(report: SupabaseMessageReportInsertDto) {
-        insertedReport = report
         val index = messageRows.indexOfFirst { it.id == report.messageId }
         check(index >= 0)
+        if (!activeReports.add(report.reporterId to report.messageId)) throw MessageReportAlreadySubmittedException()
+        insertedReport = report
         messageRows[index] = messageRows[index].copy(
             reports = messageRows[index].reports + SupabaseMessageReportMarkerDto("report-${report.messageId}")
         )
@@ -146,6 +149,9 @@ internal class FakeSupabaseMessagesTable(
         check(messageRows.isNotEmpty())
         messageRows[0] = messageRows[0].copy(createdAt = timestamp)
     }
+
+    fun closeReport(reporterId: String, messageId: String): Boolean =
+        activeReports.remove(reporterId to messageId)
 
     private fun toMessageDto(message: Message): SupabaseMessageDto = SupabaseMessageDto(
         id = message.id.value,

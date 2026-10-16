@@ -38,12 +38,13 @@ data class SupabaseMessageDto(
     @SerialName("body") val content: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("profiles") val senderProfile: SupabaseMessageProfileDto? = null,
-    @SerialName("message_reports") val reports: List<SupabaseMessageReportMarkerDto> = emptyList()
+    @SerialName("reports") val reports: List<SupabaseMessageReportMarkerDto> = emptyList()
 )
 
 @Serializable
 data class SupabaseMessageReportMarkerDto(
-    @SerialName("id") val id: String
+    @SerialName("id") val id: String,
+    @SerialName("status") val status: String? = null
 )
 
 @Serializable
@@ -58,5 +59,7 @@ data class SupabaseMessageInsertDto(
 data class SupabaseMessageReportInsertDto(
     @SerialName("message_id") val messageId: String,
     @SerialName("reporter_id") val reporterId: String,
-    @SerialName("reason") val reason: String
+    @SerialName("reason") val reason: String,
+    @SerialName("type") val type: SupabaseMessageReportType,
+    @SerialName("description") val description: String?
 )

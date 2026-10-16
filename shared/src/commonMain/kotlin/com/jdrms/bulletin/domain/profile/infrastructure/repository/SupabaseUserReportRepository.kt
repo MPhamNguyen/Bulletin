@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile.infrastructure.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.SupabaseUserReportType
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.UserReportInsertDto
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -28,7 +29,8 @@ class SupabaseUserReportRepository internal constructor(
                 reporterId = authenticatedReporter,
                 reportedUserId = report.reportedUserId.value,
                 reason = report.reason.label,
-                description = report.description
+                description = report.description,
+                type = SupabaseUserReportType.USER
             )
         )
         Result.Success(Unit)
@@ -41,7 +43,7 @@ class SupabaseUserReportRepository internal constructor(
     }
 
     companion object {
-        const val TABLE = "user_reports"
+        const val TABLE = "reports"
     }
 }
 
@@ -50,7 +52,7 @@ internal interface SupabaseUserReportsTable {
     suspend fun insert(report: UserReportInsertDto)
 }
 
-private class PostgrestSupabaseUserReportsTable(
+internal class PostgrestSupabaseUserReportsTable(
     private val supabase: SupabaseClient
 ) : SupabaseUserReportsTable {
     override suspend fun authenticatedUserId(): String? {

@@ -3,6 +3,10 @@ package com.jdrms.bulletin.domain.messages.domain.service
 import com.jdrms.bulletin.core.common.Result
 
 class MessagesPolicy {
+    companion object {
+        const val DEFAULT_REPORT_REASON = "Inappropriate Content"
+    }
+
     fun validateMessageContent(content: String): Result<Unit> {
         if (content.isBlank()) {
             return Result.Error(IllegalArgumentException("Message content cannot be blank."))
