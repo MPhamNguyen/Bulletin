@@ -1,241 +1,256 @@
 <div align="center">
 
-# ?? Bulletin
+# 🎓 Bulletin
 ### Campus Connect Marketplace
 
 **A student-focused marketplace for buying, selling, and connecting safely within a university community.**
 
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Language](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
-![Course](https://img.shields.io/badge/CECS-491A/B-FFC72C?style=for-the-badge)
+![Course](https://img.shields.io/badge/CECS-491A%2FB-FFC72C?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-In%20Development-2563EB?style=for-the-badge)
 
 </div>
 
 ---
 
-## ?? About Bulletin
+## 📖 About Bulletin
 
-**Bulletin** is a mobile campus marketplace designed to make peer-to-peer transactions between university students safer, simpler, and more convenient.
+**Bulletin** is a Kotlin Multiplatform campus marketplace designed to make peer-to-peer transactions between university students safer, simpler, and more convenient. Android is the current application platform; shared business logic and Compose UI live in `shared`.
 
-Students can discover nearby campus listings, buy, sell, or rent items, communicate directly with other students, build reputation through ratings, and receive personalized listing recommendations. Access is intended for verified university students, helping create a trusted campus-centered community.
+Students can discover campus listings, buy or sell items, communicate with other students, build reputation through reviews, and manage their profiles. The app supports university-email verification and privacy-conscious campus discovery.
 
-> **Project:** Bulletin <br>
-> **Course:** CECS 491A/B <br>
+> **Project:** Bulletin
+> **Course:** CECS 491A/B
 > **Team:** JDRMS
 
 ---
 
-## ? Core Features
+## ✨ Core Features
 
 | Feature | Description |
 | --- | --- |
-| ?? **Student Verification** | Account creation using a university-issued email and verification flow. |
-| ??? **Campus Marketplace** | Create, browse, search, view, and edit marketplace listings. |
-| ?? **Search & Filters** | Find listings using keywords, category, price, condition, distance, and sorting options. |
-| ?? **Saved Listings** | Bookmark listings for quick access later. |
-| ?? **Real-Time Messaging** | Contact other students and access conversation history. |
-| ? **Ratings & Reviews** | Build community trust through user reputation and reviews. |
-| ?? **Student Profiles** | View and edit profiles containing campus and student information. |
-| ?? **Reporting** | Report inappropriate messages for moderation. |
-| ? **Personalized Recommendations** | Surface listings based on campus, browsing history, saved items, preferences, and interactions. |
-| ?? **Proximity Awareness** | Support campus-relevant and proximity-based discovery without exposing precise locations to other users. |
+| 🎓 **Student Verification** | University-email registration and email confirmation through Supabase Auth. |
+| 🛍️ **Campus Marketplace** | Browse listings and create, view, edit, or mark listings as sold. |
+| 🔎 **Search & Filters** | Search listings and refine results with marketplace filters and sorting. |
+| 🔖 **Saved Listings** | Bookmark listings for quick access later. |
+| 💬 **Messaging** | Start conversations, view inbox and thread history, and report messages. |
+| ⭐ **Ratings & Reviews** | Submit and view reviews associated with completed/sold listings. |
+| 👤 **Student Profiles** | View and edit student profile information and profile photos. |
+| 🚩 **Reporting & Blocking** | Report users or messages and block users. |
+| 📍 **Campus Discovery** | Support campus-relevant discovery without exposing precise locations to other users. |
+| 🏠 **Home Feed** | Provide a home feed; its repository currently uses in-memory data. |
+
+> Feature availability depends on backend configuration. Recommendation personalization and production readiness are not claimed by the repository status below.
 
 ---
 
-## ?? User Experience
+## 📱 User Experience
 
-The planned application flow includes:
+The main product flow connects account setup with marketplace, messaging, and profile features:
 
 ```text
-University Verification
-        ?
-Account / Login
-        ?
-       Home
-   +----+--------------+
-   ?    ?              ?
-Browse  Recommendations  Profile
-   ?                    ?
-Listing Details      User Search
-   ?                    ?
-Save / Message ?? Student Profile
-        ?
-   Ratings & Reviews
+University Email Registration
+             ↓
+      Email Confirmation
+             ↓
+        Account / Login
+             ↓
+            Home
+       ┌─────┼──────┐
+       ↓     ↓      ↓
+    Browse  Search  Profile
+       ↓             ↓
+ Listing Details  User Search
+       ↓             ↓
+Save / Message ←→ Student Profile
+       ↓
+ Reviews & Ratings
 ```
+
 ---
 
-## ?? Functional Scope
+## 🧩 Functional Scope
 
 ### Account & Identity
-- Create an account using a school email
-- Verify the email before account creation
-- Log in securely
-- Delete an account and associated data
-- Edit profile information
-- View other student profiles
-- Search for users by username, email, or full name
+
+- Register and sign in with a university email
+- Confirm email ownership before login
+- Request password recovery
+- Edit a profile and view other student profiles
+- Maintain a session through the authentication boundary
 
 ### Marketplace
-- Create new listings with a title, description, price, category, and photos
-- Browse campus listings
-- Search, filter, and sort results
-- View complete listing and seller details
-- Edit existing listings
-- Save or unsave listings
+
+- Create, browse, search, filter, and sort listings
+- View listing and seller details
+- Edit or mark a listing as sold
+- Save and remove saved listings
+- Submit reviews associated with sold listings
 
 ### Community & Communication
-- Message other users
-- View conversation history
-- Send messages and photos
-- Report messages
-- Rate and review other users
-- View reputation information
 
-### Recommendations
-Bulletin is designed to generate a **Recommended for You** feed using signals such as:
+- Start conversations and view inbox/thread history
+- Send messages
+- Report messages or users
+- Block and unblock users
+- View profile and review information
 
-- Campus
-- Browsing history
-- Saved listings
-- Preferences
-- Past interactions
-- Proximity relevance
+### Home & Recommendations
 
-When personalization data is insufficient, a future fallback may use popular or recent listings.
+The home context currently uses an in-memory repository. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
 
 ---
 
-## ??? Technical Direction
+## 🏗️ Technical Direction
 
-The requirements describe the following planned technology direction:
-
-| Layer | Planned / Considered Technology |
+| Layer | Current implementation |
 | --- | --- |
-| **Mobile Client** | Kotlin / Android |
-| **Future Platform** | iOS |
-| **Backend / Cloud** | Supabase, AWS, or Firebase |
-| **API Integration** | AWS APIs / AWS Amplify |
-| **Real-Time Communication** | Secure WebSockets (`WSS`) |
-| **Client�Server Traffic** | HTTPS |
-| **Email Verification** | SMTP or secure transactional email API |
-| **Notifications** | Firebase Cloud Messaging or Apple Push Notification Service |
-| **Location** | Mobile OS geolocation services with privacy-conscious proximity data |
+| **Mobile app** | Android with Kotlin and Jetpack Compose |
+| **Shared code** | Kotlin Multiplatform and Compose Multiplatform in `shared` |
+| **Backend** | Supabase client adapters for configured backend-backed contexts |
+| **Authentication** | Supabase Auth adapter, with university-email validation in shared business logic |
+| **Persistence** | Supabase PostgREST and Storage adapters; in-memory repositories for tests and local/inspection use |
+| **Dependency injection** | Manual composition in `AppContainer` |
+| **Build system** | Gradle wrapper and version catalog in `gradle/libs.versions.toml` |
 
 ---
 
-## ??? Repository Architecture
+## 🏛️ Repository Architecture
 
-Bulletin follows a **DDD-inspired + Feature-First Clean Architecture**:
+Bulletin follows a **DDD-inspired, feature-first clean architecture**:
 
 ```text
 shared/src/commonMain/kotlin/com/jdrms/bulletin/
-+-- app/                  # Application composition, root Navigation, and manual DI (AppContainer)
-+-- core/                 # Shared technical concerns (common, designsystem, network, database)
-+-- domain/               # Business domains (bounded contexts)
-    +-- home/             # Personalized Feed, Ranking Engine, User Preferences
-    +-- marketplace/      # Marketplace Catalog, Search, Categories, Saved Items
-    +-- listings/         # Create, Post, Publish, and Manage Student Listings
-    +-- messages/         # Real-Time Chat, Inbox, Message Reporting
-    +-- profile/          # Student Profile, Identity, .edu Verification, Reputation
+├── app/                  # Application composition, navigation, and manual DI (AppContainer)
+├── core/                 # Shared technical concerns, design system, networking, database
+└── domain/               # Business contexts and their layers
+    ├── home/             # Home feed and preferences
+    ├── marketplace/      # Marketplace catalog, search, bookmarks, reviews
+    ├── listings/         # Create and manage student listings
+    ├── messages/         # Conversations, inbox, and reporting
+    └── profile/          # Student profiles, authentication, reputation
 ```
 
-Each business domain adheres to a 4-layer structure:
-* `domain/`: Pure Kotlin entities, value objects, domain policies, and repository interfaces.
-* `application/`: Single-responsibility use cases orchestrating domain workflows.
-* `infrastructure/`: Repository implementations, DTOs, and mappers.
-* `presentation/`: Compose screens, ViewModels, UI State, and feature UI components.
+Business contexts use four layers:
 
-### Backend status
+- `domain/`: Domain types, policies, and repository contracts.
+- `application/`: Use cases and workflow orchestration.
+- `infrastructure/`: Supabase and in-memory adapters, DTOs, and mapping.
+- `presentation/`: Compose screens, ViewModels, and UI state.
 
-`AppContainer` selects the Supabase adapter when a client is configured and the in-memory adapter for inspection or
-local fallback. Adapter bindings describe code paths, not verification against a deployed Supabase project.
+### Backend Status
 
-| Repository or port | Configured Supabase client | Local fallback | Live project verification |
+`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home remains in memory. These bindings describe code paths, not verification against a deployed Supabase project.
+
+| Repository or port | Configured binding | In-memory use | Live project verification |
 | --- | --- | --- | --- |
-| Home repository | In-memory | In-memory | Not applicable |
-| Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters | Not verified here |
-| Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter | Not verified here |
-| Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
-| Profile repository | Supabase adapter | In-memory adapter | Not verified here |
-| User report repository | Supabase adapter | In-memory adapter | Not verified here |
-| User block repository | Supabase adapter | In-memory adapter | Not verified here |
-| Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
-| Auth and session repositories | Supabase Auth adapter | In-memory auth adapter | Not verified here |
+| Home feed | In-memory repository | Runtime and tests | Not applicable |
+| Marketplace and listing source | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
+| Listings, including sold-state updates | Supabase adapter | Tests, inspection, or explicit local development | Not verified here |
+| Messages, thread observer, and inbox observer | Supabase adapters | Tests, inspection, or explicit local development | Local adapter tests only; live project not verified |
+| Profile and authentication/session | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
+| User reports and blocks | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
+| Profile photos | Supabase Storage adapter | Tests, inspection, or explicit local development | Not verified here |
+| Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
 
-
-## ?? Security & Privacy
-
-Bulletin is intended to prioritize trust and student privacy.
-
-- ?? HTTPS for client�server communication
-- ?? Secure password hashing and storage
-- ?? University-email-based student verification
-- ??? Role-based access control for sensitive functionality
-- ?? WSS for secure real-time messaging
-- ?? Only necessary proximity data should be transmitted; precise locations should not be exposed to other users
-- ??? Sensitive data should be encrypted at rest and in transit
-- ?? Users should be able to request account deletion
-- ? Rating mechanisms should resist fake reviews and manipulation
-- ?? Content/message reporting supports moderation
-- ?? The system is intended to account for applicable university policies and student privacy requirements
+Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. Review those migrations and configure the matching project before using backend features. No live project validation is claimed here.
 
 ---
 
-## ? Performance Goals
+## 🔧 Local Setup
+
+### Requirements
+
+- JDK 21
+- Android SDK configured for your environment
+- Git
+
+### Configure Supabase
+
+The Android build reads configuration from a root `.env` file, environment variables, or Gradle properties. Copy `.env.example` to `.env` and set your Supabase project values:
+
+```dotenv
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_API_KEY=your-anon-public-key
+SUPABASE_IS_CONNECTED=true
+```
+
+The app must use only the Supabase anon/public key. Never put a service-role key, credentials, or real user data in the repository. Ensure the Supabase project has the schema and policies in `supabase/migrations/` applied.
+
+### Build and Checks
+
+```bash
+./gradlew :androidApp:assembleDebug --no-daemon
+./gradlew :shared:testAndroidHostTest --no-daemon
+./gradlew :shared:detekt :androidApp:detekt --no-daemon
+```
+
+Live Supabase tests are opt-in and require explicit configuration. Regular tests should not require live credentials or network access.
+
+---
+
+## 🔐 Security & Privacy
+
+- Client-server traffic uses HTTPS through the backend client.
+- Client applications use the Supabase anon/public key, never a service-role key.
+- Database access must be protected by Row Level Security and storage policies.
+- Message contents and precise locations must not be exposed to unauthorized users.
+- Avoid logging credentials, session tokens, message contents, or precise locations.
+- Account deletion, moderation, and privacy requirements must be validated against the configured backend and applicable policies.
+
+These are implementation requirements and project goals; this README does not claim a production security audit.
+
+---
+
+## ⚡ Performance Goals
+
+The following are project targets, not measured guarantees:
 
 | Operation | Target |
 | --- | ---: |
 | App launch | `< 2 seconds` |
-| Listing/search/profile/recommendation results | `= 2 seconds` |
-| Rating/report submissions | `= 3 seconds` |
-| Account creation/authentication | `= 5 seconds` |
-| Listing/account/profile-related updates | `= 5 seconds` |
+| Listing, search, profile, and feed results | `≤ 2 seconds` |
+| Rating and report submissions | `≤ 3 seconds` |
+| Account creation and authentication | `≤ 5 seconds` |
+| Listing and profile updates | `≤ 5 seconds` |
 | API responses | `< 200 ms` |
-
-Personalized results should also refresh as user behavior changes without noticeable lag.
 
 ---
 
-## ??? Development Roadmap
+## 🗺️ Development Roadmap
 
-- [ ] Finalize production backend/cloud provider
-- [ ] Validate email ownership verification with the deployed email provider (see setup below)
-- [ ] Complete authentication and account management
-- [ ] Build marketplace listing CRUD functionality
-- [ ] Add search, filtering, and sorting
-- [ ] Implement saved listings
-- [ ] Add user search and profile management
-- [ ] Implement secure real-time messaging
-- [ ] Add message reporting and moderation workflow
-- [ ] Implement ratings and reviews
-- [ ] Add personalized recommendations
-- [ ] Validate security/privacy requirements
-- [ ] Benchmark performance requirements
+- [ ] Validate authentication, email confirmation, and account lifecycle against the configured Supabase project
+- [ ] Verify database RLS and storage policies for supported actors and operations
+- [ ] Complete and validate marketplace listing workflows
+- [ ] Complete and validate search, filters, sorting, and saved listings
+- [ ] Validate user search and profile management
+- [ ] Validate messaging, inbox updates, reporting, and blocking
+- [ ] Validate sold-listing review workflows
+- [ ] Develop and validate personalized home recommendations
+- [ ] Measure performance against project targets
 - [ ] Prepare user guide, privacy policy, and terms of service
 - [ ] Explore future iOS support
 
 ---
 
-## ?? Testing Priorities
+## 🧪 Testing Priorities
 
-Testing should cover both successful workflows and documented failure cases, including:
+Test successful workflows and meaningful failure cases, including:
 
-- Invalid or already-used school emails
-- Invalid verification codes or passwords
-- Missing listing/profile fields
-- Invalid prices and unsupported image uploads
-- Network interruptions
-- Missing/deleted listings or profiles
-- Blocked-user interactions
-- Duplicate bookmarks
-- Failed report submissions
-- Recommendation service failures or insufficient personalization data
-- Performance targets for authentication, search, messaging, profiles, and recommendations
+- Invalid, unconfirmed, or already-registered email addresses
+- Invalid credentials and password recovery failures
+- Missing listing or profile fields and invalid prices
+- Missing or deleted listings and profiles
+- Network interruptions and backend errors
+- Unauthorized access to messages, reports, profile data, or photos
+- Blocked-user interactions and duplicate bookmarks
+- Failed report and review submissions
+- Recommendation behavior when personalization data is unavailable
 
 ---
 
-## ?? Team JDRMS
+## 👥 Team JDRMS
 
 | Role | Member |
 | --- | --- |
@@ -243,15 +258,14 @@ Testing should cover both successful workflows and documented failure cases, inc
 | **Team Member** | Sean Gallagher |
 | **Team Member** | Jacob Ayoub |
 | **Team Member** | Roger Carrillo |
-| **Team Member** | Dominic Alfonso |
+| **G.O.A.T** | Dominic Alfonso |
 
 ---
 
 <div align="center">
 
-### ?? Built for students. Designed around campus trust.
+### 🎓 Built for students. Designed around campus trust.
 
-**Bulletin � connect locally, transact confidently.**
+**Bulletin — connect locally, transact confidently.**
 
 </div>
-

@@ -2,7 +2,6 @@ package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -14,23 +13,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Storefront
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,8 +38,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinExtras
 internal fun ProfileAboutCard(
     major: String,
     university: String,
-    bio: String?,
-    onEditProfileClick: () -> Unit
+    bio: String?
 ) {
     BulletinCard {
         Row(
@@ -60,9 +51,6 @@ internal fun ProfileAboutCard(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
-            TextButton(onClick = onEditProfileClick) {
-                Text("Edit", style = MaterialTheme.typography.labelMedium)
-            }
         }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -201,110 +189,4 @@ private fun ActivityDivider() {
             .width(1.dp),
         color = MaterialTheme.colorScheme.outlineVariant
     ) {}
-}
-
-@Composable
-internal fun ProfileMarketplaceCard(
-    activeListings: Int,
-    onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit,
-    onCreateListingClick: () -> Unit
-) {
-    BulletinCard {
-        Text(
-            text = "Marketplace",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        MarketplaceActionRow(
-            icon = Icons.Outlined.GridView,
-            title = "My listings",
-            badge = activeListings.toString(),
-            onClick = onMyListingsClick
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        MarketplaceActionRow(
-            icon = Icons.Outlined.BookmarkBorder,
-            title = "Bookmarked listings",
-            onClick = onBookmarkedListingsClick
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        MarketplaceActionRow(
-            icon = Icons.Outlined.Add,
-            title = "Create a listing",
-            onClick = onCreateListingClick
-        )
-    }
-}
-
-@Composable
-private fun MarketplaceActionRow(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit,
-    subtitle: String? = null,
-    badge: String? = null
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    ) {
-        Row(
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                contentColor = MaterialTheme.colorScheme.primary
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
-                }
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            if (badge != null) {
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Text(
-                        text = badge,
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                            .widthIn(min = 12.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
-                Icon(
-                    imageVector = Icons.Outlined.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-    }
 }

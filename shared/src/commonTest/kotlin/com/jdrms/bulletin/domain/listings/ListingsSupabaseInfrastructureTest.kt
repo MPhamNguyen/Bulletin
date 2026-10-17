@@ -24,7 +24,8 @@ class ListingsSupabaseInfrastructureTest {
     @Test
     fun createListingInsertsDomainFieldsAndPreservesUuid() = runTest {
         val table = FakeSupabaseListingsTable()
-        val repository = SupabaseListingsRepository(table)
+        var invalidations = 0
+        val repository = SupabaseListingsRepository(table) { invalidations++ }
         val listing = testListing()
 
         val result = repository.createListing(listing)
@@ -35,6 +36,7 @@ class ListingsSupabaseInfrastructureTest {
         assertEquals(listing.sellerId.value, table.inserted?.userId)
         assertEquals(listing.title, table.inserted?.name)
         assertEquals(false, table.inserted?.isSold)
+        assertEquals(1, invalidations)
     }
 
     @Test
@@ -52,12 +54,14 @@ class ListingsSupabaseInfrastructureTest {
     @Test
     fun createListingHidesUnexpectedRepositoryErrors() = runTest {
         val table = FakeSupabaseListingsTable(insertError = IllegalStateException("row-level security denied"))
-        val repository = SupabaseListingsRepository(table)
+        var invalidations = 0
+        val repository = SupabaseListingsRepository(table) { invalidations++ }
 
         val result = repository.createListing(testListing())
 
         assertTrue(result.isError())
         assertEquals(CreateListingErrorMessages.GENERIC_FAILURE, (result as Result.Error).message)
+        assertEquals(0, invalidations)
     }
 
     @Test

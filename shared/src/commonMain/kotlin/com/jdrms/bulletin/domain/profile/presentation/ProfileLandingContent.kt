@@ -18,11 +18,8 @@ import androidx.compose.ui.unit.dp
 internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
     onSettingsClick: () -> Unit,
-    onEditProfileClick: () -> Unit,
-    onChangePhotoClick: () -> Unit,
     onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit,
-    onCreateListingClick: () -> Unit
+    onBookmarkedListingsClick: () -> Unit
 ) {
     val profile = uiState.profile
     val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
@@ -45,8 +42,6 @@ internal fun MarketplaceProfileView(
                 major = major,
                 university = university,
                 isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
-                onEditProfileClick = onEditProfileClick,
-                onChangePhotoClick = onChangePhotoClick,
                 avatarUrl = profile?.avatarUrl
             )
 
@@ -61,15 +56,13 @@ internal fun MarketplaceProfileView(
             ProfileAboutCard(
                 major = major,
                 university = university,
-                bio = profile?.bio,
-                onEditProfileClick = onEditProfileClick
+                bio = profile?.bio
             )
 
             ProfileMarketplaceCard(
                 activeListings = uiState.activeListingsCount,
                 onMyListingsClick = onMyListingsClick,
-                onBookmarkedListingsClick = onBookmarkedListingsClick,
-                onCreateListingClick = onCreateListingClick
+                onBookmarkedListingsClick = onBookmarkedListingsClick
             )
             Spacer(modifier = Modifier.height(16.dp))
         }

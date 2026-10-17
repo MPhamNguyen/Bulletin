@@ -15,9 +15,13 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 
 class SupabaseListingsRepository internal constructor(
-    private val listingsTable: SupabaseListingsTable
+    private val listingsTable: SupabaseListingsTable,
+    private val afterSuccessfulMutation: suspend () -> Unit = {}
 ) : ListingsRepository {
-    constructor(supabase: SupabaseClient) : this(PostgrestSupabaseListingsTable(supabase))
+    constructor(supabase: SupabaseClient) : this(PostgrestSupabaseListingsTable(supabase), {})
+
+    internal constructor(supabase: SupabaseClient, afterSuccessfulMutation: suspend () -> Unit) :
+        this(PostgrestSupabaseListingsTable(supabase), afterSuccessfulMutation)
 
     override suspend fun createListing(listing: Listing): Result<Listing> {
         return runCatching {
@@ -32,7 +36,7 @@ class SupabaseListingsRepository internal constructor(
             onFailure = { error ->
                 Result.Error(Exception(CreateListingErrorMessages.GENERIC_FAILURE, error))
             }
-        )
+        ).also { result -> if (result is Result.Success) afterSuccessfulMutation() }
     }
 
     override suspend fun updateListing(listing: Listing): Result<Listing> {
@@ -49,7 +53,7 @@ class SupabaseListingsRepository internal constructor(
             onFailure = { error ->
                 Result.Error(Exception(CreateListingErrorMessages.GENERIC_FAILURE, error))
             }
-        )
+        ).also { result -> if (result is Result.Success) afterSuccessfulMutation() }
     }
 
     override suspend fun getListing(id: ListingId): Listing? {
@@ -74,7 +78,7 @@ class SupabaseListingsRepository internal constructor(
             onFailure = { error ->
                 Result.Error(Exception(CreateListingErrorMessages.GENERIC_FAILURE, error))
             }
-        )
+        ).also { result -> if (result is Result.Success) afterSuccessfulMutation() }
     }
 
     override suspend fun getSellerListings(sellerId: SellerId): List<Listing> {
