@@ -47,8 +47,8 @@ import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepo
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
-import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.MarketplaceReadCache
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
