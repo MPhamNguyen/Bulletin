@@ -1,10 +1,12 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,10 +16,12 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +36,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -207,7 +213,35 @@ fun SignInScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            MicrosoftSignInDivider()
+
+            Button(
+                onClick = {},
+                enabled = !isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp),
+                border = BorderStroke(
+                    1.5.dp,
+                    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) {
+                        Color(0xFFD0D5DD)
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    }
+                )
+            ) {
+                MicrosoftLogo()
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Continue with Microsoft", style = MaterialTheme.typography.titleMedium)
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
 
             Text(
                 text = "New to Bulletin?",
@@ -220,6 +254,49 @@ fun SignInScreen(
             ) {
                 Text("Create an account")
             }
+        }
+    }
+}
+
+@Composable
+private fun MicrosoftSignInDivider() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        androidx.compose.material3.HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        Text(
+            text = "or",
+            modifier = Modifier.padding(horizontal = 14.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        androidx.compose.material3.HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+    }
+}
+
+@Composable
+private fun MicrosoftLogo() {
+    Row(
+        modifier = Modifier.size(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFFF25022)))
+            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFF00A4EF)))
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFF7FBA00)))
+            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFFFFB900)))
         }
     }
 }
