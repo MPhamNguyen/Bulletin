@@ -20,6 +20,7 @@ import com.jdrms.bulletin.app.di.blockedUsersViewModelFactory
 import com.jdrms.bulletin.app.di.createAccountViewModel
 import com.jdrms.bulletin.app.di.createEditProfileViewModel
 import com.jdrms.bulletin.app.di.createHomeViewModel
+import com.jdrms.bulletin.app.di.createListingReportViewModel
 import com.jdrms.bulletin.app.di.createListingsViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceUserReportViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceViewModel
@@ -39,6 +40,7 @@ import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
+import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
@@ -80,6 +82,7 @@ private class MainScaffoldModels(
     val marketplace: MarketplaceViewModel,
     val sellerProfile: SellerProfileViewModel,
     val marketplaceUserReport: MarketplaceUserReportViewModel,
+    val listingReport: ListingReportViewModel,
     val marketplaceUserBlock: MarketplaceUserBlockViewModel,
     val listings: ListingsViewModel,
     val messages: MessagesViewModel
@@ -102,6 +105,7 @@ fun MainAppScaffold(
             container.createMarketplaceViewModel(),
             container.createSellerProfileViewModel(),
             container.createMarketplaceUserReportViewModel(),
+            container.createListingReportViewModel(),
             container.marketplaceUserBlockViewModelFactory(),
             container.createListingsViewModel(),
             container.createMessagesViewModel()
@@ -149,6 +153,7 @@ private fun MainAppContent(
             viewModel = models.marketplace,
             sellerProfileViewModel = models.sellerProfile,
             userReportViewModel = models.marketplaceUserReport,
+            listingReportViewModel = models.listingReport,
             userBlockViewModel = models.marketplaceUserBlock,
             actions = MarketplaceScreenActions(
                 onMessageSeller = { listingId, sellerId, sellerName, content ->

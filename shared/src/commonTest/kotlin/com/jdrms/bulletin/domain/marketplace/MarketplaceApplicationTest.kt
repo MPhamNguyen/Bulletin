@@ -7,17 +7,21 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnaps
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceReportedListingProvider
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfileProvider
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.pageFor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
@@ -142,6 +146,40 @@ class MarketplaceApplicationTest {
         assertEquals(2, requests.size)
         assertEquals(firstCursor, requests[1].cursor)
         assertEquals(null, page.nextCursor)
+    }
+
+    @Test
+    fun searchHidesListingsReportedByTheCurrentViewer() = runTest {
+        val source = MutableMarketplaceListingSource().apply {
+            listings += listOf(snapshot("reported", "seller-1"), snapshot("visible", "seller-2"))
+        }
+        val search = SearchMarketplace(
+            repository = InMemoryMarketplaceRepository(initialListings = emptyList()),
+            listingSource = source,
+            reportedListingProvider = MarketplaceReportedListingProvider { reporterId ->
+                assertEquals(MarketplaceReporterId("viewer"), reporterId)
+                setOf(MarketplaceItemId("reported"))
+            }
+        )
+
+        val page = search.getPage(MarketplacePageRequest(viewerId = "viewer", pageSize = 2))
+
+        assertEquals(listOf("visible"), page.items.map { it.id.value })
+    }
+
+    @Test
+    fun viewingAReportedListingReturnsUnavailable() = runTest {
+        val view = ViewMarketplaceListing(
+            repository = repository,
+            reportedListingProvider = MarketplaceReportedListingProvider {
+                setOf(MarketplaceItemId("mkt_1"))
+            }
+        )
+
+        val result = view("mkt_1", "viewer")
+
+        assertIs<Result.Error>(result)
+        assertEquals("This listing is unavailable.", result.message)
     }
 
     private fun snapshot(id: String, sellerId: String) = MarketplaceListingSnapshot(
