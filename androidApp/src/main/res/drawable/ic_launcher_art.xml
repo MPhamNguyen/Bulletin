@@ -3,6 +3,9 @@
     android:viewportHeight="512"
     android:width="512dp"
     android:height="512dp">
+    <path
+        android:pathData="M0 0H512V512H0V0Z"
+        android:fillColor="#3E5C76" />
     <group
         android:rotation="-40"
         android:scaleX="0.95"

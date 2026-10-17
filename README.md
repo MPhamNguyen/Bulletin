@@ -47,10 +47,6 @@ Students can discover campus listings, buy or sell items, communicate with other
 
 ## 📱 User Experience
 
-The Android launcher icon uses an off-white tag on a mid-navy background in both light and dark mode.
-On supported Android 13+ launchers, enabling **Themed icons** uses a monochrome tag with transparent pin
-and listing-line cutouts. The launcher chooses its colors from the device theme and wallpaper.
-
 The main product flow connects account setup with marketplace, messaging, and profile features:
 
 ```text
