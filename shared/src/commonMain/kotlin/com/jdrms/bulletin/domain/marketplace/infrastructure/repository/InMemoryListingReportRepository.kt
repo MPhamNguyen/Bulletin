@@ -11,25 +11,49 @@ import kotlinx.coroutines.sync.withLock
 
 class InMemoryListingReportRepository : ListingReportRepository {
     private val mutex = Mutex()
-    private val reports = mutableListOf<ListingReport>()
+    private val reports = mutableListOf<StoredListingReport>()
 
     override suspend fun submit(report: ListingReport): Result<Unit> = mutex.withLock {
-        if (reports.any { it.listingId == report.listingId && it.reporterId == report.reporterId }) {
+        if (reports.any {
+                it.isOpen && it.report.listingId == report.listingId &&
+                    it.report.reporterId == report.reporterId
+            }
+        ) {
             return@withLock Result.Error(ListingReportAlreadySubmittedException())
         }
-        reports += report
+        reports += StoredListingReport(report)
         Result.Success(Unit)
+    }
+
+    override suspend fun hasOpenReport(
+        reporterId: MarketplaceReporterId,
+        listingId: MarketplaceItemId
+    ): Result<Boolean> = mutex.withLock {
+        Result.Success(
+            reports.any {
+                it.isOpen && it.report.reporterId == reporterId && it.report.listingId == listingId
+            }
+        )
     }
 
     override suspend fun reportedListingIds(
         reporterId: MarketplaceReporterId
     ): Result<Set<MarketplaceItemId>> = mutex.withLock {
         Result.Success(
-            reports.asSequence().filter { it.reporterId == reporterId }
-                .map(ListingReport::listingId)
+            reports.asSequence()
+                .filter {
+                    it.isOpen && it.report.reporterId == reporterId
+                }
+                .map { it.report.listingId }
                 .toSet()
         )
     }
 
-    fun submittedReports(): List<ListingReport> = reports.toList()
+    internal suspend fun markClosedForTesting(report: ListingReport) = mutex.withLock {
+        reports.firstOrNull { it.report == report && it.isOpen }?.isOpen = false
+    }
+
+    fun submittedReports(): List<ListingReport> = reports.map(StoredListingReport::report)
+
+    private data class StoredListingReport(val report: ListingReport, var isOpen: Boolean = true)
 }

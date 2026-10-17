@@ -60,6 +60,11 @@ class ListingReportTest {
                 return Result.Success(Unit)
             }
 
+            override suspend fun hasOpenReport(
+                reporterId: MarketplaceReporterId,
+                listingId: MarketplaceItemId
+            ): Result<Boolean> = Result.Success(false)
+
             override suspend fun reportedListingIds(
                 reporterId: MarketplaceReporterId
             ): Result<Set<MarketplaceItemId>> = Result.Success(emptySet())
@@ -87,9 +92,55 @@ class ListingReportTest {
         val sameListingOtherReporter = report("listing-1", "another", ListingReportReason.OTHER)
 
         assertIs<Result.Success<Unit>>(repository.submit(first))
+        assertEquals(
+            true,
+            assertIs<Result.Success<Boolean>>(
+                repository.hasOpenReport(first.reporterId, first.listingId)
+            ).data
+        )
         assertIs<ListingReportAlreadySubmittedException>(assertIs<Result.Error>(repository.submit(duplicate)).exception)
         assertIs<Result.Success<Unit>>(repository.submit(sameListingOtherReporter))
         assertEquals(listOf(first, sameListingOtherReporter), repository.submittedReports())
+        assertEquals(
+            setOf(MarketplaceItemId("listing-1")),
+            assertIs<Result.Success<Set<MarketplaceItemId>>>(
+                repository.reportedListingIds(MarketplaceReporterId("reporter"))
+            ).data
+        )
+    }
+
+    @Test
+    fun allowsAnotherReportAfterEarlierReportIsClosedAndKeepsListingHidden() = runTest {
+        val repository = InMemoryListingReportRepository()
+        val closedReport = report("listing-1", "reporter", ListingReportReason.OTHER)
+        val nextReport = report("listing-1", "reporter", ListingReportReason.SCAM_OR_FRAUD)
+        assertIs<Result.Success<Unit>>(repository.submit(closedReport))
+        assertEquals(
+            true,
+            assertIs<Result.Success<Boolean>>(
+                repository.hasOpenReport(closedReport.reporterId, closedReport.listingId)
+            ).data
+        )
+
+        repository.markClosedForTesting(closedReport)
+
+        assertEquals(
+            false,
+            assertIs<Result.Success<Boolean>>(
+                repository.hasOpenReport(closedReport.reporterId, closedReport.listingId)
+            ).data
+        )
+        assertEquals(
+            emptySet(),
+            assertIs<Result.Success<Set<MarketplaceItemId>>>(
+                repository.reportedListingIds(closedReport.reporterId)
+            ).data
+        )
+        assertIs<Result.Success<Unit>>(repository.submit(nextReport))
+        assertEquals(
+            listOf(closedReport, nextReport),
+            repository.submittedReports()
+        )
         assertEquals(
             setOf(MarketplaceItemId("listing-1")),
             assertIs<Result.Success<Set<MarketplaceItemId>>>(
@@ -106,6 +157,11 @@ class ListingReportTest {
                 submitted = report
                 return Result.Success(Unit)
             }
+
+            override suspend fun hasOpenReport(
+                reporterId: MarketplaceReporterId,
+                listingId: MarketplaceItemId
+            ): Result<Boolean> = Result.Success(false)
 
             override suspend fun reportedListingIds(
                 reporterId: MarketplaceReporterId

@@ -20,5 +20,11 @@ data class ListingReportInsertDto(
 
 @Serializable
 data class ListingReportListingIdDto(
-    @SerialName("listing_id") val listingId: String
+    @SerialName("listing_id") val listingId: String,
+    @SerialName("status") val status: String?
+)
+
+@Serializable
+data class ListingReportStatusDto(
+    @SerialName("status") val status: String?
 )

@@ -23,9 +23,22 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class SupabaseListingReportRepositoryTest {
+    @Test
+    fun treatsOnlyClosedStatusesAsAllowingAnotherReport() {
+        val missingStatus: String? = null
+        assertTrue("open".isOpenListingReportStatus())
+        assertTrue("in_review".isOpenListingReportStatus())
+        assertTrue(missingStatus.isOpenListingReportStatus())
+        assertFalse("closed".isOpenListingReportStatus())
+        assertFalse("resolved".isOpenListingReportStatus())
+        assertFalse("dismissed".isOpenListingReportStatus())
+    }
+
     @Test
     fun mapsInsertPermissionFailureToRlsGuidance() {
         val cause = IllegalStateException("permission denied")
@@ -104,13 +117,70 @@ class SupabaseListingReportRepositoryTest {
             install(Postgrest)
             httpEngine = MockEngine { request ->
                 assertEquals(HttpMethod.Get, request.method)
-                respond("[{\"listing_id\":\"listing-id\"}]", HttpStatusCode.OK)
+                respond("[{\"status\":\"open\"}]", HttpStatusCode.OK)
             }
         }
         try {
             val result = repository(client).submit(report())
 
             assertIs<ListingReportAlreadySubmittedException>(assertIs<Result.Error>(result).exception)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun allowsNewReportAfterPriorReportWasClosed() = runTest {
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                if (request.method == HttpMethod.Get) {
+                    respond("[{\"status\":\"resolved\"}]", HttpStatusCode.OK)
+                } else {
+                    respond("", HttpStatusCode.Created)
+                }
+            }
+        }
+        try {
+            assertIs<Result.Success<Unit>>(repository(client).submit(report()))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun openReportReturnsListingIdForHiding() = runTest {
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond("[{\"listing_id\":\"listing-id\",\"status\":\"open\"}]", HttpStatusCode.OK)
+            }
+        }
+        try {
+            val ids = assertIs<Result.Success<Set<MarketplaceItemId>>>(
+                repository(client).reportedListingIds(MarketplaceReporterId("reporter-id"))
+            ).data
+
+            assertEquals(setOf(MarketplaceItemId("listing:listing-id")), ids)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun closedReportDoesNotReturnListingIdForHiding() = runTest {
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond("[{\"listing_id\":\"listing-id\",\"status\":\"resolved\"}]", HttpStatusCode.OK)
+            }
+        }
+        try {
+            val ids = assertIs<Result.Success<Set<MarketplaceItemId>>>(
+                repository(client).reportedListingIds(MarketplaceReporterId("reporter-id"))
+            ).data
+
+            assertEquals(emptySet(), ids)
         } finally {
             client.close()
         }

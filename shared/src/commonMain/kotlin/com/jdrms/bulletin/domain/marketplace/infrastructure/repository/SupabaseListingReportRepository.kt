@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingReportInsertDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingReportListingIdDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingReportStatusDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseListingReportType
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -30,7 +31,7 @@ class SupabaseListingReportRepository internal constructor(
             return Result.Error(IllegalStateException("Report identity does not match the signed-in user."))
         }
         val listingId = report.listingId.value.removePrefix(LISTING_ID_PREFIX)
-        if (listingId in table.reportedListingIds(authenticatedReporter)) {
+        if (table.hasOpenReport(authenticatedReporter, listingId)) {
             return Result.Error(ListingReportAlreadySubmittedException())
         }
         table.insert(
@@ -49,6 +50,29 @@ class SupabaseListingReportRepository internal constructor(
         Result.Error(
             ListingReportPersistenceFailureMapper.map(exception.code, exception)
         )
+    } catch (exception: Exception) {
+        Result.Error(IllegalStateException(SAFE_FAILURE_MESSAGE, exception))
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun hasOpenReport(
+        reporterId: MarketplaceReporterId,
+        listingId: MarketplaceItemId
+    ): Result<Boolean> = try {
+        val authenticatedReporter = table.authenticatedUserId()
+            ?.takeIf(String::isNotBlank)
+            ?: return Result.Error(IllegalStateException("Sign in to view reported listings."))
+        if (authenticatedReporter != reporterId.value) {
+            return Result.Error(IllegalStateException("Report identity does not match the signed-in user."))
+        }
+        Result.Success(
+            table.hasOpenReport(
+                authenticatedReporter,
+                listingId.value.removePrefix(LISTING_ID_PREFIX)
+            )
+        )
+    } catch (exception: CancellationException) {
+        throw exception
     } catch (exception: Exception) {
         Result.Error(IllegalStateException(SAFE_FAILURE_MESSAGE, exception))
     }
@@ -104,6 +128,7 @@ internal object ListingReportPersistenceFailureMapper {
 internal interface SupabaseListingReportsTable {
     suspend fun authenticatedUserId(): String?
     suspend fun insert(report: ListingReportInsertDto)
+    suspend fun hasOpenReport(reporterId: String, listingId: String): Boolean
     suspend fun reportedListingIds(reporterId: String): Set<String>
 }
 
@@ -119,15 +144,33 @@ internal class PostgrestSupabaseListingReportsTable(
         supabase.from(SupabaseListingReportRepository.TABLE).insert(report)
     }
 
+    override suspend fun hasOpenReport(reporterId: String, listingId: String): Boolean =
+        supabase.from(SupabaseListingReportRepository.TABLE)
+            .select(columns = Columns.raw("status")) {
+                filter {
+                    eq("reporter_id", reporterId)
+                    eq("type", "listing")
+                    eq("listing_id", listingId)
+                }
+            }
+            .decodeList<ListingReportStatusDto>()
+            .any { it.status.isOpenListingReportStatus() }
+
     override suspend fun reportedListingIds(reporterId: String): Set<String> =
         supabase.from(SupabaseListingReportRepository.TABLE)
-            .select(columns = Columns.raw("listing_id")) {
+            .select(columns = Columns.raw("listing_id,status")) {
                 filter {
                     eq("reporter_id", reporterId)
                     eq("type", "listing")
                 }
             }
             .decodeList<ListingReportListingIdDto>()
+            .filter { it.status.isOpenListingReportStatus() }
             .map(ListingReportListingIdDto::listingId)
             .toSet()
+}
+
+internal fun String?.isOpenListingReportStatus(): Boolean = when (this?.lowercase()) {
+    "closed", "resolved", "dismissed" -> false
+    else -> true
 }

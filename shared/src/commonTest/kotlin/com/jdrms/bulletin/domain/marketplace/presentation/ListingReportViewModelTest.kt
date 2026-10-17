@@ -90,6 +90,11 @@ class ListingReportViewModelTest {
             return Result.Success(Unit)
         }
 
+        override suspend fun hasOpenReport(
+            reporterId: MarketplaceReporterId,
+            listingId: MarketplaceItemId
+        ): Result<Boolean> = Result.Success(false)
+
         override suspend fun reportedListingIds(
             reporterId: MarketplaceReporterId
         ): Result<Set<MarketplaceItemId>> = Result.Success(emptySet())
