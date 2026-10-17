@@ -18,7 +18,6 @@ import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.SectionHeader
-import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @Composable
 fun MarketplaceScreen(
@@ -169,7 +168,9 @@ private fun MarketplaceCatalogContent(
                         state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
                     },
                     onLeaveReview = viewModel.reviewActions::openReviewDialog,
-                    onReportListing = { beginListingReport(listingReportViewModel, state.detail.listing) },
+                    onReportListing = {
+                        beginMarketplaceListingReport(listingReportViewModel, state.detail.listing)
+                    },
                     onSellerClick = { sellerId ->
                         sellerProfileViewModel.load(sellerId)
                         onNavigate(MarketplaceDestination.SELLER_PROFILE)
@@ -194,10 +195,6 @@ private fun MarketplaceCatalogContent(
             }
         }
     }
-}
-
-private fun beginListingReport(viewModel: ListingReportViewModel, listing: Listing?) {
-    listing?.let { viewModel.begin(it.id.value, it.sellerId) }
 }
 
 @Composable
@@ -283,12 +280,6 @@ private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
     val report: MarketplaceUserReportViewModel,
     val block: MarketplaceUserBlockViewModel
-)
-
-data class MarketplaceScreenActions(
-    val onMessageSeller: suspend (String, String, String, String) -> Boolean = { _, _, _, _ -> false },
-    val hasExistingConversation: suspend (String, String) -> Boolean = { _, _ -> false },
-    val onSeeChat: suspend (String, String) -> Unit = { _, _ -> }
 )
 
 private enum class MarketplaceDestination {
