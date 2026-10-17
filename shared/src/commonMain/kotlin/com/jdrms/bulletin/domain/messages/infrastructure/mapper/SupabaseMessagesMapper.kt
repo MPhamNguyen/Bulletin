@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInsertDto
@@ -32,6 +33,26 @@ object SupabaseMessagesMapper {
             participants = participants.map(::toParticipant),
             listingId = conversation.listingId?.let(::ListingReferenceId),
             lastMessage = mappedLastMessage,
+            updatedAtMillis = updatedAtMillis
+        )
+    }
+
+    fun toInboxConversation(dto: SupabaseConversationInboxDto): Conversation {
+        val lastMessage = dto.latestMessages.firstOrNull()?.let(::toMessage)
+        val updatedAtMillis = maxOf(
+            dto.updatedAt.toEpochMillisecondsOrZero(),
+            lastMessage?.timestampMillis ?: 0L
+        )
+        return Conversation(
+            id = ConversationId(dto.id),
+            participants = dto.participants.map { participant ->
+                ConversationParticipant(
+                    id = SenderId(participant.userId),
+                    displayName = participant.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME
+                )
+            },
+            listingId = dto.listingId?.let(::ListingReferenceId),
+            lastMessage = lastMessage,
             updatedAtMillis = updatedAtMillis
         )
     }

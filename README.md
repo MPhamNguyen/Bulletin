@@ -141,6 +141,26 @@ The requirements describe the following planned technology direction:
 
 ## ??? Repository Architecture
 
+### Backend status
+
+`AppContainer` binds Supabase adapters when Supabase is configured; otherwise it uses in-memory fallbacks for local
+development. This table records the configured binding and does not claim live-project verification.
+
+| Repository / context | Configured binding | Local fallback |
+| --- | --- | --- |
+| Home | In-memory | In-memory |
+| Marketplace | Supabase | In-memory |
+| Listings | Supabase | In-memory |
+| Messages | Supabase | In-memory |
+| Profile | Supabase | In-memory |
+| Profile photos | Supabase storage | In-memory |
+
+The messages adapter logs `inbox_retrieval` for the full repository call, plus `inbox_request_body`,
+`inbox_decode`, and `inbox_mapping` for its stages. Timings include `duration_us`; `response_bytes` on
+`inbox_request_body` is the UTF-8 size of the received JSON text. The Supabase PostgREST client returns that text
+after reading the body, so `inbox_request_body` combines request handling, time to headers, body transfer, and
+text decoding. Logs contain no message contents or request credentials.
+
 Bulletin follows a **DDD-inspired + Feature-First Clean Architecture**:
 
 ```text

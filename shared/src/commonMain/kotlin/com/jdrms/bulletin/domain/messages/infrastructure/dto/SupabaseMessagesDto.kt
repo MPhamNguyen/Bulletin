@@ -19,6 +19,25 @@ data class SupabaseConversationMembershipDto(
 )
 
 @Serializable
+data class SupabaseConversationInboxDto(
+    @SerialName("id") val id: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("listing_id") val listingId: String? = null,
+    @SerialName("membership") val membership: List<SupabaseInboxMembershipDto> = emptyList(),
+    @SerialName("participants") val participants: List<SupabaseInboxParticipantDto> = emptyList(),
+    @SerialName("messages") val latestMessages: List<SupabaseMessageDto> = emptyList()
+)
+
+@Serializable
+data class SupabaseInboxMembershipDto(@SerialName("user_id") val userId: String)
+
+@Serializable
+data class SupabaseInboxParticipantDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null
+)
+
+@Serializable
 data class SupabaseConversationParticipantDto(
     @SerialName("conversation_id") val conversationId: String,
     @SerialName("user_id") val userId: String,
