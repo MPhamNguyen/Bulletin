@@ -8,10 +8,12 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -36,15 +38,17 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.navigation.AppDestination
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun Navbar(
     currentDestination: AppDestination,
-    isVisible: Boolean,
+    isVisible: () -> Boolean,
     onDestinationSelected: (AppDestination) -> Unit,
     onFocused: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val navbarIsVisible = isVisible() && !WindowInsets.isImeVisible
     val hiddenFraction = animateFloatAsState(
-        targetValue = if (isVisible) 0f else 1f,
+        targetValue = if (navbarIsVisible) 0f else 1f,
         animationSpec = tween(durationMillis = 250),
         label = "navbar visibility"
     )
@@ -59,7 +63,7 @@ fun Navbar(
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .fillMaxWidth()
-            .semantics { if (!isVisible) hideFromAccessibility() },
+            .semantics { if (!navbarIsVisible) hideFromAccessibility() },
         contentAlignment = Alignment.Center
     ) {
         Surface(
