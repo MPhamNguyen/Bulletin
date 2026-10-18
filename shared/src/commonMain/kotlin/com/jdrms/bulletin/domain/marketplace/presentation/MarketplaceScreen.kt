@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,7 +26,8 @@ fun MarketplaceScreen(
     sellerProfileViewModel: SellerProfileViewModel,
     userReportViewModel: MarketplaceUserReportViewModel,
     userBlockViewModel: MarketplaceUserBlockViewModel,
-    actions: MarketplaceScreenActions = MarketplaceScreenActions()
+    actions: MarketplaceScreenActions = MarketplaceScreenActions(),
+    onContentNoLongerScrollable: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
@@ -41,6 +43,7 @@ fun MarketplaceScreen(
             viewModel = viewModel,
             sellerProfileViewModel = sellerProfileViewModel,
             actions = actions,
+            onContentNoLongerScrollable = onContentNoLongerScrollable,
             onNavigate = { destination = it }
         )
     }
@@ -52,10 +55,16 @@ private fun MarketplaceCatalogContent(
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
     actions: MarketplaceScreenActions,
+    onContentNoLongerScrollable: () -> Unit,
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState.canScrollForward) {
+        if (!listState.canScrollForward) onContentNoLongerScrollable()
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {

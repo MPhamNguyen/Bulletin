@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -137,6 +138,10 @@ fun MainAppScaffold(
     }
     val profilePresentation = ProfilePresentation(profileViewModel, themeViewModel, onSignOut)
 
+    LaunchedEffect(navigation.currentDestination) {
+        navbarScrollBehavior.reveal()
+    }
+
     BulletinTheme(darkTheme = darkTheme) {
         Box(Modifier.fillMaxSize()) {
             Scaffold(
@@ -149,7 +154,13 @@ fun MainAppScaffold(
                         .fillMaxSize()
                         .nestedScroll(navbarNestedScrollConnection)
                 ) {
-                    MainAppContent(container, navigation, models, profilePresentation)
+                    MainAppContent(
+                        container,
+                        navigation,
+                        models,
+                        profilePresentation,
+                        onContentNoLongerScrollable = navbarScrollBehavior::reveal
+                    )
                 }
             }
             Navbar(
@@ -176,7 +187,8 @@ private fun MainAppContent(
     container: AppContainer,
     navigation: MainNavigationState,
     models: MainScaffoldModels,
-    profilePresentation: ProfilePresentation
+    profilePresentation: ProfilePresentation,
+    onContentNoLongerScrollable: () -> Unit
 ) {
     when (navigation.currentDestination) {
         AppDestination.HOME -> HomeScreen(models.home)
@@ -185,6 +197,7 @@ private fun MainAppContent(
             sellerProfileViewModel = models.sellerProfile,
             userReportViewModel = models.marketplaceUserReport,
             userBlockViewModel = models.marketplaceUserBlock,
+            onContentNoLongerScrollable = onContentNoLongerScrollable,
             actions = MarketplaceScreenActions(
                 onMessageSeller = { listingId, sellerId, sellerName, content ->
                     val result = sendListingMessage(
