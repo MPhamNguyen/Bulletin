@@ -4,6 +4,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseInboxMembershipDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseInboxParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProfileDto
@@ -20,6 +21,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class SupabaseMessagesMapperTest {
     @Test
@@ -74,6 +76,26 @@ class SupabaseMessagesMapperTest {
         assertEquals("Alice", conversation.participants.single().displayName)
         assertEquals(MessageId("message-a"), conversation.lastMessage?.id)
         assertEquals(42L, conversation.updatedAtMillis)
+    }
+
+    @Test
+    fun inboxConversationExcludesMessageAtViewerCutoff() {
+        val cutoff = Instant.fromEpochMilliseconds(42)
+        val dto = SupabaseConversationInboxDto(
+            id = "conversation-a",
+            membership = listOf(SupabaseInboxMembershipDto("alice-id", cutoff.toString())),
+            participants = listOf(SupabaseInboxParticipantDto("alice-id")),
+            latestMessages = listOf(messageDto())
+        )
+
+        val atCutoff = SupabaseMessagesMapper.toInboxConversation(dto)
+        val afterCutoff = SupabaseMessagesMapper.toInboxConversation(
+            dto.copy(latestMessages = listOf(messageDto().copy(createdAt = "1970-01-01T00:00:00.043Z")))
+        )
+
+        assertEquals(cutoff, atCutoff.historyVisibleAfter)
+        assertNull(atCutoff.lastMessage)
+        assertEquals(MessageId("message-a"), afterCutoff.lastMessage?.id)
     }
 
     @Test
