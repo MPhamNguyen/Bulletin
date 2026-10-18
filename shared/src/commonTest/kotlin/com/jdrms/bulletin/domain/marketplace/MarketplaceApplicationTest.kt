@@ -163,6 +163,9 @@ class MarketplaceApplicationTest {
         val result = search.getPage(MarketplacePageRequest(viewerId = "viewer"))
 
         assertEquals(listOf("other"), result.items.map { it.id.value })
+    }
+
+    @Test
     fun searchHidesListingsReportedByTheCurrentViewer() = runTest {
         val source = MutableMarketplaceListingSource().apply {
             listings += listOf(snapshot("reported", "seller-1"), snapshot("visible", "seller-2"))
