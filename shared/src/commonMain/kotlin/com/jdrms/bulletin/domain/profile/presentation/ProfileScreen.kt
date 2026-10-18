@@ -142,6 +142,7 @@ private fun ProfileDestinationContent(
                     listings = states.profile.filteredBookmarkedListings,
                     allListings = states.profile.bookmarkedListings,
                     filters = states.profile.bookmarkedListingFilters,
+                    filterOptions = states.profile.bookmarkedListingFilterOptions,
                     isLoading = states.profile.isLoadingBookmarkedListings,
                     isLoadingMore = states.profile.isLoadingMoreBookmarkedListings,
                     hasMore = states.profile.bookmarkedListingsNextCursor != null,

@@ -93,7 +93,7 @@ internal fun BookmarkedListingsView(
                 item { BookmarkedListingFilters(state, actions) }
             }
 
-            if (!isLoading && errorMessage == null && listings.isEmpty()) {
+            if (state.shouldShowEmptyState) {
                 item { EmptyBookmarksCard(hasBookmarks = state.allListings.isNotEmpty()) }
             }
 
@@ -128,27 +128,6 @@ internal fun BookmarkedListingsView(
         }
     }
 }
-
-internal data class BookmarkedListingsViewState(
-    val listings: List<ProfileBookmarkedListing>,
-    val allListings: List<ProfileBookmarkedListing>,
-    val filters: ProfileListingFilterState,
-    val isLoading: Boolean,
-    val isLoadingMore: Boolean,
-    val hasMore: Boolean,
-    val errorMessage: String?,
-    val removingListingId: String?
-)
-
-internal data class BookmarkedListingsActions(
-    val onListingClick: (String) -> Unit,
-    val onRemoveBookmark: (String) -> Unit,
-    val onRefresh: () -> Unit,
-    val onLoadMore: () -> Unit,
-    val onCategorySelected: (String?) -> Unit,
-    val onConditionSelected: (String?) -> Unit,
-    val onBack: () -> Unit
-)
 
 @Composable
 private fun BookmarkedListingCard(

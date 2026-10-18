@@ -28,7 +28,13 @@ value class ProfileBookmarksPageCursor(val offset: Int) {
 
 data class ProfileBookmarkedListingsPage(
     val listings: List<ProfileBookmarkedListing>,
-    val nextCursor: ProfileBookmarksPageCursor?
+    val nextCursor: ProfileBookmarksPageCursor?,
+    val filterOptions: ProfileBookmarkedListingFilterOptions = ProfileBookmarkedListingFilterOptions()
+)
+
+data class ProfileBookmarkedListingFilterOptions(
+    val categories: List<String> = emptyList(),
+    val conditions: List<String> = emptyList()
 )
 
 fun interface ProfileBookmarkedListingsProvider {

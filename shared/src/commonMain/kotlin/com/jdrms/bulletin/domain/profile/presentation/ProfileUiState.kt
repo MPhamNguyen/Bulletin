@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingFilterOptions
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarksPageCursor
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
@@ -33,6 +34,8 @@ data class ProfileUiState(
     val activeListingsCount: Int = 0,
     val itemsSoldCount: Int? = null,
     val bookmarkedListings: List<ProfileBookmarkedListing> = emptyList(),
+    val bookmarkedListingFilterOptions: ProfileBookmarkedListingFilterOptions =
+        ProfileBookmarkedListingFilterOptions(),
     val bookmarkedListingFilters: ProfileListingFilterState = ProfileListingFilterState(),
     val isLoadingBookmarkedListings: Boolean = false,
     val isLoadingMoreBookmarkedListings: Boolean = false,

@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.profile.presentation
 import androidx.compose.runtime.Composable
 import com.jdrms.bulletin.core.designsystem.ListingFilterMenus
 import com.jdrms.bulletin.core.designsystem.ListingFilterOption
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
 @Composable
 internal fun BookmarkedListingFilters(
@@ -13,16 +12,14 @@ internal fun BookmarkedListingFilters(
     ListingFilterMenus(
         selectedCategory = state.filters.category,
         selectedCondition = state.filters.condition,
-        categories = state.allListings.filterOptions { it.category },
-        conditions = state.allListings.filterOptions { it.condition },
+        categories = state.filterOptions.categories.toFilterOptions(),
+        conditions = state.filterOptions.conditions.toFilterOptions(),
         onCategorySelected = actions.onCategorySelected,
         onConditionSelected = actions.onConditionSelected
     )
 }
 
-private fun List<ProfileBookmarkedListing>.filterOptions(
-    value: (ProfileBookmarkedListing) -> String
-): List<ListingFilterOption> = map(value)
+private fun List<String>.toFilterOptions(): List<ListingFilterOption> = this
     .filter(String::isNotBlank)
     .distinctBy(String::uppercase)
     .sorted()
