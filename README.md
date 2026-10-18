@@ -154,8 +154,7 @@ Business contexts use four layers:
 | Profile photos | Supabase Storage adapter | Tests, inspection, or explicit local development | Not verified here |
 | Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
 
-Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. The connected Bulletin project has the `listing_images` migrations applied. The `listing_imgs` bucket is public-read, accepts JPEG, PNG, and WebP images up to 5 MiB each, and restricts uploads and deletion to listing owners. Authenticated users can read image metadata. End-to-end app uploads and marketplace/bookmark rendering have not been live-smoke-tested.
-
+Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. 
 ---
 
 ## 🔧 Local Setup
