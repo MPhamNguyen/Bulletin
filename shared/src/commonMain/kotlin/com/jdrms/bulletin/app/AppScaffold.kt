@@ -2,7 +2,10 @@ package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -94,6 +97,7 @@ private class MainScaffoldModels(
 )
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun MainAppScaffold(
     appContainer: AppContainer? = null,
     profileViewModel: ProfileViewModel? = null,
@@ -165,7 +169,7 @@ fun MainAppScaffold(
             }
             Navbar(
                 currentDestination = navigation.currentDestination,
-                isVisible = navbarScrollBehavior.isVisible,
+                isVisible = navbarScrollBehavior.isVisible && !WindowInsets.isImeVisible,
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
                 onFocused = navbarScrollBehavior::reveal,
                 modifier = Modifier.align(Alignment.BottomCenter).zIndex(100f)

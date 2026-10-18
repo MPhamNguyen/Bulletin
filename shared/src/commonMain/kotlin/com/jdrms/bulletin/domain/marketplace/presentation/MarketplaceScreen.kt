@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
@@ -68,90 +69,12 @@ private fun MarketplaceCatalogContent(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                SectionHeader(
-                    title = "Campus Marketplace",
-                    subtitle = "Browse, search, & discover student items on campus"
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = state.filters.query,
-                    onValueChange = viewModel::onSearchQueryChanged,
-                    label = { Text("Search by title or category") },
-                    singleLine = true,
-                    colors = BulletinTextFieldDefaults.colors(),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                MarketplaceFilters(
-                    filters = state.filters,
-                    onCategorySelected = viewModel::onCategorySelected,
-                    onConditionSelected = viewModel::onConditionSelected
-                )
-            }
-            if (state.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-            if (state.items.isEmpty() && !state.isLoading && state.errorMessage == null) {
-                item {
-                    BulletinCard {
-                        Text(
-                            text = "No marketplace listings found for your search.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-            items(items = state.items, key = { item -> item.id.value }) { item ->
-                MarketplaceItemCard(
-                    item = item,
-                    isBookmarked = item.id in state.bookmarkedItemIds,
-                    onCardClick = { viewModel.onListingClicked(item.id.value) },
-                    onToggleBookmark = { viewModel.toggleBookmark(item.id) }
-                )
-            }
-            if (state.nextCursor != null) {
-                item(key = "marketplace-pagination-trigger") {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        if (state.isLoadingMore) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        } else {
-                            TextButton(onClick = viewModel::loadNextPage) { Text("Load more") }
-                        }
-                    }
-                }
-            }
-            state.errorMessage?.let { message ->
-                item {
-                    BulletinCard {
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        TextButton(onClick = viewModel::retryListings) { Text("Retry") }
-                    }
-                }
-            }
-            state.bookmarkErrorMessage?.let { message ->
-                item {
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+            marketplaceCatalogHeader(state, viewModel)
+            marketplaceLoadingItem(state.isLoading)
+            marketplaceEmptyResultsItem(state)
+            marketplaceListingItems(state, viewModel)
+            marketplacePaginationItem(state, viewModel)
+            marketplaceErrorItems(state, viewModel)
         }
 
         if (state.detail.isOpen) {
@@ -191,6 +114,105 @@ private fun MarketplaceCatalogContent(
                     onSubmit = viewModel.reviewActions::submitReview
                 )
             }
+        }
+    }
+}
+
+private fun LazyListScope.marketplaceCatalogHeader(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    item {
+        SectionHeader(
+            title = "Campus Marketplace",
+            subtitle = "Browse, search, & discover student items on campus"
+        )
+    }
+    item {
+        OutlinedTextField(
+            value = state.filters.query,
+            onValueChange = viewModel::onSearchQueryChanged,
+            label = { Text("Search by title or category") },
+            singleLine = true,
+            colors = BulletinTextFieldDefaults.colors(),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    item {
+        MarketplaceFilters(
+            filters = state.filters,
+            onCategorySelected = viewModel::onCategorySelected,
+            onConditionSelected = viewModel::onConditionSelected
+        )
+    }
+}
+
+private fun LazyListScope.marketplaceLoadingItem(isLoading: Boolean) {
+    if (!isLoading) return
+    item {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+private fun LazyListScope.marketplaceEmptyResultsItem(state: MarketplaceUiState) {
+    if (state.items.isNotEmpty() || state.isLoading || state.errorMessage != null) return
+    item {
+        BulletinCard {
+            Text(
+                text = "No marketplace listings found for your search.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+private fun LazyListScope.marketplaceListingItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    items(items = state.items, key = { item -> item.id.value }) { item ->
+        MarketplaceItemCard(
+            item = item,
+            isBookmarked = item.id in state.bookmarkedItemIds,
+            onCardClick = { viewModel.onListingClicked(item.id.value) },
+            onToggleBookmark = { viewModel.toggleBookmark(item.id) }
+        )
+    }
+}
+
+private fun LazyListScope.marketplacePaginationItem(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    if (state.nextCursor == null) return
+    item(key = "marketplace-pagination-trigger") {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            if (state.isLoadingMore) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            } else {
+                TextButton(onClick = viewModel::loadNextPage) { Text("Load more") }
+            }
+        }
+    }
+}
+
+private fun LazyListScope.marketplaceErrorItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    state.errorMessage?.let { message ->
+        item {
+            BulletinCard {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                TextButton(onClick = viewModel::retryListings) { Text("Retry") }
+            }
+        }
+    }
+    state.bookmarkErrorMessage?.let { message ->
+        item {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error
+            )
         }
     }
 }
