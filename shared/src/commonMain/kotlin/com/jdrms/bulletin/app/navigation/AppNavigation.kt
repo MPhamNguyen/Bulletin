@@ -18,7 +18,7 @@ enum class AppDestination(
     val selectedIcon: ImageVector = icon,
     val hidesOnScroll: Boolean = false
 ) {
-    HOME("Home", Icons.Outlined.Home, Icons.Filled.Home, hidesOnScroll = true),
+    HOME("Home", Icons.Outlined.Home, Icons.Filled.Home),
     MARKETPLACE("Market", Icons.Outlined.Storefront, Icons.Filled.Storefront, hidesOnScroll = true),
     LISTINGS("Post", Icons.Default.Add),
     MESSAGES("Inbox", Icons.Outlined.Mail, Icons.Filled.Mail),

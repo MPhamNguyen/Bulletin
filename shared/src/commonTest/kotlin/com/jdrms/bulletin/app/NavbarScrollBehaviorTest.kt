@@ -68,7 +68,7 @@ class NavbarScrollBehaviorTest {
 
     @Test
     fun onlyHomeAndMarketplaceOptIntoHiding() {
-        assertTrue(AppDestination.HOME.hidesOnScroll)
+        assertFalse(AppDestination.HOME.hidesOnScroll)
         assertTrue(AppDestination.MARKETPLACE.hidesOnScroll)
         assertFalse(AppDestination.LISTINGS.hidesOnScroll)
         assertFalse(AppDestination.MESSAGES.hidesOnScroll)
