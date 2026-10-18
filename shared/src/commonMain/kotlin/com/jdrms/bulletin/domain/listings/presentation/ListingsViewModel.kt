@@ -3,8 +3,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -12,15 +10,15 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
 import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
-import com.jdrms.bulletin.domain.listings.domain.model.ListingId
+import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
-import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +27,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 data class ListingsViewModelSessionDependencies(
     val currentSellerProvider: CurrentListingSellerProvider,
-    val listingChangedSignal: RefreshSignal? = null
+    val listingChangedSignal: RefreshSignal? = null,
+    val manageListingImages: ManageListingImages? = null
 )
 
 class ListingsViewModel(
@@ -45,11 +44,37 @@ class ListingsViewModel(
 ) : ViewModel() {
     private val currentSellerProvider get() = session.currentSellerProvider
     private val listingChangedSignal get() = session.listingChangedSignal
+    private val manageListingImages get() = session.manageListingImages
     internal val _uiState = MutableStateFlow(ListingsUiState())
     val uiState: StateFlow<ListingsUiState> = _uiState.asStateFlow()
     internal var flashNotificationJob: Job? = null
-    private var recentSoldBuyersJob: Job? = null
     internal val notificationScope get() = viewModelScope
+    private val statusActions by lazy {
+        ListingStatusActions(
+            state = _uiState,
+            scope = viewModelScope,
+            sellerProvider = currentSellerProvider,
+            markListingSold = markListingSold,
+            recentBuyers = recentListingBuyersProvider,
+            restoreListing = restoreListingToMarketplace,
+            callbacks = listingActionCallbacks
+        )
+    }
+    private val creationActions by lazy {
+        ListingCreationActions(
+            state = _uiState,
+            scope = viewModelScope,
+            createListing = createListing,
+            manageListing = manageListing,
+            manageImages = manageListingImages,
+            sellerProvider = currentSellerProvider,
+            callbacks = listingActionCallbacks
+        )
+    }
+    private val photoActions by lazy { ListingPhotoActions(_uiState) }
+    private val listingActionCallbacks by lazy {
+        ListingActionCallbacks(listingChangedSignal, ::showFlashNotification, ::loadMyListings)
+    }
     init {
         loadMyListings()
     }
@@ -93,69 +118,12 @@ class ListingsViewModel(
     fun onConditionSelected(condition: ListingCondition) {
         _uiState.update { it.copy(newCondition = condition) }
     }
-    fun submitNewListing() {
-        val draft = buildListingDraft() ?: return
-        while (true) {
-            val state = _uiState.value
-            if (state.isSubmitting) return
-            if (_uiState.compareAndSet(state, state.copy(isSubmitting = true, errorMessage = null))) break
-        }
-        viewModelScope.launch { submitListing(draft) }
-    }
-    private fun buildListingDraft(): NewListingDraft? {
-        val state = _uiState.value
-        val validation = validateNewListingDraft(state)
-        validation.errorMessage?.let { message ->
-            _uiState.update { it.copy(errorMessage = message) }
-        }
-        return validation.draft
-    }
-    private suspend fun submitListing(draft: NewListingDraft) {
-        when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
-            is Result.Success -> {
-                val seller = sellerResult.data
-                val listing = Listing(
-                    id = ListingId(generateUuid()),
-                    sellerId = seller.id,
-                    sellerName = seller.name,
-                    title = draft.title,
-                    description = draft.description,
-                    price = ListingPrice(draft.price),
-                    category = draft.category,
-                    condition = draft.condition,
-                    status = ListingStatus.AVAILABLE,
-                    createdAtMillis = currentTimeMillis()
-                )
-                when (val result = createListing(listing)) {
-                    is Result.Success -> {
-                        _uiState.update {
-                            it.copy(
-                                newTitle = "",
-                                newDescription = "",
-                                newPriceCents = "",
-                                isSubmitting = false
-                            )
-                        }
-                        showFlashNotification("Listing posted successfully!")
-                        loadMyListings(seller)
-                        listingChangedSignal?.emit()
-                    }
-                    is Result.Error -> _uiState.update {
-                        it.copy(
-                            isSubmitting = false,
-                            errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
-                        )
-                    }
-                }
-            }
-            is Result.Error -> _uiState.update {
-                it.copy(
-                    isSubmitting = false,
-                    errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
-                )
-            }
-        }
-    }
+    fun addNewImages(images: List<ListingImageUpload>) = photoActions.addNew(images)
+    fun removeNewImage(index: Int) = photoActions.removeNew(index)
+    fun addEditImages(images: List<ListingImageUpload>) = photoActions.addEdit(images)
+    fun removeEditImage(index: Int) = photoActions.removeEdit(index)
+    fun imageSelectionFailed(message: String) = photoActions.failed(message)
+    fun submitNewListing() = creationActions.submit()
     fun requestDeleteListing(listing: Listing) {
         _uiState.update { it.copy(pendingDeletion = listing, errorMessage = null) }
     }
@@ -163,167 +131,14 @@ class ListingsViewModel(
         _uiState.update { it.copy(pendingDeletion = null) }
     }
 
-    fun requestMarkListingSold(listing: Listing) {
-        recentSoldBuyersJob?.cancel()
-        _uiState.update {
-            it.copy(
-                pendingSold = listing,
-                recentSoldBuyers = emptyList(),
-                selectedBuyerId = null,
-                soldOnAnotherPlatform = true,
-                errorMessage = null
-            )
-        }
-        recentSoldBuyersJob = viewModelScope.launch {
-            val seller = currentSellerProvider.getCurrentSeller()
-            val buyers = if (seller is Result.Success) {
-                recentListingBuyersProvider.getRecentBuyers(listing.id, seller.data.id.value)
-            } else {
-                emptyList()
-            }
-            if (_uiState.value.pendingSold?.id != listing.id) return@launch
-            _uiState.update {
-                if (it.pendingSold?.id == listing.id) {
-                    it.copy(
-                        recentSoldBuyers = buyers,
-                        selectedBuyerId = buyers.singleOrNull()?.id,
-                        soldOnAnotherPlatform = buyers.isEmpty(),
-                        errorMessage = null
-                    )
-                } else {
-                    it
-                }
-            }
-        }
-    }
-
-    fun cancelMarkListingSold() {
-        recentSoldBuyersJob?.cancel()
-        _uiState.update { it.copy(pendingSold = null, recentSoldBuyers = emptyList(), selectedBuyerId = null) }
-    }
-
-    fun selectSoldBuyer(id: String?) {
-        _uiState.update { it.copy(selectedBuyerId = id, soldOnAnotherPlatform = false, errorMessage = null) }
-    }
-
-    fun selectSoldOnAnotherPlatform() {
-        _uiState.update { it.copy(selectedBuyerId = null, soldOnAnotherPlatform = true, errorMessage = null) }
-    }
-
-    fun requestRestoreListing(listing: Listing) {
-        _uiState.update { it.copy(pendingRestoration = listing, errorMessage = null) }
-    }
-
-    fun cancelRestoreListing() {
-        _uiState.update { it.copy(pendingRestoration = null) }
-    }
-
-    fun confirmRestoreListing() {
-        val restore = restoreListingToMarketplace ?: return
-        var pendingListing: Listing? = null
-        while (pendingListing == null) {
-            val state = _uiState.value
-            val listing = state.pendingRestoration ?: return
-            if (state.isRestoring) return
-            if (_uiState.compareAndSet(state, state.copy(isRestoring = true, errorMessage = null))) {
-                pendingListing = listing
-            }
-        }
-        val listing = checkNotNull(pendingListing)
-        viewModelScope.launch {
-            when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
-                is Result.Success -> when (
-                    val result = restore(listing.id, sellerResult.data.id)
-                ) {
-                    is Result.Success -> {
-                        _uiState.update { it.copy(pendingRestoration = null, isRestoring = false) }
-                        showFlashNotification("Listing restored to marketplace!")
-                        loadMyListings(sellerResult.data)
-                        listingChangedSignal?.emit()
-                    }
-                    is Result.Error -> _uiState.update {
-                        it.copy(
-                            isRestoring = false,
-                            errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
-                        )
-                    }
-                }
-                is Result.Error -> _uiState.update {
-                    it.copy(
-                        isRestoring = false,
-                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
-                    )
-                }
-            }
-        }
-    }
-
-    fun confirmMarkListingSold() {
-        val markSold = markListingSold ?: return
-        val listing = claimPendingSoldListing() ?: return
-        viewModelScope.launch { performMarkListingSold(markSold, listing) }
-    }
-
-    private fun claimPendingSoldListing(): Listing? {
-        var pendingListing: Listing? = null
-        while (pendingListing == null) {
-            val state = _uiState.value
-            val listing = state.pendingSold ?: return null
-            if (state.isMarkingSold) return null
-            if (_uiState.compareAndSet(state, state.copy(isMarkingSold = true, errorMessage = null))) {
-                pendingListing = listing
-            }
-        }
-        return pendingListing
-    }
-
-    private suspend fun performMarkListingSold(markSold: MarkListingSold, listing: Listing) {
-        when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
-            is Result.Success -> {
-                val buyerId = _uiState.value.selectedBuyerId
-                if (buyerId == null && !_uiState.value.soldOnAnotherPlatform) {
-                    showSoldSelectionError()
-                    return
-                }
-                when (val result = markSold(listing.id, sellerResult.data.id, buyerId)) {
-                    is Result.Success -> {
-                        _uiState.update {
-                            it.copy(
-                                pendingSold = null,
-                                recentSoldBuyers = emptyList(),
-                                selectedBuyerId = null,
-                                isMarkingSold = false
-                            )
-                        }
-                        showFlashNotification("Listing marked as sold!")
-                        loadMyListings(sellerResult.data)
-                        listingChangedSignal?.emit()
-                    }
-                    is Result.Error -> _uiState.update {
-                        it.copy(
-                            isMarkingSold = false,
-                            errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
-                        )
-                    }
-                }
-            }
-            is Result.Error -> _uiState.update {
-                it.copy(
-                    isMarkingSold = false,
-                    errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
-                )
-            }
-        }
-    }
-
-    private fun showSoldSelectionError() {
-        _uiState.update {
-            it.copy(
-                isMarkingSold = false,
-                errorMessage = "Choose who bought this listing."
-            )
-        }
-    }
+    fun requestMarkListingSold(listing: Listing) = statusActions.requestMarkSold(listing)
+    fun cancelMarkListingSold() = statusActions.cancelMarkSold()
+    fun selectSoldBuyer(id: String?) = statusActions.selectBuyer(id)
+    fun selectSoldOnAnotherPlatform() = statusActions.selectSoldElsewhere()
+    fun requestRestoreListing(listing: Listing) = statusActions.requestRestore(listing)
+    fun cancelRestoreListing() = statusActions.cancelRestore()
+    fun confirmRestoreListing() = statusActions.confirmRestore()
+    fun confirmMarkListingSold() = statusActions.confirmMarkSold()
 
     fun confirmDeleteListing() {
         var pendingListing: Listing? = null
@@ -383,6 +198,7 @@ class ListingsViewModel(
                             editPriceCents = amountToCurrencyDigits(listing.price.amount),
                             editCategory = listing.category,
                             editCondition = listing.condition,
+                            editPhotos = listing.images.map { ListingPhotoDraft.Existing(it) },
                             errorMessage = null,
                             successMessage = null
                         )
@@ -404,6 +220,7 @@ class ListingsViewModel(
                 editTitle = "",
                 editDescription = "",
                 editPriceCents = "",
+                editPhotos = emptyList(),
                 isUpdating = false,
                 errorMessage = null,
                 successMessage = null
@@ -462,7 +279,8 @@ class ListingsViewModel(
                 description = state.editDescription.trim(),
                 price = currencyDigitsToAmount(state.editPriceCents),
                 category = state.editCategory,
-                condition = state.editCondition
+                condition = state.editCondition,
+                photos = state.editPhotos
             )
         }
     }
@@ -511,6 +329,7 @@ class ListingsViewModel(
         val updated = updatedDetails.getOrThrow()
         when (val result = manageListing.updateListing(updated, seller.id)) {
             is Result.Success -> {
+                if (!synchronizeEditedImages(draft, seller, updated)) return
                 _uiState.update {
                     it.copy(
                         editingListing = null,
@@ -528,6 +347,34 @@ class ListingsViewModel(
                         errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
                     )
                 }
+            }
+        }
+    }
+
+    private suspend fun synchronizeEditedImages(
+        draft: ValidatedEditDraft,
+        seller: ListingSeller,
+        listing: Listing
+    ): Boolean {
+        val retained = draft.photos.filterIsInstance<ListingPhotoDraft.Existing>().map { it.url }
+        val uploads = draft.photos.filterIsInstance<ListingPhotoDraft.Pending>().map { it.upload }
+        if (draft.currentListing.images.isEmpty() && uploads.isEmpty()) return true
+        val result = manageListingImages?.synchronize(listing.id, seller.id, retained, uploads)
+            ?: Result.Error(IllegalStateException("Listing image updates are not configured."))
+        return when (result) {
+            is Result.Success -> {
+                manageListing.updateListing(listing.copy(images = result.data), seller.id)
+                true
+            }
+            is Result.Error -> {
+                _uiState.update {
+                    it.copy(
+                        isUpdating = false,
+                        errorMessage = "Listing details were saved, but image changes failed: " +
+                            result.exception.message
+                    )
+                }
+                false
             }
         }
     }

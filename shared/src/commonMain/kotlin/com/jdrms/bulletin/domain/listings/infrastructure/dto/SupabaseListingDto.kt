@@ -16,7 +16,14 @@ data class SupabaseListingDto(
     @SerialName("status") val status: String? = null,
     @SerialName("is_sold") val isSold: Boolean = false,
     @SerialName("seller_profile") val profile: SupabaseListingProfileDto? = null,
-    @SerialName("buyer_id") val buyerId: String? = null
+    @SerialName("buyer_id") val buyerId: String? = null,
+    @SerialName("listing_images") val listingImages: List<SupabaseListingImageDto> = emptyList()
+)
+
+@Serializable
+data class SupabaseListingImageDto(
+    @SerialName("object_path") val objectPath: String,
+    @SerialName("position") val position: Int
 )
 
 @Serializable
