@@ -103,13 +103,14 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
-    fun insertMappingPreservesContentAndTimestampWithoutClientControlledSender() {
+    fun insertMappingLeavesTimestampAndSenderToDatabase() {
         val insert = SupabaseMessagesMapper.toInsertDto(message())
 
         assertEquals("message-a", insert.id)
         assertEquals("conversation-a", insert.conversationId)
         assertEquals("Hello", insert.content)
-        assertEquals("1970-01-01T00:00:00.042Z", insert.createdAt)
+        assertFalse(Json.encodeToString(insert).contains("created_at"))
+        assertFalse(Json.encodeToString(insert).contains("sender_id"))
     }
 
     @Test

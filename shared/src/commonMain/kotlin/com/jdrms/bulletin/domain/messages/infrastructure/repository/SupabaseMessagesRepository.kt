@@ -33,10 +33,9 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Instant
@@ -96,7 +95,7 @@ class SupabaseMessagesRepository internal constructor(
             listingId.value
         )
         if (!messagesTable.restoreConversation(conversationId)) throw ConversationAccessException()
-        loadConversation(conversationId)
+        loadConversation(conversationId, authenticatedRequester)
     }
 
     override suspend fun getMessagePage(
@@ -106,9 +105,9 @@ class SupabaseMessagesRepository internal constructor(
         limit: Int
     ): Result<MessagePage> = repositoryCall {
         require(limit > 0)
-        requireParticipant(userId, conversationId)
+        val cutoff = requireParticipant(userId, conversationId)
         measuredMessagesOperation(instrumentation, "message_fetch", { it.messages.size }) {
-            val rows = messagesTable.getMessagePage(conversationId.value, before, limit + 1)
+            val rows = messagesTable.getMessagePage(conversationId.value, before, cutoff, limit + 1)
             val visible = rows.take(limit)
             MessagePage(
                 messages = visible.map(SupabaseMessagesMapper::toMessage).reversed(),
@@ -123,7 +122,10 @@ class SupabaseMessagesRepository internal constructor(
         val authenticatedSenderId = requireAuthenticatedUser(message.senderId)
         requireParticipant(authenticatedSenderId, message.conversationId)
         messagesTable.insertMessage(SupabaseMessagesMapper.toInsertDto(message))
-        message
+        val stored = checkNotNull(messagesTable.findMessage(message.conversationId.value, message.id.value)) {
+            "Inserted message was not returned"
+        }
+        SupabaseMessagesMapper.toMessage(stored)
     }
 
     override suspend fun reportMessage(
@@ -152,21 +154,21 @@ class SupabaseMessagesRepository internal constructor(
     private fun PostgrestRestException.isDuplicateMessageReport(): Boolean =
         code == UNIQUE_VIOLATION_CODE && message?.contains(MESSAGE_REPORT_UNIQUE_CONSTRAINT) == true
 
-    private suspend fun loadConversation(conversationId: String): Conversation {
-        val (conversation, participants, lastMessage) = coroutineScope {
-            val conversation = async { messagesTable.findConversation(conversationId) }
-            val participants = async { messagesTable.getParticipants(conversationId) }
-            val lastMessage = async { messagesTable.findLatestMessage(conversationId) }
-            Triple(conversation.await(), participants.await(), lastMessage.await())
-        }
+    private suspend fun loadConversation(conversationId: String, viewerId: SenderId): Conversation {
+        val conversation = messagesTable.findConversation(conversationId)
+        val participants = messagesTable.getParticipants(conversationId)
+        val lastMessage = messagesTable.findLatestMessage(conversationId)
+        val membership = messagesTable.getMembership(conversationId, viewerId.value)
         val accessibleConversation = conversation ?: throw ConversationAccessException()
-        return SupabaseMessagesMapper.toConversation(accessibleConversation, participants, lastMessage)
+        val cutoff = membership?.historyVisibleAfter?.let(Instant::parse)
+        val visibleLastMessage = lastMessage?.takeIf { cutoff == null || Instant.parse(it.createdAt) > cutoff }
+        return SupabaseMessagesMapper.toConversation(accessibleConversation, participants, visibleLastMessage, cutoff)
     }
 
-    private suspend fun requireParticipant(userId: SenderId, conversationId: ConversationId) {
-        if (!messagesTable.isParticipant(conversationId.value, userId.value)) {
-            throw ConversationAccessException()
-        }
+    private suspend fun requireParticipant(userId: SenderId, conversationId: ConversationId): Instant? {
+        val membership = messagesTable.getMembership(conversationId.value, userId.value)
+            ?: throw ConversationAccessException()
+        return membership.historyVisibleAfter?.let(Instant::parse)
     }
 
     private suspend fun requireAuthenticatedUser(claimedUserId: SenderId): SenderId {
@@ -215,6 +217,7 @@ internal interface SupabaseConversationCreationTable {
 internal interface SupabaseConversationVisibilityTable {
     suspend fun hideConversation(conversationId: String): Boolean
     suspend fun restoreConversation(conversationId: String): Boolean
+    suspend fun getMembership(conversationId: String, userId: String): SupabaseConversationMembershipDto?
 }
 
 internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, SupabaseConversationVisibilityTable {
@@ -223,7 +226,12 @@ internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, Su
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
     suspend fun isParticipant(conversationId: String, userId: String): Boolean
     suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto>
-    suspend fun getMessagePage(conversationId: String, before: MessageCursor?, limit: Int): List<SupabaseMessageDto>
+    suspend fun getMessagePage(
+        conversationId: String,
+        before: MessageCursor?,
+        visibleAfter: Instant?,
+        limit: Int
+    ): List<SupabaseMessageDto>
     suspend fun findLatestMessage(conversationId: String): SupabaseMessageDto?
     suspend fun findMessage(conversationId: String, messageId: String): SupabaseMessageDto?
     suspend fun insertMessage(message: SupabaseMessageInsertDto)
@@ -246,7 +254,10 @@ internal class PostgrestSupabaseMessagesTable(
             MessagesMeasurement(responseBytes = { it.data.encodeToByteArray().size })
         ) {
             supabase.from(SupabaseMessagesRepository.CONVERSATIONS_TABLE).select(columns = INBOX_COLUMNS) {
-                filter { eq("membership.user_id", userId) }
+                filter {
+                    eq("membership.user_id", userId)
+                    filter("membership.deleted_at", FilterOperator.IS, "null")
+                }
                 order("user_id", Order.ASCENDING, referencedTable = "participants")
                 order("created_at", Order.DESCENDING, referencedTable = "messages")
                 order("id", Order.DESCENDING, referencedTable = "messages")
@@ -291,7 +302,10 @@ internal class PostgrestSupabaseMessagesTable(
         }.decodeSingleOrNull()
     }
 
-    override suspend fun isParticipant(conversationId: String, userId: String): Boolean {
+    override suspend fun isParticipant(conversationId: String, userId: String): Boolean =
+        getMembership(conversationId, userId) != null
+
+    override suspend fun getMembership(conversationId: String, userId: String): SupabaseConversationMembershipDto? {
         return supabase.from(SupabaseMessagesRepository.PARTICIPANTS_TABLE)
             .select(columns = MEMBERSHIP_COLUMNS) {
                 filter {
@@ -300,8 +314,7 @@ internal class PostgrestSupabaseMessagesTable(
                 }
                 limit(1)
             }
-            .decodeList<SupabaseConversationMembershipDto>()
-            .isNotEmpty()
+            .decodeSingleOrNull()
     }
 
     override suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto> {
@@ -316,12 +329,14 @@ internal class PostgrestSupabaseMessagesTable(
     override suspend fun getMessagePage(
         conversationId: String,
         before: MessageCursor?,
+        visibleAfter: Instant?,
         limit: Int
     ): List<SupabaseMessageDto> {
         return supabase.from(SupabaseMessagesRepository.MESSAGES_TABLE)
             .select(columns = MESSAGE_COLUMNS) {
                 filter {
                     eq("conversation_id", conversationId)
+                    if (visibleAfter != null) gt("created_at", visibleAfter.toString())
                     if (before != null) {
                         or {
                             lt("created_at", before.createdAt.toString())
@@ -370,10 +385,10 @@ internal class PostgrestSupabaseMessagesTable(
     }
 
     private companion object {
-        val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id")
+        val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id,history_visible_after")
         val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name)")
         val INBOX_COLUMNS = Columns.raw(
-            "id,updated_at,listing_id,membership:conversation_participants!inner(user_id)," +
+            "id,updated_at,listing_id,membership:conversation_participants!inner(user_id,history_visible_after)," +
                 "participants:conversation_participants(user_id,profiles(full_name))," +
                 "messages(id,conversation_id,sender_id,body,created_at,profiles(full_name),reports(id,status))"
         )

@@ -22,10 +22,12 @@ internal class MessagesStreamCallbacksFactory(
         onConnectionState = { connectionState ->
             uiState.update { it.copy(connectionState = connectionState) }
         },
-        onReceived = { message ->
-            val senderName = inbox.state.value.conversations.firstOrNull { it.id == conversationId }
-                ?.participants
-                ?.firstOrNull { it.id == message.senderId }
+        onReceived = onReceived@{ message ->
+            val conversation = inbox.state.value.conversations.firstOrNull { it.id == conversationId }
+            if (conversation == null || !conversation.canSee(message)) return@onReceived
+            val senderName = conversation
+                .participants
+                .firstOrNull { it.id == message.senderId }
                 ?.displayName
             val resolvedMessage = senderName?.let { message.copy(senderName = it) } ?: message
             when (val recorded = inbox.recordMessage(resolvedMessage)) {

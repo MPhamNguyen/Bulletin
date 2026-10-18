@@ -40,6 +40,24 @@ class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() 
 
 class SupabaseMessagesRepositoryTest {
     @Test
+    fun inboxRequestExcludesDeletedMemberships() = runTest {
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                assertEquals("eq.alice-id", request.url.parameters["membership.user_id"])
+                assertEquals("is.null", request.url.parameters["membership.deleted_at"])
+                respond("[]", HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
+            }
+        }
+
+        try {
+            assertEquals(emptyList(), PostgrestSupabaseMessagesTable(client).getInboxConversations(alice.id.value))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun incomingMessageResurfacesConversationForParticipantWhoHidIt() = runTest {
         val table = FakeSupabaseMessagesTable(listOf(conversation()))
         val repository = SupabaseMessagesRepository(table)
@@ -89,11 +107,21 @@ class SupabaseMessagesRepositoryTest {
             SupabaseMessageInsertDto(
                 id = "message-a",
                 conversationId = "conversation-a",
-                content = "Hello",
-                createdAt = "1970-01-01T00:00:00.042Z"
+                content = "Hello"
             ),
             table.insertedMessage
         )
+    }
+
+    @Test
+    fun sendReturnsServerTimestampInsteadOfClientTimestamp() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+        val clientMessage = message().copy(timestampMillis = 1L)
+
+        val sent = SupabaseMessagesRepository(table).sendMessage(clientMessage).getOrThrow()
+
+        assertEquals(42L, sent.timestampMillis)
+        assertEquals("1970-01-01T00:00:00.042Z", table.findMessage(conversationId.value, sent.id.value)?.createdAt)
     }
 
     @Test
