@@ -9,19 +9,29 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
+import kotlinx.coroutines.CancellationException
 
 class SearchMarketplace(
     private val repository: MarketplaceRepository,
     private val listingSource: MarketplaceListingSource = MarketplaceRepositoryListingSource(repository),
     private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy(),
-    private val blockedUserProvider: MarketplaceBlockedUserProvider? = null
+    private val blockedUserProvider: MarketplaceBlockedUserProvider? = null,
+    private val reportedListingProvider: MarketplaceReportedListingProvider =
+        EmptyMarketplaceReportedListingProvider
 ) {
     suspend fun getPage(request: MarketplacePageRequest): MarketplaceItemPage {
         val hiddenUserIds = request.viewerId?.let { viewerId ->
             blockedUserProvider?.getHiddenUserIds(viewerId).orEmpty()
         }.orEmpty()
+        val reportedListingIds = request.viewerId
+            ?.takeIf(String::isNotBlank)
+            ?.let { viewerId ->
+                reportedListingProvider.getReportedListingIds(MarketplaceReporterId(viewerId))
+            }
+            .orEmpty()
         val visibleItems = mutableListOf<MarketplaceItem>()
         var cursor = request.cursor
         var nextCursor: MarketplacePageCursor?
@@ -31,6 +41,7 @@ class SearchMarketplace(
                 .asSequence()
                 .filterNot { it.sellerId == request.viewerId }
                 .filterNot { it.sellerId in hiddenUserIds }
+                .filterNot { MarketplaceItemId(it.id) in reportedListingIds }
                 .map { it.toMarketplaceItem() }
                 .take(request.pageSize - visibleItems.size)
             nextCursor = page.nextCursor
@@ -145,7 +156,9 @@ class RemoveMarketplaceListingBookmark(
 class ViewMarketplaceListing(
     private val repository: MarketplaceRepository,
     private val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider,
-    private val blockedUserProvider: MarketplaceBlockedUserProvider? = null
+    private val blockedUserProvider: MarketplaceBlockedUserProvider? = null,
+    private val reportedListingProvider: MarketplaceReportedListingProvider =
+        EmptyMarketplaceReportedListingProvider
 ) {
     suspend fun hasReview(listingId: String, reviewerId: String): Boolean =
         repository.hasReviewForListing(MarketplaceItemId(listingId.removePrefix("listing:")), reviewerId)
@@ -162,9 +175,14 @@ class ViewMarketplaceListing(
         return when (val result = repository.viewListing(listingID)) {
             is Result.Success -> {
                 val isHidden = try {
-                    viewerId != null && blockedUserProvider
-                        ?.getHiddenUserIds(viewerId)
-                        ?.contains(result.data.sellerId) == true
+                    viewerId != null && viewerId.isNotBlank() && (
+                        blockedUserProvider?.getHiddenUserIds(viewerId)?.contains(result.data.sellerId) == true ||
+                            result.data.id in reportedListingProvider.getReportedListingIds(
+                                MarketplaceReporterId(viewerId)
+                            )
+                        )
+                } catch (exception: CancellationException) {
+                    throw exception
                 } catch (exception: IllegalStateException) {
                     return Result.Error(exception)
                 }
