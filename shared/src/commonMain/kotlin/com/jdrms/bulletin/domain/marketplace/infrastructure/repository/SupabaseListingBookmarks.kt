@@ -11,6 +11,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.TimeSource
@@ -21,7 +22,8 @@ internal class SupabaseListingBookmarks internal constructor(
     private val upsert: suspend (ListingBookmarkDto) -> Unit,
     private val delete: suspend (String, String) -> Unit,
     private val fetchPage: suspend (String, Long, Int) -> List<ListingBookmarkWithListingDto>,
-    private val cachePolicy: BookmarkCachePolicy = BookmarkCachePolicy()
+    private val cachePolicy: BookmarkCachePolicy = BookmarkCachePolicy(),
+    private val imageUrl: (String) -> String = { it }
 ) {
     private val cacheMutex = Mutex()
     private val cachedByUser = mutableMapOf<String, CachedBookmarks>()
@@ -57,7 +59,8 @@ internal class SupabaseListingBookmarks internal constructor(
                 order("listing_id", Order.DESCENDING)
                 range(offset, offset + pageSize)
             }.decodeList<ListingBookmarkWithListingDto>()
-        }
+        },
+        imageUrl = { path -> supabase.storage.from(LISTING_IMAGE_BUCKET).publicUrl(path) }
     )
 
     suspend fun get(userId: String): ListingBookmarks {
@@ -104,7 +107,7 @@ internal class SupabaseListingBookmarks internal constructor(
         val page = BookmarkedListingsPage(
             listingIds = pageRows.map { row -> MarketplaceItemId("$LISTING_ID_PREFIX${row.listingId}") },
             listings = pageRows.mapNotNull { row ->
-                row.listing?.let { listing -> SupabaseMarketplaceListingMapper.toListing(listing, null) }
+                row.listing?.let { listing -> SupabaseMarketplaceListingMapper.toListing(listing, null, imageUrl) }
             },
             nextCursor = if (rows.size > pageSize) {
                 ListingBookmarksPageCursor(offset + pageRows.size)
@@ -124,12 +127,13 @@ internal class SupabaseListingBookmarks internal constructor(
 
     companion object {
         const val TABLE = "listing_bookmarks"
+        const val LISTING_IMAGE_BUCKET = "listing_imgs"
         const val PAGE_SIZE = 500L
         const val LISTING_ID_PREFIX = "listing:"
         const val MAX_CACHE_ENTRIES = 128
         val BOOKMARKED_LISTING_COLUMNS = Columns.raw(
             "listing_id,listings(id,name,user_id,buyer_id,is_sold,category,condition,price,description,created_at," +
-                "seller_profile:profiles!listings_user_id_fkey ( full_name ))"
+                "seller_profile:profiles!listings_user_id_fkey ( full_name ), listing_images(object_path,position))"
         )
     }
 

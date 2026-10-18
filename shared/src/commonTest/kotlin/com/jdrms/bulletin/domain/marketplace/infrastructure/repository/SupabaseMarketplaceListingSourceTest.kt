@@ -47,6 +47,35 @@ class SupabaseMarketplaceListingSourceTest {
     }
 
     @Test
+    fun mapsListingImagesInDisplayOrderToPublicUrls() = runTest {
+        val row = Json.decodeFromString<SupabaseMarketplaceListingDto>(
+            """
+            {
+                "id":"with-images",
+                "name":"Lamp",
+                "user_id":"seller",
+                "price":10.0,
+                "listing_images":[
+                    {"object_path":"listing/second.webp","position":1},
+                    {"object_path":"listing/first.jpg","position":0}
+                ]
+            }
+            """.trimIndent()
+        )
+        val source = SupabaseMarketplaceListingSource(
+            fetch = { listOf(row) },
+            imageUrl = { "https://cdn.example/$it" }
+        )
+
+        val photos = source.getAvailableListings(MarketplacePageRequest()).listings.single().photos
+
+        assertEquals(
+            listOf("https://cdn.example/listing/first.jpg", "https://cdn.example/listing/second.webp"),
+            photos
+        )
+    }
+
+    @Test
     fun translatesNullableOptionalColumnsAndPreventsNegativePrices() = runTest {
         val source = SupabaseMarketplaceListingSource { _ ->
             listOf(

@@ -58,7 +58,8 @@ data class MarketplaceItem(
     val category: MarketplaceCategory,
     val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
     val isBookmarked: Boolean = false,
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val photos: List<String> = emptyList()
 ) {
     init {
         require(title.isNotBlank()) { "Item title cannot be blank." }
