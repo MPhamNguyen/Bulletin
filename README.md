@@ -109,7 +109,7 @@ The home context currently uses an in-memory repository. Personalized ranking an
 | **Mobile app** | Android with Kotlin and Jetpack Compose |
 | **Shared code** | Kotlin Multiplatform and Compose Multiplatform in `shared` |
 | **Backend** | Supabase client adapters for configured backend-backed contexts |
-| **Authentication** | Supabase Auth adapter, with university-email validation in shared business logic |
+| **Authentication** | Supabase Auth adapter for password sign-in and feature-flagged Microsoft OAuth |
 | **Persistence** | Supabase PostgREST and Storage adapters; in-memory repositories for tests and local/inspection use |
 | **Dependency injection** | Manual composition in `AppContainer` |
 | **Build system** | Gradle wrapper and version catalog in `gradle/libs.versions.toml` |
@@ -149,12 +149,16 @@ Business contexts use four layers:
 | Marketplace and listing source | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
 | Listings, including sold-state updates | Supabase adapter | Tests, inspection, or explicit local development | Not verified here |
 | Messages, thread observer, and inbox observer | Supabase adapters | Tests, inspection, or explicit local development | Local adapter tests only; live project not verified |
-| Profile and authentication/session | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
+| Profile and authentication/session | Supabase adapters; Microsoft action disabled by default | Tests, inspection, or explicit local development | Auth DDL/config inspected read-only; SSO policy tested locally, not deployed |
 | User reports and blocks | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
 | Profile photos | Supabase Storage adapter | Tests, inspection, or explicit local development | Not verified here |
 | Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
 
 Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. Review those migrations and configure the matching project before using backend features. No live project validation is claimed here.
+
+Microsoft OAuth is disabled by default. The MVP policy accepts any verified Microsoft email, including personal/non-`.edu` accounts; password signup keeps its `.edu` requirement. `MICROSOFT_SSO_ENABLED=true` exposes the Android action after Azure credentials, the exact `com.jdrms.bulletin.auth://oauth/callback` allow-list entry and the identity-policy migration are configured. Automatic linking is rejected server-side. See the [implementation record and staging setup](docs/microsoft-sso-state-and-analysis.md#implementation-record--2026-10-17).
+
+The migrations include a schema snapshot exported from the live project. They have been exercised on a fresh local Supabase database. The live project's earlier migration files are missing from this checkout; reconcile history and compare schema before pushing to an existing project. Live Microsoft sign-in and device lifecycle behavior are not yet verified.
 
 ---
 
@@ -174,6 +178,7 @@ The Android build reads configuration from a root `.env` file, environment varia
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_API_KEY=your-anon-public-key
 SUPABASE_IS_CONNECTED=true
+MICROSOFT_SSO_ENABLED=false
 ```
 
 The app must use only the Supabase anon/public key. Never put a service-role key, credentials, or real user data in the repository. Ensure the Supabase project has the schema and policies in `supabase/migrations/` applied.
