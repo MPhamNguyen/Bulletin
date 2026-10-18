@@ -89,8 +89,12 @@ internal fun BookmarkedListingsView(
                 }
             }
 
-            if (!isLoading && errorMessage == null && listings.isEmpty()) {
-                item { EmptyBookmarksCard() }
+            if (state.allListings.isNotEmpty()) {
+                item { BookmarkedListingFilters(state, actions) }
+            }
+
+            if (state.shouldShowEmptyState) {
+                item { EmptyBookmarksCard(hasBookmarks = state.allListings.isNotEmpty()) }
             }
 
             items(items = listings, key = ProfileBookmarkedListing::id) { listing ->
@@ -124,23 +128,6 @@ internal fun BookmarkedListingsView(
         }
     }
 }
-
-internal data class BookmarkedListingsViewState(
-    val listings: List<ProfileBookmarkedListing>,
-    val isLoading: Boolean,
-    val isLoadingMore: Boolean,
-    val hasMore: Boolean,
-    val errorMessage: String?,
-    val removingListingId: String?
-)
-
-internal data class BookmarkedListingsActions(
-    val onListingClick: (String) -> Unit,
-    val onRemoveBookmark: (String) -> Unit,
-    val onRefresh: () -> Unit,
-    val onLoadMore: () -> Unit,
-    val onBack: () -> Unit
-)
 
 @Composable
 private fun BookmarkedListingCard(
@@ -212,7 +199,7 @@ private fun BookmarkedListingCard(
 }
 
 @Composable
-private fun EmptyBookmarksCard() {
+private fun EmptyBookmarksCard(hasBookmarks: Boolean) {
     BulletinCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -239,14 +226,18 @@ private fun EmptyBookmarksCard() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Bookmarked Listings",
+                text = if (hasBookmarks) "No matching listings" else "Bookmarked Listings",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Listings you bookmark will appear here.",
+                text = if (hasBookmarks) {
+                    "Try changing the category or condition filters."
+                } else {
+                    "Listings you bookmark will appear here."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

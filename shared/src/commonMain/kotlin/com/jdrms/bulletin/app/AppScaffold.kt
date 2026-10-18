@@ -2,24 +2,34 @@ package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.blockedUsersViewModelFactory
 import com.jdrms.bulletin.app.di.createAccountViewModel
 import com.jdrms.bulletin.app.di.createEditProfileViewModel
 import com.jdrms.bulletin.app.di.createHomeViewModel
+import com.jdrms.bulletin.app.di.createListingReportViewModel
 import com.jdrms.bulletin.app.di.createListingsViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceUserReportViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceViewModel
@@ -34,11 +44,13 @@ import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
+import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
@@ -80,6 +92,7 @@ private class MainScaffoldModels(
     val marketplace: MarketplaceViewModel,
     val sellerProfile: SellerProfileViewModel,
     val marketplaceUserReport: MarketplaceUserReportViewModel,
+    val listingReport: ListingReportViewModel,
     val marketplaceUserBlock: MarketplaceUserBlockViewModel,
     val listings: ListingsViewModel,
     val messages: MessagesViewModel
@@ -96,12 +109,24 @@ fun MainAppScaffold(
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     val navigation = remember { MainNavigationState() }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val navigationBarInset = with(density) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
+    val navbarScrollBehavior = remember(density) {
+        NavbarScrollBehavior(with(density) { NAVBAR_SCROLL_THRESHOLD_DP.dp.toPx() })
+    }
+    val navbarNestedScrollConnection = remember(navbarScrollBehavior) {
+        NavbarNestedScrollConnection(navbarScrollBehavior)
+    }
+    var navbarHeight by remember { mutableStateOf(0.dp) }
     val models = remember(container) {
         MainScaffoldModels(
             container.createHomeViewModel(),
             container.createMarketplaceViewModel(),
             container.createSellerProfileViewModel(),
             container.createMarketplaceUserReportViewModel(),
+            container.createListingReportViewModel(),
             container.marketplaceUserBlockViewModelFactory(),
             container.createListingsViewModel(),
             container.createMessagesViewModel()
@@ -109,31 +134,68 @@ fun MainAppScaffold(
     }
     val profilePresentation = ProfilePresentation(profileViewModel, themeViewModel, onSignOut)
 
+    LaunchedEffect(navigation.currentDestination) {
+        navbarScrollBehavior.onDestinationChanged()
+    }
+
     BulletinTheme(darkTheme = darkTheme) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            bottomBar = {
-                BulletinBottomNavigationBar(
-                    currentDestination = navigation.currentDestination,
-                    onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) }
-                )
+        Box(Modifier.fillMaxSize()) {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground
+            ) { paddingValues ->
+                val contentModifier = Modifier
+                    .padding(paddingValues)
+                    .then(
+                        if (navigation.currentDestination.hidesOnScroll) {
+                            Modifier
+                        } else {
+                            Modifier.padding(bottom = navbarHeight)
+                        }
+                    )
+                    .fillMaxSize()
+                CompositionLocalProvider(LocalNavbarHeight provides navbarHeight) {
+                    Box(
+                        modifier = if (navigation.currentDestination.hidesOnScroll) {
+                            contentModifier.nestedScroll(navbarNestedScrollConnection)
+                        } else {
+                            contentModifier
+                        }
+                    ) {
+                        MainAppContent(
+                            container,
+                            navigation,
+                            models,
+                            profilePresentation,
+                            onContentNoLongerScrollable = navbarScrollBehavior::reveal
+                        )
+                    }
+                }
             }
-        ) { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                MainAppContent(container, navigation, models, profilePresentation)
-            }
+            Navbar(
+                currentDestination = navigation.currentDestination,
+                isVisible = navbarScrollBehavior::isVisible,
+                onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
+                onFocused = navbarScrollBehavior::reveal,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(100f)
+                    .onSizeChanged {
+                        navbarHeight = with(density) { it.height.toDp() } - navigationBarInset
+                    }
+            )
         }
     }
 }
+
+private const val NAVBAR_SCROLL_THRESHOLD_DP = 32
 
 private fun navigateTo(destination: AppDestination, navigation: MainNavigationState, listings: ListingsViewModel) {
     if (destination != AppDestination.PROFILE || navigation.profileDestination != ProfileDestination.PROFILE) {
         listings.cancelEditing()
         listings.clearMessages()
     }
-    navigation.profileDestination = ProfileDestination.PROFILE
-    navigation.currentDestination = destination
+    navigation.apply(navigation.snapshot().selectBottomNavigationDestination(destination))
 }
 
 @Composable
@@ -141,7 +203,8 @@ private fun MainAppContent(
     container: AppContainer,
     navigation: MainNavigationState,
     models: MainScaffoldModels,
-    profilePresentation: ProfilePresentation
+    profilePresentation: ProfilePresentation,
+    onContentNoLongerScrollable: () -> Unit
 ) {
     when (navigation.currentDestination) {
         AppDestination.HOME -> HomeScreen(models.home)
@@ -149,7 +212,9 @@ private fun MainAppContent(
             viewModel = models.marketplace,
             sellerProfileViewModel = models.sellerProfile,
             userReportViewModel = models.marketplaceUserReport,
+            listingReportViewModel = models.listingReport,
             userBlockViewModel = models.marketplaceUserBlock,
+            onContentNoLongerScrollable = onContentNoLongerScrollable,
             actions = MarketplaceScreenActions(
                 onMessageSeller = { listingId, sellerId, sellerName, content ->
                     val result = sendListingMessage(

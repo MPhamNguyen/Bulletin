@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,7 +22,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -61,6 +57,7 @@ data class MarketplaceDetailSheetActions(
     val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
         { _, _ -> false },
     val onLeaveReview: () -> Unit = {},
+    val onReportListing: () -> Unit = {},
     val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
 )
 
@@ -73,7 +70,6 @@ fun MarketplaceDetailBottomSheet(
     val listing = state.listing
     val isLoading = state.isLoading
     val errorMessage = state.errorMessage
-    val bookmarkErrorMessage = state.bookmarkErrorMessage
     val isBookmarked = state.isBookmarked
     val onDismiss = actions.onDismiss
     val onRetry = actions.onRetry
@@ -281,45 +277,14 @@ fun MarketplaceDetailBottomSheet(
                         )
                     }
 
-                    // Action Buttons: Bookmark & Close
-                    bookmarkErrorMessage?.let { message ->
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onToggleBookmark,
-                            modifier = Modifier.weight(1f),
-                            colors = BulletinButtonDefaults.outlinedButtonColors(),
-                            border = BulletinButtonDefaults.outlinedButtonBorder()
-                        ) {
-                            Icon(
-                                imageVector = if (isBookmarked) {
-                                    Icons.Filled.Bookmark
-                                } else {
-                                    Icons.Outlined.BookmarkBorder
-                                },
-                                contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isBookmarked) "Bookmarked" else "Bookmark")
-                        }
-
-                        Button(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f),
-                            colors = BulletinButtonDefaults.buttonColors()
-                        ) {
-                            Text("Close")
-                        }
-                    }
+                    ListingDetailActions(
+                        isBookmarked = isBookmarked,
+                        bookmarkErrorMessage = state.bookmarkErrorMessage,
+                        onToggleBookmark = onToggleBookmark,
+                        onDismiss = onDismiss,
+                        onReportListing = actions.onReportListing,
+                        canReportListing = state.currentUserId != listing.sellerId
+                    )
                 }
             }
         }
