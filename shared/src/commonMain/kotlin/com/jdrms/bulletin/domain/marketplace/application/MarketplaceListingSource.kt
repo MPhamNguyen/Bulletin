@@ -78,6 +78,7 @@ class MarketplaceRepositoryListingSource(
 fun List<MarketplaceListingSnapshot>.pageFor(request: MarketplacePageRequest): MarketplaceListingPage {
     val keywords = request.query.trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
     val matchingListings = asSequence()
+        .filter { listing -> request.viewerId == null || listing.sellerId != request.viewerId }
         .filter { listing -> request.sellerId == null || listing.sellerId == request.sellerId }
         .filter { listing -> request.category == null || listing.category == request.category }
         .filter { listing -> request.condition == null || listing.condition == request.condition }

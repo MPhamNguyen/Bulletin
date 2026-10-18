@@ -29,6 +29,7 @@ class SearchMarketplace(
             val page = listingSource.getAvailableListings(request.copy(cursor = cursor))
             visibleItems += page.listings
                 .asSequence()
+                .filterNot { it.sellerId == request.viewerId }
                 .filterNot { it.sellerId in hiddenUserIds }
                 .map { it.toMarketplaceItem() }
                 .take(request.pageSize - visibleItems.size)

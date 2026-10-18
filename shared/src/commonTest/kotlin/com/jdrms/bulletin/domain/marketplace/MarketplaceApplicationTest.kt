@@ -144,6 +144,23 @@ class MarketplaceApplicationTest {
         assertEquals(null, page.nextCursor)
     }
 
+    @Test
+    fun marketplaceSearchExcludesListingsOwnedByTheViewer() = runTest {
+        val search = SearchMarketplace(
+            repository = InMemoryMarketplaceRepository(initialListings = emptyList()),
+            listingSource = MarketplaceListingSource {
+                MarketplaceListingPage(
+                    listings = listOf(snapshot("own", "viewer"), snapshot("other", "seller")),
+                    nextCursor = null
+                )
+            }
+        )
+
+        val result = search.getPage(MarketplacePageRequest(viewerId = "viewer"))
+
+        assertEquals(listOf("other"), result.items.map { it.id.value })
+    }
+
     private fun snapshot(id: String, sellerId: String) = MarketplaceListingSnapshot(
         id = id,
         sellerId = sellerId,
