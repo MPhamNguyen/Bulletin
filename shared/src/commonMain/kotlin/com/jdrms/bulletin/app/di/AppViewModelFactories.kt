@@ -64,7 +64,7 @@ fun AppContainer.createMessagesViewModel() = MessagesViewModel(
     hideConversation
 )
 
-fun AppContainer.createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)
+fun AppContainer.createSignInViewModel() = SignInViewModel(signInUser, sessionRepository, signInExternally)
 
 fun AppContainer.createRegistrationViewModel() = RegistrationViewModel(
     registerStudent,

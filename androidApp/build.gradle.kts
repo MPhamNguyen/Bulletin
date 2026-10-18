@@ -12,6 +12,8 @@ kotlin {
 }
 dependencies {
     implementation(project(":shared"))
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
 
     implementation(libs.androidx.activity.compose)
 
@@ -69,6 +71,8 @@ android {
         )
         val supabaseIsConnected = readEnvProperty("SUPABASE_IS_CONNECTED", "false").toBoolean()
 
+        val microsoftSsoEnabled = readEnvProperty("MICROSOFT_SSO_ENABLED", "false").toBoolean()
+        buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoEnabled.toString())
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_API_KEY", "\"$supabaseApiKey\"")
         buildConfigField("boolean", "SUPABASE_IS_CONNECTED", "$supabaseIsConnected")

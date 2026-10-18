@@ -2,6 +2,7 @@ package com.jdrms.bulletin.core.network
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
@@ -15,14 +16,22 @@ data class SupabaseConfig(
     val isConfigured: Boolean
         get() = isConnected && !url.isNullOrBlank() && !apiKey.isNullOrBlank()
 
-    fun createClient(): SupabaseClient {
+    fun createClient(authStorage: SupabaseAuthStorage? = null): SupabaseClient {
         val resolvedUrl = checkNotNull(url) { "Supabase URL cannot be null when creating client." }
         val resolvedKey = checkNotNull(apiKey) { "Supabase API key cannot be null when creating client." }
         return createSupabaseClient(
             supabaseUrl = resolvedUrl,
             supabaseKey = resolvedKey
         ) {
-            install(Auth)
+            defaultLogLevel = io.github.jan.supabase.logging.LogLevel.NONE
+            install(Auth) {
+                defaultRedirectUrl = "com.jdrms.bulletin.auth://oauth/callback"
+                flowType = FlowType.PKCE
+                if (authStorage != null) {
+                    sessionManager = authStorage
+                    codeVerifierCache = authStorage
+                }
+            }
             install(Postgrest)
             install(Realtime)
             install(Storage)

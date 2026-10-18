@@ -17,6 +17,7 @@ import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.core.common.FlowUserMessenger
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.core.network.SupabaseAuthStorage
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
@@ -74,6 +75,7 @@ import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignInExternally
 import com.jdrms.bulletin.domain.profile.application.SignInUser
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
@@ -91,6 +93,7 @@ import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserBlockRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.AuthSessionRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.ExternalAuthBrowser
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -107,9 +110,14 @@ class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
     private val isInspectionMode: Boolean = false,
     private val allowInMemoryFallback: Boolean = false,
+    val microsoftSignInEnabled: Boolean = false,
     themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
-    private val providedSupabaseClient: SupabaseClient? = null
+    private val providedSupabaseClient: SupabaseClient? = null,
+    private val externalAuthBrowser: ExternalAuthBrowser? = null,
+    private val authStorage: SupabaseAuthStorage? = null
 ) {
+    val externalSignInPending: Boolean get() = externalAuthBrowser?.isResuming == true
+
     internal val themePreferenceStore = themePreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     private val marketplaceReadCache by lazy { MarketplaceReadCache() }
@@ -119,7 +127,7 @@ class AppContainer(
             providedSupabaseClient
         } else if (!isInspectionMode && supabaseConfig.isConfigured) {
             runCatching {
-                supabaseConfig.createClient()
+                supabaseConfig.createClient(authStorage)
             }.fold(
                 onSuccess = { it },
                 onFailure = { error ->
@@ -230,7 +238,13 @@ class AppContainer(
     val authRepository: AuthRepository by lazy {
         val client = supabaseClient
         if (client != null) {
-            SupabaseAuthRepository(client, profileRepository) { profileReadCache.clearCurrentSession() }
+            SupabaseAuthRepository(
+                client,
+                profileRepository,
+                externalAuthBrowser.takeIf {
+                    microsoftSignInEnabled
+                }
+            ) { profileReadCache.clearCurrentSession() }
         } else {
             if (!allowInMemoryFallback && !isInspectionMode) {
                 error("Supabase client is not configured and in-memory fallback is disabled.")
@@ -307,6 +321,7 @@ class AppContainer(
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
+    val signInExternally by lazy { SignInExternally(authRepository) }
     val signInUser by lazy { SignInUser(authRepository) }
     val registerStudent by lazy { RegisterStudent(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }

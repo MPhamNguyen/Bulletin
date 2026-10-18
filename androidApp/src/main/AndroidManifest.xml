@@ -5,7 +5,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-            android:allowBackup="true"
+            android:name=".BulletinApplication"
+            android:allowBackup="false"
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
@@ -13,11 +14,18 @@
             android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
                 android:exported="true"
-                android:name=".MainActivity">
+                android:name=".MainActivity"
+                android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.jdrms.bulletin.auth" android:host="oauth" android:path="/callback" />
             </intent-filter>
         </activity>
     </application>

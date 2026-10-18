@@ -8,12 +8,13 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
-interface AuthRepository {
+interface AuthRepository : ExternalSignInRepository {
     /** Only identities confirmed by the authentication provider may be restored. */
     suspend fun getCurrentUserId(): Result<UserId?>
 
     suspend fun getCurrentUser(): Result<StudentProfile?>
     suspend fun login(email: StudentEmail, password: String): Result<StudentProfile>
+
     suspend fun requestPasswordReset(email: StudentEmail): Result<Unit>
     suspend fun verifyPasswordResetCode(email: StudentEmail, code: String): Result<Unit>
     suspend fun updatePassword(password: String): Result<Unit>
