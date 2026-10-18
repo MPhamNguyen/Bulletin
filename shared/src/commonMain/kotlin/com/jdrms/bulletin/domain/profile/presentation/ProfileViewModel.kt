@@ -156,6 +156,14 @@ class ProfileViewModel(
         state.update { it.copy(selectedBookmarkedListingId = null, errorMessage = null) }
     }
 
+    fun onBookmarkedCategorySelected(category: String?) {
+        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(category = category)) }
+    }
+
+    fun onBookmarkedConditionSelected(condition: String?) {
+        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(condition = condition)) }
+    }
+
     fun removeBookmarkedListing(listingId: String) {
         val current = state.value
         val userId = current.profile?.id ?: return

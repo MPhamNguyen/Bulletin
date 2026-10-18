@@ -139,7 +139,9 @@ private fun ProfileDestinationContent(
         ProfileDestination.BOOKMARKED_LISTINGS -> {
             BookmarkedListingsView(
                 state = BookmarkedListingsViewState(
-                    listings = states.profile.bookmarkedListings,
+                    listings = states.profile.filteredBookmarkedListings,
+                    allListings = states.profile.bookmarkedListings,
+                    filters = states.profile.bookmarkedListingFilters,
                     isLoading = states.profile.isLoadingBookmarkedListings,
                     isLoadingMore = states.profile.isLoadingMoreBookmarkedListings,
                     hasMore = states.profile.bookmarkedListingsNextCursor != null,
@@ -151,6 +153,8 @@ private fun ProfileDestinationContent(
                     onRemoveBookmark = states.viewModel::removeBookmarkedListing,
                     onRefresh = states.viewModel::loadBookmarkedListings,
                     onLoadMore = states.viewModel::loadMoreBookmarkedListings,
+                    onCategorySelected = states.viewModel::onBookmarkedCategorySelected,
+                    onConditionSelected = states.viewModel::onBookmarkedConditionSelected,
                     onBack = callbacks.onBack
                 )
             )

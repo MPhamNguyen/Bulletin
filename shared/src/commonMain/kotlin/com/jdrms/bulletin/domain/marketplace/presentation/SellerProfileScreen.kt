@@ -24,12 +24,14 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 
 @Composable
 fun SellerProfileScreen(
     state: SellerProfileUiState,
     messageActions: MessageSellerQuickActionActions?,
-    onListingClick: (String) -> Unit,
+    listingActions: SellerProfileListingActions,
     onBack: () -> Unit,
     onReportUser: () -> Unit,
     onBlockUser: () -> Unit,
@@ -66,19 +68,32 @@ fun SellerProfileScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 }
-                if (state.listings.isEmpty()) {
+                if (state.listings.isNotEmpty()) {
+                    item {
+                        MarketplaceFilters(
+                            filters = state.filters,
+                            onCategorySelected = listingActions.onCategorySelected,
+                            onConditionSelected = listingActions.onConditionSelected
+                        )
+                    }
+                }
+                if (state.filteredListings.isEmpty()) {
                     item {
                         BulletinCard {
                             Text(
-                                text = "This seller has no active listings.",
+                                text = if (state.listings.isEmpty()) {
+                                    "This seller has no active listings."
+                                } else {
+                                    "No seller listings match these filters."
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 } else {
-                    items(state.listings, key = { it.id.value }) { listing ->
-                        SellerListingCard(listing, onListingClick)
+                    items(state.filteredListings, key = { it.id.value }) { listing ->
+                        SellerListingCard(listing, listingActions.onListingClick)
                     }
                 }
             }
@@ -93,6 +108,12 @@ fun SellerProfileScreen(
     }
     BlockUserErrorMessage(blockState.errorMessage)
 }
+
+data class SellerProfileListingActions(
+    val onListingClick: (String) -> Unit,
+    val onCategorySelected: (MarketplaceCategory?) -> Unit,
+    val onConditionSelected: (MarketplaceCondition?) -> Unit
+)
 
 @Composable
 private fun SellerProfileLoading() {

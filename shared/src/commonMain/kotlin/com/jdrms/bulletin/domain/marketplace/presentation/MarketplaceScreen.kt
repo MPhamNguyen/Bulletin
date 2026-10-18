@@ -34,7 +34,12 @@ fun MarketplaceScreen(
     var destination by remember { mutableStateOf(MarketplaceDestination.CATALOG) }
 
     val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, destination)
-    val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel, userBlockViewModel)
+    val flowViewModels = MarketplaceSellerFlowViewModels(
+        viewModel,
+        sellerProfileViewModel,
+        userReportViewModel,
+        userBlockViewModel
+    )
     if (!MarketplaceSellerProfileFlow(flowState, flowViewModels, actions) { destination = it }) {
         MarketplaceCatalogContent(
             state = state,
@@ -208,10 +213,14 @@ private fun MarketplaceSellerProfileFlow(
     SellerProfileScreen(
         state = state.sellerProfileState,
         messageActions = state.messageActions(actions),
-        onListingClick = { listingId ->
-            onNavigate(MarketplaceDestination.CATALOG)
-            viewModels.marketplace.onListingClicked(listingId)
-        },
+        listingActions = SellerProfileListingActions(
+            onListingClick = { listingId ->
+                onNavigate(MarketplaceDestination.CATALOG)
+                viewModels.marketplace.onListingClicked(listingId)
+            },
+            onCategorySelected = viewModels.sellerProfile::onCategorySelected,
+            onConditionSelected = viewModels.sellerProfile::onConditionSelected
+        ),
         onBack = { onNavigate(MarketplaceDestination.CATALOG) },
         onReportUser = {
             state.sellerProfileState.profile?.sellerId?.let(viewModels.report::begin)
@@ -267,6 +276,7 @@ private data class MarketplaceSellerFlowUiState(
 
 private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
+    val sellerProfile: SellerProfileViewModel,
     val report: MarketplaceUserReportViewModel,
     val block: MarketplaceUserBlockViewModel
 )
