@@ -24,6 +24,7 @@ fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
     userReportViewModel: MarketplaceUserReportViewModel,
+    listingReportViewModel: ListingReportViewModel,
     userBlockViewModel: MarketplaceUserBlockViewModel,
     actions: MarketplaceScreenActions = MarketplaceScreenActions()
 ) {
@@ -45,6 +46,7 @@ fun MarketplaceScreen(
             state = state,
             viewModel = viewModel,
             sellerProfileViewModel = sellerProfileViewModel,
+            listingReportViewModel = listingReportViewModel,
             actions = actions,
             onNavigate = { destination = it }
         )
@@ -56,6 +58,7 @@ private fun MarketplaceCatalogContent(
     state: MarketplaceUiState,
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
+    listingReportViewModel: ListingReportViewModel,
     actions: MarketplaceScreenActions,
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
@@ -170,6 +173,9 @@ private fun MarketplaceCatalogContent(
                         state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
                     },
                     onLeaveReview = viewModel.reviewActions::openReviewDialog,
+                    onReportListing = {
+                        beginMarketplaceListingReport(listingReportViewModel, state.detail.listing)
+                    },
                     onSellerClick = { sellerId ->
                         sellerProfileViewModel.load(sellerId)
                         onNavigate(MarketplaceDestination.SELLER_PROFILE)
@@ -179,6 +185,11 @@ private fun MarketplaceCatalogContent(
                     onSeeChat = actions.onSeeChat
                 )
             )
+            MarketplaceListingReportFlow(listingReportViewModel) {
+                listingReportViewModel.dismiss()
+                viewModel.dismissListingDetail()
+                viewModel.refreshListings()
+            }
             if (state.detail.isReviewDialogOpen) {
                 MarketplaceReviewDialog(
                     isSubmitting = state.detail.isSubmittingReview,
@@ -279,12 +290,6 @@ private data class MarketplaceSellerFlowViewModels(
     val sellerProfile: SellerProfileViewModel,
     val report: MarketplaceUserReportViewModel,
     val block: MarketplaceUserBlockViewModel
-)
-
-data class MarketplaceScreenActions(
-    val onMessageSeller: suspend (String, String, String, String) -> Boolean = { _, _, _, _ -> false },
-    val hasExistingConversation: suspend (String, String) -> Boolean = { _, _ -> false },
-    val onSeeChat: suspend (String, String) -> Unit = { _, _ -> }
 )
 
 private enum class MarketplaceDestination {
