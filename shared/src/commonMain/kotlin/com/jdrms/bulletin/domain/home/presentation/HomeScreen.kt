@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -98,7 +99,7 @@ fun HomeScreen(
     val nextItem = items.getOrNull(currentIndex + 1)
 
     BoxWithConstraints(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize().padding(bottom = LocalNavbarHeight.current)
     ) {
         val screenWidthPx = constraints.maxWidth.toFloat()
         val thresholdPx = with(density) { 100.dp.toPx() }

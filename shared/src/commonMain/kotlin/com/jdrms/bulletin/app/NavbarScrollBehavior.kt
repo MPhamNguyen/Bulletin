@@ -37,4 +37,6 @@ internal class NavbarScrollBehavior(private val thresholdPx: Float) {
         accumulatedDistance = 0f
         lastDirection = 0
     }
+
+    fun onDestinationChanged() = reveal()
 }

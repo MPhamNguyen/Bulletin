@@ -1,5 +1,8 @@
 package com.jdrms.bulletin.app
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import com.jdrms.bulletin.app.navigation.AppDestination
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -43,6 +46,41 @@ class NavbarScrollBehaviorTest {
         behavior.onScrollDelta(6f)
 
         behavior.reveal()
+        behavior.onScrollDelta(3f)
+
+        assertTrue(behavior.isVisible)
+    }
+
+    @Test
+    fun postScrollAtTop_revealsNavbar() {
+        val behavior = NavbarScrollBehavior(thresholdPx = 8f)
+        behavior.onScrollDelta(9f)
+        val connection = NavbarNestedScrollConnection(behavior)
+
+        connection.onPostScroll(
+            consumed = Offset.Zero,
+            available = Offset(0f, 1f),
+            source = NestedScrollSource.UserInput
+        )
+
+        assertTrue(behavior.isVisible)
+    }
+
+    @Test
+    fun onlyHomeAndMarketplaceOptIntoHiding() {
+        assertTrue(AppDestination.HOME.hidesOnScroll)
+        assertTrue(AppDestination.MARKETPLACE.hidesOnScroll)
+        assertFalse(AppDestination.LISTINGS.hidesOnScroll)
+        assertFalse(AppDestination.MESSAGES.hidesOnScroll)
+        assertFalse(AppDestination.PROFILE.hidesOnScroll)
+    }
+
+    @Test
+    fun destinationChange_revealsNavbarAndResetsScrollDirection() {
+        val behavior = NavbarScrollBehavior(thresholdPx = 8f)
+        behavior.onScrollDelta(9f)
+
+        behavior.onDestinationChanged()
         behavior.onScrollDelta(3f)
 
         assertTrue(behavior.isVisible)

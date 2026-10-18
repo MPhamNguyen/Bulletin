@@ -29,8 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -128,7 +130,10 @@ private fun DestinationItem(
         onClick = onClick,
         modifier = modifier
             .height(60.dp)
-            .semantics { this.selected = selected },
+            .semantics {
+                this.selected = selected
+                role = Role.Tab
+            },
         shape = CircleShape,
         color = itemColor.value,
         contentColor = contentColor.value
@@ -160,7 +165,10 @@ private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
         onClick = onClick,
         modifier = modifier
             .height(60.dp)
-            .semantics { contentDescription = "Create listing" },
+            .semantics {
+                contentDescription = "Create listing"
+                role = Role.Tab
+            },
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainer
     ) {

@@ -12,9 +12,14 @@ import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class AppDestination(val label: String, val icon: ImageVector, val selectedIcon: ImageVector = icon) {
-    HOME("Home", Icons.Outlined.Home, Icons.Filled.Home),
-    MARKETPLACE("Market", Icons.Outlined.Storefront, Icons.Filled.Storefront),
+enum class AppDestination(
+    val label: String,
+    val icon: ImageVector,
+    val selectedIcon: ImageVector = icon,
+    val hidesOnScroll: Boolean = false
+) {
+    HOME("Home", Icons.Outlined.Home, Icons.Filled.Home, hidesOnScroll = true),
+    MARKETPLACE("Market", Icons.Outlined.Storefront, Icons.Filled.Storefront, hidesOnScroll = true),
     LISTINGS("Post", Icons.Default.Add),
     MESSAGES("Inbox", Icons.Outlined.Mail, Icons.Filled.Mail),
     PROFILE("Profile", Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)

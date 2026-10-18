@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 
@@ -66,7 +67,8 @@ private fun MarketplaceCatalogContent(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             marketplaceCatalogHeader(state, viewModel)

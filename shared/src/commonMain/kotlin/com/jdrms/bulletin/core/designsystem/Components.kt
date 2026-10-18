@@ -4,9 +4,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+/** Height occupied by the app navigation bar, including its system bar inset. */
+val LocalNavbarHeight = staticCompositionLocalOf<Dp> { 0.dp }
 
 @Composable
 fun SectionHeader(title: String, subtitle: String? = null) {
