@@ -4,6 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportAlreadySubmittedException
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
+import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportSelfReportException
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import io.github.jan.supabase.SupabaseClient
@@ -40,27 +41,33 @@ class SupabaseListingReportRepositoryTest {
     }
 
     @Test
-    fun mapsInsertPermissionFailureToRlsGuidance() {
+    fun mapsInsertPermissionFailureToGenericUserFacingFailureAndKeepsCause() {
         val cause = IllegalStateException("permission denied")
 
         val result = ListingReportPersistenceFailureMapper.map("42501", cause)
 
-        assertEquals(
-            "Your report couldn't be submitted because database permissions denied the insert. Check the reports " +
-                "table INSERT grant and RLS policy.",
-            result.message
-        )
+        assertEquals(SupabaseListingReportRepository.SAFE_FAILURE_MESSAGE, result.message)
         assertEquals(cause, result.cause)
     }
 
     @Test
-    fun mapsUnsupportedReportTypeToSchemaGuidance() {
-        val result = ListingReportPersistenceFailureMapper.map("22P02", IllegalStateException("enum mismatch"))
+    fun mapsUnsupportedReportTypeToGenericUserFacingFailureAndKeepsCause() {
+        val cause = IllegalStateException("enum mismatch")
+        val result = ListingReportPersistenceFailureMapper.map("22P02", cause)
 
-        assertEquals(
-            "Listing reports aren't enabled in the reports table yet. Check that its report type supports listing.",
-            result.message
-        )
+        assertEquals(SupabaseListingReportRepository.SAFE_FAILURE_MESSAGE, result.message)
+        assertEquals(cause, result.cause)
+    }
+
+    @Test
+    fun mapsDatabaseSelfReportRejectionToPlainUserFacingMessageAndKeepsCause() {
+        val cause = IllegalStateException("listing reporter matches owner")
+
+        val result = ListingReportPersistenceFailureMapper.map("23514", cause)
+
+        assertIs<ListingReportSelfReportException>(result)
+        assertEquals("You cannot report your own listing.", result.message)
+        assertEquals(cause, result.cause)
     }
 
     @Test
@@ -143,6 +150,34 @@ class SupabaseListingReportRepositoryTest {
         }
         try {
             assertIs<Result.Success<Unit>>(repository(client).submit(report()))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun forgedSellerIdCannotBypassDatabaseSelfReportConstraint() = runTest {
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                if (request.method == HttpMethod.Get) {
+                    respond("[]", HttpStatusCode.OK)
+                } else {
+                    respond(
+                        "{\"code\":\"23514\",\"message\":\"self report rejected\"}",
+                        HttpStatusCode.BadRequest
+                    )
+                }
+            }
+        }
+        try {
+            val forgedSeller = report().copy(listingSellerId = "different-seller")
+
+            val result = assertIs<Result.Error>(repository(client).submit(forgedSeller))
+
+            assertIs<ListingReportSelfReportException>(result.exception)
+            assertEquals("You cannot report your own listing.", result.message)
+            assertTrue(result.exception.cause != null)
         } finally {
             client.close()
         }

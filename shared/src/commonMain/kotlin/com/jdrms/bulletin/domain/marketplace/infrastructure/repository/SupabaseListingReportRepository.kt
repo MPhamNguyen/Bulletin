@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportAlreadySubmittedException
+import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportSelfReportException
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
@@ -110,19 +111,16 @@ class SupabaseListingReportRepository internal constructor(
 internal object ListingReportPersistenceFailureMapper {
     fun map(code: String?, cause: Exception): IllegalStateException = when (code) {
         UNIQUE_VIOLATION_CODE -> ListingReportAlreadySubmittedException()
-        PERMISSION_DENIED_CODE -> IllegalStateException(RLS_FAILURE_MESSAGE, cause)
-        INVALID_ENUM_VALUE_CODE -> IllegalStateException(REPORT_TYPE_FAILURE_MESSAGE, cause)
+        SELF_REPORT_CONSTRAINT_CODE -> ListingReportSelfReportException(cause)
+        PERMISSION_DENIED_CODE, INVALID_ENUM_VALUE_CODE ->
+            IllegalStateException(SupabaseListingReportRepository.SAFE_FAILURE_MESSAGE, cause)
         else -> IllegalStateException(SupabaseListingReportRepository.SAFE_FAILURE_MESSAGE, cause)
     }
 
     private const val UNIQUE_VIOLATION_CODE = "23505"
     private const val PERMISSION_DENIED_CODE = "42501"
     private const val INVALID_ENUM_VALUE_CODE = "22P02"
-    private const val RLS_FAILURE_MESSAGE =
-        "Your report couldn't be submitted because database permissions denied the insert. Check the reports table " +
-            "INSERT grant and RLS policy."
-    private const val REPORT_TYPE_FAILURE_MESSAGE =
-        "Listing reports aren't enabled in the reports table yet. Check that its report type supports listing."
+    private const val SELF_REPORT_CONSTRAINT_CODE = "23514"
 }
 
 internal interface SupabaseListingReportsTable {

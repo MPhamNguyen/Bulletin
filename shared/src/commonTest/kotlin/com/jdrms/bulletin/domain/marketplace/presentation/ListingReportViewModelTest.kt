@@ -23,6 +23,31 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class ListingReportViewModelTest {
     @Test
+    fun reportFlowDismissalCompletesOnlyAfterSubmission() {
+        var formDismissed = false
+        var reportDone = false
+
+        handleMarketplaceListingReportDismissal(
+            ListingReportUiState(submitted = false),
+            dismissForm = { formDismissed = true },
+            onReportDone = { reportDone = true }
+        )
+
+        assertTrue(formDismissed)
+        assertFalse(reportDone)
+
+        formDismissed = false
+        handleMarketplaceListingReportDismissal(
+            ListingReportUiState(submitted = true),
+            dismissForm = { formDismissed = true },
+            onReportDone = { reportDone = true }
+        )
+
+        assertFalse(formDismissed)
+        assertTrue(reportDone)
+    }
+
+    @Test
     fun submitsSelectedReasonAndDetailsForTheListing() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
