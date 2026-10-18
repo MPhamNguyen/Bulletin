@@ -20,7 +20,7 @@ class ProfileMarketplaceSellerNameProvider(
                     avatarUrl = it.avatarUrl,
                     reputationScore = it.reputation?.averageRating,
                     reviewCount = it.reputation?.totalReviews,
-                    isVerified = it.isVerified || it.email.isUniversityEmail
+                    isVerified = it.isVerified
                 )
             }
             is com.jdrms.bulletin.core.common.Result.Error -> null

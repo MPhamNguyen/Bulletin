@@ -21,11 +21,6 @@ internal fun MarketplaceProfileView(
     onMyListingsClick: () -> Unit,
     onBookmarkedListingsClick: () -> Unit
 ) {
-    val profile = uiState.profile
-    val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
-    val university = profile?.university.orEmpty()
-    val major = profile?.major.orEmpty()
-
     Column(modifier = Modifier.fillMaxSize()) {
         MarketplaceProfileTopBar(onSettingsClick = onSettingsClick)
         Column(
@@ -37,27 +32,7 @@ internal fun MarketplaceProfileView(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ProfileHero(
-                fullName = fullName,
-                major = major,
-                university = university,
-                isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
-                avatarUrl = profile?.avatarUrl
-            )
-
-            MarketplaceActivityStatsCard(
-                activeListings = uiState.activeListingsCount,
-                itemsSold = uiState.itemsSoldCount,
-                rating = uiState.reputation
-                    ?.takeIf { it.totalReviews > 0 }
-                    ?.averageRating
-            )
-
-            ProfileAboutCard(
-                major = major,
-                university = university,
-                bio = profile?.bio
-            )
+            MarketplaceProfileOverview(uiState)
 
             ProfileMarketplaceCard(
                 activeListings = uiState.activeListingsCount,
@@ -67,4 +42,34 @@ internal fun MarketplaceProfileView(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@Composable
+private fun MarketplaceProfileOverview(uiState: ProfileUiState) {
+    val profile = uiState.profile
+    val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
+    val university = profile?.university.orEmpty()
+    val major = profile?.major.orEmpty()
+
+    ProfileHero(
+        fullName = fullName,
+        major = major,
+        university = university,
+        isVerified = profile?.isVerified == true,
+        avatarUrl = profile?.avatarUrl
+    )
+
+    MarketplaceActivityStatsCard(
+        activeListings = uiState.activeListingsCount,
+        itemsSold = uiState.itemsSoldCount,
+        rating = uiState.reputation
+            ?.takeIf { it.totalReviews > 0 }
+            ?.averageRating
+    )
+
+    ProfileAboutCard(
+        major = major,
+        university = university,
+        bio = profile?.bio
+    )
 }
