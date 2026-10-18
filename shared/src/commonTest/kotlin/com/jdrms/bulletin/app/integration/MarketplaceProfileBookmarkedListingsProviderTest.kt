@@ -90,4 +90,22 @@ class MarketplaceProfileBookmarkedListingsProviderTest {
         assertEquals(listOf("mkt_2"), secondPage.listings.map { it.id })
         assertEquals(null, secondPage.nextCursor)
     }
+
+    @Test
+    fun exposesEveryFilterOptionRegardlessOfTheCurrentPageContents() = runTest {
+        val repository = InMemoryMarketplaceRepository()
+        BookmarkMarketplaceListing(repository)("current_student", MarketplaceItemId("mkt_1"))
+        val provider = MarketplaceProfileBookmarkedListingsProvider(
+            GetMarketplaceListingBookmarks(repository),
+            RemoveMarketplaceListingBookmark(repository)
+        )
+
+        val page = provider.getBookmarkedListings(UserId("current_student"), null, 1)
+
+        assertEquals(
+            listOf("TEXTBOOKS", "ELECTRONICS", "FURNITURE", "CLOTHING", "HOUSING", "OTHER"),
+            page.filterOptions.categories
+        )
+        assertEquals(listOf("NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"), page.filterOptions.conditions)
+    }
 }

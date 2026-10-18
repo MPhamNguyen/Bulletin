@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfil
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerSalesProvider
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -118,6 +119,23 @@ class SellerProfileViewModelTest {
     }
 
     @Test
+    fun filtersSellerListingsByCategoryAndCondition() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val viewModel = filteringSellerProfileViewModel()
+            viewModel.load("seller-a")
+            advanceUntilIdle()
+
+            viewModel.onCategorySelected(MarketplaceCategory.TEXTBOOKS)
+            viewModel.onConditionSelected(MarketplaceCondition.NEW)
+
+            assertEquals(listOf("new-book"), viewModel.uiState.value.filteredListings.map { it.id.value })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
     fun openingAnotherSellerCancelsThePreviousRequest() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
@@ -162,13 +180,32 @@ class SellerProfileViewModelTest {
     }
 }
 
+private fun filteringSellerProfileViewModel(): SellerProfileViewModel {
+    val listings = listOf(
+        listing("new-book", "seller-a", MarketplaceCategory.TEXTBOOKS, MarketplaceCondition.NEW),
+        listing("used-book", "seller-a", MarketplaceCategory.TEXTBOOKS, MarketplaceCondition.GOOD),
+        listing("new-chair", "seller-a", MarketplaceCategory.FURNITURE, MarketplaceCondition.NEW)
+    )
+    val query = ViewMarketplaceSellerProfile(
+        profileProvider = { sellerProfile(it) },
+        listingSource = MarketplaceListingSource { MarketplaceListingPage(listings, null) },
+        sellerSalesProvider = MarketplaceSellerSalesProvider { 0 }
+    )
+    return SellerProfileViewModel(query)
+}
+
 private fun sellerProfile(sellerId: String) = MarketplaceSellerProfile(
     sellerId = sellerId,
     name = if (sellerId == "seller-a") "Seller A" else "Seller",
     school = "Campus"
 )
 
-private fun listing(id: String, sellerId: String) = MarketplaceListingSnapshot(
+private fun listing(
+    id: String,
+    sellerId: String,
+    category: MarketplaceCategory = MarketplaceCategory.OTHER,
+    condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN
+) = MarketplaceListingSnapshot(
     id = id,
     sellerId = sellerId,
     sellerName = "Seller",
@@ -176,6 +213,7 @@ private fun listing(id: String, sellerId: String) = MarketplaceListingSnapshot(
     description = "Description",
     priceAmount = 10.0,
     priceCurrency = "USD",
-    category = MarketplaceCategory.OTHER,
-    createdAtMillis = 1L
+    category = category,
+    createdAtMillis = 1L,
+    condition = condition
 )

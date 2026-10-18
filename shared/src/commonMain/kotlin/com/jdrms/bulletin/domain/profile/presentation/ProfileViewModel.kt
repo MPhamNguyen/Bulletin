@@ -97,6 +97,7 @@ class ProfileViewModel(
             state.update {
                 it.copy(
                     bookmarkedListings = page.listings,
+                    bookmarkedListingFilterOptions = page.filterOptions,
                     isLoadingBookmarkedListings = false,
                     bookmarkedListingsNextCursor = page.nextCursor,
                     selectedBookmarkedListingId = null,
@@ -130,6 +131,7 @@ class ProfileViewModel(
                         bookmarkedListings = (it.bookmarkedListings + page.listings).distinctBy { listing ->
                             listing.id
                         },
+                        bookmarkedListingFilterOptions = page.filterOptions,
                         isLoadingMoreBookmarkedListings = false,
                         bookmarkedListingsNextCursor = page.nextCursor
                     )
@@ -154,6 +156,14 @@ class ProfileViewModel(
 
     fun dismissBookmarkedListing() {
         state.update { it.copy(selectedBookmarkedListingId = null, errorMessage = null) }
+    }
+
+    fun onBookmarkedCategorySelected(category: String?) {
+        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(category = category)) }
+    }
+
+    fun onBookmarkedConditionSelected(condition: String?) {
+        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(condition = condition)) }
     }
 
     fun removeBookmarkedListing(listingId: String) {
