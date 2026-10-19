@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.navigation.AppDestination
+import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -11,7 +12,7 @@ import kotlin.test.assertTrue
 class ListingMessagingActionsTest {
     @Test
     fun successfulSendOpensTheCreatedConversation() = runTest {
-        val navigation = MainNavigationState()
+        val navigation = MutableMainNavigationState()
         val id = ConversationId("conversation-1")
         var request: ListingMessageRequest? = null
         val actions = ListingMessagingActions(
@@ -32,7 +33,7 @@ class ListingMessagingActionsTest {
 
     @Test
     fun failedSendKeepsTheCurrentDestination() = runTest {
-        val navigation = MainNavigationState()
+        val navigation = MutableMainNavigationState()
         val actions = ListingMessagingActions(
             navigation,
             sendMessage = { null },
@@ -47,7 +48,7 @@ class ListingMessagingActionsTest {
 
     @Test
     fun seeChatOpensTheMatchingConversationAndExistenceUsesTheSameListing() = runTest {
-        val navigation = MainNavigationState()
+        val navigation = MutableMainNavigationState()
         val id = ConversationId("conversation-1")
         val actions = ListingMessagingActions(
             navigation,

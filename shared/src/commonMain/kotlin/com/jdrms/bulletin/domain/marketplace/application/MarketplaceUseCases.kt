@@ -113,7 +113,8 @@ internal fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
         price = MarketplacePrice(priceAmount, priceCurrency),
         category = category,
         condition = condition,
-        createdAtMillis = createdAtMillis
+        createdAtMillis = createdAtMillis,
+        photos = photos
     )
 }
 

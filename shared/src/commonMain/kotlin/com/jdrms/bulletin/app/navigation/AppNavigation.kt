@@ -46,7 +46,7 @@ enum class ProfileDestination {
     EDIT_LISTING
 }
 
-data class MainNavigationState(
+data class NavigationSnapshot(
     val currentDestination: AppDestination = AppDestination.HOME,
     val profileDestination: ProfileDestination = ProfileDestination.PROFILE
 ) {

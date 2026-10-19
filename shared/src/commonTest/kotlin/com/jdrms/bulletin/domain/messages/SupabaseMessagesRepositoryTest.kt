@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessExcepti
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInsertDto
@@ -31,6 +32,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository {
@@ -39,6 +41,24 @@ class SupabaseMessagesRepositoryContractTest : MessagesRepositoryContractTest() 
 }
 
 class SupabaseMessagesRepositoryTest {
+    @Test
+    fun inboxRequestExcludesDeletedMemberships() = runTest {
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                assertEquals("eq.alice-id", request.url.parameters["membership.user_id"])
+                assertEquals("is.null", request.url.parameters["membership.deleted_at"])
+                respond("[]", HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
+            }
+        }
+
+        try {
+            assertEquals(emptyList(), PostgrestSupabaseMessagesTable(client).getInboxConversations(alice.id.value))
+        } finally {
+            client.close()
+        }
+    }
+
     @Test
     fun incomingMessageResurfacesConversationForParticipantWhoHidIt() = runTest {
         val table = FakeSupabaseMessagesTable(listOf(conversation()))
@@ -89,11 +109,21 @@ class SupabaseMessagesRepositoryTest {
             SupabaseMessageInsertDto(
                 id = "message-a",
                 conversationId = "conversation-a",
-                content = "Hello",
-                createdAt = "1970-01-01T00:00:00.042Z"
+                content = "Hello"
             ),
             table.insertedMessage
         )
+    }
+
+    @Test
+    fun sendReturnsServerTimestampInsteadOfClientTimestamp() = runTest {
+        val table = FakeSupabaseMessagesTable(listOf(conversation()))
+        val clientMessage = message().copy(timestampMillis = 1L)
+
+        val sent = SupabaseMessagesRepository(table).sendMessage(clientMessage).getOrThrow()
+
+        assertEquals(42L, sent.timestampMillis)
+        assertEquals("1970-01-01T00:00:00.042Z", table.findMessage(conversationId.value, sent.id.value)?.createdAt)
     }
 
     @Test
@@ -172,6 +202,42 @@ class SupabaseMessagesRepositoryTest {
 
         assertEquals(conversationId, reopened.getOrThrow().id)
         assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
+    fun inboxUsesEachViewersHistoryCutoffAfterReopening() = runTest {
+        val listingId = ListingReferenceId("listing-a")
+        val existing = conversation()
+        val table = FakeSupabaseMessagesTable(
+            listOf(Conversation(existing.id, existing.participants, listingId = listingId)),
+            listOf(message())
+        )
+        val repository = SupabaseMessagesRepository(table)
+
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        repository.getOrCreateConversation(
+            alice.id,
+            ConversationParticipant(carol.id, carol.displayName),
+            listingId
+        ).getOrThrow()
+        table.authenticatedUserId = carol.id.value
+        val betweenCutoffs = repository.sendMessage(message(carol, id = MessageId("between-cutoffs"))).getOrThrow()
+        repository.hideConversation(carol.id, conversationId).getOrThrow()
+        repository.getOrCreateConversation(
+            carol.id,
+            ConversationParticipant(alice.id, alice.displayName),
+            listingId
+        ).getOrThrow()
+
+        table.authenticatedUserId = alice.id.value
+        val aliceInbox = repository.getConversations(alice.id).getOrThrow().single()
+        table.authenticatedUserId = carol.id.value
+        val carolInbox = repository.getConversations(carol.id).getOrThrow().single()
+
+        assertEquals(Instant.fromEpochMilliseconds(43), aliceInbox.historyVisibleAfter)
+        assertEquals(Instant.fromEpochMilliseconds(45), carolInbox.historyVisibleAfter)
+        assertEquals(betweenCutoffs, aliceInbox.lastMessage)
+        assertNull(carolInbox.lastMessage)
     }
 
     @Test

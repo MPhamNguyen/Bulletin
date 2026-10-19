@@ -102,7 +102,7 @@ private fun ProfileInformationChip(icon: ImageVector, text: String) {
 
 @Composable
 internal fun MarketplaceActivityStatsCard(
-    activeListings: Int,
+    activeListings: String,
     itemsSold: Int?,
     rating: Double?,
     modifier: Modifier = Modifier
@@ -120,7 +120,7 @@ internal fun MarketplaceActivityStatsCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ActivityStat(
-                value = activeListings.toString(),
+                value = activeListings,
                 label = "Active listings",
                 icon = Icons.Outlined.Storefront,
                 modifier = Modifier.weight(1f)

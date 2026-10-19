@@ -22,6 +22,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 @Composable
 fun ListingsScreen(viewModel: ListingsViewModel) {
     val state by viewModel.uiState.collectAsState()
+    val pickListingImages = rememberListingImagePicker(viewModel::addNewImages, viewModel::imageSelectionFailed)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -109,6 +110,13 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     minLines = 2,
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                ListingImageSelectionField(
+                    photos = state.newImages.map { ListingPhotoDraft.Pending(it) },
+                    onPick = pickListingImages,
+                    onRemove = viewModel::removeNewImage
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

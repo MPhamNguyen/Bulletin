@@ -23,7 +23,8 @@ internal fun validateNewListingDraft(state: ListingsUiState): NewListingDraftVal
             description,
             currencyDigitsToAmount(state.newPriceCents),
             state.newCategory,
-            state.newCondition
+            state.newCondition,
+            state.newImages
         ),
         null
     )

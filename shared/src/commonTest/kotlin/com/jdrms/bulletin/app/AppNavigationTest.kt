@@ -2,7 +2,7 @@ package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
-import com.jdrms.bulletin.app.navigation.MainNavigationState
+import com.jdrms.bulletin.app.navigation.NavigationSnapshot
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.navigation.backFromProfileDestination
@@ -100,7 +100,7 @@ class AppNavigationTest {
 
     @Test
     fun selectingProfileFromMyListingsReturnsToMainProfile() {
-        val state = MainNavigationState(
+        val state = NavigationSnapshot(
             currentDestination = AppDestination.PROFILE,
             profileDestination = ProfileDestination.MY_LISTINGS
         )
@@ -113,7 +113,7 @@ class AppNavigationTest {
 
     @Test
     fun selectingMessagesFromMyListingsResetsProfileRoute() {
-        val state = MainNavigationState(
+        val state = NavigationSnapshot(
             currentDestination = AppDestination.PROFILE,
             profileDestination = ProfileDestination.MY_LISTINGS
         )

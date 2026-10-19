@@ -52,7 +52,11 @@ fun AppContainer.createListingsViewModel() = ListingsViewModel(
     restoreListingToMarketplace,
     deleteListing,
     getSellerListings,
-    ListingsViewModelSessionDependencies(currentListingSellerProvider, listingChangedSignal)
+    ListingsViewModelSessionDependencies(
+        currentListingSellerProvider,
+        listingChangedSignal,
+        manageListingImages
+    )
 )
 
 fun AppContainer.createMessagesViewModel() = MessagesViewModel(

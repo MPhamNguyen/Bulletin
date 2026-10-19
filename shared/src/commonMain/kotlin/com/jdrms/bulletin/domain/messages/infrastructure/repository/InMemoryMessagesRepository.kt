@@ -26,11 +26,14 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /** Development adapter. Conversations are explicitly supplied by tests; no shared fictional inbox is seeded. */
 class InMemoryMessagesRepository(
     initialConversations: List<ConversationDto> = emptyList(),
-    initialMessages: Map<String, List<MessageDto>> = emptyMap()
+    initialMessages: Map<String, List<MessageDto>> = emptyMap(),
+    private val now: () -> Instant = { Clock.System.now() }
 ) : MessagesRepository, MessagesObserver, InboxObserver {
     private val mutex = Mutex()
     private val inserts = MutableSharedFlow<Message>(extraBufferCapacity = 64)
@@ -38,13 +41,17 @@ class InMemoryMessagesRepository(
         MessagesMapper.toDomain(it)
     }.associateBy { it.id }.toMutableMap()
     private val hiddenBy = mutableMapOf<ConversationId, MutableSet<SenderId>>()
+    private val historyVisibleAfter = mutableMapOf<Pair<ConversationId, SenderId>, Instant>()
     private val activeReports = mutableSetOf<Pair<SenderId, MessageId>>()
     private val messagesByConvId = initialMessages.mapKeys { ConversationId(it.key) }.mapValues { entry ->
         entry.value.map { MessagesMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
 
     override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = mutex.withLock {
-        Result.Success(conversations.values.filter { it.includes(userId) && userId !in hiddenBy[it.id].orEmpty() })
+        Result.Success(
+            conversations.values.filter { it.includes(userId) && userId !in hiddenBy[it.id].orEmpty() }
+                .map { conversation -> conversation.forViewer(userId) }
+        )
     }
 
     override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
@@ -54,7 +61,9 @@ class InMemoryMessagesRepository(
             when (val authorized = conversation.authorizeHiding(userId)) {
                 is Result.Error -> authorized
                 is Result.Success -> {
-                    hiddenBy.getOrPut(conversationId) { mutableSetOf() }.add(userId)
+                    if (hiddenBy.getOrPut(conversationId) { mutableSetOf() }.add(userId)) {
+                        historyVisibleAfter[conversationId to userId] = now()
+                    }
                     Result.Success(Unit)
                 }
             }
@@ -71,7 +80,7 @@ class InMemoryMessagesRepository(
         }
         if (existing != null) {
             hiddenBy[existing.id]?.remove(requesterId)
-            return@withLock Result.Success(existing)
+            return@withLock Result.Success(existing.forViewer(requesterId))
         }
         val conversation = Conversation(
             id = ConversationId("conversation-${conversations.size + 1}"),
@@ -94,6 +103,9 @@ class InMemoryMessagesRepository(
             require(limit > 0)
             val descending = messagesByConvId[conversationId].orEmpty()
                 .filter { before == null || it.cursor().isBefore(before) }
+                .filter { message ->
+                    historyVisibleAfter[conversationId to userId]?.let { message.orderingTimestamp > it } ?: true
+                }
                 .sortedWith(compareByDescending<Message> { it.orderingTimestamp }.thenByDescending { it.id.value })
             val page = descending.take(limit)
             Result.Success(
@@ -103,6 +115,18 @@ class InMemoryMessagesRepository(
     }
 
     private fun Message.cursor() = MessageCursor(orderingTimestamp, id)
+
+    private fun Conversation.forViewer(userId: SenderId): Conversation {
+        val cutoff = this@InMemoryMessagesRepository.historyVisibleAfter[id to userId]
+        return Conversation(
+            id,
+            participants,
+            lastMessage?.takeIf { cutoff == null || it.orderingTimestamp > cutoff },
+            updatedAtMillis,
+            listingId,
+            cutoff
+        )
+    }
 
     private fun MessageCursor.isBefore(other: MessageCursor): Boolean =
         createdAt < other.createdAt || (createdAt == other.createdAt && id.value < other.id.value)
