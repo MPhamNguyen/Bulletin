@@ -31,7 +31,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinCard
 
 @Composable
 internal fun ProfileMarketplaceCard(
-    activeListings: Int,
+    activeListings: String,
     onMyListingsClick: () -> Unit,
     onBookmarkedListingsClick: () -> Unit
 ) {
@@ -45,7 +45,7 @@ internal fun ProfileMarketplaceCard(
         MarketplaceActionRow(
             icon = Icons.Outlined.GridView,
             title = "My listings",
-            badge = activeListings.toString(),
+            badge = activeListings,
             onClick = onMyListingsClick
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

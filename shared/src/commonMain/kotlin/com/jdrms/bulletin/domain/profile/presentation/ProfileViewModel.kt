@@ -62,7 +62,12 @@ class ProfileViewModel(
         viewModelScope.launch {
             val activeCount = getProfileActivity(profile.id)
             val soldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
-            state.update { it.copy(activeListingsCount = activeCount, itemsSoldCount = soldCount) }
+            state.update {
+                it.copy(
+                    activeListingsCount = activeCount,
+                    itemsSoldCount = soldCount
+                )
+            }
         }
     }
 
@@ -243,7 +248,8 @@ class ProfileViewModel(
                                 profile = overview.profile,
                                 reputation = overview.reputation,
                                 activeListingsCount = overview.activeListingsCount,
-                                itemsSoldCount = soldCount
+                                itemsSoldCount = soldCount,
+                                hasLoadedOverview = true
                             )
                         }
                         true

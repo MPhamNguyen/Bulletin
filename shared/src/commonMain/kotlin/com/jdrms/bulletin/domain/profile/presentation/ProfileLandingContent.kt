@@ -28,6 +28,10 @@ internal fun MarketplaceProfileView(
     val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
     val university = profile?.university.orEmpty()
     val major = profile?.major.orEmpty()
+    val activeListingsDisplay = uiState.activeListingsCount
+        .takeIf { uiState.hasLoadedOverview }
+        ?.toString() ?: "—"
+    val itemsSoldDisplay = uiState.itemsSoldCount.takeIf { uiState.hasLoadedOverview }
     val pullRefreshState = rememberPullToRefreshState()
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -64,8 +68,8 @@ internal fun MarketplaceProfileView(
                 )
 
                 MarketplaceActivityStatsCard(
-                    activeListings = uiState.activeListingsCount,
-                    itemsSold = uiState.itemsSoldCount,
+                    activeListings = activeListingsDisplay,
+                    itemsSold = itemsSoldDisplay,
                     rating = uiState.reputation
                         ?.takeIf { it.totalReviews > 0 }
                         ?.averageRating
@@ -78,7 +82,7 @@ internal fun MarketplaceProfileView(
                 )
 
                 ProfileMarketplaceCard(
-                    activeListings = uiState.activeListingsCount,
+                    activeListings = activeListingsDisplay,
                     onMyListingsClick = onMyListingsClick,
                     onBookmarkedListingsClick = onBookmarkedListingsClick
                 )
