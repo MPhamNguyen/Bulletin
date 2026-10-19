@@ -132,7 +132,17 @@ fun MainAppScaffold(
             container.createMessagesViewModel()
         )
     }
-    val profilePresentation = ProfilePresentation(profileViewModel, themeViewModel, onSignOut)
+    // Keep the profile read model alive for the authenticated app session so its summary is
+    // fetched alongside the other app models, before the user opens the Profile destination.
+    val resolvedProfileViewModel = remember(profileViewModel, container) {
+        resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
+    }
+    DisposableEffect(resolvedProfileViewModel, profileViewModel) {
+        onDispose {
+            if (profileViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
+        }
+    }
+    val profilePresentation = ProfilePresentation(resolvedProfileViewModel, themeViewModel, onSignOut)
 
     LaunchedEffect(navigation.currentDestination) {
         navbarScrollBehavior.onDestinationChanged()
@@ -287,11 +297,8 @@ private fun StudentProfileDestination(
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
 ) {
-    val provided = profilePresentation.providedViewModel
     val destination = navigation.profileDestination
-    val resolvedProfileViewModel = remember(provided, container, destination) {
-        resolveProvidedOrCreate(provided) { container.createProfileViewModel() }
-    }
+    val resolvedProfileViewModel = requireNotNull(profilePresentation.providedViewModel)
     val profileFlows = remember(container, navigation.profileDestination) {
         ProfileScreenFlows(
             editing = container.createEditProfileViewModel(),
@@ -300,12 +307,11 @@ private fun StudentProfileDestination(
             blockedUsers = container.blockedUsersViewModelFactory()
         )
     }
-    DisposableEffect(profileFlows, resolvedProfileViewModel) {
+    DisposableEffect(profileFlows) {
         onDispose {
             profileFlows.editing.viewModelScope.cancel()
             profileFlows.account.viewModelScope.cancel()
             profileFlows.blockedUsers.viewModelScope.cancel()
-            if (profilePresentation.providedViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
         }
     }
     ProfileScreen(
