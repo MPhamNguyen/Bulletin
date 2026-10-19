@@ -37,11 +37,25 @@ class MarketplaceHomeRepositoryTest {
 
         assertEquals("listing:a", first.items.single().id.value)
         assertEquals("Book A", first.items.single().title)
+        assertNull(first.items.single().imageUrl)
         assertEquals(10, source.requests.first().pageSize)
         assertEquals(HomeFeedCursor(cursor.createdAt, first.items.single().id), first.nextCursor)
         assertEquals(cursor, source.requests.last().cursor)
         assertEquals("listing:b", second.items.single().id.value)
         assertNull(second.nextCursor)
+    }
+
+    @Test
+    fun carriesPositionZeroPhotoIntoHomeFeedItem() = runTest {
+        val source = RecordingMarketplaceListingSource(
+            listOf(MarketplaceListingPage(listOf(snapshot("photo", "Photo listing").copy(
+                primaryPhotoUrl = "https://storage.example/cover.webp"
+            )), null))
+        )
+
+        val feed = MarketplaceHomeRepository(source).getFeed(userId = null, cursor = null, pageSize = 10)
+
+        assertEquals("https://storage.example/cover.webp", feed.items.single().imageUrl)
     }
 
     @Test

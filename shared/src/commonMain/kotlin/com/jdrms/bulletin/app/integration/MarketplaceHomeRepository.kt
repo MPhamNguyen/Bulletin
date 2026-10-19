@@ -41,7 +41,8 @@ class MarketplaceHomeRepository(
                     description = listing.description,
                     price = HomePrice(listing.priceAmount, listing.priceCurrency),
                     category = HomeFeedCategory.valueOf(listing.category.name),
-                    createdAtMillis = listing.createdAtMillis
+                    createdAtMillis = listing.createdAtMillis,
+                    imageUrl = listing.primaryPhotoUrl
                 )
             }
         val preferences = getPreferences(userId)

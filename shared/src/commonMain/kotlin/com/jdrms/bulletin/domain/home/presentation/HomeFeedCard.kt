@@ -1,9 +1,11 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,6 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -43,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
 
 @Composable
 fun HomeFeedCard(
@@ -57,7 +64,7 @@ fun HomeFeedCard(
             .padding(8.dp)
             .clip(MaterialTheme.shapes.large)
     ) {
-        HomeFeedArtwork(modifier = Modifier.matchParentSize())
+        HomeFeedCardBackground(item)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -73,6 +80,33 @@ fun HomeFeedCard(
             )
         }
     }
+}
+
+@Composable
+private fun BoxScope.HomeFeedCardBackground(item: HomeFeedItem) {
+    HomeFeedArtwork(modifier = Modifier.matchParentSize())
+    item.imageUrl?.let { imageUrl ->
+        SubcomposeAsyncImage(
+            model = imageUrl,
+            contentDescription = "${item.title} listing photo",
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.Crop
+        ) { SubcomposeAsyncImageContent() }
+    }
+    HomeFeedImageScrim(Modifier.matchParentSize())
+}
+
+@Composable
+private fun HomeFeedImageScrim(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(
+            Brush.verticalGradient(
+                0f to MaterialTheme.colorScheme.scrim.copy(alpha = 0.28f),
+                0.35f to Color.Transparent,
+                1f to BulletinFeedCardDefaults.scrim.copy(alpha = 0.92f)
+            )
+        )
+    )
 }
 
 @Composable

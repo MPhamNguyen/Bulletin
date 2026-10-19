@@ -7,12 +7,13 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingImageDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
-    fun toItem(dto: SupabaseMarketplaceListingDto, imageUrl: (String) -> String = { it }): MarketplaceItem? {
-        val snapshot = toSnapshot(dto, imageUrl) ?: return null
+    fun toItem(dto: SupabaseMarketplaceListingDto): MarketplaceItem? {
+        val snapshot = toSnapshot(dto) ?: return null
         return MarketplaceItem(
             id = MarketplaceItemId(snapshot.id),
             sellerId = snapshot.sellerId,
@@ -70,7 +71,7 @@ object SupabaseMarketplaceListingMapper {
 
     fun toSnapshot(
         dto: SupabaseMarketplaceListingDto,
-        imageUrl: (String) -> String = { it }
+        photoUrl: (String) -> String = { it }
     ): MarketplaceListingSnapshot? {
         val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
         val title = dto.name?.takeIf(String::isNotBlank) ?: return null
@@ -92,9 +93,18 @@ object SupabaseMarketplaceListingMapper {
             category = category,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
             condition = condition,
-            photos = dto.listingImages.sortedBy { it.position }.map { imageUrl(it.objectPath) }
+            primaryPhotoUrl = dto.listingImages.firstOrNull { it.position == 0 }
+                ?.objectPath?.takeIf(String::isNotBlank)?.let(photoUrl),
+            photoUrls = dto.listingImages.primaryPhotoPaths().map(photoUrl)
         )
     }
+
+    private fun List<SupabaseMarketplaceListingImageDto>.primaryPhotoPaths(): List<String> =
+        asSequence().filter { it.position >= 0 }
+            .sortedBy { it.position }
+            .map { it.objectPath }
+            .filter(String::isNotBlank)
+            .toList()
 
     private fun String?.toEpochMillisecondsOrZero(): Long {
         return toInstantOrEpoch().toEpochMilliseconds()
