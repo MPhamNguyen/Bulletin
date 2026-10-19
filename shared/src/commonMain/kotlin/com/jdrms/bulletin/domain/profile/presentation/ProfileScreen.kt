@@ -72,7 +72,6 @@ fun ProfileScreen(
     var isSubmittingReview by remember { mutableStateOf(false) }
     val reviewScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) { viewModel.refreshActiveListings() }
     LaunchedEffect(destination) {
         if (destination == ProfileDestination.BOOKMARKED_LISTINGS) {
             viewModel.loadBookmarkedListings()
@@ -133,7 +132,9 @@ private fun ProfileDestinationContent(
     onLeaveReview: (ProfileBookmarkedListing) -> Unit
 ) {
     when (destination) {
-        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks)
+        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks) {
+            states.viewModel.refreshProfile()
+        }
         ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
         ProfileDestination.SETTINGS -> ProfileSettingsDestination(states.profile, flows, callbacks, themeViewModel)
         ProfileDestination.BOOKMARKED_LISTINGS -> {
@@ -200,10 +201,12 @@ private fun ProfileDestinationContent(
 @Composable
 private fun ProfileLandingDestination(
     state: ProfileUiState,
-    callbacks: ProfileScreenCallbacks
+    callbacks: ProfileScreenCallbacks,
+    onRefresh: () -> Unit
 ) {
     MarketplaceProfileView(
         uiState = state,
+        onRefresh = onRefresh,
         onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
         onMyListingsClick = callbacks.onMyListingsClick,
         onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) }

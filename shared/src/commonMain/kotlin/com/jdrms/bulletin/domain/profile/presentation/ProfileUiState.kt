@@ -33,6 +33,7 @@ data class ProfileUiState(
     val reputation: StudentReputation? = null,
     val activeListingsCount: Int = 0,
     val itemsSoldCount: Int? = null,
+    val isRefreshing: Boolean = false,
     val bookmarkedListings: List<ProfileBookmarkedListing> = emptyList(),
     val bookmarkedListingFilterOptions: ProfileBookmarkedListingFilterOptions =
         ProfileBookmarkedListingFilterOptions(),

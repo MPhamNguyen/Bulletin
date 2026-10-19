@@ -65,6 +65,18 @@ class ProfileViewModel(
         }
     }
 
+    fun refreshProfile() {
+        if (state.value.isRefreshing) return
+        viewModelScope.launch {
+            state.update { it.copy(isRefreshing = true, errorMessage = null) }
+            try {
+                refreshProfileDetails()
+            } finally {
+                state.update { it.copy(isRefreshing = false) }
+            }
+        }
+    }
+
     fun loadBookmarkedListings() {
         bookmarkedListingsJob?.cancel()
         bookmarkedListingsJob = viewModelScope.launch {
@@ -216,20 +228,26 @@ class ProfileViewModel(
 
     private suspend fun refreshProfileDetails() {
         val profile = state.value.profile ?: return
-        when (val result = getProfileOverview(profile.id)) {
-            is Result.Success -> result.data?.let { overview ->
-                state.update {
-                    it.copy(
-                        profile = overview.profile,
-                        reputation = overview.reputation,
-                        activeListingsCount = overview.activeListingsCount,
-                        itemsSoldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
-                    )
+        try {
+            when (val result = getProfileOverview(profile.id)) {
+                is Result.Success -> result.data?.let { overview ->
+                    state.update {
+                        it.copy(
+                            profile = overview.profile,
+                            reputation = overview.reputation,
+                            activeListingsCount = overview.activeListingsCount,
+                            itemsSoldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
+                        )
+                    }
+                }
+                is Result.Error -> state.update {
+                    it.copy(errorMessage = result.exception.message ?: "Failed to load profile")
                 }
             }
-            is Result.Error -> state.update {
-                it.copy(errorMessage = result.exception.message ?: "Failed to load profile")
-            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            state.update { it.copy(errorMessage = error.message ?: "Failed to load profile") }
         }
     }
 
