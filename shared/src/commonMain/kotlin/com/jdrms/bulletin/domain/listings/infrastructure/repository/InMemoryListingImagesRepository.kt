@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
@@ -20,12 +21,12 @@ class InMemoryListingImagesRepository : ListingImagesRepository {
             return Result.Error(IllegalAccessException("Only the listing owner can manage its images."))
         }
         val current = existing?.urls.orEmpty()
-        val retained = current.filter(retainedImageUrls::contains)
+        val retained = retainedImageUrls.mapNotNull { url -> current.find { it == url } }
         if (retained.size != retainedImageUrls.distinct().size || retained.size + newImages.size > 5) {
             return Result.Error(IllegalArgumentException("Choose up to 5 available listing images."))
         }
-        val added = newImages.indices.map { index ->
-            "memory://listing-image/${listingId.value}/${retained.size + index}"
+        val added = newImages.map {
+            "memory://listing-image/${listingId.value}/${generateUuid()}"
         }
         val result = retained + added
         imagesByListing[listingId] = OwnedListingImages(sellerId, result)

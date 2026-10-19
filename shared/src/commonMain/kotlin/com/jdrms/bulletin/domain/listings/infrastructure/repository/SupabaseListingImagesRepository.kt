@@ -23,6 +23,9 @@ internal data class ListingImageRow(
 )
 
 @Serializable
+private data class ListingImagePositionDto(@SerialName("position") val position: Int)
+
+@Serializable
 private data class ListingImageInsertDto(
     @SerialName("listing_id") val listingId: String,
     @SerialName("object_path") val objectPath: String,
@@ -32,6 +35,7 @@ private data class ListingImageInsertDto(
 internal interface ListingImageDataStore {
     suspend fun get(listingId: String): List<ListingImageRow>
     suspend fun insert(listingId: String, rows: List<ListingImageRow>)
+    suspend fun updatePosition(listingId: String, objectPath: String, position: Int)
     suspend fun remove(listingId: String, objectPaths: List<String>)
 }
 
@@ -60,7 +64,8 @@ class SupabaseListingImagesRepository internal constructor(
     ): Result<List<String>> = guardedResult {
         requireOwner(sellerId)
         val current = rows.get(listingId.value).sortedBy(ListingImageRow::position)
-        val retainedPaths = current.filter { storage.publicUrl(it.objectPath) in retainedImageUrls }
+        val currentByUrl = current.associateBy { storage.publicUrl(it.objectPath) }
+        val retainedPaths = retainedImageUrls.mapNotNull(currentByUrl::get)
         require(retainedPaths.size == retainedImageUrls.distinct().size) {
             "One or more selected listing photos are no longer available. Refresh the listing and try again."
         }
@@ -69,27 +74,33 @@ class SupabaseListingImagesRepository internal constructor(
         }
 
         val removed = current - retainedPaths.toSet()
-        val freePositions = (0 until ListingImageUpload.MAX_LISTING_IMAGE_COUNT)
-            .filterNot { position -> retainedPaths.any { it.position == position } }
-        val uploaded = uploadNewImages(listingId, newImages, freePositions.take(newImages.size))
+        val orderedRetained = retainedPaths.mapIndexed { index, row -> row.copy(position = index) }
+        val uploaded = uploadNewImages(
+            listingId,
+            newImages,
+            (retainedPaths.size until retainedPaths.size + newImages.size).toList()
+        )
         val persistence = runCatching {
             if (removed.isNotEmpty()) {
-                storage.delete(removed.map(ListingImageRow::objectPath))
                 rows.remove(listingId.value, removed.map(ListingImageRow::objectPath))
+            }
+            orderedRetained.forEachIndexed { index, row ->
+                if (row.position != index) rows.updatePosition(listingId.value, row.objectPath, index)
             }
             rows.insert(listingId.value, uploaded)
         }
         persistence.onFailure { cleanupUploads(uploaded) }
             .getOrElse { throw it }
-        (retainedPaths + uploaded).sortedBy(ListingImageRow::position).map { storage.publicUrl(it.objectPath) }
+        if (removed.isNotEmpty()) storage.delete(removed.map(ListingImageRow::objectPath))
+        (orderedRetained + uploaded).map { storage.publicUrl(it.objectPath) }
     }
 
     override suspend fun deleteAll(listingId: ListingId, sellerId: SellerId): Result<Unit> = guardedResult {
         requireOwner(sellerId)
         val existing = rows.get(listingId.value)
         if (existing.isNotEmpty()) {
-            storage.delete(existing.map(ListingImageRow::objectPath))
             rows.remove(listingId.value, existing.map(ListingImageRow::objectPath))
+            storage.delete(existing.map(ListingImageRow::objectPath))
         }
     }
 
@@ -145,6 +156,15 @@ class SupabaseListingImagesRepository internal constructor(
                         ListingImageInsertDto(listingId, row.objectPath, row.position)
                     }
                 )
+            }
+        }
+
+        override suspend fun updatePosition(listingId: String, objectPath: String, position: Int) {
+            supabase.from(TABLE).update(ListingImagePositionDto(position)) {
+                filter {
+                    eq("listing_id", listingId)
+                    eq("object_path", objectPath)
+                }
             }
         }
 
