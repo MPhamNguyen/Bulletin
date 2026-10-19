@@ -13,23 +13,13 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -37,7 +27,6 @@ import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
 
 @Composable
 internal fun MarketplaceCatalogContent(
@@ -98,47 +87,20 @@ private fun LazyGridScope.marketplaceCatalogHeader(state: MarketplaceUiState, vi
         )
     }
     fullWidthItem {
-        MarketplaceFilters(
-            filters = state.filters,
-            onCategorySelected = viewModel::onCategorySelected,
-            onConditionSelected = viewModel::onConditionSelected
-        )
-    }
-    fullWidthItem {
-        MarketplaceLayoutDropdown(state.layoutPreference, viewModel::onLayoutPreferenceChanged)
-    }
-}
-
-@Composable
-private fun MarketplaceLayoutDropdown(
-    selected: MarketplaceLayoutPreference,
-    onSelected: (MarketplaceLayoutPreference) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        Box {
-            OutlinedButton(onClick = { expanded = true }) {
-                Text(layoutOptionLabel(selected))
-                Icon(Icons.Filled.ArrowDropDown, contentDescription = "Change listings per row")
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                MarketplaceLayoutPreference.entries.forEach { preference ->
-                    DropdownMenuItem(
-                        text = { Text(layoutOptionLabel(preference)) },
-                        onClick = {
-                            expanded = false
-                            onSelected(preference)
-                        }
-                    )
-                }
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MarketplaceFilters(
+                filters = state.filters,
+                onCategorySelected = viewModel::onCategorySelected,
+                onConditionSelected = viewModel::onConditionSelected,
+                modifier = Modifier.weight(1f)
+            )
+            MarketplaceLayoutDropdown(state.layoutPreference, viewModel::onLayoutPreferenceChanged)
         }
     }
-}
-
-private fun layoutOptionLabel(preference: MarketplaceLayoutPreference): String {
-    val listingLabel = if (preference.columns == 1) "listing" else "listings"
-    return "${preference.columns} $listingLabel per row"
 }
 
 private fun LazyGridScope.marketplaceLoadingItem(isLoading: Boolean) {
@@ -167,10 +129,8 @@ private fun LazyGridScope.marketplaceListingItems(state: MarketplaceUiState, vie
     items(items = state.items, key = { item -> item.id.value }) { item ->
         MarketplaceItemCard(
             item = item,
-            isBookmarked = item.id in state.bookmarkedItemIds,
             columns = state.layoutPreference.columns,
-            onCardClick = { viewModel.onListingClicked(item.id.value) },
-            onToggleBookmark = { viewModel.toggleBookmark(item.id) }
+            onCardClick = { viewModel.onListingClicked(item.id.value) }
         )
     }
 }

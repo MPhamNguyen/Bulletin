@@ -3,9 +3,6 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,42 +18,48 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 @Composable
 internal fun MarketplaceItemCard(
     item: MarketplaceItem,
-    isBookmarked: Boolean,
     columns: Int = 1,
-    onCardClick: () -> Unit,
-    onToggleBookmark: () -> Unit
+    onCardClick: () -> Unit
 ) {
     if (columns == 1) {
-        FullWidthMarketplaceItemCard(item, isBookmarked, onCardClick, onToggleBookmark)
+        FullWidthMarketplaceItemCard(item, onCardClick)
     } else {
-        CompactMarketplaceItemCard(item, isBookmarked, onCardClick, onToggleBookmark)
+        CompactMarketplaceItemCard(item, onCardClick)
     }
 }
 
 @Composable
 private fun FullWidthMarketplaceItemCard(
     item: MarketplaceItem,
-    isBookmarked: Boolean,
-    onCardClick: () -> Unit,
-    onToggleBookmark: () -> Unit
+    onCardClick: () -> Unit
 ) {
-    BulletinCard(modifier = Modifier.clickable(onClick = onCardClick)) {
+    BulletinCard(
+        modifier = Modifier
+            .height(FULL_WIDTH_CARD_HEIGHT)
+            .clickable(onClick = onCardClick)
+    ) {
         FullWidthMarketplaceItemHeader(item)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Seller: ${item.sellerName} • Category: ${item.category.name}",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(item.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(
+            text = item.description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
         Text(
             text = formatRelativeTime(item.createdAtMillis, currentTimeMillis()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        FullWidthBookmarkButton(isBookmarked, onToggleBookmark)
     }
 }
 
@@ -72,8 +75,11 @@ private fun FullWidthMarketplaceItemHeader(item: MarketplaceItem) {
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = item.price.formatted,
             style = MaterialTheme.typography.titleMedium,
@@ -84,37 +90,21 @@ private fun FullWidthMarketplaceItemHeader(item: MarketplaceItem) {
 }
 
 @Composable
-private fun FullWidthBookmarkButton(isBookmarked: Boolean, onToggleBookmark: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        OutlinedButton(onClick = onToggleBookmark) {
-            Icon(
-                imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(if (isBookmarked) "Bookmarked" else "Bookmark")
-        }
-    }
-}
-
-@Composable
 private fun CompactMarketplaceItemCard(
     item: MarketplaceItem,
-    isBookmarked: Boolean,
-    onCardClick: () -> Unit,
-    onToggleBookmark: () -> Unit
+    onCardClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onCardClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(COMPACT_CARD_HEIGHT)
+            .clickable(onClick = onCardClick),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             CompactMarketplaceItemDetails(item)
-            Spacer(Modifier.height(6.dp))
-            CompactBookmarkButton(isBookmarked, onToggleBookmark, Modifier.align(Alignment.End))
         }
     }
 }
@@ -144,16 +134,5 @@ private fun CompactMarketplaceItemDetails(item: MarketplaceItem) {
     )
 }
 
-@Composable
-private fun CompactBookmarkButton(
-    isBookmarked: Boolean,
-    onToggleBookmark: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    IconButton(onClick = onToggleBookmark, modifier = modifier.size(32.dp)) {
-        Icon(
-            imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-            contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark"
-        )
-    }
-}
+private val FULL_WIDTH_CARD_HEIGHT = 152.dp
+private val COMPACT_CARD_HEIGHT = 112.dp
