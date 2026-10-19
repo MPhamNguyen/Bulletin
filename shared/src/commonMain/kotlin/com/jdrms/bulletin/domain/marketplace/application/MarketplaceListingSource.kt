@@ -17,7 +17,8 @@ data class MarketplaceListingSnapshot(
     val priceCurrency: String,
     val category: MarketplaceCategory,
     val createdAtMillis: Long,
-    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN
+    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
+    val photos: List<String> = emptyList()
 )
 
 data class MarketplacePageCursor(
@@ -79,7 +80,8 @@ class MarketplaceRepositoryListingSource(
                 priceCurrency = item.price.currency,
                 category = item.category,
                 createdAtMillis = item.createdAtMillis,
-                condition = item.condition
+                condition = item.condition,
+                photos = item.photos
             )
         }.pageFor(request)
     }

@@ -31,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 
 @Composable
@@ -72,37 +74,28 @@ internal fun ListingPhotosSection(photos: List<String>) {
             modifier = Modifier.fillMaxWidth()
         ) {
             items(photos) { photoUrl ->
-                Box(
-                    modifier = Modifier
-                        .size(width = 240.dp, height = 180.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline,
-                            shape = MaterialTheme.shapes.medium
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Image,
-                            contentDescription = "Listing photo",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Text(
-                            text = "Photo Preview",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                SubcomposeAsyncImage(
+                    model = photoUrl,
+                    contentDescription = "Listing photo",
+                    modifier = Modifier.size(width = 240.dp, height = 180.dp)
+                        .clip(MaterialTheme.shapes.medium),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    error = { ListingPhotoFallback() },
+                    success = { SubcomposeAsyncImageContent() }
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun ListingPhotoFallback() {
+    Box(
+        modifier = Modifier.fillMaxWidth().height(180.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

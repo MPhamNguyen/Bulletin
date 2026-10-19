@@ -20,6 +20,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarke
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -78,7 +79,7 @@ class SupabaseMarketplaceRepository private constructor(
                     val dto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
                         filter { eq("id", databaseListingId) }
                     }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
-                    dto?.let(SupabaseMarketplaceListingMapper::toItem)
+                    dto?.let { SupabaseMarketplaceListingMapper.toItem(it, ::listingImageUrl) }
                 }
             }.getOrElse { error ->
                 error.rethrowIfCancellation()
@@ -118,7 +119,8 @@ class SupabaseMarketplaceRepository private constructor(
 
                     SupabaseMarketplaceListingMapper.toListing(
                         dto = listingDto,
-                        reputationScore = reputationScore
+                        reputationScore = reputationScore,
+                        imageUrl = ::listingImageUrl
                     ) ?: error("Supabase listing is missing required fields.")
                 }
             }.fold(
@@ -194,8 +196,10 @@ class SupabaseMarketplaceRepository private constructor(
         const val REVIEWS_TABLE = "reviews"
         const val TIMEOUT_MILLIS = 2000L
         const val LISTING_ID_PREFIX = "listing:"
+        const val LISTING_IMAGE_BUCKET = "listing_imgs"
         val LISTING_COLUMNS = Columns.raw(
-            "*, seller_profile:profiles!listings_user_id_fkey ( full_name )"
+            "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), " +
+                "listing_images(object_path,position)"
         )
 
         fun normalizeListingId(listingId: String): String {
@@ -234,6 +238,9 @@ class SupabaseMarketplaceRepository private constructor(
             return if (isTechnicalDump) "Failed to load listing from server." else firstLine
         }
     }
+
+    private fun listingImageUrl(path: String): String =
+        supabase.storage.from(LISTING_IMAGE_BUCKET).publicUrl(path)
 
     private fun Throwable.rethrowIfCancellation() {
         if (this is CancellationException) {

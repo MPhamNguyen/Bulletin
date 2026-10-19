@@ -55,6 +55,9 @@ fun MyListingsScreen(
                     onCategorySelected = viewModel::onEditCategorySelected,
                     onConditionSelected = viewModel::onEditConditionSelected,
                     onDescriptionChange = viewModel::onEditDescriptionChanged,
+                    onImagesSelected = viewModel::addEditImages,
+                    onImageSelectionError = viewModel::imageSelectionFailed,
+                    onRemoveImage = viewModel::removeEditImage,
                     onSave = viewModel::saveListingChanges,
                     onBack = {
                         viewModel.cancelEditing()

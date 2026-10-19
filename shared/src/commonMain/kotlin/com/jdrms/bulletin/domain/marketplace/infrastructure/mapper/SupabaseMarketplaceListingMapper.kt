@@ -11,8 +11,8 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketpl
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
-    fun toItem(dto: SupabaseMarketplaceListingDto): MarketplaceItem? {
-        val snapshot = toSnapshot(dto) ?: return null
+    fun toItem(dto: SupabaseMarketplaceListingDto, imageUrl: (String) -> String = { it }): MarketplaceItem? {
+        val snapshot = toSnapshot(dto, imageUrl) ?: return null
         return MarketplaceItem(
             id = MarketplaceItemId(snapshot.id),
             sellerId = snapshot.sellerId,
@@ -22,7 +22,8 @@ object SupabaseMarketplaceListingMapper {
             price = MarketplacePrice(snapshot.priceAmount, snapshot.priceCurrency),
             category = snapshot.category,
             condition = snapshot.condition,
-            createdAtMillis = snapshot.createdAtMillis
+            createdAtMillis = snapshot.createdAtMillis,
+            photos = snapshot.photos
         )
     }
 
@@ -35,7 +36,8 @@ object SupabaseMarketplaceListingMapper {
 
     fun toListing(
         dto: SupabaseMarketplaceListingDto,
-        reputationScore: Double?
+        reputationScore: Double?,
+        imageUrl: (String) -> String = { it }
     ): Listing? {
         val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
         val title = dto.name?.takeIf(String::isNotBlank) ?: return null
@@ -61,11 +63,15 @@ object SupabaseMarketplaceListingMapper {
             status = "AVAILABLE",
             isSold = dto.isSold,
             sellerReputationScore = reputationScore,
+            photos = dto.listingImages.sortedBy { it.position }.map { imageUrl(it.objectPath) },
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
         )
     }
 
-    fun toSnapshot(dto: SupabaseMarketplaceListingDto): MarketplaceListingSnapshot? {
+    fun toSnapshot(
+        dto: SupabaseMarketplaceListingDto,
+        imageUrl: (String) -> String = { it }
+    ): MarketplaceListingSnapshot? {
         val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
         val title = dto.name?.takeIf(String::isNotBlank) ?: return null
         val price = dto.price ?: return null
@@ -85,7 +91,8 @@ object SupabaseMarketplaceListingMapper {
             priceCurrency = "USD",
             category = category,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
-            condition = condition
+            condition = condition,
+            photos = dto.listingImages.sortedBy { it.position }.map { imageUrl(it.objectPath) }
         )
     }
 
