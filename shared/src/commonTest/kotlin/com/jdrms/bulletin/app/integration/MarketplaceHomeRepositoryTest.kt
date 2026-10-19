@@ -49,13 +49,18 @@ class MarketplaceHomeRepositoryTest {
     fun carriesPositionZeroPhotoIntoHomeFeedItem() = runTest {
         val source = RecordingMarketplaceListingSource(
             listOf(MarketplaceListingPage(listOf(snapshot("photo", "Photo listing").copy(
-                primaryPhotoUrl = "https://storage.example/cover.webp"
+                primaryPhotoUrl = "https://storage.example/cover.webp",
+                photoUrls = listOf(
+                    "https://storage.example/cover.webp",
+                    "https://storage.example/second.webp"
+                )
             )), null))
         )
 
         val feed = MarketplaceHomeRepository(source).getFeed(userId = null, cursor = null, pageSize = 10)
 
         assertEquals("https://storage.example/cover.webp", feed.items.single().imageUrl)
+        assertEquals(2, feed.items.single().photoUrls.size)
     }
 
     @Test

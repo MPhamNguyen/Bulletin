@@ -38,6 +38,10 @@ class MarketplaceInfrastructureTest {
         )
 
         assertEquals("https://storage.example/cover.webp", snapshot?.primaryPhotoUrl)
+        assertEquals(
+            listOf("https://storage.example/cover.webp", "https://storage.example/later.webp"),
+            snapshot?.photoUrls
+        )
     }
 
     @Test
@@ -50,6 +54,7 @@ class MarketplaceInfrastructureTest {
         )
 
         assertEquals(null, snapshot?.primaryPhotoUrl)
+        assertEquals(listOf("later.webp"), snapshot?.photoUrls)
     }
 
     @Test

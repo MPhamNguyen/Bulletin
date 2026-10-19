@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,8 +30,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,21 +54,29 @@ import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
+import kotlinx.coroutines.delay
+
+private const val HOME_PHOTO_INTERVAL_MILLIS = 3_000L
 
 @Composable
 fun HomeFeedCard(
     item: HomeFeedItem,
     modifier: Modifier = Modifier,
-    cardIndex: Int = 0
+    cardIndex: Int = 0,
+    isActive: Boolean = true
 ) {
     var descriptionExpanded by rememberSaveable(item.id.value, cardIndex) { mutableStateOf(false) }
+    val photoUrls = remember(item.photoUrls, item.imageUrl) {
+        item.photoUrls.ifEmpty { listOfNotNull(item.imageUrl) }
+    }
+    val photoIndex = rememberHomePhotoIndex(item.id.value, cardIndex, photoUrls, isActive)
     Box(
         modifier = modifier
             .fillMaxSize()
             .padding(8.dp)
             .clip(MaterialTheme.shapes.large)
     ) {
-        HomeFeedCardBackground(item)
+        HomeFeedCardBackground(item, photoUrls.getOrNull(photoIndex), photoIndex, photoUrls.size)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -83,9 +95,31 @@ fun HomeFeedCard(
 }
 
 @Composable
-private fun BoxScope.HomeFeedCardBackground(item: HomeFeedItem) {
+private fun rememberHomePhotoIndex(
+    itemId: String,
+    cardIndex: Int,
+    photoUrls: List<String>,
+    isActive: Boolean
+): Int {
+    var photoIndex by rememberSaveable(itemId, cardIndex, photoUrls) { mutableIntStateOf(0) }
+    LaunchedEffect(itemId, photoUrls, isActive) {
+        while (isActive && photoIndex < photoUrls.lastIndex) {
+            delay(HOME_PHOTO_INTERVAL_MILLIS)
+            photoIndex++
+        }
+    }
+    return photoIndex
+}
+
+@Composable
+private fun BoxScope.HomeFeedCardBackground(
+    item: HomeFeedItem,
+    photoUrl: String?,
+    photoIndex: Int,
+    photoCount: Int
+) {
     HomeFeedArtwork(modifier = Modifier.matchParentSize())
-    item.imageUrl?.let { imageUrl ->
+    photoUrl?.let { imageUrl ->
         SubcomposeAsyncImage(
             model = imageUrl,
             contentDescription = "${item.title} listing photo",
@@ -94,6 +128,30 @@ private fun BoxScope.HomeFeedCardBackground(item: HomeFeedItem) {
         ) { SubcomposeAsyncImageContent() }
     }
     HomeFeedImageScrim(Modifier.matchParentSize())
+    if (photoUrl != null && photoCount > 1) {
+        HomeFeedPhotoIndicator(
+            photoCount = photoCount,
+            selectedIndex = photoIndex,
+            modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 12.dp, vertical = 10.dp)
+        )
+    }
+}
+
+@Composable
+private fun HomeFeedPhotoIndicator(photoCount: Int, selectedIndex: Int, modifier: Modifier = Modifier) {
+    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        repeat(photoCount) { index ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(3.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Color.White.copy(alpha = if (index <= selectedIndex) 1f else 0.38f)
+                    )
+            )
+        }
+    }
 }
 
 @Composable

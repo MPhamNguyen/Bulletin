@@ -77,6 +77,7 @@ fun HomeScreen(
                 HomeFeedCard(
                     item = nextItem,
                     cardIndex = currentIndex + 1,
+                    isActive = false,
                     modifier = Modifier.fillMaxSize()
                 )
             }

@@ -50,7 +50,8 @@ data class HomeFeedItem(
     val score: Double = 0.0,
     val reason: String = "",
     val imageUrl: String? = null,
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val photoUrls: List<String> = listOfNotNull(imageUrl)
 ) {
     init {
         require(title.isNotBlank()) { "Feed item title cannot be blank." }

@@ -8,5 +8,6 @@ data class HomeFeedItemDto(
     val category: String,
     val score: Double = 0.0,
     val reason: String = "",
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val photoUrls: List<String> = listOfNotNull(imageUrl)
 )
