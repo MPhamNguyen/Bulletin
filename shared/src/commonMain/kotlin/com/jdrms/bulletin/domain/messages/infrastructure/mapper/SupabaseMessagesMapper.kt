@@ -21,7 +21,8 @@ object SupabaseMessagesMapper {
     fun toConversation(
         conversation: SupabaseConversationDto,
         participants: List<SupabaseConversationParticipantDto>,
-        lastMessage: SupabaseMessageDto?
+        lastMessage: SupabaseMessageDto?,
+        historyVisibleAfter: Instant? = null
     ): Conversation {
         val mappedLastMessage = lastMessage?.let(::toMessage)
         val updatedAtMillis = maxOf(
@@ -33,12 +34,16 @@ object SupabaseMessagesMapper {
             participants = participants.map(::toParticipant),
             listingId = conversation.listingId?.let(::ListingReferenceId),
             lastMessage = mappedLastMessage,
-            updatedAtMillis = updatedAtMillis
+            updatedAtMillis = updatedAtMillis,
+            historyVisibleAfter = historyVisibleAfter
         )
     }
 
     fun toInboxConversation(dto: SupabaseConversationInboxDto): Conversation {
-        val lastMessage = dto.latestMessages.firstOrNull()?.let(::toMessage)
+        val cutoff = dto.membership.singleOrNull()?.historyVisibleAfter?.let(Instant::parse)
+        val lastMessage = dto.latestMessages.firstOrNull()?.let(::toMessage)?.takeIf { message ->
+            cutoff == null || message.orderingTimestamp > cutoff
+        }
         val updatedAtMillis = maxOf(
             dto.updatedAt.toEpochMillisecondsOrZero(),
             lastMessage?.timestampMillis ?: 0L
@@ -53,7 +58,8 @@ object SupabaseMessagesMapper {
             },
             listingId = dto.listingId?.let(::ListingReferenceId),
             lastMessage = lastMessage,
-            updatedAtMillis = updatedAtMillis
+            updatedAtMillis = updatedAtMillis,
+            historyVisibleAfter = cutoff
         )
     }
 
@@ -82,8 +88,7 @@ object SupabaseMessagesMapper {
         return SupabaseMessageInsertDto(
             id = message.id.value,
             conversationId = message.conversationId.value,
-            content = message.content,
-            createdAt = message.orderingTimestamp.toString()
+            content = message.content
         )
     }
 

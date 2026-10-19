@@ -48,7 +48,8 @@ class Conversation(
     participants: List<ConversationParticipant>,
     val lastMessage: Message? = null,
     val updatedAtMillis: Long = 0L,
-    val listingId: ListingReferenceId? = null
+    val listingId: ListingReferenceId? = null,
+    val historyVisibleAfter: Instant? = null
 ) {
     val participants: List<ConversationParticipant> = participants.toList()
     val participantNames: List<String> get() = participants.map { it.displayName }
@@ -61,6 +62,10 @@ class Conversation(
     }
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
+
+    fun canSee(message: Message): Boolean =
+        message.conversationId == id &&
+            (historyVisibleAfter == null || message.orderingTimestamp > historyVisibleAfter)
 
     fun authorizeHiding(viewerId: SenderId): Result<Unit> =
         if (includes(viewerId)) Result.Success(Unit) else Result.Error(ConversationAccessException())
@@ -93,7 +98,8 @@ class Conversation(
                 participants = participants,
                 lastMessage = message,
                 updatedAtMillis = maxOf(updatedAtMillis, message.timestampMillis),
-                listingId = listingId
+                listingId = listingId,
+                historyVisibleAfter = historyVisibleAfter
             )
         )
     }

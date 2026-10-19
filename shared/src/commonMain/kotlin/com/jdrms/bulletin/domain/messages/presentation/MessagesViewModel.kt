@@ -93,6 +93,7 @@ class MessagesViewModel(
             observeJob?.cancel()
             observeJob = null
             requestedConversationId = null
+            streamCallbacks.clearPending()
             initialPageLoaded = false
             threadState.value = MessagesUiState()
             if (previousViewerId != null && snapshot.viewerId != null) {
@@ -102,11 +103,17 @@ class MessagesViewModel(
         if (snapshot.viewerId == null) return
         if (snapshot.isLoading) return
         val current = threadState.value.selectedConversationId
+        if (streamCallbacks.isWaitingForInbox(snapshot, current, requestedConversationId)) {
+            requestedConversationId = current ?: requestedConversationId
+            if (current != null) selectLoadedConversation(null)
+            return
+        }
         val selected = snapshot.conversations.firstOrNull { it.id == requestedConversationId }
             ?: snapshot.conversations.firstOrNull { it.id == current }
             ?: snapshot.conversations.firstOrNull()
         if (selected?.id == requestedConversationId) requestedConversationId = null
         if (selected?.id != current) selectLoadedConversation(selected?.id)
+        streamCallbacks.onInboxSnapshot(snapshot)
     }
 
     private fun selectLoadedConversation(conversationId: ConversationId?) {
@@ -135,10 +142,13 @@ class MessagesViewModel(
 
     fun selectConversation(conversationId: ConversationId) {
         if (inbox.state.value.conversations.none { it.id == conversationId }) return
+        requestedConversationId = null
+        streamCallbacks.clearPending()
         selectLoadedConversation(conversationId)
     }
 
     val openConversation: (ConversationId) -> Unit = { conversationId ->
+        streamCallbacks.clearPending()
         requestedConversationId = conversationId
         applyInboxSelection(inbox.state.value)
         inbox.refresh()

@@ -45,7 +45,7 @@ internal fun ConversationList(state: MessagesUiState, viewModel: MessagesViewMod
         AlertDialog(
             onDismissRequest = { pendingRemoval = null },
             title = { Text("Remove conversation?") },
-            text = { Text("This removes it from your inbox only. The other person keeps their conversation.") },
+            text = { Text("Earlier messages will no longer appear for you. The other person keeps their history.") },
             confirmButton = {
                 TextButton(onClick = {
                     pendingRemoval = null
