@@ -16,6 +16,7 @@ import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -61,7 +62,27 @@ class ProfileViewModel(
         viewModelScope.launch {
             val activeCount = getProfileActivity(profile.id)
             val soldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
-            state.update { it.copy(activeListingsCount = activeCount, itemsSoldCount = soldCount) }
+            state.update {
+                it.copy(
+                    activeListingsCount = activeCount,
+                    itemsSoldCount = soldCount
+                )
+            }
+        }
+    }
+
+    fun refreshProfile() {
+        if (state.value.isRefreshing) return
+        viewModelScope.launch {
+            state.update { it.copy(isRefreshing = true, profileRefreshComplete = false, errorMessage = null) }
+            try {
+                if (refreshProfileDetails()) {
+                    state.update { it.copy(profileRefreshComplete = true) }
+                    delay(PROFILE_REFRESH_COMPLETE_MILLIS)
+                }
+            } finally {
+                state.update { it.copy(isRefreshing = false, profileRefreshComplete = false) }
+            }
         }
     }
 
@@ -214,27 +235,44 @@ class ProfileViewModel(
         BOOKMARKS_PAGE_SIZE
     ) ?: ProfileBookmarkedListingsPage(emptyList(), null)
 
-    private suspend fun refreshProfileDetails() {
-        val profile = state.value.profile ?: return
-        when (val result = getProfileOverview(profile.id)) {
-            is Result.Success -> result.data?.let { overview ->
-                state.update {
-                    it.copy(
-                        profile = overview.profile,
-                        reputation = overview.reputation,
-                        activeListingsCount = overview.activeListingsCount,
-                        itemsSoldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
-                    )
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun refreshProfileDetails(): Boolean {
+        val profile = state.value.profile ?: return false
+        return try {
+            when (val result = getProfileOverview(profile.id)) {
+                is Result.Success -> {
+                    result.data?.let { overview ->
+                        val soldCount = soldListingsProvider?.getSoldListingsCount(profile.id)
+                        state.update {
+                            it.copy(
+                                profile = overview.profile,
+                                reputation = overview.reputation,
+                                activeListingsCount = overview.activeListingsCount,
+                                itemsSoldCount = soldCount,
+                                hasLoadedOverview = true
+                            )
+                        }
+                        true
+                    } ?: false
+                }
+                is Result.Error -> {
+                    state.update {
+                        it.copy(errorMessage = result.exception.message ?: "Failed to load profile")
+                    }
+                    false
                 }
             }
-            is Result.Error -> state.update {
-                it.copy(errorMessage = result.exception.message ?: "Failed to load profile")
-            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            state.update { it.copy(errorMessage = error.message ?: "Failed to load profile") }
+            false
         }
     }
 
     private companion object {
         const val BOOKMARKS_PAGE_SIZE = 20
+        const val PROFILE_REFRESH_COMPLETE_MILLIS = 650L
     }
 }
 
