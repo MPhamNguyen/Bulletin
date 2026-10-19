@@ -57,7 +57,6 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockVi
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
-import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
@@ -66,20 +65,6 @@ import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.cancel
-
-internal class MainNavigationState {
-    var currentDestination by mutableStateOf(AppDestination.HOME)
-    var profileDestination by mutableStateOf(ProfileDestination.PROFILE)
-    var editReturnDestination by mutableStateOf(ProfileDestination.PROFILE)
-    var pendingConversationId by mutableStateOf<ConversationId?>(null)
-
-    fun snapshot() = com.jdrms.bulletin.app.navigation.MainNavigationState(currentDestination, profileDestination)
-
-    fun apply(snapshot: com.jdrms.bulletin.app.navigation.MainNavigationState) {
-        currentDestination = snapshot.currentDestination
-        profileDestination = snapshot.profileDestination
-    }
-}
 
 private class ProfilePresentation(
     val providedViewModel: ProfileViewModel?,
@@ -147,7 +132,7 @@ fun MainAppScaffold(
                 val contentModifier = Modifier
                     .padding(paddingValues)
                     .then(
-                        if (navigation.currentDestination.hidesOnScroll) {
+                        if (navigation.currentDestination.hidesOnScroll || !navigation.showsBottomNavigation) {
                             Modifier
                         } else {
                             Modifier.padding(bottom = navbarHeight)
@@ -174,7 +159,9 @@ fun MainAppScaffold(
             }
             Navbar(
                 currentDestination = navigation.currentDestination,
-                isVisible = navbarScrollBehavior::isVisible,
+                isVisible = {
+                    navigation.showsBottomNavigation && navbarScrollBehavior.isVisible
+                },
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
                 onFocused = navbarScrollBehavior::reveal,
                 modifier = Modifier

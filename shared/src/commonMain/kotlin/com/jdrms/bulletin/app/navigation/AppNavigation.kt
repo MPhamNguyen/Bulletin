@@ -50,6 +50,9 @@ data class MainNavigationState(
     val currentDestination: AppDestination = AppDestination.HOME,
     val profileDestination: ProfileDestination = ProfileDestination.PROFILE
 ) {
+    val showsBottomNavigation: Boolean
+        get() = currentDestination != AppDestination.PROFILE || profileDestination == ProfileDestination.PROFILE
+
     fun selectBottomNavigationDestination(destination: AppDestination): MainNavigationState = copy(
         currentDestination = destination,
         profileDestination = ProfileDestination.PROFILE
