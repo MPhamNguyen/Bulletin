@@ -1,11 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -13,14 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
-import com.jdrms.bulletin.core.designsystem.SectionHeader
 
 @Composable
 fun MarketplaceScreen(
@@ -55,183 +42,6 @@ fun MarketplaceScreen(
             onContentNoLongerScrollable = onContentNoLongerScrollable,
             onNavigate = { destination = it }
         )
-    }
-}
-
-@Composable
-private fun MarketplaceCatalogContent(
-    state: MarketplaceUiState,
-    viewModel: MarketplaceViewModel,
-    sellerProfileViewModel: SellerProfileViewModel,
-    listingReportViewModel: ListingReportViewModel,
-    actions: MarketplaceScreenActions,
-    onContentNoLongerScrollable: () -> Unit,
-    onNavigate: (MarketplaceDestination) -> Unit
-) {
-    val listState = rememberLazyListState()
-    LaunchedEffect(listState.canScrollForward) {
-        if (!listState.canScrollForward) onContentNoLongerScrollable()
-    }
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            marketplaceCatalogHeader(state, viewModel)
-            marketplaceLoadingItem(state.isLoading)
-            marketplaceEmptyResultsItem(state)
-            marketplaceListingItems(state, viewModel)
-            marketplacePaginationItem(state, viewModel)
-            marketplaceErrorItems(state, viewModel)
-        }
-
-        if (state.detail.isOpen) {
-            MarketplaceDetailBottomSheet(
-                state = MarketplaceDetailSheetState(
-                    listing = state.detail.listing,
-                    isLoading = state.detail.isLoading,
-                    errorMessage = state.detail.errorMessage,
-                    bookmarkErrorMessage = state.bookmarkErrorMessage,
-                    isBookmarked = state.detail.listing?.let {
-                        it.id in state.bookmarkedItemIds
-                    } ?: false,
-                    currentUserId = state.currentUserId,
-                    hasReview = state.detail.hasReview
-                ),
-                actions = MarketplaceDetailSheetActions(
-                    onDismiss = viewModel::dismissListingDetail,
-                    onRetry = viewModel::retryLoadListingDetail,
-                    onToggleBookmark = {
-                        state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
-                    },
-                    onLeaveReview = viewModel.reviewActions::openReviewDialog,
-                    onReportListing = {
-                        beginMarketplaceListingReport(listingReportViewModel, state.detail.listing)
-                    },
-                    onSellerClick = { sellerId ->
-                        sellerProfileViewModel.load(sellerId)
-                        onNavigate(MarketplaceDestination.SELLER_PROFILE)
-                    },
-                    onMessageSeller = actions.onMessageSeller,
-                    hasExistingConversation = actions.hasExistingConversation,
-                    onSeeChat = actions.onSeeChat
-                )
-            )
-            MarketplaceListingReportFlow(listingReportViewModel) {
-                listingReportViewModel.dismiss()
-                viewModel.dismissListingDetail()
-                viewModel.refreshListings()
-            }
-            if (state.detail.isReviewDialogOpen) {
-                MarketplaceReviewDialog(
-                    isSubmitting = state.detail.isSubmittingReview,
-                    errorMessage = state.detail.reviewErrorMessage,
-                    onDismiss = viewModel.reviewActions::dismissReviewDialog,
-                    onSubmit = viewModel.reviewActions::submitReview
-                )
-            }
-        }
-    }
-}
-
-private fun LazyListScope.marketplaceCatalogHeader(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
-    item {
-        SectionHeader(
-            title = "Campus Marketplace",
-            subtitle = "Browse, search, & discover student items on campus"
-        )
-    }
-    item {
-        OutlinedTextField(
-            value = state.filters.query,
-            onValueChange = viewModel::onSearchQueryChanged,
-            label = { Text("Search by title or category") },
-            singleLine = true,
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-    item {
-        MarketplaceFilters(
-            filters = state.filters,
-            onCategorySelected = viewModel::onCategorySelected,
-            onConditionSelected = viewModel::onConditionSelected
-        )
-    }
-}
-
-private fun LazyListScope.marketplaceLoadingItem(isLoading: Boolean) {
-    if (!isLoading) return
-    item {
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-    }
-}
-
-private fun LazyListScope.marketplaceEmptyResultsItem(state: MarketplaceUiState) {
-    if (state.items.isNotEmpty() || state.isLoading || state.errorMessage != null) return
-    item {
-        BulletinCard {
-            Text(
-                text = "No marketplace listings found for your search.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-private fun LazyListScope.marketplaceListingItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
-    items(items = state.items, key = { item -> item.id.value }) { item ->
-        MarketplaceItemCard(
-            item = item,
-            isBookmarked = item.id in state.bookmarkedItemIds,
-            onCardClick = { viewModel.onListingClicked(item.id.value) },
-            onToggleBookmark = { viewModel.toggleBookmark(item.id) }
-        )
-    }
-}
-
-private fun LazyListScope.marketplacePaginationItem(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
-    if (state.nextCursor == null) return
-    item(key = "marketplace-pagination-trigger") {
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            if (state.isLoadingMore) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            } else {
-                TextButton(onClick = viewModel::loadNextPage) { Text("Load more") }
-            }
-        }
-    }
-}
-
-private fun LazyListScope.marketplaceErrorItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
-    state.errorMessage?.let { message ->
-        item {
-            BulletinCard {
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-                TextButton(onClick = viewModel::retryListings) { Text("Retry") }
-            }
-        }
-    }
-    state.bookmarkErrorMessage?.let { message ->
-        item {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
     }
 }
 
@@ -325,7 +135,7 @@ private data class MarketplaceSellerFlowViewModels(
     val block: MarketplaceUserBlockViewModel
 )
 
-private enum class MarketplaceDestination {
+internal enum class MarketplaceDestination {
     CATALOG,
     SELLER_PROFILE,
     REPORT_USER

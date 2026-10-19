@@ -3,6 +3,9 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.domain.marketplace.application.InMemoryMarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
@@ -26,12 +29,15 @@ class MarketplaceViewModel(
             com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
         ),
     private val listingChangedSignal: RefreshSignal? = null,
-    private val currentUserIdProvider: suspend () -> String? = { null }
+    private val currentUserIdProvider: suspend () -> String? = { null },
+    private val layoutPreferenceStore: MarketplaceLayoutPreferenceStore =
+        InMemoryMarketplaceLayoutPreferenceStore()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
+    private var layoutPreferenceJob: Job? = null
     private val firstPageLoader = MarketplaceFirstPageLoader(
         _uiState,
         searchMarketplace,
@@ -47,12 +53,32 @@ class MarketplaceViewModel(
     val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
+        loadLayoutPreference()
         refreshListings()
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
                 refreshListings()
                 _uiState.value.detail.listingId?.let(::loadListingDetail)
             }
+        }
+    }
+
+    private fun loadLayoutPreference() {
+        layoutPreferenceJob = viewModelScope.launch {
+            runCatching { layoutPreferenceStore.get() }
+                .onSuccess { preference ->
+                    _uiState.update { it.copy(layoutPreference = preference) }
+                }
+                .onFailure { it.rethrowCancellation() }
+        }
+    }
+
+    fun onLayoutPreferenceChanged(preference: MarketplaceLayoutPreference) {
+        layoutPreferenceJob?.cancel()
+        _uiState.update { it.copy(layoutPreference = preference) }
+        viewModelScope.launch {
+            runCatching { layoutPreferenceStore.set(preference) }
+                .onFailure { it.rethrowCancellation() }
         }
     }
 

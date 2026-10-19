@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
@@ -17,6 +18,7 @@ data class MarketplaceUiState(
     val endReached: Boolean = false,
     val errorMessage: String? = null,
     val bookmarkErrorMessage: String? = null,
+    val layoutPreference: MarketplaceLayoutPreference = MarketplaceLayoutPreference.ONE_PER_ROW,
     val detail: MarketplaceDetailState = MarketplaceDetailState(),
     val currentUserId: String? = null
 )

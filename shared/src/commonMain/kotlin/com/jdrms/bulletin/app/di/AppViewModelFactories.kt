@@ -31,7 +31,8 @@ fun AppContainer.createMarketplaceViewModel() = MarketplaceViewModel(
     viewMarketplaceListing,
     submitMarketplaceReview,
     listingChangedSignal,
-    createCurrentUserIdProvider(authRepository)
+    createCurrentUserIdProvider(authRepository),
+    marketplaceLayoutPreferenceStore
 )
 
 fun AppContainer.createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)

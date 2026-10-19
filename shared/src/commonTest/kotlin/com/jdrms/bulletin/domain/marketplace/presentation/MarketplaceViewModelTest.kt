@@ -3,6 +3,9 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
+import com.jdrms.bulletin.domain.marketplace.application.InMemoryMarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
@@ -25,6 +28,30 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class MarketplaceViewModelTestPart1 {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun layoutPreferenceSurvivesViewModelRecreationWithoutAnAccount() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryMarketplaceRepository()
+            val store = InMemoryMarketplaceLayoutPreferenceStore()
+            val firstViewModel = marketplaceViewModel(repository, store) { null }
+            advanceUntilIdle()
+
+            firstViewModel.onLayoutPreferenceChanged(MarketplaceLayoutPreference.THREE_PER_ROW)
+            advanceUntilIdle()
+            val recreatedViewModel = marketplaceViewModel(repository, store) { null }
+            advanceUntilIdle()
+
+            assertEquals(
+                MarketplaceLayoutPreference.THREE_PER_ROW,
+                recreatedViewModel.uiState.value.layoutPreference
+            )
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 
     internal fun uploadedListing(): MarketplaceListingSnapshot {
         return MarketplaceListingSnapshot(
@@ -265,7 +292,11 @@ class MarketplaceViewModelTestPart1 {
     }
 }
 
-private fun marketplaceViewModel(repository: MarketplaceRepository) = MarketplaceViewModel(
+private fun marketplaceViewModel(
+    repository: MarketplaceRepository,
+    layoutPreferenceStore: MarketplaceLayoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
+    currentUserIdProvider: suspend () -> String? = { "student_user" }
+) = MarketplaceViewModel(
     searchMarketplace = SearchMarketplace(repository),
     bookmarks = MarketplaceBookmarkDependencies(
         add = BookmarkMarketplaceListing(repository),
@@ -273,5 +304,6 @@ private fun marketplaceViewModel(repository: MarketplaceRepository) = Marketplac
         get = GetMarketplaceListingBookmarks(repository)
     ),
     viewMarketplaceListing = ViewMarketplaceListing(repository),
-    currentUserIdProvider = { "student_user" }
+    currentUserIdProvider = currentUserIdProvider,
+    layoutPreferenceStore = layoutPreferenceStore
 )

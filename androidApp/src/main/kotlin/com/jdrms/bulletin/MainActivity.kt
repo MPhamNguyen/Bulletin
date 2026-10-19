@@ -10,6 +10,7 @@ import com.jdrms.bulletin.app.App
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.theme.AndroidThemePreferenceStore
 import com.jdrms.bulletin.core.network.SupabaseConfig
+import com.jdrms.bulletin.domain.marketplace.infrastructure.AndroidMarketplaceLayoutPreferenceStore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,7 +29,8 @@ class MainActivity : ComponentActivity() {
 
         val appContainer = AppContainer(
             supabaseConfig = supabaseConfig,
-            themePreferenceStore = AndroidThemePreferenceStore(applicationContext)
+            themePreferenceStore = AndroidThemePreferenceStore(applicationContext),
+            marketplaceLayoutPreferenceStore = AndroidMarketplaceLayoutPreferenceStore(applicationContext)
         )
 
         setContent {
