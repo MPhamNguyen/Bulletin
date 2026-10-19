@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 class MessagesPolicy {
     companion object {
         val DEFAULT_REPORT_REASON = ReportReason.INAPPROPRIATE_CONTENT.label
+        val DEFAULT_REPORT_REASON_CODE = ReportReason.INAPPROPRIATE_CONTENT.code
     }
 
     fun validateMessageContent(content: String): Result<Unit> {

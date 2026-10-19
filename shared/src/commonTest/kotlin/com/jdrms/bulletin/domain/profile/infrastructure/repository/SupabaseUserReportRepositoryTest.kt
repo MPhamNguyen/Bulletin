@@ -45,7 +45,7 @@ class SupabaseUserReportRepositoryTest {
             UserReportInsertDto(
                 reporterId = "reporter-id",
                 reportedUserId = "target-id",
-                reason = "Scam or Fraud",
+                reason = "scam_or_fraud",
                 description = "Details",
                 type = SupabaseUserReportType.USER
             )
@@ -65,7 +65,7 @@ class SupabaseUserReportRepositoryTest {
             UserReportInsertDto(
                 reporterId = "reporter-id",
                 reportedUserId = "target-id",
-                reason = "Scam or Fraud",
+                reason = "scam_or_fraud",
                 description = "Details",
                 type = SupabaseUserReportType.USER
             ),
@@ -120,7 +120,7 @@ class SupabaseUserReportRepositoryTest {
 
             repository.submit(report).getOrThrow()
 
-            assertEquals(reason.label, table.inserted?.reason)
+            assertEquals(reason.code, table.inserted?.reason)
             assertEquals(SupabaseUserReportType.USER, table.inserted?.type)
             assertEquals("reporter-id", table.inserted?.reporterId)
             assertEquals("target-id", table.inserted?.reportedUserId)

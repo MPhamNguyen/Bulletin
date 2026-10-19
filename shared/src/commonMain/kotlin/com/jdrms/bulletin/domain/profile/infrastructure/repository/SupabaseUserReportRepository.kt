@@ -28,7 +28,7 @@ class SupabaseUserReportRepository internal constructor(
             UserReportInsertDto(
                 reporterId = authenticatedReporter,
                 reportedUserId = report.reportedUserId.value,
-                reason = report.reason.label,
+                reason = report.reason.code,
                 description = report.description,
                 type = SupabaseUserReportType.USER
             )

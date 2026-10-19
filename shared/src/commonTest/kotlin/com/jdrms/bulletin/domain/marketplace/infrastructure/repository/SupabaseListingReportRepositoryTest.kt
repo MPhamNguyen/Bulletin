@@ -7,7 +7,6 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportSelfRepor
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportStatus
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -32,13 +31,16 @@ import kotlin.test.assertTrue
 class SupabaseListingReportRepositoryTest {
     @Test
     fun treatsOnlyActionableStatusesAsOpenReports() {
-        val missingStatus: ReportStatus? = null
-        assertTrue(ReportStatus.OPEN.isOpenListingReportStatus())
-        assertTrue(ReportStatus.UNDER_REVIEW.isOpenListingReportStatus())
+        val missingStatus: String? = null
+        assertTrue("open".isOpenListingReportStatus())
+        assertTrue("under_review".isOpenListingReportStatus())
         assertTrue(missingStatus.isOpenListingReportStatus())
-        assertFalse(ReportStatus.ACTION_TAKEN.isOpenListingReportStatus())
-        assertFalse(ReportStatus.DISMISSED.isOpenListingReportStatus())
-        assertFalse(ReportStatus.DUPLICATE.isOpenListingReportStatus())
+        assertFalse("action_taken".isOpenListingReportStatus())
+        assertFalse("dismissed".isOpenListingReportStatus())
+        assertFalse("duplicate".isOpenListingReportStatus())
+        assertTrue("future_status".isOpenListingReportStatus())
+        assertTrue("in_review".isOpenListingReportStatus())
+        assertFalse("resolved".isOpenListingReportStatus())
     }
 
     @Test
@@ -105,7 +107,7 @@ class SupabaseListingReportRepositoryTest {
                     assertEquals("listing", body.getValue("type").jsonPrimitive.content)
                     assertEquals("reporter-id", body.getValue("reporter_id").jsonPrimitive.content)
                     assertEquals("listing-id", body.getValue("listing_id").jsonPrimitive.content)
-                    assertEquals("Scam or Fraud", body.getValue("reason").jsonPrimitive.content)
+                    assertEquals("scam_or_fraud", body.getValue("reason").jsonPrimitive.content)
                     assertEquals(JsonNull, body.getValue("description"))
                     respond("", HttpStatusCode.Created)
                 }

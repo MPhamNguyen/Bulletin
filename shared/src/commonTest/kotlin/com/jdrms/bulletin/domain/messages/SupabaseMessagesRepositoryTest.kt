@@ -213,7 +213,7 @@ class SupabaseMessagesRepositoryTest {
             SupabaseMessageReportInsertDto(
                 "message-a",
                 "carol-id",
-                "Inappropriate Content",
+                "inappropriate_content",
                 SupabaseMessageReportType.MESSAGE,
                 null
             ),

@@ -41,7 +41,7 @@ class SupabaseListingReportRepository internal constructor(
                 reporterId = authenticatedReporter,
                 type = SupabaseListingReportType.LISTING,
                 listingId = report.listingId.value.removePrefix(LISTING_ID_PREFIX),
-                reason = report.reason.label,
+                reason = report.reason.code,
                 description = report.description.ifBlank { null }
             )
         )
@@ -169,4 +169,4 @@ internal class PostgrestSupabaseListingReportsTable(
             .toSet()
 }
 
-internal fun ReportStatus?.isOpenListingReportStatus(): Boolean = this?.isOpen ?: true
+internal fun String?.isOpenListingReportStatus(): Boolean = ReportStatus.fromDatabaseValue(this).isOpen

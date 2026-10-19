@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.messages.infrastructure.dto
 
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -64,7 +63,7 @@ data class SupabaseMessageDto(
 @Serializable
 data class SupabaseMessageReportMarkerDto(
     @SerialName("id") val id: String,
-    @SerialName("status") val status: ReportStatus? = null
+    @SerialName("status") val status: String? = null
 )
 
 @Serializable

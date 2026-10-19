@@ -38,7 +38,7 @@ class SupabaseUserReportsTableTest {
                 assertEquals("user", body.getValue("type").jsonPrimitive.content)
                 assertEquals("reporter-id", body.getValue("reporter_id").jsonPrimitive.content)
                 assertEquals("target-id", body.getValue("reported_user_id").jsonPrimitive.content)
-                assertEquals("Scam or Fraud", body.getValue("reason").jsonPrimitive.content)
+                assertEquals("scam_or_fraud", body.getValue("reason").jsonPrimitive.content)
                 assertEquals("Details", body.getValue("description").jsonPrimitive.content)
                 assertFalse("message_id" in body)
                 assertFalse("listing_id" in body)

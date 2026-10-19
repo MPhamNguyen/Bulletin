@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.dto
 
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,10 +21,10 @@ data class ListingReportInsertDto(
 @Serializable
 data class ListingReportListingIdDto(
     @SerialName("listing_id") val listingId: String,
-    @SerialName("status") val status: ReportStatus?
+    @SerialName("status") val status: String?
 )
 
 @Serializable
 data class ListingReportStatusDto(
-    @SerialName("status") val status: ReportStatus?
+    @SerialName("status") val status: String?
 )
