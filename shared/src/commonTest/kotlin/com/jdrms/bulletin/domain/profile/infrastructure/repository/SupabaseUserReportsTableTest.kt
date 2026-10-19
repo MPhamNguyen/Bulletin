@@ -4,7 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.profile.domain.model.UserReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -101,7 +101,7 @@ class SupabaseUserReportsTableTest {
     private fun report(description: String = "") = UserReport.create(
         UserId("reporter-id"),
         UserId("target-id"),
-        UserReportReason.SCAM_OR_FRAUD,
+        ReportReason.SCAM_OR_FRAUD,
         description
     ).getOrThrow()
 

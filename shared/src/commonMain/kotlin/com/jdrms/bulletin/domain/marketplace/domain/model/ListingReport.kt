@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.marketplace.domain.model
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
 @JvmInline
 value class MarketplaceReporterId(val value: String) {
@@ -9,22 +11,15 @@ value class MarketplaceReporterId(val value: String) {
     }
 }
 
-enum class ListingReportReason(val label: String) {
-    PROHIBITED_ITEM("Prohibited item"),
-    MISLEADING_LISTING("Misleading listing"),
-    SCAM_OR_FRAUD("Scam or fraud"),
-    DUPLICATE_LISTING("Duplicate listing"),
-    OTHER("Other")
-}
-
 data class ListingReport(
     val listingId: MarketplaceItemId,
     val listingSellerId: String,
     val reporterId: MarketplaceReporterId,
-    val reason: ListingReportReason,
+    val reason: ReportReason,
     val description: String
 ) {
     init {
+        require(reason.appliesTo(ReportType.LISTING)) { "Report reason is not valid for listings." }
         require(listingId.value.isNotBlank()) { "Listing ID is required." }
         require(listingSellerId.isNotBlank()) { "Listing seller ID is required." }
         require(reporterId.value != listingSellerId) { "You cannot report your own listing." }
@@ -41,9 +36,12 @@ data class ListingReport(
             listingId: MarketplaceItemId,
             listingSellerId: String,
             reporterId: MarketplaceReporterId,
-            reason: ListingReportReason,
+            reason: ReportReason,
             description: String
         ): Result<ListingReport> {
+            if (!reason.appliesTo(ReportType.LISTING)) {
+                return Result.Error(IllegalArgumentException("Report reason is not valid for listings."))
+            }
             val normalizedDescription = description.trim()
             if (listingId.value.isBlank() || listingSellerId.isBlank()) {
                 return Result.Error(IllegalArgumentException("Listing identity is required."))

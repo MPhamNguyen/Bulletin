@@ -4,7 +4,8 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.profile.domain.model.UserReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.SupabaseUserReportType
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.UserReportInsertDto
 import kotlinx.coroutines.CancellationException
@@ -109,11 +110,11 @@ class SupabaseUserReportRepositoryTest {
     }
 
     @Test
-    fun preservesEveryUserReportReasonWhenWritingTheUserReportType() = runTest {
+    fun preservesEveryReportReasonWhenWritingTheUserReportType() = runTest {
         val table = FakeTable("reporter-id")
         val repository = SupabaseUserReportRepository(table)
 
-        UserReportReason.entries.forEach { reason ->
+        ReportReason.forType(ReportType.USER).forEach { reason ->
             val report = UserReport.create(UserId("reporter-id"), UserId("target-id"), reason, "Details")
                 .getOrThrow()
 
@@ -164,7 +165,7 @@ class SupabaseUserReportRepositoryTest {
     private fun report(description: String = "Details") = UserReport.create(
         UserId("reporter-id"),
         UserId("target-id"),
-        UserReportReason.SCAM_OR_FRAUD,
+        ReportReason.SCAM_OR_FRAUD,
         description
     ).getOrThrow()
 

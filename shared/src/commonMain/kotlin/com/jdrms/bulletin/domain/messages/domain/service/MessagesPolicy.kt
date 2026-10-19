@@ -1,10 +1,11 @@
 package com.jdrms.bulletin.domain.messages.domain.service
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 
 class MessagesPolicy {
     companion object {
-        const val DEFAULT_REPORT_REASON = "Inappropriate Content"
+        val DEFAULT_REPORT_REASON = ReportReason.INAPPROPRIATE_CONTENT.label
     }
 
     fun validateMessageContent(content: String): Result<Unit> {

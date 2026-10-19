@@ -4,7 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceReportIdentity
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
-import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
@@ -58,14 +58,14 @@ class ListingReportViewModelTest {
             )
             val viewModel = ListingReportViewModel(useCase)
             viewModel.begin("listing:1", "seller")
-            viewModel.selectReason(ListingReportReason.SCAM_OR_FRAUD)
+            viewModel.selectReason(ReportReason.SCAM_OR_FRAUD)
             viewModel.updateDescription("Details")
             viewModel.submit()
             advanceUntilIdle()
 
             assertEquals("listing:1", submitted?.listingId?.value)
             assertEquals("reporter", submitted?.reporterId?.value)
-            assertEquals(ListingReportReason.SCAM_OR_FRAUD, submitted?.reason)
+            assertEquals(ReportReason.SCAM_OR_FRAUD, submitted?.reason)
             assertEquals("Details", submitted?.description)
             assertTrue(viewModel.uiState.value.submitted)
         } finally {
@@ -102,7 +102,7 @@ class ListingReportViewModelTest {
             )
         )
         viewModel.begin("listing:1", "seller")
-        viewModel.selectReason(ListingReportReason.OTHER)
+        viewModel.selectReason(ReportReason.OTHER)
 
         viewModel.dismiss()
 

@@ -3,7 +3,8 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceUserReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,7 @@ import kotlinx.coroutines.launch
 
 data class MarketplaceUserReportUiState(
     val reportedUserId: String? = null,
-    val selectedReason: MarketplaceUserReportReason? = null,
+    val selectedReason: ReportReason? = null,
     val description: String = "",
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
@@ -32,7 +33,7 @@ class MarketplaceUserReportViewModel(
         mutableUiState.value = MarketplaceUserReportUiState(reportedUserId = reportedUserId)
     }
 
-    fun selectReason(reason: MarketplaceUserReportReason) {
+    fun selectReason(reason: ReportReason) {
         mutableUiState.update { it.copy(selectedReason = reason, errorMessage = null) }
     }
 
@@ -45,7 +46,7 @@ class MarketplaceUserReportViewModel(
     fun submit() {
         val state = mutableUiState.value
         val userId = state.reportedUserId ?: return
-        val reason = state.selectedReason ?: run {
+        val reason = state.selectedReason?.takeIf { it.appliesTo(ReportType.USER) } ?: run {
             mutableUiState.update { it.copy(errorMessage = "Choose a reason for your report.") }
             return
         }

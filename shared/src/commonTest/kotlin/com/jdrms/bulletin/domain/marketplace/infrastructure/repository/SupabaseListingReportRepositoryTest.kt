@@ -3,7 +3,7 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportSelfReportException
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
@@ -104,7 +104,7 @@ class SupabaseListingReportRepositoryTest {
                     assertEquals("listing", body.getValue("type").jsonPrimitive.content)
                     assertEquals("reporter-id", body.getValue("reporter_id").jsonPrimitive.content)
                     assertEquals("listing-id", body.getValue("listing_id").jsonPrimitive.content)
-                    assertEquals("Scam or fraud", body.getValue("reason").jsonPrimitive.content)
+                    assertEquals("Scam or Fraud", body.getValue("reason").jsonPrimitive.content)
                     assertEquals(JsonNull, body.getValue("description"))
                     respond("", HttpStatusCode.Created)
                 }
@@ -262,7 +262,7 @@ class SupabaseListingReportRepositoryTest {
         listingId = MarketplaceItemId("listing:listing-id"),
         listingSellerId = "seller-id",
         reporterId = MarketplaceReporterId("reporter-id"),
-        reason = ListingReportReason.SCAM_OR_FRAUD,
+        reason = ReportReason.SCAM_OR_FRAUD,
         description = ""
     )
 }

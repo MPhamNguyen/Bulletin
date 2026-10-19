@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
+import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
@@ -235,7 +237,7 @@ class MessagesViewModel(
         actions.send(showFailure)
     }
 
-    fun report(messageId: MessageId, reason: String = "Inappropriate content") {
+    fun report(messageId: MessageId, reason: String = MessagesPolicy.DEFAULT_REPORT_REASON) {
         inbox.synchronizeIdentity()
         applyInboxSelection(inbox.state.value)
         actions.report(messageId, reason, ::selectConversation, showFailure)

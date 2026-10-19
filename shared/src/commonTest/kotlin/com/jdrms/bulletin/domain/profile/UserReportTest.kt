@@ -5,7 +5,7 @@ import com.jdrms.bulletin.domain.profile.application.SubmitUserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.profile.domain.model.UserReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
@@ -22,7 +22,7 @@ class UserReportTest {
         val report = UserReport.create(
             UserId("reporter"),
             UserId("target"),
-            UserReportReason.SCAM_OR_FRAUD,
+            ReportReason.SCAM_OR_FRAUD,
             "  Details  "
         )
 
@@ -34,7 +34,7 @@ class UserReportTest {
         val result = UserReport.create(
             UserId("same"),
             UserId("same"),
-            UserReportReason.SCAM_OR_FRAUD,
+            ReportReason.SCAM_OR_FRAUD,
             ""
         )
 
@@ -46,7 +46,7 @@ class UserReportTest {
         val result = UserReport.create(
             UserId("reporter"),
             UserId("target"),
-            UserReportReason.SCAM_OR_FRAUD,
+            ReportReason.SCAM_OR_FRAUD,
             "x".repeat(UserReport.MAX_DESCRIPTION_LENGTH + 1)
         )
 
@@ -68,7 +68,7 @@ class UserReportTest {
 
         val result = SubmitUserReport(auth, repository)(
             UserId("target"),
-            UserReportReason.FAKE_ACCOUNT_OR_IMPERSONATION,
+            ReportReason.FAKE_ACCOUNT_OR_IMPERSONATION,
             "Evidence"
         )
 
@@ -92,7 +92,7 @@ class UserReportTest {
 
         val result = SubmitUserReport(auth, repository)(
             UserId("target"),
-            UserReportReason.SCAM_OR_FRAUD,
+            ReportReason.SCAM_OR_FRAUD,
             ""
         )
 
@@ -115,7 +115,7 @@ class UserReportTest {
 
         val result = SubmitUserReport(auth, repository)(
             UserId("current"),
-            UserReportReason.SCAM_OR_FRAUD,
+            ReportReason.SCAM_OR_FRAUD,
             ""
         )
 
@@ -126,8 +126,8 @@ class UserReportTest {
     @Test
     fun rejectsDuplicateReportsFromSameReporterForSameUser() = runTest {
         val repository = InMemoryUserReportRepository()
-        val firstReport = report("reporter", "target", UserReportReason.SCAM_OR_FRAUD)
-        val duplicate = report("reporter", "target", UserReportReason.FAKE_ACCOUNT_OR_IMPERSONATION)
+        val firstReport = report("reporter", "target", ReportReason.SCAM_OR_FRAUD)
+        val duplicate = report("reporter", "target", ReportReason.FAKE_ACCOUNT_OR_IMPERSONATION)
 
         assertIs<Result.Success<Unit>>(repository.submit(firstReport))
         val result = repository.submit(duplicate)
@@ -139,8 +139,8 @@ class UserReportTest {
     @Test
     fun allowsNewReportAfterEarlierReportIsClosed() = runTest {
         val repository = InMemoryUserReportRepository()
-        val closedReport = report("reporter", "target", UserReportReason.SCAM_OR_FRAUD)
-        val newReport = report("reporter", "target", UserReportReason.FAKE_ACCOUNT_OR_IMPERSONATION)
+        val closedReport = report("reporter", "target", ReportReason.SCAM_OR_FRAUD)
+        val newReport = report("reporter", "target", ReportReason.FAKE_ACCOUNT_OR_IMPERSONATION)
         repository.submit(closedReport)
 
         repository.markClosedForTesting(closedReport)
@@ -173,6 +173,6 @@ class UserReportTest {
     private fun report(
         reporterId: String,
         reportedUserId: String,
-        reason: UserReportReason = UserReportReason.SCAM_OR_FRAUD
+        reason: ReportReason = ReportReason.SCAM_OR_FRAUD
     ) = UserReport.create(UserId(reporterId), UserId(reportedUserId), reason, "").getOrThrow()
 }
