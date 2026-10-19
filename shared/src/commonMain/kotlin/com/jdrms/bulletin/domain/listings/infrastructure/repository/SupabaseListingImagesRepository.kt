@@ -84,7 +84,7 @@ class SupabaseListingImagesRepository internal constructor(
             if (removed.isNotEmpty()) {
                 rows.remove(listingId.value, removed.map(ListingImageRow::objectPath))
             }
-            orderedRetained.forEachIndexed { index, row ->
+            retainedPaths.forEachIndexed { index, row ->
                 if (row.position != index) rows.updatePosition(listingId.value, row.objectPath, index)
             }
             rows.insert(listingId.value, uploaded)
