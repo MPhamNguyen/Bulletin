@@ -11,6 +11,9 @@ internal class MutableMainNavigationState {
     var editReturnDestination by mutableStateOf(ProfileDestination.PROFILE)
     var pendingConversationId by mutableStateOf<ConversationId?>(null)
 
+    val showsBottomNavigation: Boolean
+        get() = snapshot().showsBottomNavigation
+
     fun snapshot() = NavigationSnapshot(currentDestination, profileDestination)
 
     fun apply(snapshot: NavigationSnapshot) {
