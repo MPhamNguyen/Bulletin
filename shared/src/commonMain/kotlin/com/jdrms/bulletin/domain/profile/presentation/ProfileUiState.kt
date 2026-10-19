@@ -34,6 +34,7 @@ data class ProfileUiState(
     val activeListingsCount: Int = 0,
     val itemsSoldCount: Int? = null,
     val isRefreshing: Boolean = false,
+    val profileRefreshComplete: Boolean = false,
     val bookmarkedListings: List<ProfileBookmarkedListing> = emptyList(),
     val bookmarkedListingFilterOptions: ProfileBookmarkedListingFilterOptions =
         ProfileBookmarkedListingFilterOptions(),

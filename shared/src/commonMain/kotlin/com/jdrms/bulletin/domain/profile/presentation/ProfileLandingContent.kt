@@ -4,12 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,17 +28,28 @@ internal fun MarketplaceProfileView(
     val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
     val university = profile?.university.orEmpty()
     val major = profile?.major.orEmpty()
+    val pullRefreshState = rememberPullToRefreshState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         MarketplaceProfileTopBar(onSettingsClick = onSettingsClick)
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = onRefresh,
+            state = pullRefreshState,
+            indicator = {
+                ProfilePullRefreshIndicator(
+                    state = pullRefreshState,
+                    isRefreshing = uiState.isRefreshing,
+                    isComplete = uiState.profileRefreshComplete,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+            },
             modifier = Modifier.weight(1f)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .offset(y = (pullRefreshState.distanceFraction.coerceIn(0f, 1f) * CONTENT_PULL_OFFSET).dp)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,3 +87,5 @@ internal fun MarketplaceProfileView(
         }
     }
 }
+
+private const val CONTENT_PULL_OFFSET = 48
