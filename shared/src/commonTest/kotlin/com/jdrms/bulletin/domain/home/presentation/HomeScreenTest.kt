@@ -1,10 +1,19 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HomeScreenTest {
+    @Test
+    fun photo_index_stays_within_the_listing_photo_bounds() {
+        assertEquals(0, stepHomePhotoIndex(currentIndex = 0, direction = -1, photoCount = 3))
+        assertEquals(1, stepHomePhotoIndex(currentIndex = 0, direction = 1, photoCount = 3))
+        assertEquals(2, stepHomePhotoIndex(currentIndex = 2, direction = 1, photoCount = 3))
+        assertEquals(0, stepHomePhotoIndex(currentIndex = 0, direction = 1, photoCount = 0))
+    }
+
     @Test
     fun prefetch_starts_when_two_cards_remain() {
         assertTrue(shouldPrefetchHomeFeedPage(currentIndex = 7, feedSize = 10, hasMore = true))

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -69,14 +70,27 @@ fun HomeFeedCard(
     val photoUrls = remember(item.photoUrls, item.imageUrl) {
         item.photoUrls.ifEmpty { listOfNotNull(item.imageUrl) }
     }
-    val photoIndex = rememberHomePhotoIndex(item.id.value, cardIndex, photoUrls, isActive)
+    var photoIndex by rememberSaveable(item.id.value, cardIndex, photoUrls) { mutableIntStateOf(0) }
+    LaunchedEffect(item.id.value, photoUrls, isActive, photoIndex) {
+        if (isActive && photoIndex < photoUrls.lastIndex) {
+            delay(HOME_PHOTO_INTERVAL_MILLIS)
+            photoIndex++
+        }
+    }
     Box(
         modifier = modifier
             .fillMaxSize()
             .padding(8.dp)
             .clip(MaterialTheme.shapes.large)
     ) {
-        HomeFeedCardBackground(item, photoUrls.getOrNull(photoIndex), photoIndex, photoUrls.size)
+        HomeFeedCardBackground(
+            item = item,
+            photoUrl = photoUrls.getOrNull(photoIndex),
+            photoIndex = photoIndex,
+            photoCount = photoUrls.size,
+            onPreviousPhoto = { photoIndex = stepHomePhotoIndex(photoIndex, -1, photoUrls.size) },
+            onNextPhoto = { photoIndex = stepHomePhotoIndex(photoIndex, 1, photoUrls.size) }
+        )
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -94,21 +108,9 @@ fun HomeFeedCard(
     }
 }
 
-@Composable
-private fun rememberHomePhotoIndex(
-    itemId: String,
-    cardIndex: Int,
-    photoUrls: List<String>,
-    isActive: Boolean
-): Int {
-    var photoIndex by rememberSaveable(itemId, cardIndex, photoUrls) { mutableIntStateOf(0) }
-    LaunchedEffect(itemId, photoUrls, isActive) {
-        while (isActive && photoIndex < photoUrls.lastIndex) {
-            delay(HOME_PHOTO_INTERVAL_MILLIS)
-            photoIndex++
-        }
-    }
-    return photoIndex
+internal fun stepHomePhotoIndex(currentIndex: Int, direction: Int, photoCount: Int): Int {
+    if (photoCount <= 0) return 0
+    return (currentIndex + direction).coerceIn(0, photoCount - 1)
 }
 
 @Composable
@@ -116,7 +118,9 @@ private fun BoxScope.HomeFeedCardBackground(
     item: HomeFeedItem,
     photoUrl: String?,
     photoIndex: Int,
-    photoCount: Int
+    photoCount: Int,
+    onPreviousPhoto: () -> Unit,
+    onNextPhoto: () -> Unit
 ) {
     HomeFeedArtwork(modifier = Modifier.matchParentSize())
     photoUrl?.let { imageUrl ->
@@ -129,6 +133,20 @@ private fun BoxScope.HomeFeedCardBackground(
     }
     HomeFeedImageScrim(Modifier.matchParentSize())
     if (photoUrl != null && photoCount > 1) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth(0.38f)
+                .fillMaxHeight()
+                .clickable(onClickLabel = "Previous listing photo", onClick = onPreviousPhoto)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .fillMaxWidth(0.38f)
+                .fillMaxHeight()
+                .clickable(onClickLabel = "Next listing photo", onClick = onNextPhoto)
+        )
         HomeFeedPhotoIndicator(
             photoCount = photoCount,
             selectedIndex = photoIndex,
