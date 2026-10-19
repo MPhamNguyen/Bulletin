@@ -1,5 +1,8 @@
 package com.jdrms.bulletin.domain.home.presentation
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,7 +58,6 @@ import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
-import kotlinx.coroutines.delay
 
 private const val HOME_PHOTO_INTERVAL_MILLIS = 3_000L
 
@@ -71,10 +73,18 @@ fun HomeFeedCard(
         item.photoUrls.ifEmpty { listOfNotNull(item.imageUrl) }
     }
     var photoIndex by rememberSaveable(item.id.value, cardIndex, photoUrls) { mutableIntStateOf(0) }
+    val photoProgress = remember(item.id.value, photoUrls, photoIndex) { Animatable(0f) }
     LaunchedEffect(item.id.value, photoUrls, isActive, photoIndex) {
-        if (isActive && photoIndex < photoUrls.lastIndex) {
-            delay(HOME_PHOTO_INTERVAL_MILLIS)
-            photoIndex++
+        photoProgress.snapTo(0f)
+        if (isActive && photoUrls.size > 1) {
+            photoProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(
+                    durationMillis = HOME_PHOTO_INTERVAL_MILLIS.toInt(),
+                    easing = LinearEasing
+                )
+            )
+            if (photoIndex < photoUrls.lastIndex) photoIndex++
         }
     }
     Box(
@@ -88,6 +98,7 @@ fun HomeFeedCard(
             photoUrl = photoUrls.getOrNull(photoIndex),
             photoIndex = photoIndex,
             photoCount = photoUrls.size,
+            photoProgress = photoProgress.value,
             onPreviousPhoto = { photoIndex = stepHomePhotoIndex(photoIndex, -1, photoUrls.size) },
             onNextPhoto = { photoIndex = stepHomePhotoIndex(photoIndex, 1, photoUrls.size) }
         )
@@ -119,6 +130,7 @@ private fun BoxScope.HomeFeedCardBackground(
     photoUrl: String?,
     photoIndex: Int,
     photoCount: Int,
+    photoProgress: Float,
     onPreviousPhoto: () -> Unit,
     onNextPhoto: () -> Unit
 ) {
@@ -150,13 +162,19 @@ private fun BoxScope.HomeFeedCardBackground(
         HomeFeedPhotoIndicator(
             photoCount = photoCount,
             selectedIndex = photoIndex,
+            activeProgress = photoProgress,
             modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 12.dp, vertical = 10.dp)
         )
     }
 }
 
 @Composable
-private fun HomeFeedPhotoIndicator(photoCount: Int, selectedIndex: Int, modifier: Modifier = Modifier) {
+private fun HomeFeedPhotoIndicator(
+    photoCount: Int,
+    selectedIndex: Int,
+    activeProgress: Float,
+    modifier: Modifier = Modifier
+) {
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         repeat(photoCount) { index ->
             Box(
@@ -164,10 +182,22 @@ private fun HomeFeedPhotoIndicator(photoCount: Int, selectedIndex: Int, modifier
                     .weight(1f)
                     .height(3.dp)
                     .clip(CircleShape)
-                    .background(
-                        Color.White.copy(alpha = if (index <= selectedIndex) 1f else 0.38f)
+                    .background(Color.White.copy(alpha = 0.38f))
+            ) {
+                val fill = when {
+                    index < selectedIndex -> 1f
+                    index == selectedIndex -> activeProgress
+                    else -> 0f
+                }
+                if (fill > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(fill)
+                            .background(Color.White)
                     )
-            )
+                }
+            }
         }
     }
 }
