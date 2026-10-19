@@ -146,16 +146,15 @@ Business contexts use four layers:
 | Repository or port | Configured binding | In-memory use | Live project verification |
 | --- | --- | --- | --- |
 | Home feed | In-memory repository | Runtime and tests | Not applicable |
-| Marketplace and listing source | Supabase adapters | Tests, inspection, or explicit local development | Image schema and storage configuration verified in connected project; app image flow not live-smoke-tested |
-| Listings, including sold-state updates and image metadata | Supabase adapter | Tests, inspection, or explicit local development | Image schema and storage configuration verified in connected project; app image flow not live-smoke-tested |
+| Marketplace and listing source | Supabase adapters | Tests, inspection, or explicit local development | Image schema and storage configuration verified in connected project |
+| Listings, including sold-state updates and image metadata | Supabase adapter | Tests, inspection, or explicit local development | Image schema and storage configuration verified in connected project |
 | Messages, thread observer, and inbox observer | Supabase adapters | Tests, inspection, or explicit local development | Local adapter tests only; live project not verified |
 | Profile and authentication/session | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
 | User reports and blocks | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
 | Profile photos | Supabase Storage adapter | Tests, inspection, or explicit local development | Not verified here |
 | Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
 
-Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. The connected Bulletin project has the `listing_images` migrations applied. The `listing_imgs` bucket is public-read, accepts JPEG, PNG, and WebP images up to 5 MiB each, and restricts uploads and deletion to listing owners. Authenticated users can read image metadata. End-to-end app uploads and marketplace/bookmark rendering have not been live-smoke-tested.
-
+Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. Review those migrations and configure the matching project before using backend features. No live project validation is claimed here.
 ---
 
 ## 🔧 Local Setup
