@@ -36,6 +36,8 @@ import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Instant
@@ -154,15 +156,15 @@ class SupabaseMessagesRepository internal constructor(
     private fun PostgrestRestException.isDuplicateMessageReport(): Boolean =
         code == UNIQUE_VIOLATION_CODE && message?.contains(MESSAGE_REPORT_UNIQUE_CONSTRAINT) == true
 
-    private suspend fun loadConversation(conversationId: String, viewerId: SenderId): Conversation {
-        val conversation = messagesTable.findConversation(conversationId)
-        val participants = messagesTable.getParticipants(conversationId)
-        val lastMessage = messagesTable.findLatestMessage(conversationId)
-        val membership = messagesTable.getMembership(conversationId, viewerId.value)
-        val accessibleConversation = conversation ?: throw ConversationAccessException()
-        val cutoff = membership?.historyVisibleAfter?.let(Instant::parse)
-        val visibleLastMessage = lastMessage?.takeIf { cutoff == null || Instant.parse(it.createdAt) > cutoff }
-        return SupabaseMessagesMapper.toConversation(accessibleConversation, participants, visibleLastMessage, cutoff)
+    private suspend fun loadConversation(conversationId: String, viewerId: SenderId): Conversation = coroutineScope {
+        val conversation = async { messagesTable.findConversation(conversationId) }
+        val participants = async { messagesTable.getParticipants(conversationId) }
+        val lastMessage = async { messagesTable.findLatestMessage(conversationId) }
+        val membership = async { messagesTable.getMembership(conversationId, viewerId.value) }
+        val accessibleConversation = conversation.await() ?: throw ConversationAccessException()
+        val cutoff = membership.await()?.historyVisibleAfter?.let(Instant::parse)
+        val visibleLastMessage = lastMessage.await()?.takeIf { cutoff == null || Instant.parse(it.createdAt) > cutoff }
+        SupabaseMessagesMapper.toConversation(accessibleConversation, participants.await(), visibleLastMessage, cutoff)
     }
 
     private suspend fun requireParticipant(userId: SenderId, conversationId: ConversationId): Instant? {
