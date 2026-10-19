@@ -1,13 +1,11 @@
-package com.jdrms.bulletin.app
+package com.jdrms.bulletin.app.navigation
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.jdrms.bulletin.app.navigation.AppDestination
-import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 
-internal class MainNavigationState {
+internal class MutableMainNavigationState {
     var currentDestination by mutableStateOf(AppDestination.HOME)
     var profileDestination by mutableStateOf(ProfileDestination.PROFILE)
     var editReturnDestination by mutableStateOf(ProfileDestination.PROFILE)
@@ -16,9 +14,9 @@ internal class MainNavigationState {
     val showsBottomNavigation: Boolean
         get() = snapshot().showsBottomNavigation
 
-    fun snapshot() = com.jdrms.bulletin.app.navigation.MainNavigationState(currentDestination, profileDestination)
+    fun snapshot() = NavigationSnapshot(currentDestination, profileDestination)
 
-    fun apply(snapshot: com.jdrms.bulletin.app.navigation.MainNavigationState) {
+    fun apply(snapshot: NavigationSnapshot) {
         currentDestination = snapshot.currentDestination
         profileDestination = snapshot.profileDestination
     }

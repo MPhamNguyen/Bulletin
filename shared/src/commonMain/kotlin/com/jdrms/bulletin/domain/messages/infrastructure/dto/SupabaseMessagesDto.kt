@@ -15,7 +15,8 @@ data class SupabaseConversationLookupDto(@SerialName("conversation_id") val conv
 
 @Serializable
 data class SupabaseConversationMembershipDto(
-    @SerialName("conversation_id") val conversationId: String
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("history_visible_after") val historyVisibleAfter: String? = null
 )
 
 @Serializable
@@ -29,7 +30,10 @@ data class SupabaseConversationInboxDto(
 )
 
 @Serializable
-data class SupabaseInboxMembershipDto(@SerialName("user_id") val userId: String)
+data class SupabaseInboxMembershipDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("history_visible_after") val historyVisibleAfter: String? = null
+)
 
 @Serializable
 data class SupabaseInboxParticipantDto(
@@ -70,8 +74,7 @@ data class SupabaseMessageReportMarkerDto(
 data class SupabaseMessageInsertDto(
     @SerialName("id") val id: String,
     @SerialName("conversation_id") val conversationId: String,
-    @SerialName("body") val content: String,
-    @SerialName("created_at") val createdAt: String
+    @SerialName("body") val content: String
 )
 
 @Serializable

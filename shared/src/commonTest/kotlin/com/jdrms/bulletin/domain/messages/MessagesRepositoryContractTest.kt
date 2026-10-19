@@ -14,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 /** Reuse this suite for BULLETIN-85 with a deterministic fake of the Supabase transport. */
 abstract class MessagesRepositoryContractTest {
@@ -45,7 +46,8 @@ abstract class MessagesRepositoryContractTest {
         assertEquals(Result.Success(Unit), repository.hideConversation(alice.id, conversationId))
         assertEquals(emptyList(), repository.getConversations(alice.id).getOrThrow())
         assertEquals(listOf(conversationId), repository.getConversations(carol.id).getOrThrow().map { it.id })
-        assertEquals(listOf(message()), repository.getMessages(alice.id, conversationId).getOrThrow())
+        assertEquals(emptyList(), repository.getMessages(alice.id, conversationId).getOrThrow())
+        assertEquals(listOf(message()), repository.getMessages(carol.id, conversationId).getOrThrow())
     }
 
     @Test
@@ -58,6 +60,26 @@ abstract class MessagesRepositoryContractTest {
         repository.sendMessage(message()).getOrThrow()
 
         assertEquals(listOf(conversationId), repository.getConversations(alice.id).getOrThrow().map { it.id })
+    }
+
+    @Test
+    fun restoredConversationShowsOnlyMessagesAfterItsLastRemovalForThatParticipant() = runTest {
+        val old = message(id = MessageId("old")).copy(timestampMillis = 41L)
+        val boundary = message(id = MessageId("boundary")).copy(timestampMillis = 42L)
+        val recent = message(id = MessageId("recent")).copy(timestampMillis = 43L)
+        val listingId = ListingReferenceId("listing-a")
+        val repository = createRepository(listOf(conversation().withListing(listingId)), listOf(old, boundary))
+
+        repository.hideConversation(alice.id, conversationId).getOrThrow()
+        assertEquals(emptyList(), repository.getMessages(alice.id, conversationId).getOrThrow())
+        repository.getOrCreateConversation(alice.id, ConversationParticipant(carol.id, carol.displayName), listingId)
+            .getOrThrow()
+        assertEquals(emptyList(), repository.getMessages(alice.id, conversationId).getOrThrow())
+        val sent = repository.sendMessage(recent).getOrThrow()
+        assertEquals(listOf(sent), repository.getMessages(alice.id, conversationId).getOrThrow())
+        assertEquals(listOf(old, boundary, sent), repository.getMessages(carol.id, conversationId).getOrThrow())
+        assertEquals(recent.id, repository.getConversations(alice.id).getOrThrow().single().lastMessage?.id)
+        assertEquals(null, repository.getMessagePage(alice.id, conversationId, limit = 1).getOrThrow().olderCursor)
     }
 
     @Test
@@ -172,7 +194,7 @@ private fun Conversation.withListing(listingId: ListingReferenceId) =
 
 class InMemoryMessagesRepositoryTest : MessagesRepositoryContractTest() {
     override fun createRepository(conversations: List<Conversation>, messages: List<Message>): MessagesRepository =
-        messagesRepository(conversations, messages)
+        messagesRepository(conversations, messages, now = { Instant.fromEpochMilliseconds(42L) })
 
     @Test
     fun startingSameListingConversationAgainRestoresOnlyRequestersInbox() = runTest {

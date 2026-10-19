@@ -76,8 +76,8 @@ class SupabaseMessageReportsTableTest {
             val table = PostgrestSupabaseMessagesTable(client)
             val cursor = MessageCursor(message().orderingTimestamp, MessageId("older"))
             val rows = listOf(
-                table.getMessagePage("conversation-a", null, 50).single(),
-                table.getMessagePage("conversation-a", cursor, 50).single(),
+                table.getMessagePage("conversation-a", null, null, 50).single(),
+                table.getMessagePage("conversation-a", cursor, null, 50).single(),
                 checkNotNull(table.findMessage("conversation-a", "message-a")),
                 checkNotNull(table.findLatestMessage("conversation-a"))
             )

@@ -2,7 +2,7 @@ package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
-import com.jdrms.bulletin.app.navigation.MainNavigationState
+import com.jdrms.bulletin.app.navigation.NavigationSnapshot
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.navigation.backFromProfileDestination
@@ -100,7 +100,7 @@ class AppNavigationTest {
 
     @Test
     fun selectingProfileFromMyListingsReturnsToMainProfile() {
-        val state = MainNavigationState(
+        val state = NavigationSnapshot(
             currentDestination = AppDestination.PROFILE,
             profileDestination = ProfileDestination.MY_LISTINGS
         )
@@ -113,7 +113,7 @@ class AppNavigationTest {
 
     @Test
     fun selectingMessagesFromMyListingsResetsProfileRoute() {
-        val state = MainNavigationState(
+        val state = NavigationSnapshot(
             currentDestination = AppDestination.PROFILE,
             profileDestination = ProfileDestination.MY_LISTINGS
         )
@@ -126,13 +126,13 @@ class AppNavigationTest {
 
     @Test
     fun bottomNavigationOnlyAppearsOnTheMainProfileDestination() {
-        assertTrue(MainNavigationState(AppDestination.PROFILE, ProfileDestination.PROFILE).showsBottomNavigation)
+        assertTrue(NavigationSnapshot(AppDestination.PROFILE, ProfileDestination.PROFILE).showsBottomNavigation)
 
         ProfileDestination.entries
             .filterNot { it == ProfileDestination.PROFILE }
             .forEach { destination ->
                 assertFalse(
-                    MainNavigationState(AppDestination.PROFILE, destination).showsBottomNavigation,
+                    NavigationSnapshot(AppDestination.PROFILE, destination).showsBottomNavigation,
                     "Bottom navigation should be hidden on $destination"
                 )
             }
@@ -143,7 +143,7 @@ class AppNavigationTest {
         AppDestination.entries
             .filterNot { it == AppDestination.PROFILE }
             .forEach { destination ->
-                assertTrue(MainNavigationState(destination).showsBottomNavigation)
+                assertTrue(NavigationSnapshot(destination).showsBottomNavigation)
             }
     }
 

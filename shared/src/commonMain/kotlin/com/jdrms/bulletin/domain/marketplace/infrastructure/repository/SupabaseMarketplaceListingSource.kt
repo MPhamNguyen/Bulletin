@@ -11,15 +11,25 @@ import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
 import io.github.jan.supabase.postgrest.query.filter.TextSearchType
+import io.github.jan.supabase.storage.storage
 
 class SupabaseMarketplaceListingSource private constructor(
     private val listingTable: MarketplaceListingTable,
-    private val readCache: MarketplaceReadCache
+    private val readCache: MarketplaceReadCache,
+    private val imageUrl: (String) -> String
 ) : MarketplaceListingSource {
-    constructor(supabase: SupabaseClient) : this(PostgrestMarketplaceListingTable(supabase), MarketplaceReadCache())
+    constructor(supabase: SupabaseClient) : this(
+        PostgrestMarketplaceListingTable(supabase),
+        MarketplaceReadCache(),
+        { path -> supabase.storage.from(LISTING_IMAGE_BUCKET).publicUrl(path) }
+    )
 
     internal constructor(supabase: SupabaseClient, readCache: MarketplaceReadCache) :
-        this(PostgrestMarketplaceListingTable(supabase), readCache)
+        this(
+            PostgrestMarketplaceListingTable(supabase),
+            readCache,
+            { path -> supabase.storage.from(LISTING_IMAGE_BUCKET).publicUrl(path) }
+        )
 
     override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
         return readCache.page(request) { loadPage(request) }
@@ -28,7 +38,7 @@ class SupabaseMarketplaceListingSource private constructor(
     private suspend fun loadPage(request: MarketplacePageRequest): MarketplaceListingPage {
         val rows = listingTable.getListings(request)
         val mappedRows = rows.mapNotNull { row ->
-            SupabaseMarketplaceListingMapper.toSnapshot(row)?.let { snapshot -> row to snapshot }
+            SupabaseMarketplaceListingMapper.toSnapshot(row, imageUrl)?.let { snapshot -> row to snapshot }
         }
         val pageRows = mappedRows.take(request.pageSize)
         val cursorRow = when {
@@ -43,7 +53,12 @@ class SupabaseMarketplaceListingSource private constructor(
     }
 
     internal constructor(getListings: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>) :
-        this(MarketplaceListingTable(getListings), MarketplaceReadCache())
+        this(MarketplaceListingTable(getListings), MarketplaceReadCache(), { it })
+
+    internal constructor(
+        fetch: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>,
+        imageUrl: (String) -> String
+    ) : this(MarketplaceListingTable(fetch), MarketplaceReadCache(), imageUrl)
 }
 
 private fun interface MarketplaceListingTable {
@@ -82,12 +97,18 @@ private class PostgrestMarketplaceListingTable(
         const val LISTINGS_TABLE = "listings"
         const val LISTING_ID_PREFIX = "listing:"
         val LISTING_COLUMNS = Columns.raw(
-            "*, seller_profile:profiles!listings_user_id_fkey ( full_name )"
+            "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), " +
+                "listing_images(object_path,position)"
         )
     }
 }
 
+private const val LISTING_IMAGE_BUCKET = "listing_imgs"
+
 internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplacePageRequest) {
+    request.viewerId?.let { viewerId ->
+        neq("user_id", viewerId)
+    }
     request.sellerId?.let { sellerId ->
         eq("user_id", sellerId)
     }

@@ -17,6 +17,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
  * Adapters must enforce membership for reads and writes; names are display metadata, never identity.
  * A network adapter must also enforce these rules on the server using the authenticated session.
  * Message lists are ordered oldest to newest by timestamp, then by ID for equal timestamps.
+ * A participant who removed a conversation can only read messages after their latest removal time,
+ * including after a new message or explicit reopening makes the conversation visible again.
  */
 interface MessagesRepository {
     suspend fun getOrCreateConversation(

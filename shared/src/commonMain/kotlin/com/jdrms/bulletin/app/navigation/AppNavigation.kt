@@ -46,14 +46,14 @@ enum class ProfileDestination {
     EDIT_LISTING
 }
 
-data class MainNavigationState(
+data class NavigationSnapshot(
     val currentDestination: AppDestination = AppDestination.HOME,
     val profileDestination: ProfileDestination = ProfileDestination.PROFILE
 ) {
     val showsBottomNavigation: Boolean
         get() = currentDestination != AppDestination.PROFILE || profileDestination == ProfileDestination.PROFILE
 
-    fun selectBottomNavigationDestination(destination: AppDestination): MainNavigationState = copy(
+    fun selectBottomNavigationDestination(destination: AppDestination): NavigationSnapshot = copy(
         currentDestination = destination,
         profileDestination = ProfileDestination.PROFILE
     )
