@@ -106,6 +106,9 @@ private class PostgrestMarketplaceListingTable(
 private const val LISTING_IMAGE_BUCKET = "listing_imgs"
 
 internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplacePageRequest) {
+    request.viewerId?.let { viewerId ->
+        neq("user_id", viewerId)
+    }
     request.sellerId?.let { sellerId ->
         eq("user_id", sellerId)
     }

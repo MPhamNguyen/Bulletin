@@ -149,6 +149,15 @@ class MarketplaceApplicationTest {
     }
 
     @Test
+    fun pageForExcludesViewerListingsEvenWhenFilteringToThatSeller() {
+        val result = listOf(snapshot("own", "viewer"), snapshot("other", "seller"))
+            .pageFor(MarketplacePageRequest(viewerId = "viewer", sellerId = "viewer"))
+
+        assertTrue(result.listings.isEmpty())
+        assertEquals(null, result.nextCursor)
+    }
+
+    @Test
     fun searchHidesListingsReportedByTheCurrentViewer() = runTest {
         val source = MutableMarketplaceListingSource().apply {
             listings += listOf(snapshot("reported", "seller-1"), snapshot("visible", "seller-2"))

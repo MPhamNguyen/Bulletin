@@ -28,9 +28,11 @@ data class MarketplacePageCursor(
 
 data class MarketplacePageRequest(
     val query: String = "",
+    /** Optional seller constraint; combined with [viewerId], owned listings remain excluded. */
     val sellerId: String? = null,
     val category: MarketplaceCategory? = null,
     val condition: MarketplaceCondition? = null,
+    /** Excludes this user's listings from marketplace discovery results. */
     val viewerId: String? = null,
     val cursor: MarketplacePageCursor? = null,
     val pageSize: Int = DEFAULT_MARKETPLACE_PAGE_SIZE
@@ -90,6 +92,7 @@ class MarketplaceRepositoryListingSource(
 fun List<MarketplaceListingSnapshot>.pageFor(request: MarketplacePageRequest): MarketplaceListingPage {
     val keywords = request.query.trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
     val matchingListings = asSequence()
+        .filter { listing -> request.viewerId == null || listing.sellerId != request.viewerId }
         .filter { listing -> request.sellerId == null || listing.sellerId == request.sellerId }
         .filter { listing -> request.category == null || listing.category == request.category }
         .filter { listing -> request.condition == null || listing.condition == request.condition }
