@@ -4,9 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

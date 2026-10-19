@@ -1,7 +1,5 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
-import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
@@ -14,6 +12,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
+import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

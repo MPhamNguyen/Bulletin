@@ -3,9 +3,9 @@ package com.jdrms.bulletin.domain.profile.application
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 
 class SubmitUserReport(
     private val authRepository: AuthRepository,

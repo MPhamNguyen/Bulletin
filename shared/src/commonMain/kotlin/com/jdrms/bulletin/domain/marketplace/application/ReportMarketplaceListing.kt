@@ -2,10 +2,10 @@ package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 
 fun interface MarketplaceReportIdentity {
     suspend fun currentReporterId(): Result<MarketplaceReporterId?>

@@ -39,21 +39,19 @@ data class ListingReport(
             reason: ReportReason,
             description: String
         ): Result<ListingReport> {
-            if (!reason.appliesTo(ReportType.LISTING)) {
-                return Result.Error(IllegalArgumentException("Report reason is not valid for listings."))
-            }
             val normalizedDescription = description.trim()
-            if (listingId.value.isBlank() || listingSellerId.isBlank()) {
-                return Result.Error(IllegalArgumentException("Listing identity is required."))
-            }
-            if (reporterId.value == listingSellerId) {
-                return Result.Error(IllegalArgumentException("You cannot report your own listing."))
-            }
-            if (normalizedDescription.length > MAX_DESCRIPTION_LENGTH) {
-                return Result.Error(
+            val validationFailure = when {
+                !reason.appliesTo(ReportType.LISTING) ->
+                    IllegalArgumentException("Report reason is not valid for listings.")
+                listingId.value.isBlank() || listingSellerId.isBlank() ->
+                    IllegalArgumentException("Listing identity is required.")
+                reporterId.value == listingSellerId ->
+                    IllegalArgumentException("You cannot report your own listing.")
+                normalizedDescription.length > MAX_DESCRIPTION_LENGTH ->
                     IllegalArgumentException("Description must be $MAX_DESCRIPTION_LENGTH characters or fewer.")
-                )
+                else -> null
             }
+            if (validationFailure != null) return Result.Error(validationFailure)
             return Result.Success(
                 ListingReport(listingId, listingSellerId, reporterId, reason, normalizedDescription)
             )

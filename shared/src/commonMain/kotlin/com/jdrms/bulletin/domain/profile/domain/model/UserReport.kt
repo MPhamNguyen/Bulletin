@@ -31,21 +31,19 @@ data class UserReport(
             reason: ReportReason,
             description: String
         ): Result<UserReport> {
-            if (!reason.appliesTo(ReportType.USER)) {
-                return Result.Error(IllegalArgumentException("Report reason is not valid for users."))
-            }
             val normalizedDescription = description.trim()
-            if (reporterId.value.isBlank() || reportedUserId.value.isBlank()) {
-                return Result.Error(IllegalArgumentException("Reporter and reported user IDs are required."))
-            }
-            if (reporterId == reportedUserId) {
-                return Result.Error(IllegalArgumentException("You cannot report your own account."))
-            }
-            if (normalizedDescription.length > MAX_DESCRIPTION_LENGTH) {
-                return Result.Error(
+            val validationFailure = when {
+                !reason.appliesTo(ReportType.USER) ->
+                    IllegalArgumentException("Report reason is not valid for users.")
+                reporterId.value.isBlank() || reportedUserId.value.isBlank() ->
+                    IllegalArgumentException("Reporter and reported user IDs are required.")
+                reporterId == reportedUserId ->
+                    IllegalArgumentException("You cannot report your own account.")
+                normalizedDescription.length > MAX_DESCRIPTION_LENGTH ->
                     IllegalArgumentException("Description must be $MAX_DESCRIPTION_LENGTH characters or fewer.")
-                )
+                else -> null
             }
+            if (validationFailure != null) return Result.Error(validationFailure)
             return Result.Success(UserReport(reporterId, reportedUserId, reason, normalizedDescription))
         }
     }

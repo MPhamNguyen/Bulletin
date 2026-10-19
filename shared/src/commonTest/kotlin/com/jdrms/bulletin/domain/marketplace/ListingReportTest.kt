@@ -5,11 +5,11 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceReportIdenti
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingReportRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

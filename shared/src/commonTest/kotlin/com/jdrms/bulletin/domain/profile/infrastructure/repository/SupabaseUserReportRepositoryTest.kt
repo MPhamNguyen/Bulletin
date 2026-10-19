@@ -4,10 +4,10 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.SupabaseUserReportType
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.UserReportInsertDto
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString

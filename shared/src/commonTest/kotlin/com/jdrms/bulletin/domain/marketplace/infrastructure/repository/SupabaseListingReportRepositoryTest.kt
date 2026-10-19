@@ -3,10 +3,11 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportSelfReportException
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportStatus
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -30,14 +31,14 @@ import kotlin.test.assertTrue
 
 class SupabaseListingReportRepositoryTest {
     @Test
-    fun treatsOnlyClosedStatusesAsAllowingAnotherReport() {
-        val missingStatus: String? = null
-        assertTrue("open".isOpenListingReportStatus())
-        assertTrue("in_review".isOpenListingReportStatus())
+    fun treatsOnlyActionableStatusesAsOpenReports() {
+        val missingStatus: ReportStatus? = null
+        assertTrue(ReportStatus.OPEN.isOpenListingReportStatus())
+        assertTrue(ReportStatus.UNDER_REVIEW.isOpenListingReportStatus())
         assertTrue(missingStatus.isOpenListingReportStatus())
-        assertFalse("closed".isOpenListingReportStatus())
-        assertFalse("resolved".isOpenListingReportStatus())
-        assertFalse("dismissed".isOpenListingReportStatus())
+        assertFalse(ReportStatus.ACTION_TAKEN.isOpenListingReportStatus())
+        assertFalse(ReportStatus.DISMISSED.isOpenListingReportStatus())
+        assertFalse(ReportStatus.DUPLICATE.isOpenListingReportStatus())
     }
 
     @Test
@@ -142,7 +143,7 @@ class SupabaseListingReportRepositoryTest {
             install(Postgrest)
             httpEngine = MockEngine { request ->
                 if (request.method == HttpMethod.Get) {
-                    respond("[{\"status\":\"resolved\"}]", HttpStatusCode.OK)
+                    respond("[{\"status\":\"action_taken\"}]", HttpStatusCode.OK)
                 } else {
                     respond("", HttpStatusCode.Created)
                 }
@@ -207,7 +208,7 @@ class SupabaseListingReportRepositoryTest {
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine {
-                respond("[{\"listing_id\":\"listing-id\",\"status\":\"resolved\"}]", HttpStatusCode.OK)
+                respond("[{\"listing_id\":\"listing-id\",\"status\":\"action_taken\"}]", HttpStatusCode.OK)
             }
         }
         try {

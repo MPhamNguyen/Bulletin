@@ -56,8 +56,8 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
-    fun resolvedAndDismissedReportsKeepTheMessageHidden() {
-        listOf("open", "in_review", "resolved", "dismissed").forEach { status ->
+    fun allReportStatusesKeepTheMessageHidden() {
+        listOf("open", "under_review", "action_taken", "dismissed", "duplicate").forEach { status ->
             val dto = decodeMessage(""", "reports":[{"id":"report-id","status":"$status"}]""")
 
             assertTrue(SupabaseMessagesMapper.toMessage(dto).isReported)
