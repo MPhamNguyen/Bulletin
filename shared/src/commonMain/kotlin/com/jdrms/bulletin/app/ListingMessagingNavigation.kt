@@ -2,7 +2,7 @@ package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
-import com.jdrms.bulletin.app.navigation.MainNavigationState
+import com.jdrms.bulletin.app.navigation.NavigationSnapshot
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
@@ -12,7 +12,7 @@ import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 internal data class ListingMessageSendResult(
     val sent: Boolean,
     val conversationId: ConversationId?,
-    val navigationState: MainNavigationState
+    val navigationState: NavigationSnapshot
 )
 
 internal data class ListingMessageRequest(
@@ -33,7 +33,7 @@ internal fun openSentListingConversation(
 
 internal suspend fun sendListingMessage(
     container: AppContainer,
-    navigationState: MainNavigationState,
+    navigationState: NavigationSnapshot,
     request: ListingMessageRequest
 ): ListingMessageSendResult {
     val conversationId = container.messageSeller(

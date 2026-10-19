@@ -1,10 +1,11 @@
 package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.navigation.AppDestination
+import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 
 internal class ListingMessagingActions(
-    private val navigation: MainNavigationState,
+    private val navigation: MutableMainNavigationState,
     private val sendMessage: suspend (ListingMessageRequest) -> ConversationId?,
     private val findConversation: suspend (String, String) -> ConversationId?,
     private val hasConversation: suspend (String, String) -> Boolean
