@@ -27,9 +27,11 @@ data class MarketplacePageCursor(
 
 data class MarketplacePageRequest(
     val query: String = "",
+    /** Optional seller constraint; combined with [viewerId], owned listings remain excluded. */
     val sellerId: String? = null,
     val category: MarketplaceCategory? = null,
     val condition: MarketplaceCondition? = null,
+    /** Excludes this user's listings from marketplace discovery results. */
     val viewerId: String? = null,
     val cursor: MarketplacePageCursor? = null,
     val pageSize: Int = DEFAULT_MARKETPLACE_PAGE_SIZE

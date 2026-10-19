@@ -149,20 +149,12 @@ class MarketplaceApplicationTest {
     }
 
     @Test
-    fun marketplaceSearchExcludesListingsOwnedByTheViewer() = runTest {
-        val search = SearchMarketplace(
-            repository = InMemoryMarketplaceRepository(initialListings = emptyList()),
-            listingSource = MarketplaceListingSource {
-                MarketplaceListingPage(
-                    listings = listOf(snapshot("own", "viewer"), snapshot("other", "seller")),
-                    nextCursor = null
-                )
-            }
-        )
+    fun pageForExcludesViewerListingsEvenWhenFilteringToThatSeller() {
+        val result = listOf(snapshot("own", "viewer"), snapshot("other", "seller"))
+            .pageFor(MarketplacePageRequest(viewerId = "viewer", sellerId = "viewer"))
 
-        val result = search.getPage(MarketplacePageRequest(viewerId = "viewer"))
-
-        assertEquals(listOf("other"), result.items.map { it.id.value })
+        assertTrue(result.listings.isEmpty())
+        assertEquals(null, result.nextCursor)
     }
 
     @Test
