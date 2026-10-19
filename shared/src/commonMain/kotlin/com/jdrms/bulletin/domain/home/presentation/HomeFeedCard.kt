@@ -6,13 +6,16 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -47,17 +50,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
-import coil3.compose.SubcomposeAsyncImage
-import coil3.compose.SubcomposeAsyncImageContent
 
 private const val HOME_PHOTO_INTERVAL_MILLIS = 3_000L
 
@@ -73,14 +78,17 @@ fun HomeFeedCard(
         item.photoUrls.ifEmpty { listOfNotNull(item.imageUrl) }
     }
     var photoIndex by rememberSaveable(item.id.value, cardIndex, photoUrls) { mutableIntStateOf(0) }
+    var isHolding by remember(item.id.value, cardIndex) { mutableStateOf(false) }
+    var isLongPress by remember(item.id.value, cardIndex) { mutableStateOf(false) }
     val photoProgress = remember(item.id.value, photoUrls, photoIndex) { Animatable(0f) }
-    LaunchedEffect(item.id.value, photoUrls, isActive, photoIndex) {
-        photoProgress.snapTo(0f)
-        if (isActive && photoUrls.size > 1) {
+    LaunchedEffect(item.id.value, photoUrls, isActive, photoIndex, isHolding) {
+        if (isActive && !isHolding && photoUrls.size > 1) {
             photoProgress.animateTo(
                 targetValue = 1f,
                 animationSpec = tween(
-                    durationMillis = HOME_PHOTO_INTERVAL_MILLIS.toInt(),
+                    durationMillis = (HOME_PHOTO_INTERVAL_MILLIS * (1f - photoProgress.value))
+                        .toInt()
+                        .coerceAtLeast(1),
                     easing = LinearEasing
                 )
             )
@@ -92,6 +100,24 @@ fun HomeFeedCard(
             .fillMaxSize()
             .padding(8.dp)
             .clip(MaterialTheme.shapes.large)
+            .pointerInput(item.id.value, cardIndex) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    isHolding = true
+                    isLongPress = false
+                    try {
+                        val longPress = awaitLongPressOrCancellation(down.id)
+                        isLongPress = longPress != null
+                        if (longPress != null) {
+                            do {
+                                val event = awaitPointerEvent(PointerEventPass.Final)
+                            } while (event.changes.any { it.pressed })
+                        }
+                    } finally {
+                        isHolding = false
+                    }
+                }
+            }
     ) {
         HomeFeedCardBackground(
             item = item,
@@ -99,8 +125,12 @@ fun HomeFeedCard(
             photoIndex = photoIndex,
             photoCount = photoUrls.size,
             photoProgress = photoProgress.value,
-            onPreviousPhoto = { photoIndex = stepHomePhotoIndex(photoIndex, -1, photoUrls.size) },
-            onNextPhoto = { photoIndex = stepHomePhotoIndex(photoIndex, 1, photoUrls.size) }
+            onPreviousPhoto = {
+                if (!isLongPress) photoIndex = stepHomePhotoIndex(photoIndex, -1, photoUrls.size)
+            },
+            onNextPhoto = {
+                if (!isLongPress) photoIndex = stepHomePhotoIndex(photoIndex, 1, photoUrls.size)
+            }
         )
         Column(
             modifier = Modifier

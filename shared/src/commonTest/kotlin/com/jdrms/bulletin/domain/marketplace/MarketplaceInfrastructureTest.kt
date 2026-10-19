@@ -4,8 +4,8 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
-import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceImageDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
@@ -28,7 +28,10 @@ class MarketplaceInfrastructureTest {
     fun homeSnapshotUsesOnlyThePositionZeroImageAndResolvesItsStoragePath() {
         val snapshot = SupabaseMarketplaceListingMapper.toSnapshot(
             dto = SupabaseMarketplaceListingDto(
-                id = "listing-with-photos", name = "Desk", userId = "seller", price = 20.0,
+                id = "listing-with-photos",
+                name = "Desk",
+                userId = "seller",
+                price = 20.0,
                 listingImages = listOf(
                     SupabaseMarketplaceImageDto("later.webp", 1),
                     SupabaseMarketplaceImageDto("cover.webp", 0)
@@ -48,7 +51,10 @@ class MarketplaceInfrastructureTest {
     fun homeSnapshotHasNoPhotoWhenPositionZeroIsMissing() {
         val snapshot = SupabaseMarketplaceListingMapper.toSnapshot(
             dto = SupabaseMarketplaceListingDto(
-                id = "listing-without-cover", name = "Desk", userId = "seller", price = 20.0,
+                id = "listing-without-cover",
+                name = "Desk",
+                userId = "seller",
+                price = 20.0,
                 listingImages = listOf(SupabaseMarketplaceImageDto("later.webp", 1))
             )
         )
