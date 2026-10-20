@@ -3,10 +3,10 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportSelfReportException
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -30,14 +30,17 @@ import kotlin.test.assertTrue
 
 class SupabaseListingReportRepositoryTest {
     @Test
-    fun treatsOnlyClosedStatusesAsAllowingAnotherReport() {
+    fun treatsOnlyActionableStatusesAsOpenReports() {
         val missingStatus: String? = null
         assertTrue("open".isOpenListingReportStatus())
-        assertTrue("in_review".isOpenListingReportStatus())
+        assertTrue("under_review".isOpenListingReportStatus())
         assertTrue(missingStatus.isOpenListingReportStatus())
-        assertFalse("closed".isOpenListingReportStatus())
-        assertFalse("resolved".isOpenListingReportStatus())
+        assertFalse("action_taken".isOpenListingReportStatus())
         assertFalse("dismissed".isOpenListingReportStatus())
+        assertFalse("duplicate".isOpenListingReportStatus())
+        assertTrue("future_status".isOpenListingReportStatus())
+        assertTrue("in_review".isOpenListingReportStatus())
+        assertFalse("resolved".isOpenListingReportStatus())
     }
 
     @Test
@@ -104,7 +107,7 @@ class SupabaseListingReportRepositoryTest {
                     assertEquals("listing", body.getValue("type").jsonPrimitive.content)
                     assertEquals("reporter-id", body.getValue("reporter_id").jsonPrimitive.content)
                     assertEquals("listing-id", body.getValue("listing_id").jsonPrimitive.content)
-                    assertEquals("Scam or fraud", body.getValue("reason").jsonPrimitive.content)
+                    assertEquals("scam_or_fraud", body.getValue("reason").jsonPrimitive.content)
                     assertEquals(JsonNull, body.getValue("description"))
                     respond("", HttpStatusCode.Created)
                 }
@@ -142,7 +145,7 @@ class SupabaseListingReportRepositoryTest {
             install(Postgrest)
             httpEngine = MockEngine { request ->
                 if (request.method == HttpMethod.Get) {
-                    respond("[{\"status\":\"resolved\"}]", HttpStatusCode.OK)
+                    respond("[{\"status\":\"action_taken\"}]", HttpStatusCode.OK)
                 } else {
                     respond("", HttpStatusCode.Created)
                 }
@@ -207,7 +210,7 @@ class SupabaseListingReportRepositoryTest {
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine {
-                respond("[{\"listing_id\":\"listing-id\",\"status\":\"resolved\"}]", HttpStatusCode.OK)
+                respond("[{\"listing_id\":\"listing-id\",\"status\":\"action_taken\"}]", HttpStatusCode.OK)
             }
         }
         try {
@@ -262,7 +265,7 @@ class SupabaseListingReportRepositoryTest {
         listingId = MarketplaceItemId("listing:listing-id"),
         listingSellerId = "seller-id",
         reporterId = MarketplaceReporterId("reporter-id"),
-        reason = ListingReportReason.SCAM_OR_FRAUD,
+        reason = ReportReason.SCAM_OR_FRAUD,
         description = ""
     )
 }

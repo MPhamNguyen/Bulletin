@@ -143,7 +143,7 @@ fun MainAppScaffold(
                 val contentModifier = Modifier
                     .padding(paddingValues)
                     .then(
-                        if (navigation.currentDestination.hidesOnScroll) {
+                        if (navigation.currentDestination.hidesOnScroll || !navigation.showsBottomNavigation) {
                             Modifier
                         } else {
                             Modifier.padding(bottom = navbarHeight)
@@ -170,7 +170,9 @@ fun MainAppScaffold(
             }
             Navbar(
                 currentDestination = navigation.currentDestination,
-                isVisible = navbarScrollBehavior::isVisible,
+                isVisible = {
+                    navigation.showsBottomNavigation && navbarScrollBehavior.isVisible
+                },
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
                 onFocused = navbarScrollBehavior::reveal,
                 modifier = Modifier

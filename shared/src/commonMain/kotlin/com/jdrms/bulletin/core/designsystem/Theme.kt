@@ -34,6 +34,22 @@ private val PaletteMidBlue = Color(0xFF3E5C76)
 private val PaletteInk = Color(0xFF0D1321)
 private val PaletteSlateBlue = Color(0xFF748CAB)
 
+// Artwork stays dark in either app theme so overlaid listing details remain readable.
+object BulletinFeedCardDefaults {
+    val backgroundTop = Color(0xFF27405A)
+    val backgroundMiddle = PaletteMidBlue
+    val backgroundBottom = PaletteSlateBlue
+    val upperCircleTop = Color(0xFF5D7B99)
+    val upperCircleBottom = Color(0xFF86A0BD)
+    val leftCircleTop = Color(0xFF9AA9BF)
+    val leftCircleBottom = Color(0xFFB5BFD0)
+    val lowerCircleTop = Color(0xFF4B6A88)
+    val lowerCircleBottom = Color(0xFF33506B)
+    val scrim = Color(0xFF070B13)
+    val content = Color(0xFFF0F4F8)
+    val secondaryContent = Color(0xFFD3E0F0)
+}
+
 // Derived tints/shades (light)
 private val MidBlueContainer = Color(0xFFDCE4EB)
 private val SlateBlueContainer = Color(0xFFE7ECF2)

@@ -11,7 +11,9 @@ import com.jdrms.bulletin.app.navigation.systemProfileBack
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 class AppNavigationTest {
 
@@ -120,6 +122,29 @@ class AppNavigationTest {
 
         assertEquals(AppDestination.MESSAGES, result.currentDestination)
         assertEquals(ProfileDestination.PROFILE, result.profileDestination)
+    }
+
+    @Test
+    fun bottomNavigationOnlyAppearsOnTheMainProfileDestination() {
+        assertTrue(NavigationSnapshot(AppDestination.PROFILE, ProfileDestination.PROFILE).showsBottomNavigation)
+
+        ProfileDestination.entries
+            .filterNot { it == ProfileDestination.PROFILE }
+            .forEach { destination ->
+                assertFalse(
+                    NavigationSnapshot(AppDestination.PROFILE, destination).showsBottomNavigation,
+                    "Bottom navigation should be hidden on $destination"
+                )
+            }
+    }
+
+    @Test
+    fun bottomNavigationAppearsOnOtherMainDestinations() {
+        AppDestination.entries
+            .filterNot { it == AppDestination.PROFILE }
+            .forEach { destination ->
+                assertTrue(NavigationSnapshot(destination).showsBottomNavigation)
+            }
     }
 
     @Test

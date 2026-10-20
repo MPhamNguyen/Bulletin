@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingReportIns
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingReportListingIdDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ListingReportStatusDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseListingReportType
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportStatus
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
@@ -40,7 +41,7 @@ class SupabaseListingReportRepository internal constructor(
                 reporterId = authenticatedReporter,
                 type = SupabaseListingReportType.LISTING,
                 listingId = report.listingId.value.removePrefix(LISTING_ID_PREFIX),
-                reason = report.reason.label,
+                reason = report.reason.code,
                 description = report.description.ifBlank { null }
             )
         )
@@ -168,7 +169,4 @@ internal class PostgrestSupabaseListingReportsTable(
             .toSet()
 }
 
-internal fun String?.isOpenListingReportStatus(): Boolean = when (this?.lowercase()) {
-    "closed", "resolved", "dismissed" -> false
-    else -> true
-}
+internal fun String?.isOpenListingReportStatus(): Boolean = ReportStatus.fromDatabaseValue(this).isOpen

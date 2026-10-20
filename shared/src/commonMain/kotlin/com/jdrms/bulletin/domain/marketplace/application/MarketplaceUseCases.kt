@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.marketplace.application
 
+import com.jdrms.bulletin.app.application.GetVisibleMarketplaceListings
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.BookmarkedListingsPage
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
@@ -20,33 +21,18 @@ class SearchMarketplace(
     private val searchPolicy: MarketplaceSearchPolicy = MarketplaceSearchPolicy(),
     private val blockedUserProvider: MarketplaceBlockedUserProvider? = null,
     private val reportedListingProvider: MarketplaceReportedListingProvider =
-        EmptyMarketplaceReportedListingProvider
+        EmptyMarketplaceReportedListingProvider,
+    getVisibleListings: GetVisibleMarketplaceListings? = null
 ) {
+    private val visibilityPolicy = getVisibleListings ?: GetVisibleMarketplaceListings(
+        listingSource = listingSource,
+        blockedUserProvider = blockedUserProvider,
+        reportedListingProvider = reportedListingProvider
+    )
+
     suspend fun getPage(request: MarketplacePageRequest): MarketplaceItemPage {
-        val hiddenUserIds = request.viewerId?.let { viewerId ->
-            blockedUserProvider?.getHiddenUserIds(viewerId).orEmpty()
-        }.orEmpty()
-        val reportedListingIds = request.viewerId
-            ?.takeIf(String::isNotBlank)
-            ?.let { viewerId ->
-                reportedListingProvider.getReportedListingIds(MarketplaceReporterId(viewerId))
-            }
-            .orEmpty()
-        val visibleItems = mutableListOf<MarketplaceItem>()
-        var cursor = request.cursor
-        var nextCursor: MarketplacePageCursor?
-        do {
-            val page = listingSource.getAvailableListings(request.copy(cursor = cursor))
-            visibleItems += page.listings
-                .asSequence()
-                .filterNot { it.sellerId in hiddenUserIds }
-                .filterNot { MarketplaceItemId(it.id) in reportedListingIds }
-                .map { it.toMarketplaceItem() }
-                .take(request.pageSize - visibleItems.size)
-            nextCursor = page.nextCursor
-            cursor = nextCursor
-        } while (visibleItems.size < request.pageSize && nextCursor != null)
-        return MarketplaceItemPage(visibleItems, nextCursor)
+        val page = visibilityPolicy(request)
+        return MarketplaceItemPage(page.listings.map { it.toMarketplaceItem() }, page.nextCursor)
     }
 
     suspend fun getCatalog(): List<MarketplaceItem> {

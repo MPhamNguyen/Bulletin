@@ -18,9 +18,13 @@ data class MarketplaceListingSnapshot(
     val category: MarketplaceCategory,
     val createdAtMillis: Long,
     val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
-    val photos: List<String> = emptyList(),
+    val primaryPhotoUrl: String? = null,
+    val photoUrls: List<String> = listOfNotNull(primaryPhotoUrl),
     val updatedAtMillis: Long = 0L
-)
+) {
+    val photos: List<String>
+        get() = photoUrls
+}
 
 data class MarketplacePageCursor(
     val createdAt: Instant,
@@ -82,7 +86,8 @@ class MarketplaceRepositoryListingSource(
                 category = item.category,
                 createdAtMillis = item.createdAtMillis,
                 condition = item.condition,
-                photos = item.photos,
+                primaryPhotoUrl = item.photos.firstOrNull(),
+                photoUrls = item.photos,
                 updatedAtMillis = item.updatedAtMillis
             )
         }.pageFor(request)
@@ -92,6 +97,7 @@ class MarketplaceRepositoryListingSource(
 fun List<MarketplaceListingSnapshot>.pageFor(request: MarketplacePageRequest): MarketplaceListingPage {
     val keywords = request.query.trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
     val matchingListings = asSequence()
+        .filter { listing -> request.viewerId == null || listing.sellerId != request.viewerId }
         .filter { listing -> request.sellerId == null || listing.sellerId == request.sellerId }
         .filter { listing -> request.category == null || listing.category == request.category }
         .filter { listing -> request.condition == null || listing.condition == request.condition }

@@ -145,16 +145,19 @@ Business contexts use four layers:
 
 | Repository or port | Configured binding | In-memory use | Live project verification |
 | --- | --- | --- | --- |
-| Home feed | In-memory repository | Runtime and tests | Not applicable |
-| Marketplace and listing source | Supabase adapters | Tests, inspection, or explicit local development | Image schema and storage configuration verified in connected project |
-| Listings, including sold-state updates and image metadata | Supabase adapter | Tests, inspection, or explicit local development | Image schema and storage configuration verified in connected project |
-| Messages, thread observer, and inbox observer | Supabase adapters | Tests, inspection, or explicit local development | Local adapter tests only; live project not verified |
-| Profile and authentication/session | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
-| User reports and blocks | Supabase adapters | Tests, inspection, or explicit local development | Not verified here |
-| Profile photos | Supabase Storage adapter | Tests, inspection, or explicit local development | Not verified here |
+| Home feed | Supabase marketplace listing source when configured | Marketplace listing source with in-memory fallback | Not verified here; home preferences remain in-memory |
+| Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters | Not verified here |
+| Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter | Not verified here |
+| Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
+| Profile repository | Supabase adapter | In-memory adapter | Not verified here |
+| User report repository | Supabase adapter | In-memory adapter | Not verified here |
+| User block repository | Supabase adapter | In-memory adapter | Not verified here |
+| Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
+| Auth and session repositories | Supabase Auth adapter | In-memory auth adapter | Not verified here |
 | Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
 
 Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. Review those migrations and configure the matching project before using backend features. No live project validation is claimed here.
+
 ---
 
 ## 🔧 Local Setup

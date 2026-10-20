@@ -1,22 +1,17 @@
 package com.jdrms.bulletin.domain.profile.domain.model
 
 import com.jdrms.bulletin.core.common.Result
-
-enum class UserReportReason(val label: String) {
-    SCAM_OR_FRAUD("Scam or Fraud"),
-    SOLICITATION_OF_PERSONAL_INFORMATION("Solicitation of Personal Information"),
-    INAPPROPRIATE_CONTENT_OR_BEHAVIOR("Inappropriate Content or Behavior"),
-    FAKE_ACCOUNT_OR_IMPERSONATION("Fake Account / Impersonation"),
-    VIOLATION_OF_COMMERCE_POLICIES("Violation of Commerce Policies")
-}
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
 data class UserReport(
     val reporterId: UserId,
     val reportedUserId: UserId,
-    val reason: UserReportReason,
+    val reason: ReportReason,
     val description: String
 ) {
     init {
+        require(reason.appliesTo(ReportType.USER)) { "Report reason is not valid for users." }
         require(reporterId.value.isNotBlank() && reportedUserId.value.isNotBlank()) {
             "Reporter and reported user IDs are required."
         }
@@ -33,21 +28,22 @@ data class UserReport(
         fun create(
             reporterId: UserId,
             reportedUserId: UserId,
-            reason: UserReportReason,
+            reason: ReportReason,
             description: String
         ): Result<UserReport> {
             val normalizedDescription = description.trim()
-            if (reporterId.value.isBlank() || reportedUserId.value.isBlank()) {
-                return Result.Error(IllegalArgumentException("Reporter and reported user IDs are required."))
-            }
-            if (reporterId == reportedUserId) {
-                return Result.Error(IllegalArgumentException("You cannot report your own account."))
-            }
-            if (normalizedDescription.length > MAX_DESCRIPTION_LENGTH) {
-                return Result.Error(
+            val validationFailure = when {
+                !reason.appliesTo(ReportType.USER) ->
+                    IllegalArgumentException("Report reason is not valid for users.")
+                reporterId.value.isBlank() || reportedUserId.value.isBlank() ->
+                    IllegalArgumentException("Reporter and reported user IDs are required.")
+                reporterId == reportedUserId ->
+                    IllegalArgumentException("You cannot report your own account.")
+                normalizedDescription.length > MAX_DESCRIPTION_LENGTH ->
                     IllegalArgumentException("Description must be $MAX_DESCRIPTION_LENGTH characters or fewer.")
-                )
+                else -> null
             }
+            if (validationFailure != null) return Result.Error(validationFailure)
             return Result.Success(UserReport(reporterId, reportedUserId, reason, normalizedDescription))
         }
     }

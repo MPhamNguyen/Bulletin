@@ -4,7 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.profile.domain.model.UserReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -38,7 +38,7 @@ class SupabaseUserReportsTableTest {
                 assertEquals("user", body.getValue("type").jsonPrimitive.content)
                 assertEquals("reporter-id", body.getValue("reporter_id").jsonPrimitive.content)
                 assertEquals("target-id", body.getValue("reported_user_id").jsonPrimitive.content)
-                assertEquals("Scam or Fraud", body.getValue("reason").jsonPrimitive.content)
+                assertEquals("scam_or_fraud", body.getValue("reason").jsonPrimitive.content)
                 assertEquals("Details", body.getValue("description").jsonPrimitive.content)
                 assertFalse("message_id" in body)
                 assertFalse("listing_id" in body)
@@ -101,7 +101,7 @@ class SupabaseUserReportsTableTest {
     private fun report(description: String = "") = UserReport.create(
         UserId("reporter-id"),
         UserId("target-id"),
-        UserReportReason.SCAM_OR_FRAUD,
+        ReportReason.SCAM_OR_FRAUD,
         description
     ).getOrThrow()
 

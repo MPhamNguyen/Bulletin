@@ -57,7 +57,7 @@ class HomeDomainTest {
     }
 
     @Test
-    fun testRankingPolicyPrioritizesPreferredCategory() {
+    fun rankingKeeps_newest_listing_first_even_when_older_listing_matches_preferences() {
         val prefs = UserPreferences(
             preferredCategories = listOf(HomeFeedCategory.TEXTBOOKS),
             maxPrice = 50.0
@@ -67,26 +67,38 @@ class HomeDomainTest {
             title = "Algorithms Book",
             description = "Good condition",
             price = HomePrice(30.0),
-            category = HomeFeedCategory.TEXTBOOKS
+            category = HomeFeedCategory.TEXTBOOKS,
+            createdAtMillis = 100L
         )
         val furniture = HomeFeedItem(
             id = HomeItemId("h_fn"),
             title = "Desk Lamp",
             description = "Bright LED",
             price = HomePrice(20.0),
-            category = HomeFeedCategory.FURNITURE
+            category = HomeFeedCategory.FURNITURE,
+            createdAtMillis = 200L
         )
 
         val ranked = rankingPolicy.rankItems(listOf(furniture, textbook), prefs)
-        assertEquals("h_tb", ranked.first().id.value)
-        assertTrue(ranked.first().score > ranked.last().score)
+        assertEquals("h_fn", ranked.first().id.value)
+        assertTrue(ranked.last().score > ranked.first().score)
     }
 
     @Test
     fun testRepositoryFeedAndPreferences() = runTest {
-        val repo = InMemoryHomeRepository()
-        val feed = repo.getFeed("student_1")
-        assertTrue(feed.isNotEmpty())
+        val repo = InMemoryHomeRepository(
+            initialItems = listOf(
+                HomeFeedItemDto(
+                    id = "h_1",
+                    title = "Algorithms Book",
+                    description = "Good condition",
+                    price = 30.0,
+                    category = "TEXTBOOKS"
+                )
+            )
+        )
+        val feedPage = repo.getFeed("student_1", null, 10)
+        assertEquals(1, feedPage.items.size)
 
         val newPrefs = UserPreferences(
             preferredCategories = listOf(HomeFeedCategory.ELECTRONICS),
@@ -98,6 +110,28 @@ class HomeDomainTest {
         val updatedPrefs = repo.getPreferences("student_1")
         assertEquals(100.0, updatedPrefs.maxPrice)
         assertEquals(listOf(HomeFeedCategory.ELECTRONICS), updatedPrefs.preferredCategories)
+    }
+
+    @Test
+    fun inMemoryRepositoryPagesInStableOrderWithoutRepeatingCursorItem() = runTest {
+        val repo = InMemoryHomeRepository(
+            initialItems = listOf("a", "b", "c").map { id ->
+                HomeFeedItemDto(
+                    id = id,
+                    title = "Listing $id",
+                    description = "Available",
+                    price = 20.0,
+                    category = "TEXTBOOKS"
+                )
+            }
+        )
+
+        val firstPage = repo.getFeed(null, null, 2)
+        val secondPage = repo.getFeed(null, firstPage.nextCursor, 2)
+
+        assertEquals(listOf("c", "b"), firstPage.items.map { it.id.value })
+        assertEquals(listOf("a"), secondPage.items.map { it.id.value })
+        assertEquals(null, secondPage.nextCursor)
     }
 
     @Test

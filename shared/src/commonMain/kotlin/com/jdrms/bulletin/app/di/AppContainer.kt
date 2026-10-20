@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.application.GetVisibleMarketplaceListings
 import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.AuthMarketplaceReportIdentity
@@ -9,6 +10,7 @@ import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
+import com.jdrms.bulletin.app.integration.MarketplaceHomeRepository
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceBlockedUserProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
@@ -21,7 +23,6 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
-import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemoryHomeRepository
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
@@ -39,6 +40,8 @@ import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceReportedListings
+import com.jdrms.bulletin.domain.marketplace.application.InMemoryMarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
@@ -118,9 +121,12 @@ class AppContainer(
     private val isInspectionMode: Boolean = false,
     private val allowInMemoryFallback: Boolean = false,
     themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
+    marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore =
+        InMemoryMarketplaceLayoutPreferenceStore(),
     private val providedSupabaseClient: SupabaseClient? = null
 ) {
     internal val themePreferenceStore = themePreferenceStore
+    internal val marketplaceLayoutPreferenceStore = marketplaceLayoutPreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     private val marketplaceReadCache by lazy { MarketplaceReadCache() }
     private val profileReadCache by lazy { ProfileReadCache() }
@@ -142,7 +148,14 @@ class AppContainer(
         }
     }
 
-    val homeRepository by lazy { InMemoryHomeRepository() }
+    val getVisibleMarketplaceListings by lazy {
+        GetVisibleMarketplaceListings(
+            listingSource = marketplaceListingSource,
+            blockedUserProvider = marketplaceBlockedUserProvider,
+            reportedListingProvider = marketplaceReportedListingProvider
+        )
+    }
+    val homeRepository by lazy { MarketplaceHomeRepository(getVisibleMarketplaceListings) }
     val marketplaceRepository: MarketplaceRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -264,7 +277,8 @@ class AppContainer(
             repository = marketplaceRepository,
             listingSource = marketplaceListingSource,
             blockedUserProvider = marketplaceBlockedUserProvider,
-            reportedListingProvider = marketplaceReportedListingProvider
+            reportedListingProvider = marketplaceReportedListingProvider,
+            getVisibleListings = getVisibleMarketplaceListings
         )
     }
 

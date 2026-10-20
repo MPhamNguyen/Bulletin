@@ -204,6 +204,26 @@ class SupabaseMarketplaceListingSourceTest {
     }
 
     @Test
+    fun marketplaceQueryExcludesTheViewerListings() {
+        val builder = PostgrestFilterBuilder(PropertyConversionMethod.NONE)
+
+        builder.applyMarketplaceSearch(MarketplacePageRequest(viewerId = "viewer-42"))
+
+        assertEquals(listOf("neq.viewer-42"), builder.params["user_id"])
+    }
+
+    @Test
+    fun marketplaceQueryReturnsNoOwnedListingsWhenSellerMatchesViewer() {
+        val builder = PostgrestFilterBuilder(PropertyConversionMethod.NONE)
+
+        builder.applyMarketplaceSearch(
+            MarketplacePageRequest(viewerId = "viewer-42", sellerId = "viewer-42")
+        )
+
+        assertEquals(listOf("neq.viewer-42", "eq.viewer-42"), builder.params["user_id"])
+    }
+
+    @Test
     fun partialSearchTermUsesPrefixMatching() {
         val builder = PostgrestFilterBuilder(PropertyConversionMethod.NONE)
 

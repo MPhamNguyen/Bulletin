@@ -4,6 +4,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceImageDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.MarketplaceMapper
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
@@ -22,6 +23,45 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MarketplaceInfrastructureTest {
+
+    @Test
+    fun homeSnapshotUsesOnlyThePositionZeroImageAndResolvesItsStoragePath() {
+        val snapshot = SupabaseMarketplaceListingMapper.toSnapshot(
+            dto = SupabaseMarketplaceListingDto(
+                id = "listing-with-photos",
+                name = "Desk",
+                userId = "seller",
+                price = 20.0,
+                listingImages = listOf(
+                    SupabaseMarketplaceImageDto("later.webp", 1),
+                    SupabaseMarketplaceImageDto("cover.webp", 0)
+                )
+            ),
+            photoUrl = { "https://storage.example/$it" }
+        )
+
+        assertEquals("https://storage.example/cover.webp", snapshot?.primaryPhotoUrl)
+        assertEquals(
+            listOf("https://storage.example/cover.webp", "https://storage.example/later.webp"),
+            snapshot?.photoUrls
+        )
+    }
+
+    @Test
+    fun homeSnapshotHasNoPhotoWhenPositionZeroIsMissing() {
+        val snapshot = SupabaseMarketplaceListingMapper.toSnapshot(
+            dto = SupabaseMarketplaceListingDto(
+                id = "listing-without-cover",
+                name = "Desk",
+                userId = "seller",
+                price = 20.0,
+                listingImages = listOf(SupabaseMarketplaceImageDto("later.webp", 1))
+            )
+        )
+
+        assertEquals(null, snapshot?.primaryPhotoUrl)
+        assertEquals(listOf("later.webp"), snapshot?.photoUrls)
+    }
 
     @Test
     fun mapsSupabaseListingsShapeToMarketplaceDetail() {

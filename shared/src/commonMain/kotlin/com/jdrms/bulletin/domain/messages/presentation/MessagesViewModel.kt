@@ -12,6 +12,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
+import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -245,7 +246,7 @@ class MessagesViewModel(
         actions.send(showFailure)
     }
 
-    fun report(messageId: MessageId, reason: String = "Inappropriate content") {
+    fun report(messageId: MessageId, reason: String = MessagesPolicy.DEFAULT_REPORT_REASON) {
         inbox.synchronizeIdentity()
         applyInboxSelection(inbox.state.value)
         actions.report(messageId, reason, ::selectConversation, showFailure)

@@ -100,7 +100,7 @@ object SupabaseMessagesMapper {
         return SupabaseMessageReportInsertDto(
             messageId = messageId.value,
             reporterId = reporterId.value,
-            reason = MessagesPolicy.DEFAULT_REPORT_REASON,
+            reason = MessagesPolicy.DEFAULT_REPORT_REASON_CODE,
             type = SupabaseMessageReportType.MESSAGE,
             description = null
         )
