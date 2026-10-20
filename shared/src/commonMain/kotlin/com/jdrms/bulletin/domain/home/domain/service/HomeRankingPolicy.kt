@@ -19,6 +19,6 @@ class HomeRankingPolicy {
             }
 
             item.copy(score = calculatedScore, reason = reason)
-        }.sortedByDescending { it.score }
+        }.sortedByDescending { it.createdAtMillis }
     }
 }

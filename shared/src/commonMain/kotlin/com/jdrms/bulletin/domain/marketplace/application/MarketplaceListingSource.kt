@@ -18,8 +18,12 @@ data class MarketplaceListingSnapshot(
     val category: MarketplaceCategory,
     val createdAtMillis: Long,
     val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
-    val photos: List<String> = emptyList()
-)
+    val primaryPhotoUrl: String? = null,
+    val photoUrls: List<String> = listOfNotNull(primaryPhotoUrl)
+) {
+    val photos: List<String>
+        get() = photoUrls
+}
 
 data class MarketplacePageCursor(
     val createdAt: Instant,
@@ -28,11 +32,9 @@ data class MarketplacePageCursor(
 
 data class MarketplacePageRequest(
     val query: String = "",
-    /** Optional seller constraint; combined with [viewerId], owned listings remain excluded. */
     val sellerId: String? = null,
     val category: MarketplaceCategory? = null,
     val condition: MarketplaceCondition? = null,
-    /** Excludes this user's listings from marketplace discovery results. */
     val viewerId: String? = null,
     val cursor: MarketplacePageCursor? = null,
     val pageSize: Int = DEFAULT_MARKETPLACE_PAGE_SIZE
@@ -82,8 +84,7 @@ class MarketplaceRepositoryListingSource(
                 priceCurrency = item.price.currency,
                 category = item.category,
                 createdAtMillis = item.createdAtMillis,
-                condition = item.condition,
-                photos = item.photos
+                condition = item.condition
             )
         }.pageFor(request)
     }
