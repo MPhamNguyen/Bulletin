@@ -16,19 +16,19 @@ import io.github.jan.supabase.storage.storage
 class SupabaseMarketplaceListingSource private constructor(
     private val listingTable: MarketplaceListingTable,
     private val readCache: MarketplaceReadCache,
-    private val imageUrl: (String) -> String
+    private val photoUrl: (String) -> String
 ) : MarketplaceListingSource {
     constructor(supabase: SupabaseClient) : this(
         PostgrestMarketplaceListingTable(supabase),
         MarketplaceReadCache(),
-        { path -> supabase.storage.from(LISTING_IMAGE_BUCKET).publicUrl(path) }
+        { path -> supabase.storage.from(MARKETPLACE_IMAGES_BUCKET).publicUrl(path) }
     )
 
     internal constructor(supabase: SupabaseClient, readCache: MarketplaceReadCache) :
         this(
             PostgrestMarketplaceListingTable(supabase),
             readCache,
-            { path -> supabase.storage.from(LISTING_IMAGE_BUCKET).publicUrl(path) }
+            { path -> supabase.storage.from(MARKETPLACE_IMAGES_BUCKET).publicUrl(path) }
         )
 
     override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
@@ -38,7 +38,7 @@ class SupabaseMarketplaceListingSource private constructor(
     private suspend fun loadPage(request: MarketplacePageRequest): MarketplaceListingPage {
         val rows = listingTable.getListings(request)
         val mappedRows = rows.mapNotNull { row ->
-            SupabaseMarketplaceListingMapper.toSnapshot(row, imageUrl)?.let { snapshot -> row to snapshot }
+            SupabaseMarketplaceListingMapper.toSnapshot(row, photoUrl)?.let { snapshot -> row to snapshot }
         }
         val pageRows = mappedRows.take(request.pageSize)
         val cursorRow = when {
@@ -97,13 +97,12 @@ private class PostgrestMarketplaceListingTable(
         const val LISTINGS_TABLE = "listings"
         const val LISTING_ID_PREFIX = "listing:"
         val LISTING_COLUMNS = Columns.raw(
-            "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), " +
-                "listing_images(object_path,position)"
+            "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), listing_images ( object_path, position )"
         )
     }
 }
 
-private const val LISTING_IMAGE_BUCKET = "listing_imgs"
+private const val MARKETPLACE_IMAGES_BUCKET = "listing_imgs"
 
 internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplacePageRequest) {
     request.viewerId?.let { viewerId ->

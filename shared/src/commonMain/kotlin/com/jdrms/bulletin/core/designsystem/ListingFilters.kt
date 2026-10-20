@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 data class ListingFilterOption(val value: String, val label: String)
@@ -63,7 +64,11 @@ private fun ListingFilterMenu(
             shape = MaterialTheme.shapes.small,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(selectedLabel ?: "All $label")
+            Text(
+                text = selectedLabel ?: "All $label",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(

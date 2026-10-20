@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.home.domain.model
 import com.jdrms.bulletin.core.common.formatUsdAmount
 import com.jdrms.bulletin.core.common.hasAtMostTwoDecimalPlaces
 import kotlin.jvm.JvmInline
+import kotlin.time.Instant
 
 @JvmInline
 value class HomeItemId(val value: String)
@@ -48,10 +49,22 @@ data class HomeFeedItem(
     val category: HomeFeedCategory,
     val score: Double = 0.0,
     val reason: String = "",
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val createdAtMillis: Long = 0L,
+    val photoUrls: List<String> = listOfNotNull(imageUrl)
 ) {
     init {
         require(title.isNotBlank()) { "Feed item title cannot be blank." }
         require(score >= 0.0) { "Recommendation score cannot be negative." }
     }
 }
+
+data class HomeFeedCursor(
+    val createdAt: Instant,
+    val itemId: HomeItemId
+)
+
+data class HomeFeedPage(
+    val items: List<HomeFeedItem>,
+    val nextCursor: HomeFeedCursor?
+)

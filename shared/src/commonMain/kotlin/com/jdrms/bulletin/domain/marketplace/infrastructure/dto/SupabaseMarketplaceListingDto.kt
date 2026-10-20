@@ -26,6 +26,8 @@ data class SupabaseMarketplaceListingImageDto(
     @SerialName("position") val position: Int
 )
 
+typealias SupabaseMarketplaceImageDto = SupabaseMarketplaceListingImageDto
+
 @Serializable
 data class SupabaseMarketplaceProfileDto(
     @SerialName("full_name") val fullName: String? = null

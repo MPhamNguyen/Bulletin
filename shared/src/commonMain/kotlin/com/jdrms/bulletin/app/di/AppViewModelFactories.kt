@@ -19,7 +19,12 @@ import com.jdrms.bulletin.domain.profile.presentation.RegistrationViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ReviewViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignInViewModel
 
-fun AppContainer.createHomeViewModel() = HomeViewModel(getPersonalizedFeed, updateUserPreferences)
+fun AppContainer.createHomeViewModel() = HomeViewModel(
+    getPersonalizedFeed,
+    updateUserPreferences,
+    sessionRepository,
+    listingChangedSignal
+)
 
 fun AppContainer.createMarketplaceViewModel() = MarketplaceViewModel(
     searchMarketplace,
@@ -31,13 +36,14 @@ fun AppContainer.createMarketplaceViewModel() = MarketplaceViewModel(
     viewMarketplaceListing,
     submitMarketplaceReview,
     listingChangedSignal,
-    createCurrentUserIdProvider(authRepository)
+    createCurrentUserIdProvider(authRepository),
+    marketplaceLayoutPreferenceStore
 )
 
 fun AppContainer.createMarketplaceUserReportViewModel() = MarketplaceUserReportViewModel(reportMarketplaceUser)
 
 val AppContainer.marketplaceUserBlockViewModelFactory: () -> MarketplaceUserBlockViewModel
-    get() = { MarketplaceUserBlockViewModel(blockMarketplaceUser) }
+    get() = { MarketplaceUserBlockViewModel(blockMarketplaceUser, listingChangedSignal) }
 
 val AppContainer.blockedUsersViewModelFactory: () -> BlockedUsersViewModel
     get() = { BlockedUsersViewModel(getBlockedUsers, unblockUser, listingChangedSignal) }

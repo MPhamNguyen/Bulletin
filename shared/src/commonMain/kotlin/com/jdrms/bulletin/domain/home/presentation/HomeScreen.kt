@@ -14,11 +14,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,67 +42,31 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-data class LoremCardItem(
-    val id: String,
-    val tag: String,
-    val title: String,
-    val subtitle: String,
-    val description: String,
-    val price: String
-)
-
-val defaultLoremItems = listOf(
-    LoremCardItem(
-        id = "1",
-        tag = "Campus Discovery • Featured", // TODO: Rename `tag` to `condition` when the listing schema is finalized.
-        title = "Lorem Ipsum Dolor Sit Amet",
-        // TODO: Replace subtitle into tags when we start to support tags.
-        subtitle = "Consectetur adipiscing elit • Sed do eiusmod",
-        description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor " +
-            "incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-        price = "$49.99"
-    ),
-    LoremCardItem(
-        id = "2",
-        tag = "Marketplace • Textbooks",
-        title = "Calculus: Early Transcendentals",
-        subtitle = "8th Edition • James Stewart",
-        description = "Barely used calculus textbook. Highlight-free with all companion access codes intact. " +
-            "Great condition for upcoming term coursework.",
-        price = "$35.00"
-    ),
-    LoremCardItem(
-        id = "3",
-        tag = "Housing • Sublease",
-        title = "Studio Apartment Near Campus",
-        subtitle = "Available Summer Term • Utilities Included",
-        description = "Bright and spacious studio within walking distance to the engineering quad and library. " +
-            "Fully furnished with high-speed internet.",
-        price = "$750 / mo"
-    ),
-    LoremCardItem(
-        id = "4",
-        tag = "Student Services • Tutoring",
-        title = "CS & Math Peer Tutoring",
-        subtitle = "Algorithms, Data Structures & Linear Algebra",
-        description = "Experienced upperclassman offering 1-on-1 tutoring sessions. Flexible schedule " +
-            "and tailored exam preparation guides.",
-        price = "$20 / hr"
-    )
-)
+private const val PREFETCH_REMAINING_ITEMS = 2
 
 @Composable
 fun HomeScreen(
-    @Suppress("UnusedParameter", "unused") viewModel: HomeViewModel,
-    modifier: Modifier = Modifier,
-    items: List<LoremCardItem> = defaultLoremItems
+    viewModel: HomeViewModel,
+    modifier: Modifier = Modifier
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val items = uiState.feed
+    val errorMessage = uiState.errorMessage
     var currentIndex by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
 
     val currentItem = items.getOrNull(currentIndex)
     val nextItem = items.getOrNull(currentIndex + 1)
+
+    LaunchedEffect(currentIndex, items.size, uiState.hasMore, uiState.nextCursor) {
+        if (shouldPrefetchHomeFeedPage(currentIndex, items.size, uiState.hasMore)) {
+            viewModel.loadNextPage()
+        }
+    }
+    LaunchedEffect(uiState.isLoading) {
+        if (uiState.isLoading) currentIndex = 0
+    }
 
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
@@ -111,6 +82,7 @@ fun HomeScreen(
                 HomeFeedCard(
                     item = nextItem,
                     cardIndex = currentIndex + 1,
+                    isActive = false,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -174,6 +146,20 @@ fun HomeScreen(
                         )
                     }
             )
+        } else if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (errorMessage != null) {
+            FeedErrorState(
+                title = if (items.isEmpty()) "Couldn't load listings" else "Couldn't load more listings",
+                message = errorMessage,
+                onRetry = if (items.isEmpty()) viewModel::loadFeed else viewModel::loadNextPage,
+                modifier = Modifier.fillMaxSize()
+            )
         } else {
             // The feed intentionally stops here instead of looping back through the items.
             EmptyFeedState(
@@ -181,7 +167,89 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize()
             )
         }
+
+        if (currentItem != null && errorMessage != null) {
+            NextPageError(
+                message = errorMessage,
+                isRetrying = uiState.isLoadingMore,
+                onRetry = viewModel::loadNextPage,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            )
+        }
     }
+}
+
+@Composable
+private fun FeedErrorState(
+    title: String,
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.background)
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+            Button(onClick = onRetry, shape = RoundedCornerShape(12.dp)) {
+                Text("Try again", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NextPageError(
+    message: String,
+    isRetrying: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(message, style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onRetry, enabled = !isRetrying) {
+                if (isRetrying) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Retry")
+                }
+            }
+        }
+    }
+}
+
+internal fun shouldPrefetchHomeFeedPage(currentIndex: Int, feedSize: Int, hasMore: Boolean): Boolean {
+    return hasMore && feedSize > 0 && feedSize - 1 - currentIndex <= PREFETCH_REMAINING_ITEMS
 }
 
 @Composable

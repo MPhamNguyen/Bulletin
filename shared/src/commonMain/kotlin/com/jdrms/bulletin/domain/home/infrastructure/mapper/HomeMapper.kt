@@ -18,7 +18,8 @@ object HomeMapper {
             category = category,
             score = dto.score.coerceAtLeast(0.0),
             reason = dto.reason,
-            imageUrl = dto.imageUrl
+            imageUrl = dto.imageUrl,
+            photoUrls = dto.photoUrls
         )
     }
 
@@ -31,7 +32,8 @@ object HomeMapper {
             category = domain.category.name,
             score = domain.score,
             reason = domain.reason,
-            imageUrl = domain.imageUrl
+            imageUrl = domain.imageUrl,
+            photoUrls = domain.photoUrls
         )
     }
 }
