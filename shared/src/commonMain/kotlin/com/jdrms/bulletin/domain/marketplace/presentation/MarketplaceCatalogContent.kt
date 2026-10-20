@@ -130,6 +130,8 @@ private fun LazyGridScope.marketplaceListingItems(state: MarketplaceUiState, vie
         MarketplaceItemCard(
             item = item,
             columns = state.layoutPreference.columns,
+            isBookmarked = item.id in state.bookmarkedItemIds,
+            onBookmarkClick = { viewModel.toggleBookmark(item.id) },
             onCardClick = { viewModel.onListingClicked(item.id.value) }
         )
     }
