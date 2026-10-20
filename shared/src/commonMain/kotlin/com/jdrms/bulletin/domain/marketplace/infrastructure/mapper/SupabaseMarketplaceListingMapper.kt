@@ -7,8 +7,8 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
-import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingImageDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingImageDto
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
