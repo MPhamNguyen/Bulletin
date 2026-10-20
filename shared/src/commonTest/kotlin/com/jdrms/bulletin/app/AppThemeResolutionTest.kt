@@ -24,4 +24,16 @@ class AppThemeResolutionTest {
         assertTrue(resolveIsDarkTheme(ThemePreference.DARK, systemDarkTheme = true))
         assertTrue(resolveIsDarkTheme(ThemePreference.DARK, systemDarkTheme = false))
     }
+
+    @Test
+    fun passwordRecoveryFollowsSystemThemeRegardlessOfSavedPreference() {
+        assertTrue(resolveAppIsDarkTheme(ThemePreference.LIGHT, systemDarkTheme = true, isPasswordRecovery = true))
+        assertFalse(resolveAppIsDarkTheme(ThemePreference.DARK, systemDarkTheme = false, isPasswordRecovery = true))
+    }
+
+    @Test
+    fun otherFlowsContinueToUseSavedThemePreference() {
+        assertFalse(resolveAppIsDarkTheme(ThemePreference.LIGHT, systemDarkTheme = true, isPasswordRecovery = false))
+        assertTrue(resolveAppIsDarkTheme(ThemePreference.DARK, systemDarkTheme = false, isPasswordRecovery = false))
+    }
 }
