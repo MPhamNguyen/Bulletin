@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.home.presentation
 
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
@@ -29,6 +30,36 @@ import kotlin.test.assertEquals
 import kotlin.time.Instant
 
 class HomeViewModelTest {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun listing_visibility_invalidation_reloads_the_feed_from_the_first_page() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = PagedHomeRepository(
+                listOf(
+                    HomeFeedPage(listOf(item("before-change")), null),
+                    HomeFeedPage(listOf(item("after-change")), null)
+                )
+            )
+            val signal = RefreshSignal()
+            val viewModel = HomeViewModel(
+                GetPersonalizedFeed(repository),
+                UpdateUserPreferences(repository),
+                TestSessionRepository(),
+                signal
+            )
+            advanceUntilIdle()
+
+            signal.emit()
+            advanceUntilIdle()
+
+            assertEquals(listOf<HomeFeedCursor?>(null, null), repository.cursors)
+            assertEquals(listOf("after-change"), viewModel.uiState.value.feed.map { it.id.value })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun loads_ten_listings_and_appends_next_page_once() = runTest {

@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val getPersonalizedFeed: GetPersonalizedFeed,
     private val updateUserPreferences: UpdateUserPreferences,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val listingChangedSignal: RefreshSignal? = null
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState = _uiState.asStateFlow()
@@ -27,6 +29,13 @@ class HomeViewModel(
     private var feedJob: Job? = null
 
     init {
+        listingChangedSignal?.let { signal ->
+            viewModelScope.launch {
+                signal.events.collect {
+                    if (hasResolvedSession) loadFeed()
+                }
+            }
+        }
         viewModelScope.launch {
             sessionRepository.state.collect { session ->
                 if (session == SessionState.Checking) return@collect
