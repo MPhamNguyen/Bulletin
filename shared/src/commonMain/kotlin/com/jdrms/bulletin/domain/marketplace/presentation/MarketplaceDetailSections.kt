@@ -2,6 +2,9 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Person
@@ -25,11 +26,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
@@ -69,29 +73,106 @@ internal fun ListingPhotosSection(photos: List<String>) {
             }
         }
     } else {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(photos) { photoUrl ->
-                SubcomposeAsyncImage(
-                    model = photoUrl,
-                    contentDescription = "Listing photo",
-                    modifier = Modifier.size(width = 240.dp, height = 180.dp)
-                        .clip(MaterialTheme.shapes.medium),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    error = { ListingPhotoFallback() },
-                    success = { SubcomposeAsyncImageContent() }
-                )
+        val pagerState = rememberPagerState(pageCount = { photos.size })
+        val coroutineScope = rememberCoroutineScope()
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                modifier = Modifier.fillMaxWidth().height(240.dp)
+                    .clip(MaterialTheme.shapes.medium)
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth().height(240.dp),
+                    key = { page -> photos[page] }
+                ) { page ->
+                    SubcomposeAsyncImage(
+                        model = photos[page],
+                        contentDescription = "Listing photo ${page + 1} of ${photos.size}",
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        contentScale = ContentScale.Crop,
+                        error = { ListingPhotoFallback() },
+                        success = { SubcomposeAsyncImageContent() }
+                    )
+                }
+                if (photos.size > 1) {
+                    if (pagerState.currentPage > 0) {
+                        PhotoCarouselArrow(
+                            isPrevious = true,
+                            modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp),
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                }
+                            }
+                        )
+                    }
+                    if (pagerState.currentPage < photos.lastIndex) {
+                        PhotoCarouselArrow(
+                            isPrevious = false,
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 10.dp),
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+            if (photos.size > 1) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    photos.indices.forEach { page ->
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .size(if (pagerState.currentPage == page) 8.dp else 6.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (pagerState.currentPage == page) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant
+                                    }
+                                )
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
+private fun PhotoCarouselArrow(
+    isPrevious: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .size(42.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (isPrevious) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
+            contentDescription = if (isPrevious) "Previous photo" else "Next photo",
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+@Composable
 private fun ListingPhotoFallback() {
     Box(
-        modifier = Modifier.fillMaxWidth().height(180.dp)
+        modifier = Modifier.fillMaxWidth().height(240.dp)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
