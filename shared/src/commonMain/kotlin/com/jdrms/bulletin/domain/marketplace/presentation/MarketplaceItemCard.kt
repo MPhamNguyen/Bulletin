@@ -219,13 +219,28 @@ private fun SingleListingTitleAndPrice(item: MarketplaceItem) {
 
 @Composable
 private fun ListingMetadata(item: MarketplaceItem, style: androidx.compose.ui.text.TextStyle) {
+    val listingTime = formatMarketplaceListingTime(
+        item.createdAtMillis,
+        item.updatedAtMillis,
+        currentTimeMillis()
+    )
     Text(
-        text = "${formatRelativeTime(item.createdAtMillis, currentTimeMillis())} • ${item.sellerName}",
+        text = "$listingTime • ${item.sellerName}",
         style = style,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
+}
+
+internal fun formatMarketplaceListingTime(
+    createdAtMillis: Long,
+    updatedAtMillis: Long,
+    nowMillis: Long
+): String = if (updatedAtMillis > createdAtMillis && updatedAtMillis > 0L) {
+    "Edited ${formatRelativeTime(updatedAtMillis, nowMillis)}"
+} else {
+    formatRelativeTime(createdAtMillis, nowMillis)
 }
 
 private val SINGLE_PHOTO_HEIGHT = 216.dp

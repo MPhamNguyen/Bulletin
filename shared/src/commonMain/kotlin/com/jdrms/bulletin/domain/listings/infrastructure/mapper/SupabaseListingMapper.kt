@@ -31,7 +31,8 @@ object SupabaseListingMapper {
                 .getOrDefault(ListingCondition.GOOD),
             status = dto.toListingStatus(),
             images = dto.listingImages.sortedBy { it.position }.map { imageUrl(it.objectPath) },
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
         )
     }
 

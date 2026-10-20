@@ -27,7 +27,8 @@ object SupabaseMarketplaceListingMapper {
             category = snapshot.category,
             condition = snapshot.condition,
             createdAtMillis = snapshot.createdAtMillis,
-            photos = snapshot.photos
+            photos = snapshot.photos,
+            updatedAtMillis = snapshot.updatedAtMillis
         )
     }
 
@@ -68,7 +69,8 @@ object SupabaseMarketplaceListingMapper {
             isSold = dto.isSold,
             sellerReputationScore = reputationScore,
             photos = dto.listingImages.sortedBy { it.position }.map { imageUrl(it.objectPath) },
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
         )
     }
 
@@ -95,6 +97,7 @@ object SupabaseMarketplaceListingMapper {
             priceCurrency = "USD",
             category = category,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
             condition = condition,
             primaryPhotoUrl = dto.listingImages.firstOrNull { it.position == 0 }
                 ?.objectPath?.takeIf(String::isNotBlank)?.let(photoUrl),

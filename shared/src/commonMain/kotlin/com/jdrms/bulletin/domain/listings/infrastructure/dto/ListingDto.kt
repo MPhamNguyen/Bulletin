@@ -12,5 +12,6 @@ data class ListingDto(
     val status: String = "AVAILABLE",
     val images: List<String> = emptyList(),
     val createdAtMillis: Long = 0L,
-    val buyerId: String? = null
+    val buyerId: String? = null,
+    val updatedAtMillis: Long = 0L
 )

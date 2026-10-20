@@ -19,7 +19,8 @@ data class MarketplaceListingSnapshot(
     val createdAtMillis: Long,
     val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
     val primaryPhotoUrl: String? = null,
-    val photoUrls: List<String> = listOfNotNull(primaryPhotoUrl)
+    val photoUrls: List<String> = listOfNotNull(primaryPhotoUrl),
+    val updatedAtMillis: Long = 0L
 ) {
     val photos: List<String>
         get() = photoUrls
@@ -84,7 +85,10 @@ class MarketplaceRepositoryListingSource(
                 priceCurrency = item.price.currency,
                 category = item.category,
                 createdAtMillis = item.createdAtMillis,
-                condition = item.condition
+                condition = item.condition,
+                primaryPhotoUrl = item.photos.firstOrNull(),
+                photoUrls = item.photos,
+                updatedAtMillis = item.updatedAtMillis
             )
         }.pageFor(request)
     }
