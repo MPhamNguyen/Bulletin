@@ -31,8 +31,10 @@ class AndroidMarketplaceLayoutPreferenceStore(
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }
             .first()
-        return MarketplaceLayoutPreference.entries.firstOrNull { it.name == preferences[LAYOUT_KEY] }
-            ?: MarketplaceLayoutPreference.ONE_PER_ROW
+        val storedValue = preferences[LAYOUT_KEY]
+        if (storedValue == LEGACY_THREE_PER_ROW) return MarketplaceLayoutPreference.TWO_PER_ROW
+        return MarketplaceLayoutPreference.entries.firstOrNull { it.name == storedValue }
+            ?: MarketplaceLayoutPreference.TWO_PER_ROW
     }
 
     override suspend fun set(preference: MarketplaceLayoutPreference) {
@@ -40,6 +42,7 @@ class AndroidMarketplaceLayoutPreferenceStore(
     }
 
     private companion object {
+        const val LEGACY_THREE_PER_ROW = "THREE_PER_ROW"
         val LAYOUT_KEY = stringPreferencesKey("listings_per_row")
     }
 }

@@ -18,7 +18,7 @@ data class MarketplaceUiState(
     val endReached: Boolean = false,
     val errorMessage: String? = null,
     val bookmarkErrorMessage: String? = null,
-    val layoutPreference: MarketplaceLayoutPreference = MarketplaceLayoutPreference.ONE_PER_ROW,
+    val layoutPreference: MarketplaceLayoutPreference = MarketplaceLayoutPreference.TWO_PER_ROW,
     val detail: MarketplaceDetailState = MarketplaceDetailState(),
     val currentUserId: String? = null
 )

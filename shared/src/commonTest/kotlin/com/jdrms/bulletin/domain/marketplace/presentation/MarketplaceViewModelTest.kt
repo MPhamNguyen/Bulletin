@@ -39,13 +39,13 @@ class MarketplaceViewModelTestPart1 {
             val firstViewModel = marketplaceViewModel(repository, store) { null }
             advanceUntilIdle()
 
-            firstViewModel.onLayoutPreferenceChanged(MarketplaceLayoutPreference.THREE_PER_ROW)
+            firstViewModel.onLayoutPreferenceChanged(MarketplaceLayoutPreference.ONE_PER_ROW)
             advanceUntilIdle()
             val recreatedViewModel = marketplaceViewModel(repository, store) { null }
             advanceUntilIdle()
 
             assertEquals(
-                MarketplaceLayoutPreference.THREE_PER_ROW,
+                MarketplaceLayoutPreference.ONE_PER_ROW,
                 recreatedViewModel.uiState.value.layoutPreference
             )
         } finally {

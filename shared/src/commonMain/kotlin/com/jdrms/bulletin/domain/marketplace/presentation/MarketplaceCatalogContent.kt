@@ -98,7 +98,7 @@ private fun LazyGridScope.marketplaceCatalogHeader(state: MarketplaceUiState, vi
                 onConditionSelected = viewModel::onConditionSelected,
                 modifier = Modifier.weight(1f)
             )
-            MarketplaceLayoutDropdown(state.layoutPreference, viewModel::onLayoutPreferenceChanged)
+            MarketplaceLayoutToggle(state.layoutPreference, viewModel::onLayoutPreferenceChanged)
         }
     }
 }
