@@ -18,6 +18,7 @@ import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplac
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
+import com.jdrms.bulletin.domain.listings.domain.model.ListingDetails
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import kotlinx.coroutines.Job
@@ -311,11 +312,14 @@ class ListingsViewModel(
         val updatedDetails = runCatching {
             draft.currentListing.updateDetails(
                 editorSellerId = seller.id,
-                title = draft.title,
-                description = draft.description,
-                price = ListingPrice(draft.price),
-                category = draft.category,
-                condition = draft.condition,
+                details = ListingDetails(
+                    title = draft.title,
+                    description = draft.description,
+                    price = ListingPrice(draft.price),
+                    category = draft.category,
+                    condition = draft.condition,
+                    images = draft.currentListing.images
+                ),
                 updatedAtMillis = currentTimeMillis()
             )
         }

@@ -54,6 +54,15 @@ data class ListingPrice(
         get() = formatUsdAmount(amount)
 }
 
+data class ListingDetails(
+    val title: String,
+    val description: String,
+    val price: ListingPrice,
+    val category: ListingCategory,
+    val condition: ListingCondition,
+    val images: List<String>
+)
+
 data class Listing(
     val id: ListingId,
     val sellerId: SellerId,
@@ -92,22 +101,17 @@ data class Listing(
 
     fun updateDetails(
         editorSellerId: SellerId,
-        title: String = this.title,
-        description: String = this.description,
-        price: ListingPrice = this.price,
-        category: ListingCategory = this.category,
-        condition: ListingCondition = this.condition,
-        images: List<String> = this.images,
+        details: ListingDetails,
         updatedAtMillis: Long = this.updatedAtMillis
     ): Listing {
         require(isOwnedBy(editorSellerId)) { "Only the owner can edit this listing." }
         return copy(
-            title = title,
-            description = description,
-            price = price,
-            category = category,
-            condition = condition,
-            images = images,
+            title = details.title,
+            description = details.description,
+            price = details.price,
+            category = details.category,
+            condition = details.condition,
+            images = details.images,
             updatedAtMillis = updatedAtMillis
         )
     }
