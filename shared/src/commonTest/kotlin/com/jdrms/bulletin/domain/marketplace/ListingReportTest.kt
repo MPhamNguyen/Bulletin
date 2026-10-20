@@ -5,11 +5,11 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceReportIdenti
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingReportRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +23,7 @@ class ListingReportTest {
             MarketplaceItemId("listing-1"),
             "seller",
             MarketplaceReporterId("reporter"),
-            ListingReportReason.SCAM_OR_FRAUD,
+            ReportReason.SCAM_OR_FRAUD,
             "  Details  "
         )
 
@@ -36,14 +36,14 @@ class ListingReportTest {
             MarketplaceItemId("listing-1"),
             "same",
             MarketplaceReporterId("same"),
-            ListingReportReason.OTHER,
+            ReportReason.OTHER,
             ""
         )
         val longDescription = ListingReport.create(
             MarketplaceItemId("listing-1"),
             "seller",
             MarketplaceReporterId("reporter"),
-            ListingReportReason.OTHER,
+            ReportReason.OTHER,
             "x".repeat(ListingReport.MAX_DESCRIPTION_LENGTH + 1)
         )
 
@@ -73,7 +73,7 @@ class ListingReportTest {
         val submit = ReportMarketplaceListing(authenticatedIdentity, repository)
 
         assertIs<Result.Success<Unit>>(
-            submit(MarketplaceItemId("listing-1"), "seller", ListingReportReason.OTHER, "")
+            submit(MarketplaceItemId("listing-1"), "seller", ReportReason.OTHER, "")
         )
         assertEquals("reporter", submitted?.reporterId?.value)
 
@@ -81,15 +81,15 @@ class ListingReportTest {
             MarketplaceReportIdentity { Result.Success(null) },
             repository
         )
-        assertIs<Result.Error>(unauthenticated(MarketplaceItemId("listing-2"), "seller", ListingReportReason.OTHER, ""))
+        assertIs<Result.Error>(unauthenticated(MarketplaceItemId("listing-2"), "seller", ReportReason.OTHER, ""))
     }
 
     @Test
     fun repositoryContractPreventsDuplicateReportsByReporterAndListing() = runTest {
         val repository = InMemoryListingReportRepository()
-        val first = report("listing-1", "reporter", ListingReportReason.OTHER)
-        val duplicate = report("listing-1", "reporter", ListingReportReason.SCAM_OR_FRAUD)
-        val sameListingOtherReporter = report("listing-1", "another", ListingReportReason.OTHER)
+        val first = report("listing-1", "reporter", ReportReason.OTHER)
+        val duplicate = report("listing-1", "reporter", ReportReason.SCAM_OR_FRAUD)
+        val sameListingOtherReporter = report("listing-1", "another", ReportReason.OTHER)
 
         assertIs<Result.Success<Unit>>(repository.submit(first))
         assertEquals(
@@ -112,8 +112,8 @@ class ListingReportTest {
     @Test
     fun allowsAnotherReportAfterEarlierReportIsClosedAndKeepsListingHidden() = runTest {
         val repository = InMemoryListingReportRepository()
-        val closedReport = report("listing-1", "reporter", ListingReportReason.OTHER)
-        val nextReport = report("listing-1", "reporter", ListingReportReason.SCAM_OR_FRAUD)
+        val closedReport = report("listing-1", "reporter", ReportReason.OTHER)
+        val nextReport = report("listing-1", "reporter", ReportReason.SCAM_OR_FRAUD)
         assertIs<Result.Success<Unit>>(repository.submit(closedReport))
         assertEquals(
             true,
@@ -172,11 +172,11 @@ class ListingReportTest {
             repository
         )
 
-        assertIs<Result.Error>(useCase(MarketplaceItemId("listing-1"), "seller", ListingReportReason.OTHER, ""))
+        assertIs<Result.Error>(useCase(MarketplaceItemId("listing-1"), "seller", ReportReason.OTHER, ""))
         assertNull(submitted)
     }
 
-    private fun report(listingId: String, reporterId: String, reason: ListingReportReason) =
+    private fun report(listingId: String, reporterId: String, reason: ReportReason) =
         ListingReport.create(
             MarketplaceItemId(listingId),
             "seller",

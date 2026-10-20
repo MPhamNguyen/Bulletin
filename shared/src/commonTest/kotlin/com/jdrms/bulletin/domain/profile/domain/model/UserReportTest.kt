@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.domain.model
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -10,7 +11,7 @@ class UserReportTest {
     @Test
     fun directConstructionCannotBypassSelfReportRule() {
         assertFailsWith<IllegalArgumentException> {
-            UserReport(UserId("same"), UserId("same"), UserReportReason.SCAM_OR_FRAUD, "")
+            UserReport(UserId("same"), UserId("same"), ReportReason.SCAM_OR_FRAUD, "")
         }
     }
 
@@ -35,9 +36,9 @@ class UserReportTest {
     @Test
     fun missingReporterOrTargetFailsBeforePersistence() {
         listOf(UserId("") to UserId("target"), UserId("reporter") to UserId(" ")).forEach { (reporter, target) ->
-            assertIs<Result.Error>(UserReport.create(reporter, target, UserReportReason.SCAM_OR_FRAUD, ""))
+            assertIs<Result.Error>(UserReport.create(reporter, target, ReportReason.SCAM_OR_FRAUD, ""))
             assertFailsWith<IllegalArgumentException> {
-                UserReport(reporter, target, UserReportReason.SCAM_OR_FRAUD, "")
+                UserReport(reporter, target, ReportReason.SCAM_OR_FRAUD, "")
             }
         }
         assertFailsWith<IllegalArgumentException> { validReport().copy(reportedUserId = UserId("")) }
@@ -46,7 +47,7 @@ class UserReportTest {
     private fun validReport() = UserReport.create(
         UserId("reporter"),
         UserId("target"),
-        UserReportReason.SCAM_OR_FRAUD,
+        ReportReason.SCAM_OR_FRAUD,
         "Details"
     ).getOrThrow()
 }

@@ -113,7 +113,7 @@ private fun MessageList(
                 message = message,
                 isRevealed = message.id in state.revealedReportedMessageIds,
                 canReport = !state.isReporting,
-                onReport = { viewModel.report(message.id, "Inappropriate content") },
+                onReport = { viewModel.report(message.id) },
                 onToggleVisibility = { viewModel.toggleReportedMessageVisibility(message.id) }
             )
         }

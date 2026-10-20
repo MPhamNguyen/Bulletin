@@ -2,10 +2,10 @@ package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReport
-import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 
 fun interface MarketplaceReportIdentity {
     suspend fun currentReporterId(): Result<MarketplaceReporterId?>
@@ -18,7 +18,7 @@ class ReportMarketplaceListing(
     suspend operator fun invoke(
         listingId: MarketplaceItemId,
         listingSellerId: String,
-        reason: ListingReportReason,
+        reason: ReportReason,
         description: String
     ): Result<Unit> {
         val reporterId = when (val result = identity.currentReporterId()) {

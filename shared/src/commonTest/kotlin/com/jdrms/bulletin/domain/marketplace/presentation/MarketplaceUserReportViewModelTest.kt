@@ -1,9 +1,9 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceUserReportReason
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceUserReporter
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,19 +24,19 @@ class MarketplaceUserReportViewModelTest {
     fun submitsSelectedReasonAndDescriptionForTheViewedSeller() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
-            var submitted: Triple<String, MarketplaceUserReportReason, String>? = null
+            var submitted: Triple<String, ReportReason, String>? = null
             val reporter = MarketplaceUserReporter { userId, reason, description ->
                 submitted = Triple(userId, reason, description)
                 Result.Success(Unit)
             }
             val viewModel = MarketplaceUserReportViewModel(ReportMarketplaceUser(reporter))
             viewModel.begin("seller-1")
-            viewModel.selectReason(MarketplaceUserReportReason.SCAM_OR_FRAUD)
+            viewModel.selectReason(ReportReason.SCAM_OR_FRAUD)
             viewModel.updateDescription("Details")
             viewModel.submit()
             advanceUntilIdle()
 
-            assertEquals(Triple("seller-1", MarketplaceUserReportReason.SCAM_OR_FRAUD, "Details"), submitted)
+            assertEquals(Triple("seller-1", ReportReason.SCAM_OR_FRAUD, "Details"), submitted)
             assertEquals(true, viewModel.uiState.value.submitted)
         } finally {
             Dispatchers.resetMain()
@@ -106,7 +106,7 @@ class MarketplaceUserReportViewModelTest {
             advanceUntilIdle()
 
             assertEquals(duplicateMessage, viewModel.uiState.value.errorMessage)
-            assertEquals(MarketplaceUserReportReason.SCAM_OR_FRAUD, viewModel.uiState.value.selectedReason)
+            assertEquals(ReportReason.SCAM_OR_FRAUD, viewModel.uiState.value.selectedReason)
             assertEquals("Details", viewModel.uiState.value.description)
             assertFalse(viewModel.uiState.value.isSubmitting)
             assertFalse(viewModel.uiState.value.submitted)
@@ -188,7 +188,7 @@ class MarketplaceUserReportViewModelTest {
     private fun createReadyViewModel(reporter: MarketplaceUserReporter): MarketplaceUserReportViewModel {
         return MarketplaceUserReportViewModel(ReportMarketplaceUser(reporter)).apply {
             begin("seller-1")
-            selectReason(MarketplaceUserReportReason.SCAM_OR_FRAUD)
+            selectReason(ReportReason.SCAM_OR_FRAUD)
             updateDescription("Details")
         }
     }

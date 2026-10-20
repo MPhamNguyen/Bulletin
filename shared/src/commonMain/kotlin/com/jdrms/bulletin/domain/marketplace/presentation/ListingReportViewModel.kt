@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
-import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 data class ListingReportUiState(
     val listingId: String? = null,
     val listingSellerId: String? = null,
-    val selectedReason: ListingReportReason? = null,
+    val selectedReason: ReportReason? = null,
     val description: String = "",
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
@@ -41,7 +41,7 @@ class ListingReportViewModel(
         }
     }
 
-    fun selectReason(reason: ListingReportReason) {
+    fun selectReason(reason: ReportReason) {
         mutableUiState.update { it.copy(selectedReason = reason, errorMessage = null) }
     }
 
@@ -71,7 +71,7 @@ class ListingReportViewModel(
         generation: Int,
         listingId: String,
         sellerId: String,
-        reason: ListingReportReason,
+        reason: ReportReason,
         description: String
     ) {
         try {

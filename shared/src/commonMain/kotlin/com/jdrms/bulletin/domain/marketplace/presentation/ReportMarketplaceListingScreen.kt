@@ -29,12 +29,13 @@ import androidx.compose.ui.window.DialogProperties
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.domain.marketplace.domain.model.ListingReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
 @Composable
 internal fun ReportMarketplaceListingScreen(
     state: ListingReportUiState,
-    onReasonSelected: (ListingReportReason) -> Unit,
+    onReasonSelected: (ReportReason) -> Unit,
     onDescriptionChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit
@@ -63,7 +64,7 @@ internal fun ReportMarketplaceListingScreen(
 @Composable
 private fun ListingReportDialogContent(
     state: ListingReportUiState,
-    onReasonSelected: (ListingReportReason) -> Unit,
+    onReasonSelected: (ReportReason) -> Unit,
     onDescriptionChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit
@@ -111,7 +112,7 @@ private fun ListingReportSubmitted(onDismiss: () -> Unit) {
 @Composable
 private fun ListingReportForm(
     state: ListingReportUiState,
-    onReasonSelected: (ListingReportReason) -> Unit,
+    onReasonSelected: (ReportReason) -> Unit,
     onDescriptionChanged: (String) -> Unit
 ) {
     Column(
@@ -119,8 +120,8 @@ private fun ListingReportForm(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text("Why are you reporting this listing?", style = MaterialTheme.typography.titleMedium)
-        ListingReportReason.entries.forEach { reason ->
-            ListingReportReasonOption(reason, state.selectedReason, onReasonSelected)
+        ReportReason.forType(ReportType.LISTING).forEach { reason ->
+            ReportReasonOption(reason, state.selectedReason, onReasonSelected)
         }
         OutlinedTextField(
             value = state.description,
@@ -136,10 +137,10 @@ private fun ListingReportForm(
 }
 
 @Composable
-private fun ListingReportReasonOption(
-    reason: ListingReportReason,
-    selectedReason: ListingReportReason?,
-    onReasonSelected: (ListingReportReason) -> Unit
+private fun ReportReasonOption(
+    reason: ReportReason,
+    selectedReason: ReportReason?,
+    onReasonSelected: (ReportReason) -> Unit
 ) {
     Row(
         Modifier.fillMaxWidth().clickable { onReasonSelected(reason) }.padding(vertical = 1.dp),
