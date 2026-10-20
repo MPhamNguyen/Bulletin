@@ -39,6 +39,8 @@ import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceReportedListings
+import com.jdrms.bulletin.domain.marketplace.application.InMemoryMarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
@@ -118,9 +120,12 @@ class AppContainer(
     private val isInspectionMode: Boolean = false,
     private val allowInMemoryFallback: Boolean = false,
     themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
+    marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore =
+        InMemoryMarketplaceLayoutPreferenceStore(),
     private val providedSupabaseClient: SupabaseClient? = null
 ) {
     internal val themePreferenceStore = themePreferenceStore
+    internal val marketplaceLayoutPreferenceStore = marketplaceLayoutPreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     private val marketplaceReadCache by lazy { MarketplaceReadCache() }
     private val profileReadCache by lazy { ProfileReadCache() }

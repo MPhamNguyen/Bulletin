@@ -1,0 +1,241 @@
+package com.jdrms.bulletin.domain.marketplace.presentation
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
+import com.jdrms.bulletin.core.designsystem.SectionHeader
+
+@Composable
+internal fun MarketplaceCatalogContent(
+    state: MarketplaceUiState,
+    viewModel: MarketplaceViewModel,
+    sellerProfileViewModel: SellerProfileViewModel,
+    listingReportViewModel: ListingReportViewModel,
+    actions: MarketplaceScreenActions,
+    onContentNoLongerScrollable: () -> Unit,
+    onNavigate: (MarketplaceDestination) -> Unit
+) {
+    val gridState = rememberLazyGridState()
+    LaunchedEffect(gridState.canScrollForward) {
+        if (!gridState.canScrollForward) onContentNoLongerScrollable()
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(state.layoutPreference.columns),
+            state = gridState,
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            marketplaceCatalogHeader(state, viewModel)
+            marketplaceLoadingItem(state.isLoading)
+            marketplaceEmptyResultsItem(state)
+            marketplaceListingItems(state, viewModel)
+            marketplacePaginationItem(state, viewModel)
+            marketplaceErrorItems(state, viewModel)
+        }
+        MarketplaceCatalogOverlays(
+            state,
+            viewModel,
+            sellerProfileViewModel,
+            listingReportViewModel,
+            actions,
+            onNavigate
+        )
+    }
+}
+
+private fun LazyGridScope.marketplaceCatalogHeader(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    fullWidthItem {
+        SectionHeader(
+            title = "Campus Marketplace",
+            subtitle = "Browse, search, & discover student items on campus"
+        )
+    }
+    fullWidthItem {
+        OutlinedTextField(
+            value = state.filters.query,
+            onValueChange = viewModel::onSearchQueryChanged,
+            label = { Text("Search by title or category") },
+            singleLine = true,
+            colors = BulletinTextFieldDefaults.colors(),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    fullWidthItem {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MarketplaceFilters(
+                filters = state.filters,
+                onCategorySelected = viewModel::onCategorySelected,
+                onConditionSelected = viewModel::onConditionSelected,
+                modifier = Modifier.weight(1f)
+            )
+            MarketplaceLayoutToggle(state.layoutPreference, viewModel::onLayoutPreferenceChanged)
+        }
+    }
+}
+
+private fun LazyGridScope.marketplaceLoadingItem(isLoading: Boolean) {
+    if (!isLoading) return
+    fullWidthItem {
+        Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+private fun LazyGridScope.marketplaceEmptyResultsItem(state: MarketplaceUiState) {
+    if (state.items.isNotEmpty() || state.isLoading || state.errorMessage != null) return
+    fullWidthItem {
+        BulletinCard {
+            Text(
+                text = "No marketplace listings found for your search.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+private fun LazyGridScope.marketplaceListingItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    items(items = state.items, key = { item -> item.id.value }) { item ->
+        MarketplaceItemCard(
+            item = item,
+            columns = state.layoutPreference.columns,
+            isBookmarked = item.id in state.bookmarkedItemIds,
+            onBookmarkClick = { viewModel.toggleBookmark(item.id) },
+            onCardClick = { viewModel.onListingClicked(item.id.value) }
+        )
+    }
+}
+
+private fun LazyGridScope.marketplacePaginationItem(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    if (state.nextCursor == null) return
+    fullWidthItem(key = "marketplace-pagination-trigger") {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            if (state.isLoadingMore) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            } else {
+                TextButton(onClick = viewModel::loadNextPage) { Text("Load more") }
+            }
+        }
+    }
+}
+
+private fun LazyGridScope.marketplaceErrorItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+    state.errorMessage?.let { message ->
+        fullWidthItem {
+            BulletinCard {
+                Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = viewModel::retryListings) { Text("Retry") }
+            }
+        }
+    }
+    state.bookmarkErrorMessage?.let { message ->
+        fullWidthItem {
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+private fun LazyGridScope.fullWidthItem(
+    key: Any? = null,
+    content: @Composable () -> Unit
+) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
+
+@Composable
+private fun MarketplaceCatalogOverlays(
+    state: MarketplaceUiState,
+    viewModel: MarketplaceViewModel,
+    sellerProfileViewModel: SellerProfileViewModel,
+    listingReportViewModel: ListingReportViewModel,
+    actions: MarketplaceScreenActions,
+    onNavigate: (MarketplaceDestination) -> Unit
+) {
+    if (!state.detail.isOpen) return
+    MarketplaceDetailOverlay(
+        state = state,
+        viewModel = viewModel,
+        sellerProfileViewModel = sellerProfileViewModel,
+        listingReportViewModel = listingReportViewModel,
+        actions = actions,
+        onNavigate = onNavigate
+    )
+    MarketplaceListingReportFlow(listingReportViewModel) {
+        listingReportViewModel.dismiss()
+        viewModel.dismissListingDetail()
+        viewModel.refreshListings()
+    }
+    if (state.detail.isReviewDialogOpen) {
+        MarketplaceReviewDialog(
+            isSubmitting = state.detail.isSubmittingReview,
+            errorMessage = state.detail.reviewErrorMessage,
+            onDismiss = viewModel.reviewActions::dismissReviewDialog,
+            onSubmit = viewModel.reviewActions::submitReview
+        )
+    }
+}
+
+@Composable
+private fun MarketplaceDetailOverlay(
+    state: MarketplaceUiState,
+    viewModel: MarketplaceViewModel,
+    sellerProfileViewModel: SellerProfileViewModel,
+    listingReportViewModel: ListingReportViewModel,
+    actions: MarketplaceScreenActions,
+    onNavigate: (MarketplaceDestination) -> Unit
+) {
+    MarketplaceDetailBottomSheet(
+        state = MarketplaceDetailSheetState(
+            listing = state.detail.listing,
+            isLoading = state.detail.isLoading,
+            errorMessage = state.detail.errorMessage,
+            bookmarkErrorMessage = state.bookmarkErrorMessage,
+            isBookmarked = state.detail.listing?.let { it.id in state.bookmarkedItemIds } ?: false,
+            currentUserId = state.currentUserId,
+            hasReview = state.detail.hasReview
+        ),
+        actions = MarketplaceDetailSheetActions(
+            onDismiss = viewModel::dismissListingDetail,
+            onRetry = viewModel::retryLoadListingDetail,
+            onToggleBookmark = { state.detail.listing?.let { viewModel.toggleBookmark(it.id) } },
+            onLeaveReview = viewModel.reviewActions::openReviewDialog,
+            onReportListing = { beginMarketplaceListingReport(listingReportViewModel, state.detail.listing) },
+            onSellerClick = { sellerId ->
+                sellerProfileViewModel.load(sellerId)
+                onNavigate(MarketplaceDestination.SELLER_PROFILE)
+            },
+            onMessageSeller = actions.onMessageSeller,
+            hasExistingConversation = actions.hasExistingConversation,
+            onSeeChat = actions.onSeeChat
+        )
+    )
+}

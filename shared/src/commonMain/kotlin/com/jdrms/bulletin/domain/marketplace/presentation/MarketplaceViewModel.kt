@@ -3,6 +3,9 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.domain.marketplace.application.InMemoryMarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
@@ -26,12 +29,16 @@ class MarketplaceViewModel(
             com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
         ),
     private val listingChangedSignal: RefreshSignal? = null,
-    private val currentUserIdProvider: suspend () -> String? = { null }
+    private val currentUserIdProvider: suspend () -> String? = { null },
+    private val layoutPreferenceStore: MarketplaceLayoutPreferenceStore =
+        InMemoryMarketplaceLayoutPreferenceStore()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
+    private var layoutPreferenceJob: Job? = null
+    private var persistedLayoutPreference = MarketplaceLayoutPreference.TWO_PER_ROW
     private val firstPageLoader = MarketplaceFirstPageLoader(
         _uiState,
         searchMarketplace,
@@ -47,11 +54,43 @@ class MarketplaceViewModel(
     val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
+        loadLayoutPreference()
         refreshListings()
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
                 refreshListings()
                 _uiState.value.detail.listingId?.let(::loadListingDetail)
+            }
+        }
+    }
+
+    private fun loadLayoutPreference() {
+        layoutPreferenceJob = viewModelScope.launch {
+            runCatching { layoutPreferenceStore.get() }
+                .onSuccess { preference ->
+                    persistedLayoutPreference = preference
+                    _uiState.update { it.copy(layoutPreference = preference) }
+                }
+                .onFailure { it.rethrowCancellation() }
+        }
+    }
+
+    fun onLayoutPreferenceChanged(preference: MarketplaceLayoutPreference) {
+        layoutPreferenceJob?.cancel()
+        _uiState.update { it.copy(layoutPreference = preference) }
+        layoutPreferenceJob = viewModelScope.launch {
+            val result = runCatching { layoutPreferenceStore.set(preference) }
+            result.exceptionOrNull()?.rethrowCancellation()
+            if (result.isSuccess) {
+                persistedLayoutPreference = preference
+            } else {
+                _uiState.update { state ->
+                    if (state.layoutPreference == preference) {
+                        state.copy(layoutPreference = persistedLayoutPreference)
+                    } else {
+                        state
+                    }
+                }
             }
         }
     }
@@ -200,14 +239,10 @@ class MarketplaceViewModel(
     }
 
     fun dismissListingDetail() {
-        _uiState.update {
-            it.copy(detail = MarketplaceDetailState())
-        }
+        _uiState.update { it.copy(detail = MarketplaceDetailState()) }
     }
 
-    fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) {
-        bookmarkController.toggle(itemId, userId)
-    }
+    fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) = bookmarkController.toggle(itemId, userId)
 
     private companion object {
         const val SEARCH_DEBOUNCE_MILLIS = 300L
