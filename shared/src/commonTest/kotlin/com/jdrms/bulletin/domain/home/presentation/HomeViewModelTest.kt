@@ -152,6 +152,33 @@ class HomeViewModelTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun failed_first_page_exposes_error_and_can_be_retried() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = PagedHomeRepository(
+                pages = listOf(HomeFeedPage(listOf(item("recovered")), null)),
+                failingRequestIndexes = setOf(0)
+            )
+            val viewModel = HomeViewModel(
+                GetPersonalizedFeed(repository),
+                UpdateUserPreferences(repository),
+                TestSessionRepository()
+            )
+            advanceUntilIdle()
+
+            assertEquals("Failed to load listings", viewModel.uiState.value.errorMessage)
+            viewModel.loadFeed()
+            advanceUntilIdle()
+
+            assertEquals(null, viewModel.uiState.value.errorMessage)
+            assertEquals(listOf("recovered"), viewModel.uiState.value.feed.map { it.id.value })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private fun item(id: String) = HomeFeedItem(
         id = HomeItemId(id),
         title = "Listing $id",

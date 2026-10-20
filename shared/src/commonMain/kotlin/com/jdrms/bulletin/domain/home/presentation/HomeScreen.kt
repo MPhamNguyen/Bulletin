@@ -14,11 +14,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,6 +51,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val items = uiState.feed
+    val errorMessage = uiState.errorMessage
     var currentIndex by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -148,12 +153,97 @@ fun HomeScreen(
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
+        } else if (errorMessage != null) {
+            FeedErrorState(
+                title = if (items.isEmpty()) "Couldn't load listings" else "Couldn't load more listings",
+                message = errorMessage,
+                onRetry = if (items.isEmpty()) viewModel::loadFeed else viewModel::loadNextPage,
+                modifier = Modifier.fillMaxSize()
+            )
         } else {
             // The feed intentionally stops here instead of looping back through the items.
             EmptyFeedState(
                 onReset = { currentIndex = 0 },
                 modifier = Modifier.fillMaxSize()
             )
+        }
+
+        if (currentItem != null && errorMessage != null) {
+            NextPageError(
+                message = errorMessage,
+                isRetrying = uiState.isLoadingMore,
+                onRetry = viewModel::loadNextPage,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FeedErrorState(
+    title: String,
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.background)
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+            Button(onClick = onRetry, shape = RoundedCornerShape(12.dp)) {
+                Text("Try again", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NextPageError(
+    message: String,
+    isRetrying: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(message, style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onRetry, enabled = !isRetrying) {
+                if (isRetrying) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Retry")
+                }
+            }
         }
     }
 }
