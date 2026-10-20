@@ -53,6 +53,30 @@ class MarketplaceViewModelTestPart1 {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun failedLayoutPreferenceWriteRestoresPersistedPreference() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val store = object : MarketplaceLayoutPreferenceStore {
+                override suspend fun get() = MarketplaceLayoutPreference.TWO_PER_ROW
+
+                override suspend fun set(preference: MarketplaceLayoutPreference) {
+                    error("Preference storage unavailable")
+                }
+            }
+            val viewModel = marketplaceViewModel(InMemoryMarketplaceRepository(), store) { null }
+            advanceUntilIdle()
+
+            viewModel.onLayoutPreferenceChanged(MarketplaceLayoutPreference.ONE_PER_ROW)
+            advanceUntilIdle()
+
+            assertEquals(MarketplaceLayoutPreference.TWO_PER_ROW, viewModel.uiState.value.layoutPreference)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     internal fun uploadedListing(): MarketplaceListingSnapshot {
         return MarketplaceListingSnapshot(
             id = "listing:new",

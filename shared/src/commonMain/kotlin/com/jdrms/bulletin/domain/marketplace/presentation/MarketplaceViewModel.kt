@@ -38,6 +38,7 @@ class MarketplaceViewModel(
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
     private var layoutPreferenceJob: Job? = null
+    private var persistedLayoutPreference = MarketplaceLayoutPreference.TWO_PER_ROW
     private val firstPageLoader = MarketplaceFirstPageLoader(
         _uiState,
         searchMarketplace,
@@ -67,6 +68,7 @@ class MarketplaceViewModel(
         layoutPreferenceJob = viewModelScope.launch {
             runCatching { layoutPreferenceStore.get() }
                 .onSuccess { preference ->
+                    persistedLayoutPreference = preference
                     _uiState.update { it.copy(layoutPreference = preference) }
                 }
                 .onFailure { it.rethrowCancellation() }
@@ -76,9 +78,20 @@ class MarketplaceViewModel(
     fun onLayoutPreferenceChanged(preference: MarketplaceLayoutPreference) {
         layoutPreferenceJob?.cancel()
         _uiState.update { it.copy(layoutPreference = preference) }
-        viewModelScope.launch {
-            runCatching { layoutPreferenceStore.set(preference) }
-                .onFailure { it.rethrowCancellation() }
+        layoutPreferenceJob = viewModelScope.launch {
+            val result = runCatching { layoutPreferenceStore.set(preference) }
+            result.exceptionOrNull()?.rethrowCancellation()
+            if (result.isSuccess) {
+                persistedLayoutPreference = preference
+            } else {
+                _uiState.update { state ->
+                    if (state.layoutPreference == preference) {
+                        state.copy(layoutPreference = persistedLayoutPreference)
+                    } else {
+                        state
+                    }
+                }
+            }
         }
     }
 
@@ -226,14 +239,10 @@ class MarketplaceViewModel(
     }
 
     fun dismissListingDetail() {
-        _uiState.update {
-            it.copy(detail = MarketplaceDetailState())
-        }
+        _uiState.update { it.copy(detail = MarketplaceDetailState()) }
     }
 
-    fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) {
-        bookmarkController.toggle(itemId, userId)
-    }
+    fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) = bookmarkController.toggle(itemId, userId)
 
     private companion object {
         const val SEARCH_DEBOUNCE_MILLIS = 300L
