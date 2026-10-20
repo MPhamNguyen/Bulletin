@@ -48,14 +48,15 @@ fun App(appContainer: AppContainer? = null) {
     val systemDarkTheme = isSystemInDarkTheme()
     val themeViewModel = remember { container.createThemeViewModel() }
     val themePreference by themeViewModel.themePreference.collectAsState()
-    val isDarkTheme = resolveIsDarkTheme(themePreference, systemDarkTheme)
+    val passwordRecoveryViewModel = remember { container.createPasswordRecoveryViewModel() }
+    val passwordRecoveryUiState by passwordRecoveryViewModel.uiState.collectAsState()
+    val isPasswordRecovery = passwordRecoveryUiState.stage != PasswordRecoveryStage.NONE
+    val isDarkTheme = resolveAppIsDarkTheme(themePreference, systemDarkTheme, isPasswordRecovery)
 
     com.jdrms.bulletin.core.designsystem.BulletinTheme(darkTheme = isDarkTheme) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
         val sessionState by container.sessionRepository.state.collectAsState()
         val authSessionState = sessionState.toAuthSessionState()
-        val passwordRecoveryViewModel = remember { container.createPasswordRecoveryViewModel() }
-        val passwordRecoveryUiState by passwordRecoveryViewModel.uiState.collectAsState()
         val effectiveRootScreen = resolveRootScreen(currentRootScreen, authSessionState)
 
         LaunchedEffect(container) { container.sessionRepository.restore() }
@@ -183,4 +184,14 @@ internal fun resolveIsDarkTheme(
     ThemePreference.SYSTEM -> systemDarkTheme
     ThemePreference.LIGHT -> false
     ThemePreference.DARK -> true
+}
+
+internal fun resolveAppIsDarkTheme(
+    themePreference: ThemePreference,
+    systemDarkTheme: Boolean,
+    isPasswordRecovery: Boolean
+): Boolean = if (isPasswordRecovery) {
+    systemDarkTheme
+} else {
+    resolveIsDarkTheme(themePreference, systemDarkTheme)
 }
