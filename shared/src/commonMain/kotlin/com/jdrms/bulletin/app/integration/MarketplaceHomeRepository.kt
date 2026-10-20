@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.integration
 
+import com.jdrms.bulletin.app.application.GetVisibleMarketplaceListings
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCursor
@@ -10,12 +11,11 @@ import com.jdrms.bulletin.domain.home.domain.model.HomePrice
 import com.jdrms.bulletin.domain.home.domain.model.UserPreferences
 import com.jdrms.bulletin.domain.home.domain.repository.HomeRepository
 import com.jdrms.bulletin.domain.home.domain.service.HomeRankingPolicy
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 
 class MarketplaceHomeRepository(
-    private val marketplaceListingSource: MarketplaceListingSource,
+    private val getVisibleListings: GetVisibleMarketplaceListings,
     private val rankingPolicy: HomeRankingPolicy = HomeRankingPolicy()
 ) : HomeRepository {
     private val preferencesByUser = mutableMapOf<String, UserPreferences>()
@@ -25,27 +25,25 @@ class MarketplaceHomeRepository(
         cursor: HomeFeedCursor?,
         pageSize: Int
     ): HomeFeedPage {
-        val page = marketplaceListingSource.getAvailableListings(
+        val page = getVisibleListings(
             MarketplacePageRequest(
                 viewerId = userId,
                 cursor = cursor?.toMarketplaceCursor(),
                 pageSize = pageSize
             )
         )
-        val feedItems = page.listings
-            .filterNot { listing -> userId != null && listing.sellerId == userId }
-            .map { listing ->
-                HomeFeedItem(
-                    id = HomeItemId(listing.id),
-                    title = listing.title,
-                    description = listing.description,
-                    price = HomePrice(listing.priceAmount, listing.priceCurrency),
-                    category = HomeFeedCategory.valueOf(listing.category.name),
-                    createdAtMillis = listing.createdAtMillis,
-                    imageUrl = listing.primaryPhotoUrl,
-                    photoUrls = listing.photoUrls
-                )
-            }
+        val feedItems = page.listings.map { listing ->
+            HomeFeedItem(
+                id = HomeItemId(listing.id),
+                title = listing.title,
+                description = listing.description,
+                price = HomePrice(listing.priceAmount, listing.priceCurrency),
+                category = HomeFeedCategory.valueOf(listing.category.name),
+                createdAtMillis = listing.createdAtMillis,
+                imageUrl = listing.primaryPhotoUrl,
+                photoUrls = listing.photoUrls
+            )
+        }
         val preferences = getPreferences(userId)
         return HomeFeedPage(
             items = rankingPolicy.rankItems(feedItems, preferences),

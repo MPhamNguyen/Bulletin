@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.application.GetVisibleMarketplaceListings
 import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
 import com.jdrms.bulletin.app.integration.AuthMarketplaceReportIdentity
@@ -142,7 +143,14 @@ class AppContainer(
         }
     }
 
-    val homeRepository by lazy { MarketplaceHomeRepository(marketplaceListingSource) }
+    val getVisibleMarketplaceListings by lazy {
+        GetVisibleMarketplaceListings(
+            listingSource = marketplaceListingSource,
+            blockedUserProvider = marketplaceBlockedUserProvider,
+            reportedListingProvider = marketplaceReportedListingProvider
+        )
+    }
+    val homeRepository by lazy { MarketplaceHomeRepository(getVisibleMarketplaceListings) }
     val marketplaceRepository: MarketplaceRepository by lazy {
         val client = supabaseClient
         if (client != null) {
@@ -264,7 +272,8 @@ class AppContainer(
             repository = marketplaceRepository,
             listingSource = marketplaceListingSource,
             blockedUserProvider = marketplaceBlockedUserProvider,
-            reportedListingProvider = marketplaceReportedListingProvider
+            reportedListingProvider = marketplaceReportedListingProvider,
+            getVisibleListings = getVisibleMarketplaceListings
         )
     }
 
