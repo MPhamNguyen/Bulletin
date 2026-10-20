@@ -30,7 +30,8 @@ object ListingMapper {
             condition = condition,
             status = status,
             images = dto.images,
-            createdAtMillis = dto.createdAtMillis
+            createdAtMillis = dto.createdAtMillis,
+            updatedAtMillis = dto.updatedAtMillis
         )
     }
 
@@ -47,7 +48,8 @@ object ListingMapper {
             condition = domain.condition.name,
             status = domain.status.name,
             images = domain.images,
-            createdAtMillis = domain.createdAtMillis
+            createdAtMillis = domain.createdAtMillis,
+            updatedAtMillis = domain.updatedAtMillis
         )
     }
 }

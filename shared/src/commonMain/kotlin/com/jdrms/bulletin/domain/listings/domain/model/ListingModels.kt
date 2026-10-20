@@ -66,7 +66,8 @@ data class Listing(
     val condition: ListingCondition = ListingCondition.GOOD,
     val status: ListingStatus = ListingStatus.AVAILABLE,
     val images: List<String> = emptyList(),
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val updatedAtMillis: Long = 0L
 ) {
     init {
         require(title.isNotBlank()) { "Listing title cannot be blank." }
@@ -96,7 +97,8 @@ data class Listing(
         price: ListingPrice = this.price,
         category: ListingCategory = this.category,
         condition: ListingCondition = this.condition,
-        images: List<String> = this.images
+        images: List<String> = this.images,
+        updatedAtMillis: Long = this.updatedAtMillis
     ): Listing {
         require(isOwnedBy(editorSellerId)) { "Only the owner can edit this listing." }
         return copy(
@@ -105,7 +107,8 @@ data class Listing(
             price = price,
             category = category,
             condition = condition,
-            images = images
+            images = images,
+            updatedAtMillis = updatedAtMillis
         )
     }
 }

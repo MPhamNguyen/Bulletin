@@ -18,7 +18,8 @@ data class MarketplaceListingSnapshot(
     val category: MarketplaceCategory,
     val createdAtMillis: Long,
     val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
-    val photos: List<String> = emptyList()
+    val photos: List<String> = emptyList(),
+    val updatedAtMillis: Long = 0L
 )
 
 data class MarketplacePageCursor(
@@ -81,7 +82,8 @@ class MarketplaceRepositoryListingSource(
                 category = item.category,
                 createdAtMillis = item.createdAtMillis,
                 condition = item.condition,
-                photos = item.photos
+                photos = item.photos,
+                updatedAtMillis = item.updatedAtMillis
             )
         }.pageFor(request)
     }

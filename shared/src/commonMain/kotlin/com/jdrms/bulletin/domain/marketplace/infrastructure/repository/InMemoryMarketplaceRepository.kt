@@ -38,7 +38,8 @@ class InMemoryMarketplaceRepository(
                 category = listing.category,
                 condition = listing.condition.toMarketplaceCondition(),
                 isBookmarked = listing.isBookmarked,
-                createdAtMillis = listing.createdAtMillis
+                createdAtMillis = listing.createdAtMillis,
+                updatedAtMillis = listing.updatedAtMillis
             )
         }
     }
@@ -178,7 +179,8 @@ class InMemoryMarketplaceRepository(
                 description = it.description,
                 price = it.price,
                 category = it.category,
-                createdAtMillis = it.createdAtMillis
+                createdAtMillis = it.createdAtMillis,
+                updatedAtMillis = it.updatedAtMillis
             )
         }
     }

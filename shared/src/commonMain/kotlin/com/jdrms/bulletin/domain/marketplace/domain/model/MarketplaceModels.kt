@@ -59,7 +59,8 @@ data class MarketplaceItem(
     val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
     val isBookmarked: Boolean = false,
     val createdAtMillis: Long = 0L,
-    val photos: List<String> = emptyList()
+    val photos: List<String> = emptyList(),
+    val updatedAtMillis: Long = 0L
 ) {
     init {
         require(title.isNotBlank()) { "Item title cannot be blank." }
@@ -89,7 +90,8 @@ data class Listing(
     val sellerAvatarUrl: String? = null,
     val sellerMajor: String = "",
     val sellerReviewCount: Int = 0,
-    val sellerIsVerified: Boolean = false
+    val sellerIsVerified: Boolean = false,
+    val updatedAtMillis: Long = 0L
 ) {
     init {
         require(title.isNotBlank()) { "Listing title cannot be blank." }

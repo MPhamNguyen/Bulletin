@@ -3,6 +3,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -314,7 +315,8 @@ class ListingsViewModel(
                 description = draft.description,
                 price = ListingPrice(draft.price),
                 category = draft.category,
-                condition = draft.condition
+                condition = draft.condition,
+                updatedAtMillis = currentTimeMillis()
             )
         }
         if (updatedDetails.isFailure) {

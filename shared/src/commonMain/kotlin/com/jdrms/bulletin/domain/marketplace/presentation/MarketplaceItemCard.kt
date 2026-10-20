@@ -52,7 +52,11 @@ internal fun MarketplaceItemCard(
         Spacer(modifier = Modifier.height(8.dp))
         Text(item.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
         Text(
-            text = formatRelativeTime(item.createdAtMillis, currentTimeMillis()),
+            text = formatMarketplaceListingTime(
+                createdAtMillis = item.createdAtMillis,
+                updatedAtMillis = item.updatedAtMillis,
+                nowMillis = currentTimeMillis()
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -69,4 +73,14 @@ internal fun MarketplaceItemCard(
             }
         }
     }
+}
+
+internal fun formatMarketplaceListingTime(
+    createdAtMillis: Long,
+    updatedAtMillis: Long,
+    nowMillis: Long
+): String = if (updatedAtMillis > createdAtMillis && updatedAtMillis > 0L) {
+    "Edited ${formatRelativeTime(updatedAtMillis, nowMillis)}"
+} else {
+    formatRelativeTime(createdAtMillis, nowMillis)
 }
