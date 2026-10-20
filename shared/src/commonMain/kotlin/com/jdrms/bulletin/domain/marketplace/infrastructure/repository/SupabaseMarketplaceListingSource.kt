@@ -54,6 +54,11 @@ class SupabaseMarketplaceListingSource private constructor(
 
     internal constructor(getListings: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>) :
         this(MarketplaceListingTable(getListings), MarketplaceReadCache(), { it })
+
+    internal constructor(
+        fetch: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>,
+        imageUrl: (String) -> String
+    ) : this(MarketplaceListingTable(fetch), MarketplaceReadCache(), imageUrl)
 }
 
 private fun interface MarketplaceListingTable {

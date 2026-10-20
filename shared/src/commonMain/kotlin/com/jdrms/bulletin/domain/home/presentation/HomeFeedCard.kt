@@ -296,18 +296,27 @@ private fun HomeFeedCategoryPill(category: HomeFeedCategory, modifier: Modifier 
 @Composable
 private fun HomeFeedDescription(description: String, expanded: Boolean, onToggle: () -> Unit) {
     if (description.isBlank()) return
+    var descriptionOverflows by remember(description) { mutableStateOf(false) }
+    val descriptionModifier = Modifier
+        .fillMaxWidth()
+        .padding(top = 4.dp)
+        .heightIn(min = 48.dp)
+        .then(
+            if (descriptionOverflows) {
+                Modifier
+                    .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
+                    .clickable(
+                        role = Role.Button,
+                        onClickLabel = if (expanded) "Collapse description" else "Expand description",
+                        onClick = onToggle
+                    )
+            } else {
+                Modifier
+            }
+        )
+        .padding(vertical = 10.dp)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp)
-            .heightIn(min = 48.dp)
-            .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
-            .clickable(
-                role = Role.Button,
-                onClickLabel = if (expanded) "Collapse description" else "Expand description",
-                onClick = onToggle
-            )
-            .padding(vertical = 10.dp),
+        modifier = descriptionModifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top
     ) {
@@ -317,13 +326,18 @@ private fun HomeFeedDescription(description: String, expanded: Boolean, onToggle
             style = MaterialTheme.typography.bodyMedium,
             color = BulletinFeedCardDefaults.secondaryContent,
             maxLines = if (expanded) Int.MAX_VALUE else 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = {
+                if (!expanded) descriptionOverflows = it.didOverflowWidth
+            }
         )
-        Icon(
-            imageVector = Icons.Outlined.ExpandMore,
-            contentDescription = null,
-            tint = BulletinFeedCardDefaults.secondaryContent,
-            modifier = Modifier.padding(top = 2.dp).size(18.dp).rotate(if (expanded) 180f else 0f)
-        )
+        if (descriptionOverflows) {
+            Icon(
+                imageVector = Icons.Outlined.ExpandMore,
+                contentDescription = null,
+                tint = BulletinFeedCardDefaults.secondaryContent,
+                modifier = Modifier.padding(top = 2.dp).size(18.dp).rotate(if (expanded) 180f else 0f)
+            )
+        }
     }
 }

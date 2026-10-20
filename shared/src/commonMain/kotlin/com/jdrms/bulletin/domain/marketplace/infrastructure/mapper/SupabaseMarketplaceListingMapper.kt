@@ -12,8 +12,11 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketpl
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
-    fun toItem(dto: SupabaseMarketplaceListingDto): MarketplaceItem? {
-        val snapshot = toSnapshot(dto) ?: return null
+    fun toItem(
+        dto: SupabaseMarketplaceListingDto,
+        imageUrl: (String) -> String = { it }
+    ): MarketplaceItem? {
+        val snapshot = toSnapshot(dto, imageUrl) ?: return null
         return MarketplaceItem(
             id = MarketplaceItemId(snapshot.id),
             sellerId = snapshot.sellerId,
