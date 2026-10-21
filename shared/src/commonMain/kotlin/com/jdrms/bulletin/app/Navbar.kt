@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.hideFromAccessibility
@@ -38,6 +40,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.navigation.AppDestination
+
+private val NavigationIconSize = 24.dp
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
@@ -145,7 +149,7 @@ private fun DestinationItem(
             Icon(
                 imageVector = if (selected) destination.selectedIcon else destination.icon,
                 contentDescription = null,
-                modifier = Modifier.graphicsLayer {
+                modifier = Modifier.size(NavigationIconSize).graphicsLayer {
                     scaleX = iconScale.value
                     scaleY = iconScale.value
                 }
@@ -161,6 +165,9 @@ private fun DestinationItem(
 
 @Composable
 private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
+    val labelHeightPx = with(LocalDensity.current) {
+        MaterialTheme.typography.labelSmall.lineHeight.toPx()
+    }
     Surface(
         onClick = onClick,
         modifier = modifier
@@ -174,6 +181,8 @@ private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
     ) {
         Box(contentAlignment = Alignment.Center) {
             Surface(
+                // Align the plus with the icon row above the destination labels.
+                modifier = Modifier.graphicsLayer { translationY = -labelHeightPx / 2f },
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -181,7 +190,7 @@ private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp).size(NavigationIconSize)
                 )
             }
         }
