@@ -116,7 +116,8 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                 ListingImageSelectionField(
                     photos = state.newImages.map { ListingPhotoDraft.Pending(it) },
                     onPick = pickListingImages,
-                    onRemove = viewModel::removeNewImage
+                    onRemove = viewModel::removeNewImage,
+                    onCropChange = viewModel::updateNewImageCrop
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

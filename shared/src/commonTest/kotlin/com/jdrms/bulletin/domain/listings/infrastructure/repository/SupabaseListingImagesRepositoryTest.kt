@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
@@ -28,7 +30,10 @@ class SupabaseListingImagesRepositoryTest {
 
         assertTrue(result is Result.Success)
         assertEquals(
-            listOf("https://cdn/listing/a.jpeg", "https://cdn/listing/b.jpeg"),
+            listOf(
+                "https://cdn/listing/a.jpeg#bulletin_crop=1.0,0.0,0.0",
+                "https://cdn/listing/b.jpeg#bulletin_crop=1.0,0.0,0.0"
+            ),
             result.data
         )
         assertEquals(listOf("listing/a.jpeg", "listing/b.jpeg"), storage.uploaded)
@@ -115,13 +120,43 @@ class SupabaseListingImagesRepositoryTest {
 
         assertTrue(result is Result.Success)
         assertEquals(
-            listOf(storage.publicUrl(second.objectPath), "https://cdn/listing/third.jpeg"),
+            listOf(
+                "https://cdn/listing/second.jpeg#bulletin_crop=1.0,0.0,0.0",
+                "https://cdn/listing/third.jpeg#bulletin_crop=1.0,0.0,0.0"
+            ),
             result.data
         )
         assertEquals(
-            listOf(ListingImageRow(second.objectPath, 0), ListingImageRow("listing/third.jpeg", 1)),
+            listOf(
+                ListingImageRow(second.objectPath, 0),
+                ListingImageRow("listing/third.jpeg", 1)
+            ),
             rows.get("listing").sortedBy(ListingImageRow::position)
         )
+    }
+
+    @Test
+    fun persistsCropSettingsWithUploadedImageMetadata() = runTest {
+        val rows = FakeListingImageDataStore()
+        val repository = SupabaseListingImagesRepository(
+            rows = rows,
+            storage = FakeListingImageStorage(),
+            createPath = { "cropped" }
+        )
+
+        val result = repository.synchronize(
+            ListingId("listing"),
+            SellerId("seller"),
+            emptyList(),
+            listOf(ListingImageUpload(byteArrayOf(1), "image/jpeg", 2f, 0.2f, -0.1f))
+        )
+
+        assertTrue(result is Result.Success)
+        assertEquals(
+            "https://cdn/listing/cropped.jpeg".withCropSettings(ImageCropSettings(2f, 0.2f, -0.1f)),
+            result.data.single()
+        )
+        assertEquals(ListingImageRow("listing/cropped.jpeg", 0, 2f, 0.2f, -0.1f), rows.get("listing").single())
     }
 
     private fun image() = ListingImageUpload(byteArrayOf(1), "image/jpeg")
@@ -137,6 +172,12 @@ private class FakeListingImageDataStore(
     override suspend fun updatePosition(listingId: String, objectPath: String, position: Int) {
         val index = images.indexOfFirst { it.objectPath == objectPath }
         if (index >= 0) images[index] = images[index].copy(position = position)
+    }
+    override suspend fun updateCrop(listingId: String, objectPath: String, crop: ImageCropSettings) {
+        val index = images.indexOfFirst { it.objectPath == objectPath }
+        if (index >= 0) images[index] = images[index].copy(
+            cropScale = crop.scale, cropOffsetX = crop.offsetX, cropOffsetY = crop.offsetY
+        )
     }
     override suspend fun remove(listingId: String, objectPaths: List<String>) {
         if (failOnRemove) error("Metadata removal failed")

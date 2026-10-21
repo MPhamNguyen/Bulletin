@@ -3,6 +3,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
@@ -122,6 +123,10 @@ class ListingsViewModel(
     }
     fun addNewImages(images: List<ListingImageUpload>) = photoActions.addNew(images)
     fun removeNewImage(index: Int) = photoActions.removeNew(index)
+    fun updateNewImageCrop(index: Int, crop: ImageCropSettings) =
+        photoActions.updateNewCrop(index, crop)
+    fun updateEditImageCrop(index: Int, crop: ImageCropSettings) =
+        photoActions.updateEditCrop(index, crop)
     fun addEditImages(images: List<ListingImageUpload>) = photoActions.addEdit(images)
     fun removeEditImage(index: Int) = photoActions.removeEdit(index)
     fun imageSelectionFailed(message: String) = photoActions.failed(message)

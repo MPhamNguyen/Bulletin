@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.mapper
 
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
+import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
@@ -30,7 +32,11 @@ object SupabaseListingMapper {
             condition = runCatching { ListingCondition.valueOf(dto.condition.orEmpty().uppercase()) }
                 .getOrDefault(ListingCondition.GOOD),
             status = dto.toListingStatus(),
-            images = dto.listingImages.sortedBy { it.position }.map { imageUrl(it.objectPath) },
+            images = dto.listingImages.sortedBy { it.position }.map { image ->
+                imageUrl(image.objectPath).withCropSettings(
+                    ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
+                )
+            },
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
             updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
         )

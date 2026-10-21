@@ -36,6 +36,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
+import com.jdrms.bulletin.core.common.ImageCropSettings
 import org.jetbrains.compose.resources.painterResource
 
 data class EditListingActions(
@@ -47,6 +48,7 @@ data class EditListingActions(
     val onImagesSelected: (List<com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload>) -> Unit,
     val onImageSelectionError: (String) -> Unit,
     val onRemoveImage: (Int) -> Unit,
+    val onCropImage: (Int, ImageCropSettings) -> Unit,
     val onSave: () -> Unit,
     val onBack: () -> Unit
 )
@@ -129,7 +131,8 @@ fun EditListingView(
             ListingImageSelectionField(
                 photos = uiState.editPhotos,
                 onPick = pickListingImages,
-                onRemove = actions.onRemoveImage
+                onRemove = actions.onRemoveImage,
+                onCropChange = actions.onCropImage
             )
 
             uiState.errorMessage?.let { error ->

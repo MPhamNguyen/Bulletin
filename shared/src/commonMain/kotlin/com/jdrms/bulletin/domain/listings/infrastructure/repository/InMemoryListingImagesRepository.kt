@@ -2,6 +2,9 @@ package com.jdrms.bulletin.domain.listings.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.generateUuid
+import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.cropSettings
+import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
@@ -21,12 +24,18 @@ class InMemoryListingImagesRepository : ListingImagesRepository {
             return Result.Error(IllegalAccessException("Only the listing owner can manage its images."))
         }
         val current = existing?.urls.orEmpty()
-        val retained = retainedImageUrls.mapNotNull { url -> current.find { it == url } }
-        if (retained.size != retainedImageUrls.distinct().size || retained.size + newImages.size > 5) {
+        val retained = retainedImageUrls.mapNotNull { url ->
+            current.find { it.substringBefore("#bulletin_crop=") == url.substringBefore("#bulletin_crop=") }
+                ?.substringBefore("#bulletin_crop=")?.withCropSettings(url.cropSettings())
+        }
+        val uniqueRetainedImages = retainedImageUrls.map { it.substringBefore("#bulletin_crop=") }.distinct()
+        if (retained.size != uniqueRetainedImages.size || retained.size + newImages.size > 5) {
             return Result.Error(IllegalArgumentException("Choose up to 5 available listing images."))
         }
-        val added = newImages.map {
-            "memory://listing-image/${listingId.value}/${generateUuid()}"
+        val added = newImages.map { image ->
+            "memory://listing-image/${listingId.value}/${generateUuid()}".withCropSettings(
+                ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
+            )
         }
         val result = retained + added
         imagesByListing[listingId] = OwnedListingImages(sellerId, result)
