@@ -97,7 +97,8 @@ private class PostgrestMarketplaceListingTable(
         const val LISTINGS_TABLE = "listings"
         const val LISTING_ID_PREFIX = "listing:"
         val LISTING_COLUMNS = Columns.raw(
-            "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), listing_images ( object_path, position )"
+            "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), " +
+                "listing_images ( object_path, position, crop_scale, crop_offset_x, crop_offset_y )"
         )
     }
 }

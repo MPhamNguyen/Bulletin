@@ -134,7 +134,7 @@ internal class SupabaseListingBookmarks internal constructor(
         val BOOKMARKED_LISTING_COLUMNS = Columns.raw(
             "listing_id,listings(id,name,user_id,buyer_id,is_sold,category,condition,price," +
                 "description,created_at,updated_at,seller_profile:profiles!listings_user_id_fkey " +
-                "( full_name ), listing_images(object_path,position))"
+                "( full_name ), listing_images(object_path,position,crop_scale,crop_offset_x,crop_offset_y))"
         )
     }
 

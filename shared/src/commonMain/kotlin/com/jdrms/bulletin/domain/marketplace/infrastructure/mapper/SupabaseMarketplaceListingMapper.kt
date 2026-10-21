@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.mapper
 
+import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
@@ -8,7 +10,6 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
-import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingImageDto
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
@@ -68,7 +69,10 @@ object SupabaseMarketplaceListingMapper {
             status = "AVAILABLE",
             isSold = dto.isSold,
             sellerReputationScore = reputationScore,
-            photos = dto.listingImages.sortedBy { it.position }.map { imageUrl(it.objectPath) },
+            photos = dto.listingImages.sortedBy { it.position }.map { image ->
+                imageUrl(image.objectPath)
+                    .withCropSettings(ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY))
+            },
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
             updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
         )
@@ -100,17 +104,19 @@ object SupabaseMarketplaceListingMapper {
             updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
             condition = condition,
             primaryPhotoUrl = dto.listingImages.firstOrNull { it.position == 0 }
-                ?.objectPath?.takeIf(String::isNotBlank)?.let(photoUrl),
-            photoUrls = dto.listingImages.primaryPhotoPaths().map(photoUrl)
+                ?.let { image ->
+                    photoUrl(image.objectPath).withCropSettings(
+                        ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
+                    )
+                },
+            photoUrls = dto.listingImages.asSequence().filter { it.position >= 0 }.sortedBy { it.position }
+                .filter { it.objectPath.isNotBlank() }.map { image ->
+                    photoUrl(image.objectPath).withCropSettings(
+                        ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
+                    )
+                }.toList()
         )
     }
-
-    private fun List<SupabaseMarketplaceListingImageDto>.primaryPhotoPaths(): List<String> =
-        asSequence().filter { it.position >= 0 }
-            .sortedBy { it.position }
-            .map { it.objectPath }
-            .filter(String::isNotBlank)
-            .toList()
 
     private fun String?.toEpochMillisecondsOrZero(): Long {
         return toInstantOrEpoch().toEpochMilliseconds()

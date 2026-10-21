@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
+import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
@@ -47,6 +48,7 @@ data class EditListingActions(
     val onImagesSelected: (List<com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload>) -> Unit,
     val onImageSelectionError: (String) -> Unit,
     val onRemoveImage: (Int) -> Unit,
+    val onCropImage: (Int, ImageCropSettings) -> Unit,
     val onSave: () -> Unit,
     val onBack: () -> Unit
 )
@@ -129,7 +131,8 @@ fun EditListingView(
             ListingImageSelectionField(
                 photos = uiState.editPhotos,
                 onPick = pickListingImages,
-                onRemove = actions.onRemoveImage
+                onRemove = actions.onRemoveImage,
+                onCropChange = actions.onCropImage
             )
 
             uiState.errorMessage?.let { error ->

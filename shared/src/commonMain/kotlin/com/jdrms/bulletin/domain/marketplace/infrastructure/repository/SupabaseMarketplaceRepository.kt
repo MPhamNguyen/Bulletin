@@ -199,7 +199,7 @@ class SupabaseMarketplaceRepository private constructor(
         const val LISTING_IMAGE_BUCKET = "listing_imgs"
         val LISTING_COLUMNS = Columns.raw(
             "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), " +
-                "listing_images(object_path,position)"
+                "listing_images(object_path,position,crop_scale,crop_offset_x,crop_offset_y)"
         )
 
         fun normalizeListingId(listingId: String): String {
