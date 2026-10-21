@@ -57,15 +57,11 @@ internal fun MarketplaceCatalogContent(
             val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
             layoutInfo.totalItemsCount - lastVisibleIndex
         }.distinctUntilChanged().collect { remainingItems ->
-            if (
-                state.nextCursor != null &&
-                !state.isLoading &&
-                !state.isLoadingMore &&
-                state.errorMessage == null &&
-                remainingItems in 1..PREFETCH_ITEM_THRESHOLD
-            ) {
-                viewModel.loadNextPage()
-            }
+            if (state.nextCursor == null) return@collect
+            if (state.isLoading || state.isLoadingMore) return@collect
+            if (state.errorMessage != null) return@collect
+            if (remainingItems !in 1..PREFETCH_ITEM_THRESHOLD) return@collect
+            viewModel.loadNextPage()
         }
     }
     Box(modifier = Modifier.fillMaxSize()) {
