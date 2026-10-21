@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,22 +8,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,9 +37,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun MarketplaceSearchFilters(
@@ -130,10 +130,18 @@ private fun ActiveMarketplaceFilterChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         filters.category?.let { category ->
-            FilterChip(true, { onFiltersApplied(filters.copy(category = null)) }, label = { Text("${category.displayName()} ×") })
+            FilterChip(
+                selected = true,
+                onClick = { onFiltersApplied(filters.copy(category = null)) },
+                label = { Text("${category.displayName()} ×") },
+            )
         }
         filters.condition?.let { condition ->
-            FilterChip(true, { onFiltersApplied(filters.copy(condition = null)) }, label = { Text("${condition.displayName()} ×") })
+            FilterChip(
+                selected = true,
+                onClick = { onFiltersApplied(filters.copy(condition = null)) },
+                label = { Text("${condition.displayName()} ×") },
+            )
         }
     }
 }
