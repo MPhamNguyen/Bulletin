@@ -22,7 +22,9 @@ class SupabaseListingBookmarksTest {
         assertTrue(columns.contains("profiles!listings_user_id_fkey"))
         assertTrue(columns.contains("buyer_id"))
         assertTrue(columns.contains("is_sold"))
-        assertTrue(columns.contains("listing_images(object_path,position)"))
+        assertTrue(
+            columns.contains("listing_images(object_path,position,crop_scale,crop_offset_x,crop_offset_y)")
+        )
     }
 
     @Test
@@ -204,7 +206,10 @@ class SupabaseListingBookmarksTest {
         assertEquals(listOf("listing:one", "listing:two"), page.listingIds.map { it.value })
         assertEquals(listOf("listing:one", "listing:two"), page.listings.map { it.id.value })
         assertEquals(listOf("Seller one", "Seller two"), page.listings.map { it.sellerName })
-        assertEquals(listOf("https://cdn.example/one/first.webp"), page.listings.first().photos)
+        assertEquals(
+            listOf("https://cdn.example/one/first.webp#bulletin_crop=1.0,0.0,0.0"),
+            page.listings.first().photos
+        )
         assertEquals(2, page.nextCursor?.offset)
 
         nowMillis = 100L

@@ -24,7 +24,10 @@ data class SupabaseMarketplaceListingDto(
 @Serializable
 data class SupabaseMarketplaceListingImageDto(
     @SerialName("object_path") val objectPath: String,
-    @SerialName("position") val position: Int
+    @SerialName("position") val position: Int,
+    @SerialName("crop_scale") val cropScale: Float = 1f,
+    @SerialName("crop_offset_x") val cropOffsetX: Float = 0f,
+    @SerialName("crop_offset_y") val cropOffsetY: Float = 0f
 )
 
 typealias SupabaseMarketplaceImageDto = SupabaseMarketplaceListingImageDto

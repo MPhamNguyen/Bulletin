@@ -40,9 +40,12 @@ class MarketplaceInfrastructureTest {
             photoUrl = { "https://storage.example/$it" }
         )
 
-        assertEquals("https://storage.example/cover.webp", snapshot?.primaryPhotoUrl)
+        assertEquals("https://storage.example/cover.webp#bulletin_crop=1.0,0.0,0.0", snapshot?.primaryPhotoUrl)
         assertEquals(
-            listOf("https://storage.example/cover.webp", "https://storage.example/later.webp"),
+            listOf(
+                "https://storage.example/cover.webp#bulletin_crop=1.0,0.0,0.0",
+                "https://storage.example/later.webp#bulletin_crop=1.0,0.0,0.0"
+            ),
             snapshot?.photoUrls
         )
     }
@@ -60,7 +63,7 @@ class MarketplaceInfrastructureTest {
         )
 
         assertEquals(null, snapshot?.primaryPhotoUrl)
-        assertEquals(listOf("later.webp"), snapshot?.photoUrls)
+        assertEquals(listOf("later.webp#bulletin_crop=1.0,0.0,0.0"), snapshot?.photoUrls)
     }
 
     @Test

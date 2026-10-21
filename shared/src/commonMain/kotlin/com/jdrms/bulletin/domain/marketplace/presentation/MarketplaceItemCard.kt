@@ -13,14 +13,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.formatRelativeTime
+import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
 @Composable
@@ -48,7 +52,7 @@ private fun SingleColumnListingCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(SINGLE_CARD_HEIGHT)
+            .wrapContentHeight()
             .clickable(onClick = onCardClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -75,7 +79,7 @@ private fun TwoColumnListingCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(DOUBLE_CARD_HEIGHT)
+            .wrapContentHeight()
             .clickable(onClick = onCardClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -121,18 +125,26 @@ private fun MarketplaceListingPhoto(
     onBookmarkClick: () -> Unit
 ) {
     val photoUrl = item.photos.firstOrNull()
-    Box(modifier = Modifier.fillMaxWidth().height(height)) {
+    Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clipToBounds()) {
         if (photoUrl == null) {
             MarketplaceListingPhotoFallback(height)
         } else {
             SubcomposeAsyncImage(
-                model = photoUrl,
+                model = photoUrl.imageRequestUrl(),
                 contentDescription = "${item.title} photo",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 loading = { MarketplaceListingPhotoFallback(height) },
                 error = { MarketplaceListingPhotoFallback(height) },
-                success = { SubcomposeAsyncImageContent() }
+                success = {
+                    val crop = photoUrl.cropSettings()
+                    SubcomposeAsyncImageContent(Modifier.graphicsLayer {
+                        scaleX = crop.scale
+                        scaleY = crop.scale
+                        translationX = -crop.offsetX * size.width * crop.scale
+                        translationY = -crop.offsetY * size.height * crop.scale
+                    })
+                }
             )
         }
         MarketplaceBookmarkButton(
@@ -179,7 +191,7 @@ private fun MarketplaceListingPhotoFallback(height: androidx.compose.ui.unit.Dp)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(height)
+            .aspectRatio(1f)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
@@ -245,5 +257,3 @@ internal fun formatMarketplaceListingTime(
 
 private val SINGLE_PHOTO_HEIGHT = 216.dp
 private val DOUBLE_PHOTO_HEIGHT = 180.dp
-private val SINGLE_CARD_HEIGHT = 284.dp
-private val DOUBLE_CARD_HEIGHT = 240.dp
