@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -170,6 +172,12 @@ private fun BoxScope.HomeFeedCardBackground(
     HomeFeedArtwork(modifier = Modifier.matchParentSize())
     photoUrl?.let { imageUrl ->
         val crop = imageUrl.cropSettings()
+        SubcomposeAsyncImage(
+            model = imageUrl.imageRequestUrl(),
+            contentDescription = null,
+            modifier = Modifier.matchParentSize().scale(1.15f).blur(22.dp),
+            contentScale = ContentScale.Crop
+        ) { SubcomposeAsyncImageContent() }
         SubcomposeAsyncImage(
             model = imageUrl.imageRequestUrl(),
             contentDescription = "${item.title} listing photo",
