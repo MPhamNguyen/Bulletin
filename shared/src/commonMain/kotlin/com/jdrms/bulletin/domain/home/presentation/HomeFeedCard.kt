@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -60,6 +61,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
+import com.jdrms.bulletin.core.common.cropSettings
+import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
@@ -166,12 +169,20 @@ private fun BoxScope.HomeFeedCardBackground(
 ) {
     HomeFeedArtwork(modifier = Modifier.matchParentSize())
     photoUrl?.let { imageUrl ->
+        val crop = imageUrl.cropSettings()
         SubcomposeAsyncImage(
-            model = imageUrl,
+            model = imageUrl.imageRequestUrl(),
             contentDescription = "${item.title} listing photo",
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop
-        ) { SubcomposeAsyncImageContent() }
+        ) {
+            SubcomposeAsyncImageContent(Modifier.graphicsLayer {
+                scaleX = crop.scale
+                scaleY = crop.scale
+                translationX = -crop.offsetX * size.width * crop.scale
+                translationY = -crop.offsetY * size.height * crop.scale
+            })
+        }
     }
     HomeFeedImageScrim(Modifier.matchParentSize())
     if (photoUrl != null && photoCount > 1) {
