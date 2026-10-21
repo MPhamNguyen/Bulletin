@@ -133,7 +133,7 @@ private fun MarketplaceListingPhoto(
                 model = photoUrl.imageRequestUrl(),
                 contentDescription = "${item.title} photo",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 loading = { MarketplaceListingPhotoFallback(height) },
                 error = { MarketplaceListingPhotoFallback(height) },
                 success = {
