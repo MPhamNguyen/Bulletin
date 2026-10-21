@@ -47,7 +47,7 @@ class SupabaseMarketplaceListingSourceTest {
     }
 
     @Test
-    fun mapsListingImagesInDisplayOrderToPublicUrls() = runTest {
+    fun mapsListingImagesInDisplayOrderWithCropSettings() = runTest {
         val row = Json.decodeFromString<SupabaseMarketplaceListingDto>(
             """
             {
@@ -57,7 +57,13 @@ class SupabaseMarketplaceListingSourceTest {
                 "price":10.0,
                 "listing_images":[
                     {"object_path":"listing/second.webp","position":1},
-                    {"object_path":"listing/first.jpg","position":0}
+                    {
+                        "object_path":"listing/first.jpg",
+                        "position":0,
+                        "crop_scale":1.5,
+                        "crop_offset_x":0.1,
+                        "crop_offset_y":-0.2
+                    }
                 ]
             }
             """.trimIndent()
@@ -70,7 +76,10 @@ class SupabaseMarketplaceListingSourceTest {
         val photos = source.getAvailableListings(MarketplacePageRequest()).listings.single().photos
 
         assertEquals(
-            listOf("https://cdn.example/listing/first.jpg", "https://cdn.example/listing/second.webp"),
+            listOf(
+                "https://cdn.example/listing/first.jpg#bulletin_crop=1.5,0.1,-0.2",
+                "https://cdn.example/listing/second.webp#bulletin_crop=1.0,0.0,0.0"
+            ),
             photos
         )
     }
