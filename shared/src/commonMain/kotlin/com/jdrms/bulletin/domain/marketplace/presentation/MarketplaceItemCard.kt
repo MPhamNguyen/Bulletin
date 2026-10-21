@@ -13,16 +13,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
-import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.cropSettings
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
@@ -138,12 +138,14 @@ private fun MarketplaceListingPhoto(
                 error = { MarketplaceListingPhotoFallback(height) },
                 success = {
                     val crop = photoUrl.cropSettings()
-                    SubcomposeAsyncImageContent(Modifier.graphicsLayer {
-                        scaleX = crop.scale
-                        scaleY = crop.scale
-                        translationX = -crop.offsetX * size.width * crop.scale
-                        translationY = -crop.offsetY * size.height * crop.scale
-                    })
+                    SubcomposeAsyncImageContent(
+                        Modifier.graphicsLayer {
+                            scaleX = crop.scale
+                            scaleY = crop.scale
+                            translationX = -crop.offsetX * size.width * crop.scale
+                            translationY = -crop.offsetY * size.height * crop.scale
+                        }
+                    )
                 }
             )
         }

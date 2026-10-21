@@ -1,7 +1,7 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.repository
 
-import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
@@ -175,9 +175,11 @@ private class FakeListingImageDataStore(
     }
     override suspend fun updateCrop(listingId: String, objectPath: String, crop: ImageCropSettings) {
         val index = images.indexOfFirst { it.objectPath == objectPath }
-        if (index >= 0) images[index] = images[index].copy(
-            cropScale = crop.scale, cropOffsetX = crop.offsetX, cropOffsetY = crop.offsetY
-        )
+        if (index >= 0) {
+            images[index] = images[index].copy(
+                cropScale = crop.scale, cropOffsetX = crop.offsetX, cropOffsetY = crop.offsetY
+            )
+        }
     }
     override suspend fun remove(listingId: String, objectPaths: List<String>) {
         if (failOnRemove) error("Metadata removal failed")

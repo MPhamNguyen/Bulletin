@@ -1,8 +1,8 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
-import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.withCropSettings
+import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -21,11 +21,19 @@ internal class ListingPhotoActions(private val state: MutableStateFlow<ListingsU
     }
 
     fun updateNewCrop(index: Int, crop: ImageCropSettings) = state.update { current ->
-        current.copy(newImages = current.newImages.mapIndexed { position, upload ->
-            if (position == index) upload.copy(
-                cropScale = crop.scale, cropOffsetX = crop.offsetX, cropOffsetY = crop.offsetY
-            ) else upload
-        })
+        current.copy(
+            newImages = current.newImages.mapIndexed { position, upload ->
+                if (position == index) {
+                    upload.copy(
+                        cropScale = crop.scale,
+                        cropOffsetX = crop.offsetX,
+                        cropOffsetY = crop.offsetY
+                    )
+                } else {
+                    upload
+                }
+            }
+        )
     }
 
     fun addEdit(images: List<ListingImageUpload>) = state.update { current ->
@@ -42,14 +50,24 @@ internal class ListingPhotoActions(private val state: MutableStateFlow<ListingsU
     }
 
     fun updateEditCrop(index: Int, crop: ImageCropSettings) = state.update { current ->
-        current.copy(editPhotos = current.editPhotos.mapIndexed { position, photo ->
-            if (position != index) photo else when (photo) {
-                is ListingPhotoDraft.Existing -> photo.copy(url = photo.url.withCropSettings(crop))
-                is ListingPhotoDraft.Pending -> photo.copy(upload = photo.upload.copy(
-                    cropScale = crop.scale, cropOffsetX = crop.offsetX, cropOffsetY = crop.offsetY
-                ))
+        current.copy(
+            editPhotos = current.editPhotos.mapIndexed { position, photo ->
+                if (position != index) {
+                    photo
+                } else {
+                    when (photo) {
+                        is ListingPhotoDraft.Existing -> photo.copy(url = photo.url.withCropSettings(crop))
+                        is ListingPhotoDraft.Pending -> photo.copy(
+                            upload = photo.upload.copy(
+                                cropScale = crop.scale,
+                                cropOffsetX = crop.offsetX,
+                                cropOffsetY = crop.offsetY
+                            )
+                        )
+                    }
+                }
             }
-        })
+        )
     }
 
     fun failed(message: String) = state.update { it.copy(errorMessage = message) }

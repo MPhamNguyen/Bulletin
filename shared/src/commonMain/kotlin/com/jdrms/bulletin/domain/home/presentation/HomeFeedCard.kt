@@ -176,12 +176,14 @@ private fun BoxScope.HomeFeedCardBackground(
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop
         ) {
-            SubcomposeAsyncImageContent(Modifier.graphicsLayer {
-                scaleX = crop.scale
-                scaleY = crop.scale
-                translationX = -crop.offsetX * size.width * crop.scale
-                translationY = -crop.offsetY * size.height * crop.scale
-            })
+            SubcomposeAsyncImageContent(
+                Modifier.graphicsLayer {
+                    scaleX = crop.scale
+                    scaleY = crop.scale
+                    translationX = -crop.offsetX * size.width * crop.scale
+                    translationY = -crop.offsetY * size.height * crop.scale
+                }
+            )
         }
     }
     HomeFeedImageScrim(Modifier.matchParentSize())

@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -38,9 +38,9 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
+import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import kotlinx.coroutines.launch
 
 @Composable
@@ -97,12 +97,14 @@ internal fun ListingPhotosSection(photos: List<String>) {
                         contentScale = ContentScale.Fit,
                         error = { ListingPhotoFallback() },
                         success = {
-                            SubcomposeAsyncImageContent(Modifier.graphicsLayer {
-                                scaleX = crop.scale
-                                scaleY = crop.scale
-                                translationX = -crop.offsetX * size.width * crop.scale
-                                translationY = -crop.offsetY * size.height * crop.scale
-                            })
+                            SubcomposeAsyncImageContent(
+                                Modifier.graphicsLayer {
+                                    scaleX = crop.scale
+                                    scaleY = crop.scale
+                                    translationX = -crop.offsetX * size.width * crop.scale
+                                    translationY = -crop.offsetY * size.height * crop.scale
+                                }
+                            )
                         }
                     )
                 }

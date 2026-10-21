@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -30,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +38,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.ImageCropSettings
@@ -61,7 +61,8 @@ internal fun ListingImageSelectionField(
             Column(modifier = Modifier.weight(1f)) {
                 Text("Listing photos", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} images, 5 MB each. Adjust each photo to fit the square.",
+                    "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} images, 5 MB each. " +
+                        "Adjust each photo to fit the square.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -78,7 +79,9 @@ internal fun ListingImageSelectionField(
                         val crop = when (photo) {
                             is ListingPhotoDraft.Existing -> photo.url.cropSettings()
                             is ListingPhotoDraft.Pending -> ImageCropSettings(
-                                photo.upload.cropScale, photo.upload.cropOffsetX, photo.upload.cropOffsetY
+                                photo.upload.cropScale,
+                                photo.upload.cropOffsetX,
+                                photo.upload.cropOffsetY
                             )
                         }
                         ListingPhotoImage(
@@ -103,7 +106,9 @@ internal fun ListingImageSelectionField(
             val crop = when (photo) {
                 is ListingPhotoDraft.Existing -> photo.url.cropSettings()
                 is ListingPhotoDraft.Pending -> ImageCropSettings(
-                    photo.upload.cropScale, photo.upload.cropOffsetX, photo.upload.cropOffsetY
+                    photo.upload.cropScale,
+                    photo.upload.cropOffsetX,
+                    photo.upload.cropOffsetY
                 )
             }
             ListingPhotoCropDialog(

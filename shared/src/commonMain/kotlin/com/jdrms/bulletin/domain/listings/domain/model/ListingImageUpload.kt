@@ -20,7 +20,13 @@ data class ListingImageUpload(
         other is ListingImageUpload && bytes.contentEquals(other.bytes) && mediaType == other.mediaType &&
             cropScale == other.cropScale && cropOffsetX == other.cropOffsetX && cropOffsetY == other.cropOffsetY
 
-    override fun hashCode(): Int = listOf(bytes.contentHashCode(), mediaType, cropScale, cropOffsetX, cropOffsetY).hashCode()
+    override fun hashCode(): Int = listOf(
+        bytes.contentHashCode(),
+        mediaType,
+        cropScale,
+        cropOffsetX,
+        cropOffsetY
+    ).hashCode()
 
     companion object {
         const val MAX_LISTING_IMAGE_COUNT = 5

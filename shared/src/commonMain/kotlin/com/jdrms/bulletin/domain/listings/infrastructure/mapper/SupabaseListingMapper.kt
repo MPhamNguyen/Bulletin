@@ -1,8 +1,8 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.mapper
 
-import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.withCropSettings
+import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId

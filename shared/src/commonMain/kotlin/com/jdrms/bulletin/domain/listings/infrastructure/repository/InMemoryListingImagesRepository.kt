@@ -1,9 +1,9 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.repository
 
-import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.cropSettings
+import com.jdrms.bulletin.core.common.generateUuid
 import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload

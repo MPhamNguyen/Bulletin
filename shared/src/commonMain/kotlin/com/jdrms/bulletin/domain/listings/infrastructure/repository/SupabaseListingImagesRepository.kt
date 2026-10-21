@@ -3,8 +3,8 @@ package com.jdrms.bulletin.domain.listings.infrastructure.repository
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.cropSettings
-import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.core.common.generateUuid
+import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
@@ -101,9 +101,11 @@ class SupabaseListingImagesRepository internal constructor(
         )
         persistImageChanges(listingId, removed, retainedPaths, orderedRetained, uploaded)
         if (removed.isNotEmpty()) storage.delete(removed.map(ListingImageRow::objectPath))
-        (orderedRetained + uploaded).map { row -> storage.publicUrl(row.objectPath).withCropSettings(
-            ImageCropSettings(row.cropScale, row.cropOffsetX, row.cropOffsetY)
-        ) }
+        (orderedRetained + uploaded).map { row ->
+            storage.publicUrl(row.objectPath).withCropSettings(
+                ImageCropSettings(row.cropScale, row.cropOffsetX, row.cropOffsetY)
+            )
+        }
     }
 
     private fun resolveRetainedImages(
@@ -178,8 +180,11 @@ class SupabaseListingImagesRepository internal constructor(
             images.forEachIndexed { index, image ->
                 val extension = image.mediaType.substringAfter('/')
                 val row = ListingImageRow(
-                    "${listingId.value}/${createPath()}.$extension", positions[index],
-                    image.cropScale, image.cropOffsetX, image.cropOffsetY
+                    "${listingId.value}/${createPath()}.$extension",
+                    positions[index],
+                    image.cropScale,
+                    image.cropOffsetX,
+                    image.cropOffsetY
                 )
                 storage.upload(row.objectPath, image)
                 uploaded += row
@@ -221,8 +226,12 @@ class SupabaseListingImagesRepository internal constructor(
                 supabase.from(TABLE).insert(
                     rows.map { row ->
                         ListingImageInsertDto(
-                            listingId, row.objectPath, row.position,
-                            row.cropScale, row.cropOffsetX, row.cropOffsetY
+                            listingId,
+                            row.objectPath,
+                            row.position,
+                            row.cropScale,
+                            row.cropOffsetX,
+                            row.cropOffsetY
                         )
                     }
                 )
