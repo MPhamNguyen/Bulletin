@@ -121,6 +121,11 @@ class MarketplaceViewModel(
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
+    fun onFiltersApplied(filters: MarketplaceFilterState) {
+        _uiState.update { state -> state.copy(filters = filters.copy(query = state.filters.query)) }
+        loadFirstPage(userId = null, debounceMillis = 0L)
+    }
+
     fun loadNextPage() {
         val currentState = _uiState.value
         val cursor = currentState.nextCursor ?: return
