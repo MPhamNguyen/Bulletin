@@ -68,6 +68,8 @@ import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
+import kotlin.math.max
+import kotlin.math.min
 
 private const val HOME_PHOTO_INTERVAL_MILLIS = 3_000L
 
@@ -159,6 +161,32 @@ internal fun stepHomePhotoIndex(currentIndex: Int, direction: Int, photoCount: I
     return (currentIndex + direction).coerceIn(0, photoCount - 1)
 }
 
+/**
+ * Converts a saved crop offset (normalized against the square crop-editor frame) into a pixel
+ * translation for a frame of any aspect ratio.
+ *
+ * The old code multiplied offsetY by the card HEIGHT (~2x the editor frame in the Home feed),
+ * which pushed letterboxed images down/up by far more than the user chose. Here the offset is
+ * normalized against the shorter side of the frame (matching the square editor), and the result
+ * is clamped so the scaled image can never be pushed off-center on an axis where it does not
+ * even fill the frame.
+ *
+ * @param frameExtent size of the frame along this axis (px)
+ * @param referenceSide shorter side of the frame (px), the equivalent of the editor's square side
+ * @param fittedExtent size of the ContentScale.Fit image along this axis (px)
+ */
+internal fun cropAxisTranslation(
+    offset: Float,
+    scale: Float,
+    frameExtent: Float,
+    referenceSide: Float,
+    fittedExtent: Float
+): Float {
+    val raw = -offset * referenceSide * scale
+    val maxTranslation = max(0f, (fittedExtent * scale - frameExtent) / 2f)
+    return raw.coerceIn(-maxTranslation, maxTranslation)
+}
+
 @Composable
 private fun BoxScope.HomeFeedCardBackground(
     item: HomeFeedItem,
@@ -182,14 +210,25 @@ private fun BoxScope.HomeFeedCardBackground(
             model = imageUrl.imageRequestUrl(),
             contentDescription = "${item.title} listing photo",
             modifier = Modifier.matchParentSize(),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Fit
         ) {
+            val intrinsic = painter.intrinsicSize
             SubcomposeAsyncImageContent(
                 Modifier.graphicsLayer {
+                    val frameW = size.width
+                    val frameH = size.height
+                    val hasIntrinsic = intrinsic.width.isFinite() && intrinsic.height.isFinite() &&
+                        intrinsic.width > 0f && intrinsic.height > 0f
+                    // Size of the image as drawn by ContentScale.Fit (before the crop scale).
+                    val fit = if (hasIntrinsic) min(frameW / intrinsic.width, frameH / intrinsic.height) else 1f
+                    val fittedW = if (hasIntrinsic) intrinsic.width * fit else frameW
+                    val fittedH = if (hasIntrinsic) intrinsic.height * fit else frameH
+                    val referenceSide = min(frameW, frameH)
+
                     scaleX = crop.scale
                     scaleY = crop.scale
-                    translationX = -crop.offsetX * size.width * crop.scale
-                    translationY = -crop.offsetY * size.height * crop.scale
+                    translationX = cropAxisTranslation(crop.offsetX, crop.scale, frameW, referenceSide, fittedW)
+                    translationY = cropAxisTranslation(crop.offsetY, crop.scale, frameH, referenceSide, fittedH)
                 }
             )
         }
