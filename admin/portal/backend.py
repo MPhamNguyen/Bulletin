@@ -124,6 +124,8 @@ class Supabase:
         return result["users"]
 
     def set_ban(self, user_id, duration):
+        # Auth bans alone do not revoke issued JWTs. Data-access enforcement is
+        # provided separately by the deployed database policies.
         return self.request(
             "PUT", "/auth/v1/admin/users/" + user_id, data={"ban_duration": duration}
         )

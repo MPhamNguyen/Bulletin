@@ -27,8 +27,16 @@ class PortalTests(unittest.TestCase):
         response = self.client.get("/reports/" + REPORT)
         self.assertEqual(200, response.status_code)
         html = response.get_data(as_text=True)
-        return {name: re.search(r'name="' + name + r'" value="([^"]+)"', html).group(1)
+        data = {name: re.search(r'name="' + name + r'" value="([^"]+)"', html).group(1)
                 for name in ("csrf", "version")}
+        match = re.search(r'name="account_version" value="([^"]+)"', html)
+        if match:
+            data["account_version"] = match.group(1)
+        else:
+            with self.app.app_context():
+                from portal.web import version_serializer
+                data["account_version"] = version_serializer("report-account").dumps({"id": REPORT, "account": None})
+        return data
 
     def test_admin_login_sets_protected_cookie_and_rotates_csrf(self):
         old_csrf = self.csrf()

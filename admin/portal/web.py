@@ -15,6 +15,7 @@ from itsdangerous import BadSignature, URLSafeTimedSerializer
 from werkzeug.exceptions import HTTPException
 
 from .backend import PortalError, Supabase
+from .account_access import account_snapshot
 from .listing_review import delete_reported_listing, listing_images, listing_snapshot
 from .moderation import (
     ACCOUNT_ACTIONS, ALIASES, PROFILE_COLUMNS, STATUSES, act_on_account,
@@ -148,9 +149,9 @@ def version_serializer(salt="report-version"):
     return URLSafeTimedSerializer(current_app.secret_key, salt=salt)
 
 
-def submitted_version(report_id, salt="report-version"):
+def submitted_version(report_id, salt="report-version", field="version"):
     try:
-        version = version_serializer(salt).loads(request.form.get("version", ""), max_age=3600)
+        version = version_serializer(salt).loads(request.form.get(field, ""), max_age=3600)
     except BadSignature:
         raise PortalError("This report form expired. Reload before saving.", 409) from None
     if not isinstance(version, dict) or version.get("id") != report_id:
@@ -236,9 +237,13 @@ def review(report_id):
     if report.get("reporter_id"):
         reporter = g.backend.one("profiles", identifier(report["reporter_id"]), PROFILE_COLUMNS)
     images, image_error, delete_version = listing_review_details(report, context["content"])
+    account_version = version_serializer("report-account").dumps({
+        "id": report["id"], "account": account_snapshot(context["account"]) if context["account"] else None,
+    })
     return render_template(
         "review.html", report=report, reporter=reporter,
         version=version_serializer().dumps(snapshot(report)), images=images,
+        account_version=account_version,
         image_error=image_error, delete_version=delete_version, **context,
     )
 
@@ -289,6 +294,7 @@ def save_status(report_id):
 def account_action(report_id):
     report_id = str(report_id)
     version = submitted_version(report_id)
+    account_version = submitted_version(report_id, salt="report-account", field="account_version")
     report = report_by_id(g.backend, report_id)
     if version != snapshot(report):
         raise PortalError("Another reviewer changed this report. Reload before acting.", 409)
@@ -298,6 +304,7 @@ def account_action(report_id):
     target_id = act_on_account(
         g.backend, report, g.admin["id"], action,
         request.form.get("duration"), request.form.get("duration_unit"),
+        account_version=account_version.get("account"),
     )
     current_app.logger.info("account_action actor=%s report=%s target=%s action=%s",
                             g.admin["id"], report_id, target_id, action)

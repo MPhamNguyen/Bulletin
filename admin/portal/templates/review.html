@@ -53,6 +53,7 @@
       <form method="post" action="{{ url_for('portal.account_action', report_id=report.id) }}">
         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
         <input type="hidden" name="version" value="{{ version }}">
+        <input type="hidden" name="account_version" value="{{ account_version }}">
         {% include 'account_action_fields.html' %}
       </form>
       {% else %}<p>Account actions are unavailable for this account.</p>{% endif %}

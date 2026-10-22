@@ -5,6 +5,10 @@ from datetime import datetime, timezone
 from .backend import PortalError
 
 
+def account_snapshot(account):
+    return {key: account.get(key) for key in ("id", "banned_until", "updated_at")}
+
+
 def require_active_account(backend, user_id):
     account = backend.auth_user(user_id)
     if not isinstance(account, dict) or account.get("id") != user_id:

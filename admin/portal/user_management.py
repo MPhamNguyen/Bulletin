@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 
+from .account_access import account_snapshot
 from .backend import PortalError
 from .moderation import (
     PAGE_SIZE, PROFILE_COLUMNS, REPORT_COLUMNS, account_ban_duration,
@@ -42,10 +43,6 @@ def managed_account(backend, user_id):
         raise PortalError("The account could not be verified.", 502)
     profile = backend.one("profiles", user_id, PROFILE_COLUMNS)
     return account, profile
-
-
-def account_snapshot(account):
-    return {key: account.get(key) for key in ("id", "banned_until", "updated_at")}
 
 
 def account_reports_page(backend, user_id, page):
