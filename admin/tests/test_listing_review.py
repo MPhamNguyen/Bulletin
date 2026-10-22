@@ -35,7 +35,10 @@ class ListingReviewTests(unittest.TestCase):
         self.assertIn("https://project.supabase.co/storage/v1/object/public/listing_imgs/" + LISTING + "/first%20image.jpg", html)
         self.assertIn("Open full image", html)
         self.assertIn("listing-photos", html)
-        self.assertIn("img-src 'self' https://project.supabase.co;", response.headers["Content-Security-Policy"])
+        directives = dict(part.strip().split(None, 1) for part in
+                          response.headers["Content-Security-Policy"].split(";") if part.strip())
+        self.assertEqual({"'self'", "https://project.supabase.co", "https://static.vecteezy.com"},
+                         set(directives["img-src"].split()))
         self.assertNotIn("verified-token", html)
         query = next(query for table, query in self.backend.queries if table == "listing_images")
         self.assertEqual("eq." + LISTING, query["listing_id"])
