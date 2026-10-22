@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 internal fun MarketplaceCatalogContent(
@@ -55,6 +57,26 @@ internal fun MarketplaceCatalogContent(
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
     LaunchedEffect(gridState.canScrollForward) {
         if (!gridState.canScrollForward) onContentNoLongerScrollable()
+    }
+    LaunchedEffect(
+        gridState,
+        state.nextCursor,
+        state.isLoading,
+        state.isLoadingMore,
+        state.errorMessage,
+        state.filters
+    ) {
+        snapshotFlow {
+            val layoutInfo = gridState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            layoutInfo.totalItemsCount - lastVisibleIndex
+        }.distinctUntilChanged().collect { remainingItems ->
+            if (state.nextCursor == null) return@collect
+            if (state.isLoading || state.isLoadingMore) return@collect
+            if (state.errorMessage != null) return@collect
+            if (remainingItems !in 1..PREFETCH_ITEM_THRESHOLD) return@collect
+            viewModel.loadNextPage()
+        }
     }
     Box(
         modifier = Modifier
@@ -81,7 +103,7 @@ internal fun MarketplaceCatalogContent(
             marketplaceLoadingItem(state.isLoading)
             marketplaceEmptyResultsItem(state)
             marketplaceListingItems(state, viewModel)
-            marketplacePaginationItem(state, viewModel)
+            marketplacePaginationItem(state)
             marketplaceErrorItems(state, viewModel)
         }
         MarketplaceCatalogOverlays(
@@ -159,14 +181,12 @@ private fun LazyGridScope.marketplaceListingItems(state: MarketplaceUiState, vie
     }
 }
 
-private fun LazyGridScope.marketplacePaginationItem(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+private fun LazyGridScope.marketplacePaginationItem(state: MarketplaceUiState) {
     if (state.nextCursor == null) return
     fullWidthItem(key = "marketplace-pagination-trigger") {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             if (state.isLoadingMore) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            } else {
-                TextButton(onClick = viewModel::loadNextPage) { Text("Load more") }
             }
         }
     }
@@ -192,6 +212,8 @@ private fun LazyGridScope.fullWidthItem(
     key: Any? = null,
     content: @Composable () -> Unit
 ) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
+
+private const val PREFETCH_ITEM_THRESHOLD = 6
 
 @Composable
 private fun MarketplaceCatalogOverlays(
