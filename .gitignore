@@ -37,3 +37,6 @@ node_modules/
 
 # Supabase local state
 supabase/.temp/
+
+# Admin Page
+.venv/

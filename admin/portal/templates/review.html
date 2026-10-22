@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Review report{% endblock %}
+{% block scripts %}<script src="{{ url_for('portal.asset', filename='account-action.js') }}" defer></script>{% endblock %}
+{% block content %}
+<a href="{{ url_for('portal.reports') }}">← Reports</a>
+<h1>Review {{ report.type }} report</h1>
+<p class="muted">{{ report.id }}</p>
+<div class="columns">
+  <section>
+    <h2>Report details</h2>
+    <dl>
+      <dt>Reason</dt><dd>{{ report.reason|replace('_', ' ') }}</dd>
+      <dt>Description</dt><dd class="content">{{ report.description or 'No description provided.' }}</dd>
+      <dt>Reporter</dt><dd>{{ reporter.full_name or reporter.email if reporter else 'Unavailable' }}<br>{{ report.reporter_id }}</dd>
+      <dt>Created (UTC)</dt><dd>{{ report.created_at or '—' }}</dd>
+      <dt>Modified (UTC)</dt><dd>{{ report.modified_at or '—' }}</dd>
+      <dt>Current status</dt><dd>{{ statuses.get(aliases.get(report.status, report.status), report.status or 'Unknown') }}</dd>
+    </dl>
+    <h2>Reported content</h2>
+    {% if report.type == 'message' and content %}
+      <p class="content">{{ content.body }}</p>
+      <p class="muted">Message {{ content.id }} · {{ content.created_at }}</p>
+    {% elif report.type == 'listing' and content %}
+      <h3>{{ content.name }}</h3><p class="content">{{ content.description }}</p>
+      <p>Price: {{ content.price }} · {{ 'Sold' if content.is_sold else 'Not sold' }}</p>
+      <p class="muted">Listing {{ content.id }}</p>
+      {% if image_error %}<p class="error" role="alert">{{ image_error }}</p>
+      {% elif images %}
+        <div class="listing-photos" aria-label="Reported listing photos">
+          {% for image_url in images %}
+          <figure>
+            <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer">
+              <img src="{{ image_url }}" alt="{{ content.name or 'Reported listing' }} — photo {{ loop.index }}" loading="lazy" referrerpolicy="no-referrer">
+            </a>
+            <figcaption>Photo {{ loop.index }} · <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer">Open full image</a></figcaption>
+          </figure>
+          {% endfor %}
+        </div>
+      {% else %}<p class="muted">This listing has no photos.</p>{% endif %}
+    {% elif report.type == 'user' %}<p>This report concerns the account shown here.</p>
+    {% else %}<p>The reported content is unavailable. It may have been deleted.</p>{% endif %}
+  </section>
+  <section>
+    <h2>Reported account</h2>
+    {% if target %}
+      <p>{{ target.full_name or 'Unnamed account' }}<br>{{ target.email }}<br><span class="muted">{{ target.id }}</span></p>
+      {% if target.deleted_at %}<p>Profile deleted: {{ target.deleted_at }}</p>{% endif %}
+      <p>Last signed in: {{ account.last_sign_in_at|utc_timestamp if account else 'Unavailable' }}</p>
+      <p class="muted">The last recorded sign-in does not indicate whether the user is currently online.</p>
+      {% if account %}<p>Suspended until: {{ account.banned_until or 'Not suspended' }}</p>{% endif %}
+      {% if account and not target.deleted_at and target.is_admin is sameas false and target.id != g.admin.id %}
+      <form method="post" action="{{ url_for('portal.account_action', report_id=report.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="version" value="{{ version }}">
+        <label for="action">Account action</label>
+        <select name="action" id="action" required>
+          <option value="">Choose an action</option>
+          {% for value, label in account_actions.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+        <fieldset id="suspension-duration" hidden disabled>
+          <legend>How long should the suspension last?</legend>
+          <label for="duration">Duration</label>
+          <input type="number" name="duration" id="duration" min="1" max="365" step="1" inputmode="numeric" required aria-describedby="duration-help">
+          <label for="duration-unit">Unit</label>
+          <select name="duration_unit" id="duration-unit" required>
+            <option value="days">Days</option>
+            <option value="hours">Hours</option>
+            <option value="minutes">Minutes</option>
+          </select>
+          <p class="muted" id="duration-help">Enter a whole number. Maximum suspension: 365 days. The duration starts when this action is applied.</p>
+        </fieldset>
+        <noscript><p>Enable JavaScript to enter a suspension duration. Restoring access works without JavaScript.</p></noscript>
+        <p class="muted">Restore removes the account suspension. Suspension restrictions on existing sessions require the account security SQL to be installed. These actions do not delete listings.</p>
+        <label class="checkbox"><input type="checkbox" name="confirm" value="yes" required> I confirm this action applies to the reported account.</label>
+        <button type="submit">Apply account action</button>
+      </form>
+      {% else %}<p>Account actions are unavailable for this account.</p>{% endif %}
+    {% else %}<p>The reported account is unavailable. No account action can be performed.</p>{% endif %}
+    <h2>Review outcome</h2>
+    <form method="post" action="{{ url_for('portal.save_status', report_id=report.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="version" value="{{ version }}">
+      <label for="new-status">Report status</label>
+      <select name="status" id="new-status" required>
+        {% if aliases.get(report.status, report.status) not in statuses %}<option value="" selected>Choose a status</option>{% endif %}
+        {% for value, label in statuses.items() %}<option value="{{ value }}" {% if aliases.get(report.status, report.status) == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <p class="muted">Changing the status also updates the report's modified time. Saving a status does not perform an account action.</p>
+      <button type="submit">Save report status</button>
+    </form>
+    {% if delete_version %}
+    <section class="danger-zone" aria-labelledby="delete-listing-heading">
+      <h2 id="delete-listing-heading">Delete reported listing</h2>
+      <p>This permanently deletes the listing and all its photos, reports, bookmarks, and reviews. This cannot be undone.</p>
+      <form method="post" action="{{ url_for('portal.delete_listing', report_id=report.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="version" value="{{ delete_version }}">
+        <label class="checkbox"><input type="checkbox" name="confirm" value="delete" required> I confirm permanent deletion of this listing and its associated data.</label>
+        <button class="danger" type="submit">Delete listing and reports</button>
+      </form>
+    </section>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
