@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Manage suspended account{% endblock %}
+{% block scripts %}<script src="{{ url_for('portal.asset', filename='account-action.js') }}" defer></script>{% endblock %}
+{% block content %}
+<a href="{{ url_for('users.index') }}">Manage Users</a>
+<h1>Manage account</h1>
+<p>{{ target.full_name or account.email if target else account.email or 'Unavailable profile' }}<br>{{ account.email }}<br>{{ account.id }}</p>
+<p>Last signed in: {{ account.last_sign_in_at|utc_timestamp }}</p>
+<p>Suspended until: {{ account.banned_until|utc_timestamp if suspended else 'Not suspended' }}</p>
+{% if suspended and target and not target.deleted_at and target.is_admin is sameas false and target.id != g.admin.id %}
+<form method="post" action="{{ url_for('users.action', user_id=account.id) }}">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  {% include 'account_action_fields.html' %}
+</form>
+{% elif not suspended %}<p>This account is no longer suspended.</p>
+{% else %}<p>Account actions are unavailable for this account.</p>{% endif %}
+<section aria-labelledby="report-tickets-heading">
+  <h2 id="report-tickets-heading">Report tickets</h2>
+  <p>Reports about this account, its messages, and its listings. These include all report statuses.</p>
+  {% if report_error %}<p class="error" role="alert">{{ report_error }}</p>
+  {% else %}
+  <div class="table-scroll">
+    <table>
+      <caption>Report tickets · page {{ report_page }}</caption>
+      <thead><tr><th scope="col">Ticket</th><th scope="col">Type</th><th scope="col">Reason</th><th scope="col">Status</th><th scope="col">Created</th></tr></thead>
+      <tbody>
+      {% for report in reports %}
+        <tr>
+          <td><a href="{{ url_for('portal.review', report_id=report.id) }}">View report {{ report.id }}</a></td>
+          <td>{{ report.type }}</td><td>{{ report.reason|replace('_', ' ') }}</td>
+          <td>{{ statuses.get(aliases.get(report.status, report.status), report.status or 'Unknown') }}</td>
+          <td>{{ report.created_at|utc_timestamp }}</td>
+        </tr>
+      {% else %}<tr><td colspan="5">No matching report tickets remain.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav aria-label="User report tickets">
+    {% if report_page > 1 %}<a href="{{ url_for('users.detail', user_id=account.id, report_page=report_page-1) }}">Previous reports</a>{% endif %}
+    {% if has_next %}<a href="{{ url_for('users.detail', user_id=account.id, report_page=report_page+1) }}">Next reports</a>{% endif %}
+  </nav>
+  {% endif %}
+</section>
+{% endblock %}

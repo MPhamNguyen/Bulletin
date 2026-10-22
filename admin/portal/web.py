@@ -52,8 +52,17 @@ def create_app(config=None, backend=None):
     app.add_template_filter(utc_timestamp, "utc_timestamp")
     app.register_error_handler(PortalError, portal_error)
     app.register_error_handler(HTTPException, http_error)
-    app.register_blueprint(routes)
+    register_routes(app)
     return app
+
+
+def register_routes(app):
+    from .conversation_web import conversation_routes
+    from .directory_web import directory_routes
+    from .users_web import user_routes
+
+    for blueprint in (routes, user_routes, directory_routes, conversation_routes):
+        app.register_blueprint(blueprint)
 
 
 def utc_timestamp(value):
@@ -108,7 +117,8 @@ def security_headers(response):
         "Cache-Control": "no-store, private",
         "Pragma": "no-cache",
         "Content-Security-Policy": (
-            "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'" + image_origin + "; "
+            "default-src 'none'; script-src 'self'; style-src 'self'; "
+            "img-src 'self' https://static.vecteezy.com" + image_origin + "; "
             "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
         ),
         "X-Content-Type-Options": "nosniff",

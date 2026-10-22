@@ -17,6 +17,23 @@ class SupabaseTests(unittest.TestCase):
         self.backend = Supabase("https://project.supabase.co", "anon-test", "service-test")
 
     @patch("portal.backend.urlopen")
+    def test_account_list_is_paginated_and_uses_server_credentials(self, open_url):
+        open_url.return_value = Response(b'{"users":[{"id":"account-id"}]}')
+        self.assertEqual([{"id": "account-id"}], self.backend.auth_users(2, "example.test"))
+        request = open_url.call_args.args[0]
+        self.assertEqual("Bearer service-test", request.headers["Authorization"])
+        self.assertEqual("/auth/v1/admin/users", urlsplit(request.full_url).path)
+        self.assertEqual({"page": ["2"], "per_page": ["100"], "filter": ["example.test"]},
+                         parse_qs(urlsplit(request.full_url).query))
+
+    @patch("portal.backend.urlopen")
+    def test_invalid_account_list_is_rejected(self, open_url):
+        for body in (b'[]', b'{}', b'{"users":null}', b'{"users":[null]}'):
+            open_url.return_value = Response(body)
+            with self.assertRaises(PortalError):
+                self.backend.auth_users(1)
+
+    @patch("portal.backend.urlopen")
     def test_login_uses_anon_key_and_sends_credentials_only_to_auth(self, open_url):
         open_url.return_value = Response(b'{"access_token":"issued"}')
         self.assertEqual("issued", self.backend.sign_in("admin@example.test", "password")["access_token"])

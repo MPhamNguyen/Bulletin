@@ -136,11 +136,15 @@ def act_on_account(backend, report, actor_id, action, amount=None, unit=None):
     duration = account_ban_duration(action, amount, unit)
     context = target_context(backend, report)
     target = context["target"]
-    if not target or not context["account"]:
+    ensure_account_action_allowed(target, context["account"], actor_id)
+    backend.set_ban(identifier(target["id"]), duration)
+    return target["id"]
+
+
+def ensure_account_action_allowed(target, account, actor_id):
+    if not target or not account:
         raise PortalError("The reported account is unavailable. No action was taken.", 409)
     if target.get("deleted_at"):
         raise PortalError("This profile was deleted. Account actions are unavailable.", 409)
     if target["id"] == actor_id or target.get("is_admin") is not False:
         raise PortalError("Actions against your own account or administrator accounts are blocked.", 403)
-    backend.set_ban(identifier(target["id"]), duration)
-    return target["id"]

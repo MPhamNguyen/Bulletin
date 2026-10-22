@@ -1,0 +1,21 @@
+<label for="action">Account action</label>
+<select name="action" id="action" required>
+  <option value="">Choose an action</option>
+  {% for value, label in account_actions.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+</select>
+<fieldset id="suspension-duration" hidden disabled>
+  <legend>How long should the suspension last?</legend>
+  <label for="duration">Duration</label>
+  <input type="number" name="duration" id="duration" min="1" max="365" step="1" inputmode="numeric" required aria-describedby="duration-help">
+  <label for="duration-unit">Unit</label>
+  <select name="duration_unit" id="duration-unit" required>
+    <option value="days">Days</option>
+    <option value="hours">Hours</option>
+    <option value="minutes">Minutes</option>
+  </select>
+  <p class="muted" id="duration-help">Enter a whole number. Maximum suspension: 365 days. The duration starts when this action is applied.</p>
+</fieldset>
+<noscript><p>Enable JavaScript to enter a suspension duration. Restoring access works without JavaScript.</p></noscript>
+<p class="muted">Restore removes the account suspension. These actions do not delete listings.</p>
+<label class="checkbox"><input type="checkbox" name="confirm" value="yes" required> I confirm this action applies to this account.</label>
+<button type="submit">Apply account action</button>

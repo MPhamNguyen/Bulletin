@@ -16,6 +16,10 @@ def image_paths(backend, listing_id):
     listing_id = identifier(listing_id)
     rows = backend.rows("listing_images", listing_id="eq." + listing_id,
                         select="object_path,position", order="position.asc,id.asc")
+    return validated_image_paths(rows, listing_id)
+
+
+def validated_image_paths(rows, listing_id):
     paths = []
     for row in rows:
         path = row.get("object_path")
@@ -30,6 +34,10 @@ def image_paths(backend, listing_id):
 
 def listing_images(backend, listing):
     paths = image_paths(backend, listing["id"])
+    return public_image_urls(backend, paths)
+
+
+def public_image_urls(backend, paths):
     base = backend.url + "/storage/v1/object/public/" + IMAGE_BUCKET + "/"
     return [base + quote(path, safe="/") for path in paths]
 

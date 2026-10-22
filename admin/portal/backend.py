@@ -114,6 +114,15 @@ class Supabase:
     def auth_user(self, user_id):
         return self.request("GET", "/auth/v1/admin/users/" + user_id, missing_ok=True)
 
+    def auth_users(self, page, search=""):
+        result = self.request("GET", "/auth/v1/admin/users", query={
+            "page": page, "per_page": 100, "filter": search,
+        })
+        if (not isinstance(result, dict) or not isinstance(result.get("users"), list)
+                or any(not isinstance(user, dict) for user in result["users"])):
+            raise PortalError("The account list could not be loaded. Please try again.", 502)
+        return result["users"]
+
     def set_ban(self, user_id, duration):
         return self.request(
             "PUT", "/auth/v1/admin/users/" + user_id, data={"ban_duration": duration}

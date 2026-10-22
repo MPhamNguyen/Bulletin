@@ -13,7 +13,13 @@ button:hover { background: #edf2fb; }
 .button { display: inline-block; border: 1px solid #aeb7c2; border-radius: 4px; padding: .55rem .75rem; background: #fff; font-weight: 600; text-decoration: none; }
 .button:hover { background: #edf2fb; }
 .reports-button { display: inline-flex; align-items: center; gap: 1rem; padding: 1.5rem 2rem; font-size: 1.35rem; }
-.reports-icon { width: 64px; height: 64px; flex-shrink: 0; }
+.reports-icon { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; }
+.profile-avatar { border-radius: 50%; object-fit: cover; }
+.chat-history { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.chat-message { background: #fff; border: 1px solid #d8dde3; border-radius: 6px; padding: 1rem; }
+.reported-message { border: 2px solid #174fa8; }
+.user-listings { display: grid; gap: 1rem; }
+.user-listing { background: #fff; border: 1px solid #d8dde3; border-radius: 6px; padding: 1.5rem; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #245fc4; outline-offset: 3px; }
 label { display: block; margin-bottom: .3rem; font-weight: 600; }
 fieldset { border: 1px solid #d8dde3; border-radius: 4px; margin: 0 0 1rem; padding: 1rem; }

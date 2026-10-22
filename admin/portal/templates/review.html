@@ -20,6 +20,7 @@
     {% if report.type == 'message' and content %}
       <p class="content">{{ content.body }}</p>
       <p class="muted">Message {{ content.id }} · {{ content.created_at }}</p>
+      <p><a class="button" href="{{ url_for('conversation.review', report_id=report.id) }}">View full conversation</a></p>
     {% elif report.type == 'listing' and content %}
       <h3>{{ content.name }}</h3><p class="content">{{ content.description }}</p>
       <p>Price: {{ content.price }} · {{ 'Sold' if content.is_sold else 'Not sold' }}</p>
@@ -52,27 +53,7 @@
       <form method="post" action="{{ url_for('portal.account_action', report_id=report.id) }}">
         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
         <input type="hidden" name="version" value="{{ version }}">
-        <label for="action">Account action</label>
-        <select name="action" id="action" required>
-          <option value="">Choose an action</option>
-          {% for value, label in account_actions.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-        </select>
-        <fieldset id="suspension-duration" hidden disabled>
-          <legend>How long should the suspension last?</legend>
-          <label for="duration">Duration</label>
-          <input type="number" name="duration" id="duration" min="1" max="365" step="1" inputmode="numeric" required aria-describedby="duration-help">
-          <label for="duration-unit">Unit</label>
-          <select name="duration_unit" id="duration-unit" required>
-            <option value="days">Days</option>
-            <option value="hours">Hours</option>
-            <option value="minutes">Minutes</option>
-          </select>
-          <p class="muted" id="duration-help">Enter a whole number. Maximum suspension: 365 days. The duration starts when this action is applied.</p>
-        </fieldset>
-        <noscript><p>Enable JavaScript to enter a suspension duration. Restoring access works without JavaScript.</p></noscript>
-        <p class="muted">Restore removes the account suspension. Suspension restrictions on existing sessions require the account security SQL to be installed. These actions do not delete listings.</p>
-        <label class="checkbox"><input type="checkbox" name="confirm" value="yes" required> I confirm this action applies to the reported account.</label>
-        <button type="submit">Apply account action</button>
+        {% include 'account_action_fields.html' %}
       </form>
       {% else %}<p>Account actions are unavailable for this account.</p>{% endif %}
     {% else %}<p>The reported account is unavailable. No account action can be performed.</p>{% endif %}
