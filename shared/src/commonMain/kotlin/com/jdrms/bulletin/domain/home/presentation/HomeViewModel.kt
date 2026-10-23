@@ -6,6 +6,7 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
+import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import kotlinx.coroutines.CancellationException
@@ -27,6 +28,8 @@ class HomeViewModel(
     private var currentUserId: String? = null
     private var hasResolvedSession = false
     private var feedJob: Job? = null
+    private val dismissedIds = mutableSetOf<HomeItemId>()
+    private var requestVersion = 0L
 
     init {
         listingChangedSignal?.let { signal ->
@@ -41,6 +44,8 @@ class HomeViewModel(
                 if (session == SessionState.Checking) return@collect
                 val userId = (session as? SessionState.Authenticated)?.profile?.id?.value
                 if (!hasResolvedSession || userId != currentUserId) {
+                    dismissedIds.clear()
+                    _uiState.update { it.copy(sessionGeneration = it.sessionGeneration + 1) }
                     currentUserId = userId
                     hasResolvedSession = true
                     loadFeed()
@@ -50,6 +55,31 @@ class HomeViewModel(
     }
 
     fun loadFeed() {
+        val version = beginFeedRefresh()
+        feedJob = viewModelScope.launch {
+            try {
+                val page = getPersonalizedFeed(currentUserId)
+                if (version != requestVersion) return@launch
+                _uiState.update {
+                    it.copy(
+                        feed = page.items.distinctBy { item -> item.id }.filterNot { item -> item.id in dismissedIds },
+                        isLoading = false,
+                        hasMore = page.nextCursor != null,
+                        nextCursor = page.nextCursor
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                if (version == requestVersion) {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = FEED_LOAD_ERROR) }
+                }
+            }
+        }
+    }
+
+    private fun beginFeedRefresh(): Long {
+        requestVersion++
         feedJob?.cancel()
         _uiState.update {
             it.copy(
@@ -61,37 +91,24 @@ class HomeViewModel(
                 errorMessage = null
             )
         }
-        feedJob = viewModelScope.launch {
-            try {
-                val page = getPersonalizedFeed(currentUserId)
-                _uiState.update {
-                    it.copy(
-                        feed = page.items,
-                        isLoading = false,
-                        hasMore = page.nextCursor != null,
-                        nextCursor = page.nextCursor
-                    )
-                }
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (_: Exception) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = FEED_LOAD_ERROR) }
-            }
-        }
+        return requestVersion
     }
 
     fun loadNextPage() {
         val state = _uiState.value
         val cursor = state.nextCursor ?: return
+        val version = requestVersion
         if (state.isLoading || state.isLoadingMore || !state.hasMore) return
         _uiState.update { it.copy(isLoadingMore = true, errorMessage = null) }
         feedJob = viewModelScope.launch {
             try {
                 val page = getPersonalizedFeed(currentUserId, cursor)
+                if (version != requestVersion) return@launch
                 _uiState.update { current ->
                     val existingIds = current.feed.mapTo(mutableSetOf()) { it.id }
                     current.copy(
-                        feed = current.feed + page.items.filterNot { it.id in existingIds },
+                        feed = current.feed + page.items
+                            .filterNot { it.id in dismissedIds }.filter { existingIds.add(it.id) },
                         isLoadingMore = false,
                         hasMore = page.nextCursor != null,
                         nextCursor = page.nextCursor
@@ -100,9 +117,21 @@ class HomeViewModel(
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (_: Exception) {
-                _uiState.update { it.copy(isLoadingMore = false, errorMessage = FEED_LOAD_ERROR) }
+                if (version == requestVersion) {
+                    _uiState.update { it.copy(isLoadingMore = false, errorMessage = FEED_LOAD_ERROR) }
+                }
             }
         }
+    }
+
+    fun passListing(id: HomeItemId, sessionGeneration: Long = _uiState.value.sessionGeneration) {
+        if (sessionGeneration != _uiState.value.sessionGeneration || !dismissedIds.add(id)) return
+        advanceListing(id, sessionGeneration)
+    }
+
+    fun advanceListing(id: HomeItemId, sessionGeneration: Long = _uiState.value.sessionGeneration) {
+        if (sessionGeneration != _uiState.value.sessionGeneration) return
+        _uiState.update { it.copy(feed = it.feed.filterNot { item -> item.id == id }) }
     }
 
     fun onCategoryFilterSelected(category: HomeFeedCategory?) {

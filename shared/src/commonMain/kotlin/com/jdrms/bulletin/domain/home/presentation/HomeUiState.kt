@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.UserPreferences
 
 data class HomeUiState(
+    val sessionGeneration: Long = 0,
     val feed: List<HomeFeedItem> = emptyList(),
     val preferences: UserPreferences = UserPreferences(),
     val selectedCategory: HomeFeedCategory? = null,

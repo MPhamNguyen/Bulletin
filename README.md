@@ -39,7 +39,7 @@ Students can discover campus listings, buy or sell items, communicate with other
 | 👤 **Student Profiles** | View and edit student profile information and profile photos. |
 | 🚩 **Reporting & Blocking** | Report users or messages and block users. |
 | 📍 **Campus Discovery** | Support campus-relevant discovery without exposing precise locations to other users. |
-| 🏠 **Home Feed** | Provide a home feed; its repository currently uses in-memory data. |
+| 🏠 **Home Feed** | Browse marketplace listings and pass items for the current session. |
 
 > Feature availability depends on backend configuration. Recommendation personalization and production readiness are not claimed by the repository status below.
 
@@ -98,7 +98,7 @@ Save / Message ←→ Student Profile
 
 ### Home & Recommendations
 
-The home context currently uses an in-memory repository. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
+The home feed is bound to `MarketplaceHomeRepository`, which reads through the shared marketplace visibility rules; home preferences remain in memory. Left swipe passes a listing for the current session, including across refresh and pagination. Passes have no undo UI and are cleared when the signed-in identity changes or the app session ends. Right swipe continues to use marketplace bookmarks. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
 
 ---
 
@@ -141,7 +141,7 @@ Business contexts use four layers:
 
 ### Backend Status
 
-`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home remains in memory. These bindings describe code paths, not verification against a deployed Supabase project.
+`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home reads through the marketplace listing source; home preferences and session passes remain in memory. These bindings describe code paths, not verification against a deployed Supabase project.
 
 | Repository or port | Configured binding | In-memory use | Live project verification |
 | --- | --- | --- | --- |
