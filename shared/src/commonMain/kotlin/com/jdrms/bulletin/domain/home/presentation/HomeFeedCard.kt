@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -90,8 +91,9 @@ fun HomeFeedCard(
     var isHolding by remember(item.id.value, cardIndex) { mutableStateOf(false) }
     var isLongPress by remember(item.id.value, cardIndex) { mutableStateOf(false) }
     val photoProgress = remember(item.id.value, photoUrls, photoIndex) { Animatable(0f) }
-    LaunchedEffect(item.id.value, photoUrls, isActive, photoIndex, isHolding) {
-        if (isActive && !isHolding && photoUrls.size > 1) {
+    val isQuickMessagePeekOpen = expansionProgress > 0f
+    LaunchedEffect(item.id.value, photoUrls, isActive, photoIndex, isHolding, isQuickMessagePeekOpen) {
+        if (isActive && !isHolding && !isQuickMessagePeekOpen && photoUrls.size > 1) {
             photoProgress.animateTo(
                 targetValue = 1f,
                 animationSpec = tween(
@@ -108,6 +110,7 @@ fun HomeFeedCard(
         modifier = modifier
             .fillMaxSize()
             .padding(8.dp)
+            .shadow(8.dp, MaterialTheme.shapes.large)
             .clip(MaterialTheme.shapes.large)
             .background(BulletinFeedCardDefaults.cardSurface)
             .pointerInput(item.id.value, cardIndex) {
