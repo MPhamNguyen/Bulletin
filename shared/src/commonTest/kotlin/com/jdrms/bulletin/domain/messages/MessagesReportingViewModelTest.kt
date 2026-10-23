@@ -28,6 +28,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -56,7 +57,7 @@ class MessagesReportingViewModelTest {
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.currentMessages.single().isReported)
         assertEquals("Unsent draft", viewModel.uiState.value.messageInput)
-        assertEquals("Message reported.", viewModel.uiState.value.statusMessage)
+        assertNull(viewModel.uiState.value.statusMessage)
         assertFalse(viewModel.uiState.value.isReporting)
         assertEquals(emptySet(), viewModel.uiState.value.revealedReportedMessageIds)
     }

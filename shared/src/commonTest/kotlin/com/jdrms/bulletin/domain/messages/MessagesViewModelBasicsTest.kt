@@ -148,7 +148,7 @@ class MessagesViewModelBasicsTest {
         assertEquals("", viewModel.uiState.value.messageInput)
         assertEquals(conversationId, viewModel.uiState.value.selectedConversationId)
         assertEquals(listOf(sent), viewModel.uiState.value.currentMessages)
-        assertEquals("Message sent.", viewModel.uiState.value.statusMessage)
+        assertNull(viewModel.uiState.value.statusMessage)
         assertFalse(viewModel.uiState.value.isSending)
     }
 
