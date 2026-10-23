@@ -22,8 +22,12 @@ enum class AppDestination(
         hidesOnScroll = true
     ),
     LISTINGS("Post", Icons.Default.Add),
-    MESSAGES("Inbox", PaperPlaneNavigationIcon, hidesOnScroll = true),
-    MESSAGES("Inbox", MessagesNavigationIcons.outline, MessagesNavigationIcons.filled),
+    MESSAGES(
+        "Inbox",
+        MessagesNavigationIcons.outline,
+        MessagesNavigationIcons.filled,
+        hidesOnScroll = true
+    ),
     PROFILE("Profile", Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)
 }
 
