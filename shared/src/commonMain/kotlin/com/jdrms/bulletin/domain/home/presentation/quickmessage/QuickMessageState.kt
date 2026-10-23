@@ -75,6 +75,11 @@ internal class QuickMessageState(
         sendFailed = false
     }
 
+    fun submitQuickReply(reply: String) {
+        onReplyChosen(reply)
+        submit()
+    }
+
     fun submit() {
         val content = message.trim()
         if (content.isEmpty() || phase != SendPhase.Idle) return

@@ -21,8 +21,10 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
+internal const val DEFAULT_QUICK_REPLY = "Is this still available?"
+
 internal fun quickMessageReplies(suggestedOffer: String?): List<String> = listOfNotNull(
-    "Is this still available?",
+    DEFAULT_QUICK_REPLY,
     suggestedOffer?.let { "Can you do $it?" },
     "Where can we meet?",
     "Can I see more photos?"

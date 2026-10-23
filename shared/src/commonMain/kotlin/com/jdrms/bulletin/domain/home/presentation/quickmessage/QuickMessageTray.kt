@@ -29,7 +29,8 @@ internal fun QuickMessageTray(
     visibleProgress: Float,
     actions: QuickMessageActions,
     modifier: Modifier = Modifier,
-    suggestedOffer: String? = null
+    suggestedOffer: String? = null,
+    quickSendTrigger: Int = 0
 ) {
     val state = rememberQuickMessageState(listingId, actions)
     val replies = remember(suggestedOffer) { quickMessageReplies(suggestedOffer) }
@@ -38,6 +39,9 @@ internal fun QuickMessageTray(
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
 
+    LaunchedEffect(quickSendTrigger) {
+        if (quickSendTrigger > 0) state.submitQuickReply(DEFAULT_QUICK_REPLY)
+    }
     LaunchedEffect(visible) { if (!visible) focusManager.clearFocus() }
     DisposableEffect(focusManager) { onDispose { focusManager.clearFocus() } }
 
