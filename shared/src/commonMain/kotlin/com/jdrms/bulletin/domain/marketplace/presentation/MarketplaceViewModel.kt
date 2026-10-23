@@ -37,8 +37,6 @@ class MarketplaceViewModel(
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
-    private var layoutPreferenceJob: Job? = null
-    private var persistedLayoutPreference = MarketplaceLayoutPreference.TWO_PER_ROW
     private val firstPageLoader = MarketplaceFirstPageLoader(
         _uiState,
         searchMarketplace,
@@ -51,10 +49,15 @@ class MarketplaceViewModel(
         bookmarks,
         currentUserIdProvider
     )
+    private val layoutPreferenceController = MarketplaceLayoutPreferenceController(
+        _uiState,
+        viewModelScope,
+        layoutPreferenceStore
+    )
     val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
-        loadLayoutPreference()
+        layoutPreferenceController.load()
         refreshListings()
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
@@ -64,36 +67,8 @@ class MarketplaceViewModel(
         }
     }
 
-    private fun loadLayoutPreference() {
-        layoutPreferenceJob = viewModelScope.launch {
-            runCatching { layoutPreferenceStore.get() }
-                .onSuccess { preference ->
-                    persistedLayoutPreference = preference
-                    _uiState.update { it.copy(layoutPreference = preference) }
-                }
-                .onFailure { it.rethrowCancellation() }
-        }
-    }
-
-    fun onLayoutPreferenceChanged(preference: MarketplaceLayoutPreference) {
-        layoutPreferenceJob?.cancel()
-        _uiState.update { it.copy(layoutPreference = preference) }
-        layoutPreferenceJob = viewModelScope.launch {
-            val result = runCatching { layoutPreferenceStore.set(preference) }
-            result.exceptionOrNull()?.rethrowCancellation()
-            if (result.isSuccess) {
-                persistedLayoutPreference = preference
-            } else {
-                _uiState.update { state ->
-                    if (state.layoutPreference == preference) {
-                        state.copy(layoutPreference = persistedLayoutPreference)
-                    } else {
-                        state
-                    }
-                }
-            }
-        }
-    }
+    fun onLayoutPreferenceChanged(preference: MarketplaceLayoutPreference) =
+        layoutPreferenceController.change(preference)
 
     fun refreshListings(userId: String? = null) {
         loadFirstPage(userId = userId, debounceMillis = 0L)
@@ -118,6 +93,11 @@ class MarketplaceViewModel(
 
     fun onConditionSelected(condition: MarketplaceCondition?) {
         _uiState.update { it.copy(filters = it.filters.copy(condition = condition)) }
+        loadFirstPage(userId = null, debounceMillis = 0L)
+    }
+
+    fun onFiltersApplied(filters: MarketplaceFilterState) {
+        _uiState.update { state -> state.copy(filters = filters.copy(query = state.filters.query)) }
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 

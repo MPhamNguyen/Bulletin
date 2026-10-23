@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,17 +17,26 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -41,6 +52,9 @@ internal fun MarketplaceCatalogContent(
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
     val gridState = rememberLazyGridState()
+    val focusManager = LocalFocusManager.current
+    var searchBounds by remember { mutableStateOf(Rect.Zero) }
+    var containerOrigin by remember { mutableStateOf(Offset.Zero) }
     LaunchedEffect(gridState.canScrollForward) {
         if (!gridState.canScrollForward) onContentNoLongerScrollable()
     }
@@ -64,7 +78,17 @@ internal fun MarketplaceCatalogContent(
             viewModel.loadNextPage()
         }
     }
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { containerOrigin = it.positionInRoot() }
+            .pointerInput(focusManager, searchBounds, containerOrigin) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    if (!searchBounds.contains(down.position + containerOrigin)) focusManager.clearFocus()
+                }
+            }
+    ) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(state.layoutPreference.columns),
             state = gridState,
@@ -73,7 +97,9 @@ internal fun MarketplaceCatalogContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            marketplaceCatalogHeader(state, viewModel)
+            marketplaceCatalogHeader(state, viewModel) { coordinates ->
+                searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
+            }
             marketplaceLoadingItem(state.isLoading)
             marketplaceEmptyResultsItem(state)
             marketplaceListingItems(state, viewModel)
@@ -91,7 +117,11 @@ internal fun MarketplaceCatalogContent(
     }
 }
 
-private fun LazyGridScope.marketplaceCatalogHeader(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+private fun LazyGridScope.marketplaceCatalogHeader(
+    state: MarketplaceUiState,
+    viewModel: MarketplaceViewModel,
+    onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
+) {
     fullWidthItem {
         SectionHeader(
             title = "Campus Marketplace",
@@ -99,27 +129,19 @@ private fun LazyGridScope.marketplaceCatalogHeader(state: MarketplaceUiState, vi
         )
     }
     fullWidthItem {
-        OutlinedTextField(
-            value = state.filters.query,
-            onValueChange = viewModel::onSearchQueryChanged,
-            label = { Text("Search by title or category") },
-            singleLine = true,
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth()
+        MarketplaceSearchFilters(
+            filters = state.filters,
+            onQueryChanged = viewModel::onSearchQueryChanged,
+            onFiltersApplied = viewModel::onFiltersApplied,
+            onSearchPositioned = onSearchPositioned
         )
     }
     fullWidthItem {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MarketplaceFilters(
-                filters = state.filters,
-                onCategorySelected = viewModel::onCategorySelected,
-                onConditionSelected = viewModel::onConditionSelected,
-                modifier = Modifier.weight(1f)
-            )
             MarketplaceLayoutToggle(state.layoutPreference, viewModel::onLayoutPreferenceChanged)
         }
     }

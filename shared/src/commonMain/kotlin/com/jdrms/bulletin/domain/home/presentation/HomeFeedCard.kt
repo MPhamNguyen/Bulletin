@@ -46,8 +46,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -66,6 +68,8 @@ import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
+import kotlin.math.max
+import kotlin.math.min
 
 private const val HOME_PHOTO_INTERVAL_MILLIS = 3_000L
 
@@ -157,6 +161,18 @@ internal fun stepHomePhotoIndex(currentIndex: Int, direction: Int, photoCount: I
     return (currentIndex + direction).coerceIn(0, photoCount - 1)
 }
 
+internal fun cropAxisTranslation(
+    offset: Float,
+    scale: Float,
+    frameExtent: Float,
+    referenceSide: Float,
+    fittedExtent: Float
+): Float {
+    val raw = -offset * referenceSide * scale
+    val maxTranslation = max(0f, (fittedExtent * scale - frameExtent) / 2f)
+    return raw.coerceIn(-maxTranslation, maxTranslation)
+}
+
 @Composable
 private fun BoxScope.HomeFeedCardBackground(
     item: HomeFeedItem,
@@ -172,16 +188,32 @@ private fun BoxScope.HomeFeedCardBackground(
         val crop = imageUrl.cropSettings()
         SubcomposeAsyncImage(
             model = imageUrl.imageRequestUrl(),
+            contentDescription = null,
+            modifier = Modifier.matchParentSize().scale(1.15f).blur(22.dp),
+            contentScale = ContentScale.Crop
+        ) { SubcomposeAsyncImageContent() }
+        SubcomposeAsyncImage(
+            model = imageUrl.imageRequestUrl(),
             contentDescription = "${item.title} listing photo",
             modifier = Modifier.matchParentSize(),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Fit
         ) {
+            val intrinsic = painter.intrinsicSize
             SubcomposeAsyncImageContent(
                 Modifier.graphicsLayer {
+                    val frameW = size.width
+                    val frameH = size.height
+                    val hasIntrinsic = intrinsic.width.isFinite() && intrinsic.height.isFinite() &&
+                        intrinsic.width > 0f && intrinsic.height > 0f
+                    val fit = if (hasIntrinsic) min(frameW / intrinsic.width, frameH / intrinsic.height) else 1f
+                    val fittedW = if (hasIntrinsic) intrinsic.width * fit else frameW
+                    val fittedH = if (hasIntrinsic) intrinsic.height * fit else frameH
+                    val referenceSide = min(frameW, frameH)
+
                     scaleX = crop.scale
                     scaleY = crop.scale
-                    translationX = -crop.offsetX * size.width * crop.scale
-                    translationY = -crop.offsetY * size.height * crop.scale
+                    translationX = cropAxisTranslation(crop.offsetX, crop.scale, frameW, referenceSide, fittedW)
+                    translationY = cropAxisTranslation(crop.offsetY, crop.scale, frameH, referenceSide, fittedH)
                 }
             )
         }

@@ -3,7 +3,9 @@ package com.jdrms.bulletin.app.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class AppDestination(
@@ -15,12 +17,12 @@ enum class AppDestination(
     HOME("Home", HomeNavigationIcons.outlined, HomeNavigationIcons.filled),
     MARKETPLACE(
         "Market",
-        MarketplaceNavigationIcons.outlined,
-        MarketplaceNavigationIcons.filled,
+        Icons.Outlined.ShoppingBag,
+        Icons.Filled.ShoppingBag,
         hidesOnScroll = true
     ),
     LISTINGS("Post", Icons.Default.Add),
-    MESSAGES("Inbox", MessagesNavigationIcons.filled),
+    MESSAGES("Inbox", MessagesNavigationIcons.outline, MessagesNavigationIcons.filled),
     PROFILE("Profile", Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)
 }
 
