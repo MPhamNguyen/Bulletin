@@ -3,7 +3,7 @@ package com.jdrms.bulletin.domain.home.presentation.quickmessage
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-internal val QUICK_MESSAGE_TRAY_HEIGHT = 164.dp
+internal val QUICK_MESSAGE_TRAY_HEIGHT = 170.dp
 
 internal object QuickMessageTokens {
     val ink = Color(0xFF0F1A2B)

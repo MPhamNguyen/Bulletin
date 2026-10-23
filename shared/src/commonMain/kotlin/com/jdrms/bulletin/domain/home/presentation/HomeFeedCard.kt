@@ -47,7 +47,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -168,7 +170,23 @@ fun HomeFeedCard(
                     .fillMaxWidth()
                     .height(QUICK_MESSAGE_TRAY_HEIGHT)
                     .graphicsLayer { alpha = expansionProgress }
-                    .background(BulletinFeedCardDefaults.cardSurface)
+                    .background(
+                        Brush.verticalGradient(
+                            0f to BulletinFeedCardDefaults.cardSurface,
+                            0.08f to lerp(
+                                BulletinFeedCardDefaults.cardSurface,
+                                MaterialTheme.colorScheme.surfaceContainerLow,
+                                0.22f
+                            ),
+                            0.18f to lerp(
+                                BulletinFeedCardDefaults.cardSurface,
+                                MaterialTheme.colorScheme.surfaceContainerLow,
+                                0.58f
+                            ),
+                            0.28f to MaterialTheme.colorScheme.surfaceContainerLow,
+                            1f to MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    )
             )
         }
         if (isActive && expansionProgress > 0.3f) {
