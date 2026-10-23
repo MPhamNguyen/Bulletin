@@ -35,7 +35,14 @@ internal interface SupabaseConversationVisibilityTable {
     suspend fun getMembership(conversationId: String, userId: String): SupabaseConversationMembershipDto?
 }
 
-internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, SupabaseConversationVisibilityTable {
+internal interface SupabaseConversationReadTable {
+    suspend fun markConversationRead(conversationId: String): Instant?
+}
+
+internal interface SupabaseMessagesTable :
+    SupabaseConversationCreationTable,
+    SupabaseConversationVisibilityTable,
+    SupabaseConversationReadTable {
     suspend fun getAuthenticatedUserId(): String?
     suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto>
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
@@ -49,7 +56,6 @@ internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, Su
     ): List<SupabaseMessageDto>
     suspend fun findLatestMessage(conversationId: String): SupabaseMessageDto?
     suspend fun findMessage(conversationId: String, messageId: String): SupabaseMessageDto?
-    suspend fun markConversationRead(conversationId: String): Instant?
     suspend fun insertMessage(message: SupabaseMessageInsertDto)
     suspend fun insertReport(report: SupabaseMessageReportInsertDto)
 }

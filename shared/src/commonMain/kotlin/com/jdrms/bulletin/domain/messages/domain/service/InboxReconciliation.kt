@@ -20,7 +20,9 @@ object InboxReconciliation {
             val previous = previousConversation.lastMessage
             if (previous != null && previous.isNewerThan(remote.lastMessage)) {
                 withCurrentReads.recordMessage(previous).getOrNull() ?: withCurrentReads
-            } else withCurrentReads
+            } else {
+                withCurrentReads
+            }
         }.sortedByDescending(Conversation::updatedAtMillis)
     }
 

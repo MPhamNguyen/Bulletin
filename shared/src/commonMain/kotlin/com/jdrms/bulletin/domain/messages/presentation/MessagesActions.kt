@@ -5,7 +5,9 @@ import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,13 +61,9 @@ internal class MessagesActions(
         val conversationId = snapshot.selectedConversationId ?: return
         val viewerId = inbox.state.value.viewerId ?: return
         val targetMessage = snapshot.currentMessages.firstOrNull { it.id == messageId } ?: return
-        if (
-            targetMessage.senderId == viewerId ||
-            targetMessage.conversationId != conversationId ||
-            targetMessage.isReported ||
-            snapshot.isReporting ||
-            inbox.state.value.isLoading
-        ) return
+        val isReportBlocked = !targetMessage.canBeReportedBy(viewerId, conversationId) ||
+            snapshot.isReporting || inbox.state.value.isLoading
+        if (isReportBlocked) return
         state.update { it.copy(isReporting = true, errorMessage = null, statusMessage = null) }
         scope.launch {
             when (val result = reportMessage(conversationId, messageId, reason)) {
@@ -79,6 +77,9 @@ internal class MessagesActions(
             }
         }
     }
+
+    private fun Message.canBeReportedBy(viewerId: SenderId, conversationId: ConversationId): Boolean =
+        senderId != viewerId && this.conversationId == conversationId && !isReported
 
     fun hideConversation(
         conversationId: ConversationId,

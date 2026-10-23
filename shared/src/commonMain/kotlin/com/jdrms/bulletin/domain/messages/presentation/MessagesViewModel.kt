@@ -3,9 +3,9 @@ package com.jdrms.bulletin.domain.messages.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreviewProvider
 import com.jdrms.bulletin.domain.messages.application.EmptyConversationListingPreviewProvider
+import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.MarkConversationRead
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
@@ -54,7 +54,14 @@ class MessagesViewModel(
         }
         threadState.value = presented.state
     }
-    private val actions = MessagesActions(inbox, threadState, sendMessage, reportMessage, hideConversation, viewModelScope)
+    private val actions = MessagesActions(
+        inbox,
+        threadState,
+        sendMessage,
+        reportMessage,
+        hideConversation,
+        viewModelScope
+    )
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
     private val olderHistory = MessagesOlderHistoryLoader(
         threadState,
@@ -205,7 +212,8 @@ class MessagesViewModel(
     }
 
     fun loadOlderMessages() = olderHistory.load()
-    fun hideConversationFromInbox(conversationId: ConversationId) = actions.hideConversation(conversationId, showFailure)
+    fun hideConversationFromInbox(conversationId: ConversationId) =
+        actions.hideConversation(conversationId, showFailure)
 
     fun onMessageInputChanged(input: String) {
         threadState.update { it.copy(messageInput = input, errorMessage = null, statusMessage = null) }

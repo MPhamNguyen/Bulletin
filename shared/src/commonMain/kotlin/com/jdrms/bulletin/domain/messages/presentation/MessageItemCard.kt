@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.messages.presentation
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,9 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,98 +24,155 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+
+internal data class MessageItemCardPresentation(
+    val maxBubbleWidth: Dp,
+    val isMine: Boolean,
+    val showTimestamp: Boolean,
+    val showSeenReceipt: Boolean,
+    val showAvatar: Boolean,
+    val isRevealed: Boolean,
+    val canReport: Boolean,
+    val conversationTitle: String
+)
+
+internal data class MessageItemCardActions(
+    val onReport: () -> Unit,
+    val onToggleVisibility: () -> Unit
+)
 
 @Composable
 internal fun MessageItemCard(
     message: Message,
-    maxBubbleWidth: Dp,
-    isMine: Boolean,
-    showTimestamp: Boolean,
-    showSeenReceipt: Boolean = false,
-    showAvatar: Boolean,
-    isRevealed: Boolean,
-    canReport: Boolean,
-    conversationTitle: String,
-    onReport: () -> Unit,
-    onToggleVisibility: () -> Unit
+    presentation: MessageItemCardPresentation,
+    actions: MessageItemCardActions
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start,
+        horizontalArrangement = if (presentation.isMine) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom
     ) {
-        if (!isMine) {
-            if (showAvatar) ConversationAvatar(conversationTitle, Modifier)
-            else Spacer(Modifier.width(40.dp))
-            Spacer(Modifier.width(8.dp))
+        if (!presentation.isMine) MessageSenderAvatar(presentation)
+        Column(horizontalAlignment = bubbleAlignment(presentation.isMine)) {
+            MessageBubble(message, presentation, actions)
+            if (presentation.showSeenReceipt) SeenReceipt()
         }
-        Column(horizontalAlignment = if (isMine) Alignment.End else Alignment.Start) {
-            var reportMenuExpanded by remember(message.id) { mutableStateOf(false) }
-            val canReportMessage = !isMine && canReport && !message.isReported
-            androidx.compose.foundation.layout.Box {
-                Surface(
-                    color = when {
-                        message.isReported -> MaterialTheme.colorScheme.errorContainer
-                        isMine -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.surfaceVariant
-                    },
-                    contentColor = when {
-                        message.isReported -> MaterialTheme.colorScheme.onErrorContainer
-                        isMine -> MaterialTheme.colorScheme.onPrimary
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    shape = RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomEnd = if (isMine && showTimestamp) 4.dp else 18.dp,
-                        bottomStart = if (!isMine && showTimestamp) 4.dp else 18.dp
-                    ),
-                    modifier = Modifier
-                        .widthIn(max = maxBubbleWidth)
-                        .then(
-                            if (canReportMessage) Modifier.combinedClickable(
-                                onClick = {},
-                                onLongClick = { reportMenuExpanded = true }
-                            ) else Modifier
-                        )
-                ) {
-                    Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
-                        Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
-                        if (message.isReported) {
-                            Text("Reported for moderation", style = MaterialTheme.typography.labelSmall)
-                            TextButton(onClick = onToggleVisibility, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                                Text(if (isRevealed) "Hide message" else "Show message", color = MaterialTheme.colorScheme.error)
-                            }
-                        }
-                    }
-                }
-                DropdownMenu(
-                    expanded = reportMenuExpanded,
-                    onDismissRequest = { reportMenuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Report message") },
-                        onClick = {
-                            reportMenuExpanded = false
-                            if (canReportMessage) onReport()
-                        },
-                        enabled = canReportMessage
-                    )
-                }
+        if (presentation.isMine) Spacer(Modifier.width(40.dp))
+    }
+}
+
+@Composable
+private fun MessageSenderAvatar(presentation: MessageItemCardPresentation) {
+    if (presentation.showAvatar) ConversationAvatar(presentation.conversationTitle) else Spacer(Modifier.width(40.dp))
+    Spacer(Modifier.width(8.dp))
+}
+
+private fun bubbleAlignment(isMine: Boolean): Alignment.Horizontal =
+    if (isMine) Alignment.End else Alignment.Start
+
+@Composable
+private fun MessageBubble(
+    message: Message,
+    presentation: MessageItemCardPresentation,
+    actions: MessageItemCardActions
+) {
+    var reportMenuExpanded by remember(message.id) { mutableStateOf(false) }
+    val canReportMessage = !presentation.isMine && presentation.canReport && !message.isReported
+    Box {
+        Surface(
+            color = messageBubbleColor(message, presentation.isMine),
+            contentColor = messageBubbleContentColor(message, presentation.isMine),
+            shape = messageBubbleShape(presentation),
+            modifier = Modifier
+                .widthIn(max = presentation.maxBubbleWidth)
+                .then(reportableBubbleModifier(canReportMessage) { reportMenuExpanded = true })
+        ) {
+            MessageBubbleContent(message, presentation.isRevealed, actions.onToggleVisibility)
+        }
+        MessageReportMenu(
+            expanded = reportMenuExpanded,
+            canReport = canReportMessage,
+            onDismiss = { reportMenuExpanded = false },
+            onReport = {
+                reportMenuExpanded = false
+                actions.onReport()
             }
-            if (showSeenReceipt) {
+        )
+    }
+}
+
+@Composable
+private fun MessageBubbleContent(
+    message: Message,
+    isRevealed: Boolean,
+    onToggleVisibility: () -> Unit
+) {
+    Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
+        if (message.isReported) {
+            Text("Reported for moderation", style = MaterialTheme.typography.labelSmall)
+            TextButton(
+                onClick = onToggleVisibility,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+            ) {
                 Text(
-                    "Seen",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    if (isRevealed) "Hide message" else "Show message",
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }
-        if (isMine) Spacer(Modifier.width(40.dp))
     }
 }
+
+@Composable
+private fun MessageReportMenu(
+    expanded: Boolean,
+    canReport: Boolean,
+    onDismiss: () -> Unit,
+    onReport: () -> Unit
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(
+            text = { Text("Report message") },
+            onClick = onReport,
+            enabled = canReport
+        )
+    }
+}
+
+@Composable
+private fun SeenReceipt() {
+    Text(
+        "Seen",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+    )
+}
+
+@Composable
+private fun messageBubbleColor(message: Message, isMine: Boolean) = when {
+    message.isReported -> MaterialTheme.colorScheme.errorContainer
+    isMine -> MaterialTheme.colorScheme.primary
+    else -> MaterialTheme.colorScheme.surfaceVariant
+}
+
+@Composable
+private fun messageBubbleContentColor(message: Message, isMine: Boolean) = when {
+    message.isReported -> MaterialTheme.colorScheme.onErrorContainer
+    isMine -> MaterialTheme.colorScheme.onPrimary
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+private fun messageBubbleShape(presentation: MessageItemCardPresentation) = RoundedCornerShape(
+    topStart = 18.dp,
+    topEnd = 18.dp,
+    bottomEnd = if (presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp,
+    bottomStart = if (!presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp
+)
+
+private fun reportableBubbleModifier(canReport: Boolean, onLongClick: () -> Unit): Modifier =
+    if (canReport) Modifier.combinedClickable(onClick = {}, onLongClick = onLongClick) else Modifier

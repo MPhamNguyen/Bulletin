@@ -9,6 +9,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 
+data class MarketplaceScreenNavigation(
+    val sellerProfileIdToOpen: String? = null,
+    val onSellerProfileRequestHandled: () -> Unit = {},
+    val onReturnToInboxChat: () -> Unit = {},
+    val onContentNoLongerScrollable: () -> Unit = {}
+)
+
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
@@ -17,10 +24,7 @@ fun MarketplaceScreen(
     listingReportViewModel: ListingReportViewModel,
     userBlockViewModel: MarketplaceUserBlockViewModel,
     actions: MarketplaceScreenActions = MarketplaceScreenActions(),
-    sellerProfileIdToOpen: String? = null,
-    onSellerProfileRequestHandled: () -> Unit = {},
-    onReturnToInboxChat: () -> Unit = {},
-    onContentNoLongerScrollable: () -> Unit = {}
+    navigation: MarketplaceScreenNavigation = MarketplaceScreenNavigation()
 ) {
     val state by viewModel.uiState.collectAsState()
     val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
@@ -28,16 +32,21 @@ fun MarketplaceScreen(
     val blockState by userBlockViewModel.uiState.collectAsState()
     var destination by remember {
         mutableStateOf(
-            if (sellerProfileIdToOpen != null) MarketplaceDestination.SELLER_PROFILE
-            else MarketplaceDestination.CATALOG
+            if (navigation.sellerProfileIdToOpen != null) {
+                MarketplaceDestination.SELLER_PROFILE
+            } else {
+                MarketplaceDestination.CATALOG
+            }
         )
     }
-    var sellerProfileOpenedFromInbox by remember { mutableStateOf(sellerProfileIdToOpen != null) }
+    var sellerProfileOpenedFromInbox by remember {
+        mutableStateOf(navigation.sellerProfileIdToOpen != null)
+    }
 
-    LaunchedEffect(sellerProfileIdToOpen) {
-        sellerProfileIdToOpen?.let { sellerId ->
+    LaunchedEffect(navigation.sellerProfileIdToOpen) {
+        navigation.sellerProfileIdToOpen?.let { sellerId ->
             sellerProfileViewModel.load(sellerId)
-            onSellerProfileRequestHandled()
+            navigation.onSellerProfileRequestHandled()
         }
     }
 
@@ -56,7 +65,7 @@ fun MarketplaceScreen(
             onBackFromSellerProfile = {
                 if (sellerProfileOpenedFromInbox) {
                     sellerProfileOpenedFromInbox = false
-                    onReturnToInboxChat()
+                    navigation.onReturnToInboxChat()
                 } else {
                     destination = MarketplaceDestination.CATALOG
                 }
@@ -69,7 +78,7 @@ fun MarketplaceScreen(
             sellerProfileViewModel = sellerProfileViewModel,
             listingReportViewModel = listingReportViewModel,
             actions = actions,
-            onContentNoLongerScrollable = onContentNoLongerScrollable,
+            onContentNoLongerScrollable = navigation.onContentNoLongerScrollable,
             onNavigate = {
                 if (it == MarketplaceDestination.SELLER_PROFILE) sellerProfileOpenedFromInbox = false
                 destination = it

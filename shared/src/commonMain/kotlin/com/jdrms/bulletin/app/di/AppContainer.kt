@@ -10,8 +10,8 @@ import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
-import com.jdrms.bulletin.app.integration.MarketplaceHomeRepository
 import com.jdrms.bulletin.app.integration.MarketplaceConversationListingPreviewProvider
+import com.jdrms.bulletin.app.integration.MarketplaceHomeRepository
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceBlockedUserProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
@@ -61,10 +61,10 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseM
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
-import com.jdrms.bulletin.domain.messages.application.MarkConversationRead
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.HideConversation
+import com.jdrms.bulletin.domain.messages.application.MarkConversationRead
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ObserveInboxInvalidations

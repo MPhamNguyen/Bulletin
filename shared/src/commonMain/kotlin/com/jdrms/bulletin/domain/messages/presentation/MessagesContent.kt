@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -65,12 +65,14 @@ internal fun MessagesInboxContent(
         ) {
             if (state.connectionState == MessageConnectionState.DISCONNECTED ||
                 inbox.connectionState == InboxConnectionState.DISCONNECTED
-            ) Text(
-                "Live updates unavailable. Recent messages may be delayed.",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            ) {
+                Text(
+                    "Live updates unavailable. Recent messages may be delayed.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
             state.errorMessage?.let { error ->
                 BulletinCard {
                     Text(error, color = MaterialTheme.colorScheme.error)
@@ -78,8 +80,13 @@ internal fun MessagesInboxContent(
                 }
             }
             when {
-                state.isLoading && state.conversations.isEmpty() -> CenterMessage("Loading conversations...", loading = true)
-                state.conversations.isEmpty() -> CenterMessage("No conversations yet. Message a seller to start a conversation.")
+                state.isLoading && state.conversations.isEmpty() -> CenterMessage(
+                    "Loading conversations...",
+                    loading = true
+                )
+                state.conversations.isEmpty() -> CenterMessage(
+                    "No conversations yet. Message a seller to start a conversation."
+                )
                 else -> ConversationList(state, viewModel, Modifier.weight(1f).fillMaxWidth())
             }
         }
@@ -112,7 +119,11 @@ internal fun MessagesChatContent(
             }
         }
         if (state.statusMessage != null) {
-            Text(state.statusMessage, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp))
+            Text(
+                state.statusMessage,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
         val listState = rememberMessageHistoryListState(viewModel, state)
         MessageList(state, viewModel, conversation, listState, Modifier.weight(1f).padding(horizontal = 12.dp))
@@ -145,7 +156,11 @@ private fun ConversationParticipantsSection(
                 ConversationAvatar(participant.displayName)
                 Column {
                     Text(participant.displayName, style = MaterialTheme.typography.titleSmall)
-                    Text("View profile", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "View profile",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -183,40 +198,48 @@ private fun MessageList(
             state = listState,
             verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.Bottom)
         ) {
-        if (state.olderCursor != null) {
-            item(key = "older-messages") {
-                TextButton(onClick = viewModel::loadOlderMessages, enabled = !state.isLoadingOlder, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (state.isLoadingOlder) "Loading..." else "Load older messages")
+            if (state.olderCursor != null) {
+                item(key = "older-messages") {
+                    TextButton(
+                        onClick = viewModel::loadOlderMessages,
+                        enabled = !state.isLoadingOlder,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (state.isLoadingOlder) "Loading..." else "Load older messages")
+                    }
                 }
             }
-        }
-        itemsIndexed(messages, key = { _, message -> message.id.value }) { index, message ->
-            val previous = messages.getOrNull(index - 1)
-            val next = messages.getOrNull(index + 1)
-            val isMine = message.senderId == state.viewerId
-            val showSeenReceipt = isMine && message.id == latestOutgoingMessageId &&
-                otherParticipantReadAt != null && message.orderingTimestamp <= otherParticipantReadAt
-            val isLastInGroup = next == null || next.senderId != message.senderId ||
-                dayKey(next.timestampMillis) != dayKey(message.timestampMillis)
-            Column {
-                if (previous == null || dayKey(previous.timestampMillis) != dayKey(message.timestampMillis)) {
-                    DateSeparator(message.timestampMillis)
+            itemsIndexed(messages, key = { _, message -> message.id.value }) { index, message ->
+                val previous = messages.getOrNull(index - 1)
+                val next = messages.getOrNull(index + 1)
+                val isMine = message.senderId == state.viewerId
+                val showSeenReceipt = isMine && message.id == latestOutgoingMessageId &&
+                    otherParticipantReadAt != null && message.orderingTimestamp <= otherParticipantReadAt
+                val isLastInGroup = next == null || next.senderId != message.senderId ||
+                    dayKey(next.timestampMillis) != dayKey(message.timestampMillis)
+                Column {
+                    if (previous == null || dayKey(previous.timestampMillis) != dayKey(message.timestampMillis)) {
+                        DateSeparator(message.timestampMillis)
+                    }
+                    MessageItemCard(
+                        message = message,
+                        presentation = MessageItemCardPresentation(
+                            maxBubbleWidth = maxBubbleWidth,
+                            isMine = isMine,
+                            showTimestamp = isLastInGroup,
+                            showSeenReceipt = showSeenReceipt,
+                            showAvatar = !isMine && isLastInGroup,
+                            isRevealed = message.id in state.revealedReportedMessageIds,
+                            canReport = !state.isReporting,
+                            conversationTitle = conversationTitle(conversation, state.viewerId)
+                        ),
+                        actions = MessageItemCardActions(
+                            onReport = { viewModel.report(message.id) },
+                            onToggleVisibility = { viewModel.toggleReportedMessageVisibility(message.id) }
+                        )
+                    )
                 }
-                MessageItemCard(
-                    message = message,
-                    maxBubbleWidth = maxBubbleWidth,
-                    isMine = isMine,
-                    showTimestamp = isLastInGroup,
-                    showSeenReceipt = showSeenReceipt,
-                    showAvatar = !isMine && isLastInGroup,
-                    isRevealed = message.id in state.revealedReportedMessageIds,
-                    canReport = !state.isReporting,
-                    conversationTitle = conversationTitle(conversation, state.viewerId),
-                    onReport = { viewModel.report(message.id) },
-                    onToggleVisibility = { viewModel.toggleReportedMessageVisibility(message.id) }
-                )
             }
-        }
         }
     }
 }
@@ -251,7 +274,9 @@ private fun rememberMessageHistoryListState(
                     lastVisibleItemIndex = lastVisibleItemIndex,
                     totalItemsCount = layoutInfo.totalItemsCount
                 )
-            ) listState.scrollToItem(targetIndex)
+            ) {
+                listState.scrollToItem(targetIndex)
+            }
             positioned = true
         }
     }

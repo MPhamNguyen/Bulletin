@@ -54,6 +54,7 @@ import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
@@ -222,10 +223,12 @@ private fun MainAppContent(
                 userReportViewModel = models.marketplaceUserReport,
                 listingReportViewModel = models.listingReport,
                 userBlockViewModel = models.marketplaceUserBlock,
-                sellerProfileIdToOpen = navigation.pendingSellerProfileId,
-                onSellerProfileRequestHandled = { navigation.pendingSellerProfileId = null },
-                onReturnToInboxChat = { navigation.currentDestination = AppDestination.MESSAGES },
-                onContentNoLongerScrollable = onContentNoLongerScrollable,
+                navigation = MarketplaceScreenNavigation(
+                    sellerProfileIdToOpen = navigation.pendingSellerProfileId,
+                    onSellerProfileRequestHandled = { navigation.pendingSellerProfileId = null },
+                    onReturnToInboxChat = { navigation.currentDestination = AppDestination.MESSAGES },
+                    onContentNoLongerScrollable = onContentNoLongerScrollable
+                ),
                 actions = MarketplaceScreenActions(
                     onMessageSeller = conversationActions::messageSeller,
                     hasExistingConversation = conversationActions::hasExistingConversation,

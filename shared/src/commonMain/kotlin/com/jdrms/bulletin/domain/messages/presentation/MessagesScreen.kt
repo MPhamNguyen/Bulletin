@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -10,15 +11,16 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,13 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.core.tween
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import androidx.compose.foundation.shape.CircleShape
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,7 +116,11 @@ internal fun messageBodyText(message: Message, isRevealed: Boolean): String =
 
 @Composable
 internal fun ConversationAvatar(name: String, modifier: Modifier = Modifier) {
-    val initials = name.trim().split(Regex("\\s+")).take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString("")
+    val initials = name.trim()
+        .split(Regex("\\s+"))
+        .take(2)
+        .mapNotNull { it.firstOrNull()?.uppercase() }
+        .joinToString("")
     Surface(
         modifier = modifier.size(40.dp).semantics { contentDescription = "$name avatar" },
         shape = CircleShape,

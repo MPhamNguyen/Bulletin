@@ -25,14 +25,8 @@ internal class ConversationReadReceiptHandler(
     fun markIfNeeded(conversationId: ConversationId) = markIfNeeded(conversationId, forceRemoteUpdate = false)
 
     private fun markIfNeeded(conversationId: ConversationId, forceRemoteUpdate: Boolean) {
-        val state = uiState.value
-        val readerId = viewerId() ?: return
-        if (!state.isConversationOpen || state.selectedConversationId != conversationId) return
-        val latestIncoming = state.currentMessages.lastOrNull { it.senderId != readerId } ?: return
-        val conversation = inbox.state.value.conversations.firstOrNull { it.id == conversationId } ?: return
-        val readerReadAt = conversation.participants.firstOrNull { it.id == readerId }?.lastReadAt
-        if (!forceRemoteUpdate && readerReadAt != null && latestIncoming.orderingTimestamp <= readerReadAt) return
-        when (val localReceipt = inbox.recordReadAt(conversationId, readerId, latestIncoming.orderingTimestamp)) {
+        val request = readRequestOrNull(conversationId, forceRemoteUpdate) ?: return
+        when (val localReceipt = inbox.recordReadAt(conversationId, request.readerId, request.readAt)) {
             is Result.Error -> {
                 showFailure(localReceipt)
                 return
@@ -41,13 +35,21 @@ internal class ConversationReadReceiptHandler(
         }
         val markRead = markConversationRead ?: return
         if (readJobs[conversationId]?.isActive == true) return
+        persistReadReceipt(conversationId, request, markRead)
+    }
+
+    private fun persistReadReceipt(
+        conversationId: ConversationId,
+        request: ReadReceiptRequest,
+        markRead: MarkConversationRead
+    ) {
         var markedSuccessfully = false
         var serverReadAt: Instant? = null
         val job = scope.launch(start = CoroutineStart.LAZY) {
             when (val result = markRead(conversationId)) {
                 is Result.Error -> showFailure(result)
                 is Result.Success -> {
-                    inbox.recordReadAt(conversationId, readerId, result.data)
+                    inbox.recordReadAt(conversationId, request.readerId, result.data)
                     markedSuccessfully = true
                     serverReadAt = result.data
                 }
@@ -58,7 +60,7 @@ internal class ConversationReadReceiptHandler(
             if (readJobs[conversationId] === job) {
                 readJobs.remove(conversationId)
                 val latestIncomingAt = uiState.value.currentMessages
-                    .lastOrNull { it.senderId != readerId }
+                    .lastOrNull { it.senderId != request.readerId }
                     ?.orderingTimestamp
                 val needsFollowUp = serverReadAt?.let { persistedAt ->
                     latestIncomingAt?.let { it > persistedAt }
@@ -70,4 +72,24 @@ internal class ConversationReadReceiptHandler(
         }
         job.start()
     }
+
+    private fun readRequestOrNull(
+        conversationId: ConversationId,
+        forceRemoteUpdate: Boolean
+    ): ReadReceiptRequest? {
+        val state = uiState.value
+        val readerId = viewerId()?.takeIf {
+            state.isConversationOpen && state.selectedConversationId == conversationId
+        } ?: return null
+        val latestIncoming = state.currentMessages.lastOrNull { it.senderId != readerId } ?: return null
+        val conversation = inbox.state.value.conversations.firstOrNull { it.id == conversationId } ?: return null
+        val readAt = conversation.participants.firstOrNull { it.id == readerId }?.lastReadAt
+        return if (forceRemoteUpdate || readAt == null || latestIncoming.orderingTimestamp > readAt) {
+            ReadReceiptRequest(readerId, latestIncoming.orderingTimestamp)
+        } else {
+            null
+        }
+    }
+
+    private data class ReadReceiptRequest(val readerId: SenderId, val readAt: Instant)
 }

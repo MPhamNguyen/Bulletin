@@ -1,11 +1,11 @@
 package com.jdrms.bulletin.app.integration
 
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
-import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
-import com.jdrms.bulletin.domain.messages.application.ConversationListingPreviewProvider
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
+import com.jdrms.bulletin.domain.messages.application.ConversationListingPreviewProvider
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 
 /** Translates marketplace listing data into the small preview contract owned by messages. */

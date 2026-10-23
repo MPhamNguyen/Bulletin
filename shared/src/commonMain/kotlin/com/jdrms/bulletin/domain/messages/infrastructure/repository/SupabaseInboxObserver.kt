@@ -7,8 +7,8 @@ import com.jdrms.bulletin.domain.messages.domain.repository.InboxObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseInboxInvalidationMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
