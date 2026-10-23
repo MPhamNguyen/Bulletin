@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.domain.home.presentation.quickmessage.QUICK_MESSAGE_TRAY_HEIGHT
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 

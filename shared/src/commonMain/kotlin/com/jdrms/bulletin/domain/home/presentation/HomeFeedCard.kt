@@ -47,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -60,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
+import com.jdrms.bulletin.domain.home.presentation.quickmessage.QuickMessageActions
+import com.jdrms.bulletin.domain.home.presentation.quickmessage.QuickMessageTray
+import com.jdrms.bulletin.domain.home.presentation.quickmessage.QUICK_MESSAGE_TRAY_HEIGHT
 import kotlin.math.max
 import kotlin.math.min
 
@@ -173,10 +175,12 @@ fun HomeFeedCard(
             QuickMessageTray(
                 listingId = item.id.value,
                 visibleProgress = expansionProgress,
-                onSend = onSendQuickMessage,
-                onSending = onMessageSending,
-                onSendFailed = onMessageSendFailed,
-                onAnimationComplete = onMessageAnimationComplete,
+                actions = QuickMessageActions(
+                    onSend = onSendQuickMessage,
+                    onSending = onMessageSending,
+                    onSendFailed = onMessageSendFailed,
+                    onAnimationComplete = onMessageAnimationComplete
+                ),
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
