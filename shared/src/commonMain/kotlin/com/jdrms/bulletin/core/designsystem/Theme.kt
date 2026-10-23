@@ -36,6 +36,7 @@ private val PaletteSlateBlue = Color(0xFF748CAB)
 
 // Artwork stays dark in either app theme so overlaid listing details remain readable.
 object BulletinFeedCardDefaults {
+    val cardSurface = Color(0xFF090D14)
     val backgroundTop = Color(0xFF27405A)
     val backgroundMiddle = PaletteMidBlue
     val backgroundBottom = PaletteSlateBlue

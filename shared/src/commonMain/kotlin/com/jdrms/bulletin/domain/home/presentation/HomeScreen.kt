@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -74,12 +76,16 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize()
     ) {
         val screenWidthPx = constraints.maxWidth.toFloat()
+        val screenHeightPx = constraints.maxHeight.toFloat()
         val thresholdPx = with(density) { 100.dp.toPx() }
 
         val offsetX = remember(currentIndex) { Animatable(0f) }
         // Shared by both mounted cards so vertical gestures move the stack as one surface.
         val offsetY = remember(currentIndex) { Animatable(0f) }
         val quickMessageProgress = remember(currentIndex) { Animatable(0f) }
+        val exitProgress = remember(currentIndex) { Animatable(0f) }
+        val nextProgress = remember(currentIndex) { Animatable(0f) }
+        var isMessageBusy by remember(currentIndex) { mutableStateOf(false) }
         val stackTranslationY = offsetY.value
 
         if (currentItem != null) {
@@ -90,7 +96,11 @@ fun HomeScreen(
                     cardIndex = currentIndex + 1,
                     isActive = false,
                     modifier = Modifier.fillMaxSize().graphicsLayer {
-                        translationY = stackTranslationY
+                        val progress = nextProgress.value
+                        translationY = stackTranslationY + with(density) { (-12.dp + 12.dp * progress).toPx() }
+                        scaleX = 0.94f + 0.06f * progress
+                        scaleY = 0.94f + 0.06f * progress
+                        alpha = 0.7f + 0.3f * progress
                     }
                 )
             }
@@ -104,21 +114,36 @@ fun HomeScreen(
                 cardIndex = currentIndex,
                 expansionProgress = quickMessageProgress.value,
                 onSendQuickMessage = { content -> onSendQuickMessage(currentItem, content) },
-                onCloseQuickMessage = {
-                    coroutineScope.launch { quickMessageProgress.animateTo(0f, tween(durationMillis = 350)) }
+                onMessageSending = { isMessageBusy = true },
+                onMessageSendFailed = { isMessageBusy = false },
+                onMessageAnimationComplete = {
+                    coroutineScope.launch {
+                        val easing = CubicBezierEasing(0.5f, 0f, 0.85f, 0.45f)
+                        val exit = launch {
+                            exitProgress.animateTo(1f, tween(600, easing = easing))
+                        }
+                        val reveal = launch {
+                            nextProgress.animateTo(1f, tween(600, easing = easing))
+                        }
+                        exit.join()
+                        reveal.join()
+                        currentIndex++
+                        isMessageBusy = false
+                    }
                 },
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
                         translationX = offsetX.value
-                        translationY = stackTranslationY
-                        rotationZ = rotationAngle
-                        alpha = cardAlpha
+                        translationY = stackTranslationY - exitProgress.value * screenHeightPx * 1.18f
+                        rotationZ = rotationAngle - exitProgress.value * 5f
+                        alpha = cardAlpha * (1f - exitProgress.value)
+                        transformOrigin = TransformOrigin(0.5f, 0.9f)
                     }
-                    .pointerInput(currentIndex) {
+                    .pointerInput(currentIndex, isMessageBusy) {
                         detectHorizontalDragGestures(
                             onDragEnd = {
-                                coroutineScope.launch {
+                                if (!isMessageBusy) coroutineScope.launch {
                                     if (offsetX.value < -thresholdPx) {
                                         // Advance only after the current card has fully left the viewport.
                                         offsetX.animateTo(
@@ -144,7 +169,7 @@ fun HomeScreen(
                                 }
                             },
                             onDragCancel = {
-                                coroutineScope.launch {
+                                if (!isMessageBusy) coroutineScope.launch {
                                     offsetX.animateTo(
                                         targetValue = 0f,
                                         animationSpec = spring()
@@ -152,6 +177,7 @@ fun HomeScreen(
                                 }
                             },
                             onHorizontalDrag = { change, dragAmount ->
+                                if (isMessageBusy) return@detectHorizontalDragGestures
                                 change.consume()
                                 coroutineScope.launch {
                                     offsetX.snapTo(offsetX.value + dragAmount)
@@ -159,7 +185,7 @@ fun HomeScreen(
                             }
                         )
                     }
-                    .pointerInput(currentIndex) {
+                    .pointerInput(currentIndex, isMessageBusy) {
                         var dragStartProgress = 0f
                         var dragDistance = 0f
                         var dragVelocity = 0f
@@ -170,17 +196,21 @@ fun HomeScreen(
                                 dragVelocity = 0f
                             },
                             onVerticalDrag = { change, dragAmount ->
+                                if (isMessageBusy) return@detectVerticalDragGestures
                                 change.consume()
                                 dragDistance += dragAmount
                                 dragVelocity = dragAmount
                                 coroutineScope.launch {
                                     quickMessageProgress.snapTo(
-                                        (quickMessageProgress.value - dragAmount / with(density) { 140.dp.toPx() })
+                                        (quickMessageProgress.value - dragAmount / with(density) {
+                                            QUICK_MESSAGE_TRAY_HEIGHT.toPx()
+                                        })
                                             .coerceIn(0f, 1f)
                                     )
                                 }
                             },
                             onDragEnd = {
+                                if (isMessageBusy) return@detectVerticalDragGestures
                                 val shouldOpen = if (dragStartProgress > 0.5f) {
                                     dragDistance <= 50f && dragVelocity <= 8f
                                 } else {
@@ -194,7 +224,9 @@ fun HomeScreen(
                                 }
                             },
                             onDragCancel = {
-                                coroutineScope.launch { quickMessageProgress.animateTo(0f, spring()) }
+                                if (!isMessageBusy) {
+                                    coroutineScope.launch { quickMessageProgress.animateTo(0f, spring()) }
+                                }
                             }
                         )
                     }

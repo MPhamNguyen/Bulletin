@@ -73,7 +73,9 @@ fun HomeFeedCard(
     isActive: Boolean = true,
     expansionProgress: Float = 0f,
     onSendQuickMessage: suspend (String) -> Boolean = { false },
-    onCloseQuickMessage: () -> Unit = {}
+    onMessageSending: () -> Unit = {},
+    onMessageSendFailed: () -> Unit = {},
+    onMessageAnimationComplete: () -> Unit = {}
 ) {
     val density = LocalDensity.current
     var descriptionExpanded by rememberSaveable(item.id.value, cardIndex) { mutableStateOf(false) }
@@ -103,7 +105,7 @@ fun HomeFeedCard(
             .fillMaxSize()
             .padding(8.dp)
             .clip(MaterialTheme.shapes.large)
-            .background(Color(0xFF090D14))
+            .background(BulletinFeedCardDefaults.cardSurface)
             .pointerInput(item.id.value, cardIndex) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -126,7 +128,7 @@ fun HomeFeedCard(
         // Keep the shifted media and listing content inside the card's original viewport.
         Box(Modifier.matchParentSize().clipToBounds()) {
             Box(Modifier.matchParentSize().graphicsLayer {
-                translationY = -expansionProgress * with(density) { 140.dp.toPx() }
+                translationY = -expansionProgress * with(density) { QUICK_MESSAGE_TRAY_HEIGHT.toPx() }
             }) {
                 HomeFeedCardBackground(
                     item = item,
@@ -162,9 +164,9 @@ fun HomeFeedCard(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .height(140.dp)
+                    .height(QUICK_MESSAGE_TRAY_HEIGHT)
                     .graphicsLayer { alpha = expansionProgress }
-                    .background(Color(0xFF090D14))
+                    .background(BulletinFeedCardDefaults.cardSurface)
             )
         }
         if (isActive && expansionProgress > 0.3f) {
@@ -172,7 +174,9 @@ fun HomeFeedCard(
                 listingId = item.id.value,
                 visibleProgress = expansionProgress,
                 onSend = onSendQuickMessage,
-                onClose = onCloseQuickMessage,
+                onSending = onMessageSending,
+                onSendFailed = onMessageSendFailed,
+                onAnimationComplete = onMessageAnimationComplete,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }

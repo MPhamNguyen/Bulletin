@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
@@ -126,9 +125,13 @@ private fun HomeFeedImageScrim(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.background(
             Brush.verticalGradient(
-                0f to MaterialTheme.colorScheme.scrim.copy(alpha = 0.28f),
-                0.35f to Color.Transparent,
-                1f to BulletinFeedCardDefaults.scrim.copy(alpha = 0.92f)
+                0f to Color.Transparent,
+                0.46f to Color.Transparent,
+                0.56f to BulletinFeedCardDefaults.cardSurface.copy(alpha = 0.16f),
+                0.66f to BulletinFeedCardDefaults.cardSurface.copy(alpha = 0.42f),
+                0.76f to BulletinFeedCardDefaults.cardSurface.copy(alpha = 0.72f),
+                0.88f to BulletinFeedCardDefaults.cardSurface.copy(alpha = 0.94f),
+                1f to BulletinFeedCardDefaults.cardSurface
             )
         )
     )
