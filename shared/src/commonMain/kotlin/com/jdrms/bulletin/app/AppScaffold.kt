@@ -209,7 +209,22 @@ private fun MainAppContent(
     onContentNoLongerScrollable: () -> Unit
 ) {
     when (navigation.currentDestination) {
-        AppDestination.HOME -> HomeScreen(models.home)
+        AppDestination.HOME -> {
+            val conversationActions = ListingConversationActions(container, navigation, models.messages)
+            HomeScreen(
+                viewModel = models.home,
+                onSendQuickMessage = { item, content ->
+                    val sellerId = item.sellerId
+                    val sellerName = item.sellerName
+                    sellerId != null && sellerName != null && conversationActions.sendQuickMessage(
+                        item.id.value,
+                        sellerId,
+                        sellerName,
+                        content
+                    )
+                }
+            )
+        }
         AppDestination.MARKETPLACE -> {
             val conversationActions = ListingConversationActions(container, navigation, models.messages)
             MarketplaceScreen(

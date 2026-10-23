@@ -6,6 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -47,7 +48,8 @@ private const val PREFETCH_REMAINING_ITEMS = 2
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSendQuickMessage: suspend (com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem, String) -> Boolean = { _, _ -> false }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val items = uiState.feed
@@ -75,6 +77,10 @@ fun HomeScreen(
         val thresholdPx = with(density) { 100.dp.toPx() }
 
         val offsetX = remember(currentIndex) { Animatable(0f) }
+        // Shared by both mounted cards so vertical gestures move the stack as one surface.
+        val offsetY = remember(currentIndex) { Animatable(0f) }
+        val quickMessageProgress = remember(currentIndex) { Animatable(0f) }
+        val stackTranslationY = offsetY.value
 
         if (currentItem != null) {
             // Keep the next card mounted underneath so it is revealed during the swipe.
@@ -83,7 +89,9 @@ fun HomeScreen(
                     item = nextItem,
                     cardIndex = currentIndex + 1,
                     isActive = false,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize().graphicsLayer {
+                        translationY = stackTranslationY
+                    }
                 )
             }
 
@@ -94,10 +102,16 @@ fun HomeScreen(
             HomeFeedCard(
                 item = currentItem,
                 cardIndex = currentIndex,
+                expansionProgress = quickMessageProgress.value,
+                onSendQuickMessage = { content -> onSendQuickMessage(currentItem, content) },
+                onCloseQuickMessage = {
+                    coroutineScope.launch { quickMessageProgress.animateTo(0f, tween(durationMillis = 350)) }
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
                         translationX = offsetX.value
+                        translationY = stackTranslationY
                         rotationZ = rotationAngle
                         alpha = cardAlpha
                     }
@@ -145,6 +159,45 @@ fun HomeScreen(
                             }
                         )
                     }
+                    .pointerInput(currentIndex) {
+                        var dragStartProgress = 0f
+                        var dragDistance = 0f
+                        var dragVelocity = 0f
+                        detectVerticalDragGestures(
+                            onDragStart = {
+                                dragStartProgress = quickMessageProgress.value
+                                dragDistance = 0f
+                                dragVelocity = 0f
+                            },
+                            onVerticalDrag = { change, dragAmount ->
+                                change.consume()
+                                dragDistance += dragAmount
+                                dragVelocity = dragAmount
+                                coroutineScope.launch {
+                                    quickMessageProgress.snapTo(
+                                        (quickMessageProgress.value - dragAmount / with(density) { 140.dp.toPx() })
+                                            .coerceIn(0f, 1f)
+                                    )
+                                }
+                            },
+                            onDragEnd = {
+                                val shouldOpen = if (dragStartProgress > 0.5f) {
+                                    dragDistance <= 50f && dragVelocity <= 8f
+                                } else {
+                                    dragDistance < -60f || dragVelocity < -8f
+                                }
+                                coroutineScope.launch {
+                                    quickMessageProgress.animateTo(
+                                        if (shouldOpen) 1f else 0f,
+                                        animationSpec = tween(durationMillis = 350)
+                                    )
+                                }
+                            },
+                            onDragCancel = {
+                                coroutineScope.launch { quickMessageProgress.animateTo(0f, spring()) }
+                            }
+                        )
+                    }
             )
         } else if (uiState.isLoading) {
             Box(
@@ -181,120 +234,6 @@ fun HomeScreen(
     }
 }
 
-@Composable
-private fun FeedErrorState(
-    title: String,
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
-            )
-            Button(onClick = onRetry, shape = RoundedCornerShape(12.dp)) {
-                Text("Try again", style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
-}
-
-@Composable
-private fun NextPageError(
-    message: String,
-    isRetrying: Boolean,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer
-        )
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(message, style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onRetry, enabled = !isRetrying) {
-                if (isRetrying) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Retry")
-                }
-            }
-        }
-    }
-}
-
 internal fun shouldPrefetchHomeFeedPage(currentIndex: Int, feedSize: Int, hasMore: Boolean): Boolean {
     return hasMore && feedSize > 0 && feedSize - 1 - currentIndex <= PREFETCH_REMAINING_ITEMS
-}
-
-@Composable
-private fun EmptyFeedState(
-    onReset: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "✨",
-                style = MaterialTheme.typography.displayMedium
-            )
-            Text(
-                text = "You're All Caught Up",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "You've swiped through all available listings. Check back later for new items.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = onReset,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "Start Over",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-    }
 }
