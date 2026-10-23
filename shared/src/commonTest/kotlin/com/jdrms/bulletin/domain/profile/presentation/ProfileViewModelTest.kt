@@ -80,6 +80,11 @@ class ProfileViewModelTest {
         advanceUntilIdle()
         assertEquals(emptyList(), vm.uiState.value.bookmarkedListings)
         assertEquals(1, bookmarkPageRequests)
+
+        vm.loadBookmarkedListings()
+        advanceUntilIdle()
+        assertEquals(2, bookmarkPageRequests)
+        assertEquals(emptyList(), vm.uiState.value.bookmarkedListings)
     }
 
     @Test

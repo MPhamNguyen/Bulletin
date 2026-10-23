@@ -73,7 +73,7 @@ fun ProfileScreen(
     val reviewScope = rememberCoroutineScope()
 
     LaunchedEffect(destination) {
-        if (destination == ProfileDestination.BOOKMARKED_LISTINGS) {
+        if (destination == ProfileDestination.BOOKMARKED_LISTINGS || destination == ProfileDestination.PROFILE) {
             viewModel.loadBookmarkedListings()
         }
         if (destination == ProfileDestination.BLOCKED_USERS) {

@@ -12,12 +12,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -46,6 +49,7 @@ import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
+import com.jdrms.bulletin.core.designsystem.platformReducedMotion
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
@@ -107,6 +111,8 @@ fun MainAppScaffold(
         NavbarNestedScrollConnection(navbarScrollBehavior)
     }
     var navbarHeight by remember { mutableStateOf(0.dp) }
+    var profileTabCenter by remember { mutableStateOf(Offset.Zero) }
+    var profileSaveTrigger by remember { mutableIntStateOf(0) }
     val models = remember(container) {
         MainScaffoldModels(
             container.createHomeViewModel(),
@@ -133,6 +139,13 @@ fun MainAppScaffold(
 
     LaunchedEffect(navigation.currentDestination) {
         navbarScrollBehavior.onDestinationChanged()
+    }
+    LaunchedEffect(navigation.currentDestination, navigation.profileDestination) {
+        if (navigation.currentDestination == AppDestination.PROFILE &&
+            navigation.profileDestination in setOf(ProfileDestination.PROFILE, ProfileDestination.BOOKMARKED_LISTINGS)
+        ) {
+            resolvedProfileViewModel.loadBookmarkedListings()
+        }
     }
 
     BulletinTheme(darkTheme = darkTheme) {
@@ -164,6 +177,8 @@ fun MainAppScaffold(
                             navigation,
                             models,
                             profilePresentation,
+                            profileTabCenter,
+                            onListingSaved = { profileSaveTrigger++ },
                             onContentNoLongerScrollable = navbarScrollBehavior::reveal
                         )
                     }
@@ -176,6 +191,11 @@ fun MainAppScaffold(
                 },
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
                 onFocused = navbarScrollBehavior::reveal,
+                onDestinationPositioned = { destination, center ->
+                    if (destination == AppDestination.PROFILE) profileTabCenter = center
+                },
+                profileSaveTrigger = profileSaveTrigger,
+                reducedMotion = platformReducedMotion(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(100f)
@@ -207,11 +227,15 @@ private fun MainAppContent(
     navigation: MutableMainNavigationState,
     models: MainScaffoldModels,
     profilePresentation: ProfilePresentation,
+    profileTabCenter: Offset,
+    onListingSaved: () -> Unit,
     onContentNoLongerScrollable: () -> Unit
 ) {
     when (navigation.currentDestination) {
         AppDestination.HOME -> {
             val conversationActions = ListingConversationActions(container, navigation, models.messages)
+            val marketplaceState by models.marketplace.uiState.collectAsState()
+            var failedSaveItem by remember { mutableStateOf<MarketplaceItemId?>(null) }
             HomeScreen(
                 viewModel = models.home,
                 onSendQuickMessage = { item, content ->
@@ -225,8 +249,14 @@ private fun MainAppContent(
                     )
                 },
                 onSaveListing = { item ->
-                    models.marketplace.bookmarkListing(MarketplaceItemId(item.id.value))
-                }
+                    onListingSaved()
+                    val itemId = MarketplaceItemId(item.id.value)
+                    failedSaveItem = itemId
+                    models.marketplace.bookmarkListing(itemId)
+                },
+                saveErrorMessage = marketplaceState.bookmarkErrorMessage,
+                onRetrySave = { failedSaveItem?.let { models.marketplace.bookmarkListing(it) } },
+                profileTargetPosition = profileTabCenter
             )
         }
         AppDestination.MARKETPLACE -> {

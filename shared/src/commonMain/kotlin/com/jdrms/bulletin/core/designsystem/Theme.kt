@@ -49,6 +49,9 @@ object BulletinFeedCardDefaults {
     val scrim = Color(0xFF070B13)
     val content = Color(0xFFF0F4F8)
     val secondaryContent = Color(0xFFD3E0F0)
+    val passTint = Color(0xFFE86E64)
+    val passStamp = Color(0xFFFFB4AB)
+    val saveTint = Color(0xFF6FD0C0)
 }
 
 // Derived tints/shades (light)

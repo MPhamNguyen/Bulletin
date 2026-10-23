@@ -91,8 +91,11 @@ class ProfileViewModel(
         bookmarkedListingsJob = viewModelScope.launch {
             state.update {
                 it.copy(
+                    bookmarkedListings = emptyList(),
                     isLoadingBookmarkedListings = true,
                     isLoadingMoreBookmarkedListings = false,
+                    bookmarkedListingsNextCursor = null,
+                    selectedBookmarkedListingId = null,
                     errorMessage = null
                 )
             }
