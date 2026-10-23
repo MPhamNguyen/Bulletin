@@ -44,7 +44,6 @@ internal object HomeNavigationIcons {
         viewportWidth = 24f,
         viewportHeight = 24f
     ).apply {
-        // Both states share the rounded roof, walls, and open doorway.
         addPath(
             pathData = silhouette,
             fill = if (filled) ink else null,

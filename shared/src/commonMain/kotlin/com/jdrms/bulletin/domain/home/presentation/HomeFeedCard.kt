@@ -161,20 +161,6 @@ internal fun stepHomePhotoIndex(currentIndex: Int, direction: Int, photoCount: I
     return (currentIndex + direction).coerceIn(0, photoCount - 1)
 }
 
-/**
- * Converts a saved crop offset (normalized against the square crop-editor frame) into a pixel
- * translation for a frame of any aspect ratio.
- *
- * The old code multiplied offsetY by the card HEIGHT (~2x the editor frame in the Home feed),
- * which pushed letterboxed images down/up by far more than the user chose. Here the offset is
- * normalized against the shorter side of the frame (matching the square editor), and the result
- * is clamped so the scaled image can never be pushed off-center on an axis where it does not
- * even fill the frame.
- *
- * @param frameExtent size of the frame along this axis (px)
- * @param referenceSide shorter side of the frame (px), the equivalent of the editor's square side
- * @param fittedExtent size of the ContentScale.Fit image along this axis (px)
- */
 internal fun cropAxisTranslation(
     offset: Float,
     scale: Float,
@@ -219,7 +205,6 @@ private fun BoxScope.HomeFeedCardBackground(
                     val frameH = size.height
                     val hasIntrinsic = intrinsic.width.isFinite() && intrinsic.height.isFinite() &&
                         intrinsic.width > 0f && intrinsic.height > 0f
-                    // Size of the image as drawn by ContentScale.Fit (before the crop scale).
                     val fit = if (hasIntrinsic) min(frameW / intrinsic.width, frameH / intrinsic.height) else 1f
                     val fittedW = if (hasIntrinsic) intrinsic.width * fit else frameW
                     val fittedH = if (hasIntrinsic) intrinsic.height * fit else frameH

@@ -140,7 +140,6 @@ private fun DestinationItem(
 @Composable
 private fun DestinationIcon(destination: AppDestination, selected: Boolean) {
     val colorScheme = MaterialTheme.colorScheme
-    // The taller house silhouette needs a smaller box to match the storefront's visible height.
     val iconSize = if (destination == AppDestination.HOME) NavigationIconSize - 2.dp else NavigationIconSize
     val contentColor = animateColorAsState(
         targetValue = if (selected) colorScheme.primary else colorScheme.onSurfaceVariant,
