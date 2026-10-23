@@ -37,7 +37,8 @@ internal class FakeSupabaseMessagesTable(
             SupabaseConversationParticipantDto(
                 conversationId = conversation.id.value,
                 userId = participant.id.value,
-                profile = SupabaseMessageProfileDto(participant.displayName)
+                profile = SupabaseMessageProfileDto(participant.displayName),
+                lastReadAt = participant.lastReadAt?.toString()
             )
         }
     }.toMutableList()
@@ -94,7 +95,11 @@ internal class FakeSupabaseMessagesTable(
                         SupabaseInboxMembershipDto(userId, historyVisibleAfter[id to userId]?.toString())
                     ),
                     participants = participantRows.filter { it.conversationId == id }.map { participant ->
-                        SupabaseInboxParticipantDto(participant.userId, participant.profile)
+                        SupabaseInboxParticipantDto(
+                            participant.userId,
+                            participant.profile,
+                            participant.lastReadAt
+                        )
                     },
                     latestMessages = listOfNotNull(
                         getMessagePage(id, null, historyVisibleAfter[id to userId], 1).firstOrNull()
@@ -131,6 +136,17 @@ internal class FakeSupabaseMessagesTable(
         } else {
             null
         }
+
+    override suspend fun markConversationRead(conversationId: String): Instant? {
+        val viewerId = authenticatedUserId ?: return null
+        val index = participantRows.indexOfFirst {
+            it.conversationId == conversationId && it.userId == viewerId
+        }
+        if (index < 0) return null
+        val markedAt = serverNow()
+        participantRows[index] = participantRows[index].copy(lastReadAt = markedAt.toString())
+        return markedAt
+    }
 
     override suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto> =
         participantRows.filter { it.conversationId == conversationId }

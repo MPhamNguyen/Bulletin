@@ -49,6 +49,7 @@ internal interface SupabaseMessagesTable : SupabaseConversationCreationTable, Su
     ): List<SupabaseMessageDto>
     suspend fun findLatestMessage(conversationId: String): SupabaseMessageDto?
     suspend fun findMessage(conversationId: String, messageId: String): SupabaseMessageDto?
+    suspend fun markConversationRead(conversationId: String): Instant?
     suspend fun insertMessage(message: SupabaseMessageInsertDto)
     suspend fun insertReport(report: SupabaseMessageReportInsertDto)
 }
@@ -132,6 +133,14 @@ internal class PostgrestSupabaseMessagesTable(
             .decodeSingleOrNull()
     }
 
+    override suspend fun markConversationRead(conversationId: String): Instant? {
+        val markedAt = supabase.postgrest.rpc(
+            "mark_conversation_read",
+            parameters = buildJsonObject { put("p_conversation_id", conversationId) }
+        ).decodeAs<String>()
+        return runCatching { Instant.parse(markedAt) }.getOrNull()
+    }
+
     override suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto> {
         return supabase.from(SupabaseMessagesRepository.PARTICIPANTS_TABLE)
             .select(columns = PARTICIPANT_COLUMNS) {
@@ -201,10 +210,10 @@ internal class PostgrestSupabaseMessagesTable(
 
     private companion object {
         val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id,history_visible_after")
-        val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name)")
+        val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name),last_read_at")
         val INBOX_COLUMNS = Columns.raw(
             "id,updated_at,listing_id,membership:conversation_participants!inner(user_id,history_visible_after)," +
-                "participants:conversation_participants(user_id,profiles(full_name))," +
+                "participants:conversation_participants(user_id,profiles(full_name),last_read_at)," +
                 "messages(id,conversation_id,sender_id,body,created_at,profiles(full_name),reports(id,status))"
         )
         val MESSAGE_COLUMNS = Columns.raw(

@@ -8,8 +8,10 @@ import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseInboxInv
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -58,9 +60,14 @@ private class SupabaseInboxRealtimeChannel(
     private val changes = channel.broadcastFlow<JsonObject>("conversation-changed").mapNotNull { payload ->
         SupabaseInboxInvalidationMapper.conversationIdOrNull(payload)?.let(InboxInvalidation::Changed)
     }
+    private val readReceipts = channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+        table = SupabaseMessagesRepository.PARTICIPANTS_TABLE
+    }.mapNotNull { action ->
+        SupabaseInboxInvalidationMapper.conversationIdOrNull(action.record)?.let(InboxInvalidation::Changed)
+    }
     private val status = channel.status.drop(1).mapNotNull(::invalidationForChannelStatus)
 
-    override val events: Flow<InboxInvalidation> = merge(changes, status)
+    override val events: Flow<InboxInvalidation> = merge(changes, readReceipts, status)
 
     override suspend fun subscribe() = channel.subscribe(blockUntilSubscribed = true)
 

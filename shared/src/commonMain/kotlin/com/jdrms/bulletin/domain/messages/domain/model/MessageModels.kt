@@ -22,7 +22,11 @@ value class ListingReferenceId(val value: String) {
     init { require(value.isNotBlank()) { "Listing reference cannot be blank." } }
 }
 
-data class ConversationParticipant(val id: SenderId, val displayName: String)
+data class ConversationParticipant(
+    val id: SenderId,
+    val displayName: String,
+    val lastReadAt: Instant? = null
+)
 
 data class Message(
     val id: MessageId,
@@ -62,6 +66,24 @@ class Conversation(
     }
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
+
+    fun recordReadAt(readerId: SenderId, readAt: Instant): Result<Conversation> {
+        if (!includes(readerId)) return Result.Error(ConversationAccessException())
+        val participant = participants.first { it.id == readerId }
+        if (participant.lastReadAt?.let { it >= readAt } == true) return Result.Success(this)
+        return Result.Success(
+            Conversation(
+                id = id,
+                participants = participants.map {
+                    if (it.id == readerId) it.copy(lastReadAt = readAt) else it
+                },
+                lastMessage = lastMessage,
+                updatedAtMillis = updatedAtMillis,
+                listingId = listingId,
+                historyVisibleAfter = historyVisibleAfter
+            )
+        )
+    }
 
     fun canSee(message: Message): Boolean =
         message.conversationId == id &&
