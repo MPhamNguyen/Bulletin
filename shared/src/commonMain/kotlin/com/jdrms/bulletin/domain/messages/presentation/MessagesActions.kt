@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.application.HideConversation
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
@@ -16,8 +17,11 @@ internal class MessagesActions(
     private val state: MutableStateFlow<MessagesUiState>,
     private val sendMessage: SendMessage,
     private val reportMessage: ReportMessage,
+    private val hideConversation: HideConversation,
     private val scope: CoroutineScope
 ) {
+    private var hideJob: kotlinx.coroutines.Job? = null
+
     fun send(showFailure: (Result.Error) -> Unit) {
         val snapshot = state.value
         val conversationId = snapshot.selectedConversationId ?: return
@@ -37,8 +41,7 @@ internal class MessagesActions(
                             } else {
                                 current.messageInput
                             },
-                            isSending = false,
-                            statusMessage = "Message sent."
+                            isSending = false
                         )
                     }
                 }
@@ -52,8 +55,17 @@ internal class MessagesActions(
         onReported: (ConversationId) -> Unit,
         showFailure: (Result.Error) -> Unit
     ) {
-        val conversationId = state.value.selectedConversationId ?: return
-        if (state.value.isReporting || inbox.state.value.isLoading) return
+        val snapshot = state.value
+        val conversationId = snapshot.selectedConversationId ?: return
+        val viewerId = inbox.state.value.viewerId ?: return
+        val targetMessage = snapshot.currentMessages.firstOrNull { it.id == messageId } ?: return
+        if (
+            targetMessage.senderId == viewerId ||
+            targetMessage.conversationId != conversationId ||
+            targetMessage.isReported ||
+            snapshot.isReporting ||
+            inbox.state.value.isLoading
+        ) return
         state.update { it.copy(isReporting = true, errorMessage = null, statusMessage = null) }
         scope.launch {
             when (val result = reportMessage(conversationId, messageId, reason)) {
@@ -61,9 +73,29 @@ internal class MessagesActions(
                 is Result.Success -> {
                     if (state.value.selectedConversationId == conversationId) {
                         onReported(conversationId)
-                        state.update { it.copy(statusMessage = "Message reported.") }
                     }
                     state.update { it.copy(isReporting = false) }
+                }
+            }
+        }
+    }
+
+    fun hideConversation(
+        conversationId: ConversationId,
+        showFailure: (Result.Error) -> Unit
+    ) {
+        if (inbox.state.value.conversations.none { it.id == conversationId } || hideJob?.isActive == true) return
+        hideJob = scope.launch {
+            when (val result = hideConversation(conversationId)) {
+                is Result.Error -> showFailure(result)
+                is Result.Success -> {
+                    state.update {
+                        it.copy(
+                            errorMessage = null,
+                            statusMessage = "Conversation removed from your inbox."
+                        )
+                    }
+                    inbox.refresh()
                 }
             }
         }

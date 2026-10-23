@@ -6,11 +6,14 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
 
 data class MessagesUiState(
     val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
+    val listingPreviews: Map<String, ConversationListingPreview?> = emptyMap(),
     val selectedConversationId: ConversationId? = null,
+    val isConversationOpen: Boolean = false,
     val currentMessages: List<Message> = emptyList(),
     val revealedReportedMessageIds: Set<MessageId> = emptySet(),
     val olderCursor: MessageCursor? = null,

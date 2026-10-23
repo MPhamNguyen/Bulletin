@@ -163,7 +163,10 @@ fun MainAppScaffold(
                             navigation,
                             models,
                             profilePresentation,
-                            onContentNoLongerScrollable = navbarScrollBehavior::reveal
+                            onContentNoLongerScrollable = navbarScrollBehavior::reveal,
+                            onConversationVisibilityChanged = { isOpen ->
+                                if (isOpen) navbarScrollBehavior.hide() else navbarScrollBehavior.reveal()
+                            }
                         )
                     }
                 }
@@ -206,7 +209,8 @@ private fun MainAppContent(
     navigation: MutableMainNavigationState,
     models: MainScaffoldModels,
     profilePresentation: ProfilePresentation,
-    onContentNoLongerScrollable: () -> Unit
+    onContentNoLongerScrollable: () -> Unit,
+    onConversationVisibilityChanged: (Boolean) -> Unit
 ) {
     when (navigation.currentDestination) {
         AppDestination.HOME -> HomeScreen(models.home)
@@ -218,6 +222,9 @@ private fun MainAppContent(
                 userReportViewModel = models.marketplaceUserReport,
                 listingReportViewModel = models.listingReport,
                 userBlockViewModel = models.marketplaceUserBlock,
+                sellerProfileIdToOpen = navigation.pendingSellerProfileId,
+                onSellerProfileRequestHandled = { navigation.pendingSellerProfileId = null },
+                onReturnToInboxChat = { navigation.currentDestination = AppDestination.MESSAGES },
                 onContentNoLongerScrollable = onContentNoLongerScrollable,
                 actions = MarketplaceScreenActions(
                     onMessageSeller = conversationActions::messageSeller,
@@ -227,7 +234,14 @@ private fun MainAppContent(
             )
         }
         AppDestination.LISTINGS -> ListingsScreen(models.listings)
-        AppDestination.MESSAGES -> MessagesScreen(models.messages)
+        AppDestination.MESSAGES -> MessagesScreen(
+            viewModel = models.messages,
+            onViewProfile = { sellerId ->
+                navigation.pendingSellerProfileId = sellerId
+                navigation.currentDestination = AppDestination.MARKETPLACE
+            },
+            onConversationVisibilityChanged = onConversationVisibilityChanged
+        )
         AppDestination.PROFILE -> ProfileDestinationContent(
             container,
             navigation,

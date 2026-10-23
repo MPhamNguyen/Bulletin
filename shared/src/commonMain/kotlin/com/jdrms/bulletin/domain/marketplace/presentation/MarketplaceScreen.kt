@@ -17,13 +17,29 @@ fun MarketplaceScreen(
     listingReportViewModel: ListingReportViewModel,
     userBlockViewModel: MarketplaceUserBlockViewModel,
     actions: MarketplaceScreenActions = MarketplaceScreenActions(),
+    sellerProfileIdToOpen: String? = null,
+    onSellerProfileRequestHandled: () -> Unit = {},
+    onReturnToInboxChat: () -> Unit = {},
     onContentNoLongerScrollable: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
     val blockState by userBlockViewModel.uiState.collectAsState()
-    var destination by remember { mutableStateOf(MarketplaceDestination.CATALOG) }
+    var destination by remember {
+        mutableStateOf(
+            if (sellerProfileIdToOpen != null) MarketplaceDestination.SELLER_PROFILE
+            else MarketplaceDestination.CATALOG
+        )
+    }
+    var sellerProfileOpenedFromInbox by remember { mutableStateOf(sellerProfileIdToOpen != null) }
+
+    LaunchedEffect(sellerProfileIdToOpen) {
+        sellerProfileIdToOpen?.let { sellerId ->
+            sellerProfileViewModel.load(sellerId)
+            onSellerProfileRequestHandled()
+        }
+    }
 
     val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, destination)
     val flowViewModels = MarketplaceSellerFlowViewModels(
@@ -32,7 +48,21 @@ fun MarketplaceScreen(
         userReportViewModel,
         userBlockViewModel
     )
-    if (!MarketplaceSellerProfileFlow(flowState, flowViewModels, actions) { destination = it }) {
+    if (!MarketplaceSellerProfileFlow(
+            flowState,
+            flowViewModels,
+            actions,
+            onNavigate = { destination = it },
+            onBackFromSellerProfile = {
+                if (sellerProfileOpenedFromInbox) {
+                    sellerProfileOpenedFromInbox = false
+                    onReturnToInboxChat()
+                } else {
+                    destination = MarketplaceDestination.CATALOG
+                }
+            }
+        )
+    ) {
         MarketplaceCatalogContent(
             state = state,
             viewModel = viewModel,
@@ -40,7 +70,10 @@ fun MarketplaceScreen(
             listingReportViewModel = listingReportViewModel,
             actions = actions,
             onContentNoLongerScrollable = onContentNoLongerScrollable,
-            onNavigate = { destination = it }
+            onNavigate = {
+                if (it == MarketplaceDestination.SELLER_PROFILE) sellerProfileOpenedFromInbox = false
+                destination = it
+            }
         )
     }
 }
@@ -50,7 +83,8 @@ private fun MarketplaceSellerProfileFlow(
     state: MarketplaceSellerFlowUiState,
     viewModels: MarketplaceSellerFlowViewModels,
     actions: MarketplaceScreenActions,
-    onNavigate: (MarketplaceDestination) -> Unit
+    onNavigate: (MarketplaceDestination) -> Unit,
+    onBackFromSellerProfile: () -> Unit
 ): Boolean {
     if (state.destination == MarketplaceDestination.REPORT_USER) {
         ReportMarketplaceUserScreen(
@@ -75,7 +109,7 @@ private fun MarketplaceSellerProfileFlow(
             onCategorySelected = viewModels.sellerProfile::onCategorySelected,
             onConditionSelected = viewModels.sellerProfile::onConditionSelected
         ),
-        onBack = { onNavigate(MarketplaceDestination.CATALOG) },
+        onBack = onBackFromSellerProfile,
         onReportUser = {
             state.sellerProfileState.profile?.sellerId?.let(viewModels.report::begin)
             if (state.sellerProfileState.profile != null) onNavigate(MarketplaceDestination.REPORT_USER)

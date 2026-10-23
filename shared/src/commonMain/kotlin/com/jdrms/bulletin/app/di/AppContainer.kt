@@ -11,6 +11,7 @@ import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
 import com.jdrms.bulletin.app.integration.MarketplaceHomeRepository
+import com.jdrms.bulletin.app.integration.MarketplaceConversationListingPreviewProvider
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceBlockedUserProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
@@ -60,6 +61,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseM
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
+import com.jdrms.bulletin.domain.messages.application.MarkConversationRead
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.HideConversation
@@ -338,10 +340,14 @@ class AppContainer(
     val currentListingSellerProvider by lazy { AuthListingSellerProvider(authRepository) }
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(restoreAuthenticatedProfile) }
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    val conversationListingPreviewProvider by lazy {
+        MarketplaceConversationListingPreviewProvider(listingsRepository, marketplaceRepository)
+    }
     internal val recentListingBuyersProvider by lazy { createRecentListingBuyersProvider(getConversations) }
     val hideConversation by lazy { HideConversation(messagesRepository, currentMessageSenderProvider) }
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
+    val markConversationRead by lazy { MarkConversationRead(messagesRepository, currentMessageSenderProvider) }
     val observeConversationMessages by lazy {
         val observer = messagesObserver
         val sender = currentMessageSenderProvider
