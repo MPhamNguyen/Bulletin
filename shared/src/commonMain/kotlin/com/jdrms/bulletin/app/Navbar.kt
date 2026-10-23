@@ -7,7 +7,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -24,24 +23,21 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.navigation.AppDestination
 
-private val NavigationIconSize = 24.dp
+private val NavigationIconSize = 30.dp
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
@@ -72,35 +68,40 @@ fun Navbar(
             .semantics { if (!navbarIsVisible) hideFromAccessibility() },
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        NavbarContent(currentDestination, onDestinationSelected)
+    }
+}
+
+@Composable
+private fun NavbarContent(
+    currentDestination: AppDestination,
+    onDestinationSelected: (AppDestination) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(72.dp).padding(6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(72.dp)
-                    .padding(6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AppDestination.entries.forEach { destination ->
-                    if (destination == AppDestination.LISTINGS) {
-                        CreateListingItem(
-                            modifier = Modifier.weight(1f),
-                            onClick = { onDestinationSelected(destination) }
-                        )
-                    } else {
-                        DestinationItem(
-                            destination = destination,
-                            selected = currentDestination == destination,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onDestinationSelected(destination) }
-                        )
-                    }
+            AppDestination.entries.forEach { destination ->
+                if (destination == AppDestination.LISTINGS) {
+                    CreateListingItem(
+                        modifier = Modifier.weight(1f),
+                        onClick = { onDestinationSelected(destination) }
+                    )
+                } else {
+                    DestinationItem(
+                        destination = destination,
+                        selected = currentDestination == destination,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onDestinationSelected(destination) }
+                    )
                 }
             }
         }
@@ -120,6 +121,27 @@ private fun DestinationItem(
         animationSpec = tween(durationMillis = 220),
         label = "navigation item background"
     )
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(60.dp).semantics {
+            contentDescription = destination.label
+            this.selected = selected
+            role = Role.Tab
+        },
+        shape = CircleShape,
+        color = itemColor.value
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            DestinationIcon(destination, selected)
+        }
+    }
+}
+
+@Composable
+private fun DestinationIcon(destination: AppDestination, selected: Boolean) {
+    val colorScheme = MaterialTheme.colorScheme
+    // The taller house silhouette needs a smaller box to match the storefront's visible height.
+    val iconSize = if (destination == AppDestination.HOME) NavigationIconSize - 2.dp else NavigationIconSize
     val contentColor = animateColorAsState(
         targetValue = if (selected) colorScheme.primary else colorScheme.onSurfaceVariant,
         animationSpec = tween(durationMillis = 220),
@@ -130,44 +152,19 @@ private fun DestinationItem(
         animationSpec = tween(durationMillis = 220),
         label = "navigation item icon scale"
     )
-    Surface(
-        onClick = onClick,
-        modifier = modifier
-            .height(60.dp)
-            .semantics {
-                this.selected = selected
-                role = Role.Tab
-            },
-        shape = CircleShape,
-        color = itemColor.value,
-        contentColor = contentColor.value
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = if (selected) destination.selectedIcon else destination.icon,
-                contentDescription = null,
-                modifier = Modifier.size(NavigationIconSize).graphicsLayer {
-                    scaleX = iconScale.value
-                    scaleY = iconScale.value
-                }
-            )
-            Text(
-                text = destination.label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-            )
+    Icon(
+        imageVector = if (selected) destination.selectedIcon else destination.icon,
+        contentDescription = null,
+        tint = contentColor.value,
+        modifier = Modifier.size(iconSize).graphicsLayer {
+            scaleX = iconScale.value
+            scaleY = iconScale.value
         }
-    }
+    )
 }
 
 @Composable
 private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
-    val labelHeightPx = with(LocalDensity.current) {
-        MaterialTheme.typography.labelSmall.lineHeight.toPx()
-    }
     Surface(
         onClick = onClick,
         modifier = modifier
@@ -181,8 +178,7 @@ private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
     ) {
         Box(contentAlignment = Alignment.Center) {
             Surface(
-                // Align the plus with the icon row above the destination labels.
-                modifier = Modifier.graphicsLayer { translationY = -labelHeightPx / 2f },
+                modifier = Modifier.size(NavigationIconSize),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -190,7 +186,7 @@ private fun CreateListingItem(modifier: Modifier, onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    modifier = Modifier.padding(8.dp).size(NavigationIconSize)
+                    modifier = Modifier.padding(6.dp)
                 )
             }
         }
