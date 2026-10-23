@@ -51,6 +51,7 @@ import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
@@ -222,6 +223,9 @@ private fun MainAppContent(
                         sellerName,
                         content
                     )
+                },
+                onSaveListing = { item ->
+                    models.marketplace.bookmarkListing(MarketplaceItemId(item.id.value))
                 }
             )
         }

@@ -102,10 +102,27 @@ internal class MarketplaceBookmarkController(
     private val pendingChanges = mutableMapOf<MarketplaceItemId, PendingBookmarkChange>()
 
     fun toggle(itemId: MarketplaceItemId, userId: String?) {
-        val pending = pendingChanges[itemId]
-        val displayedState = pending?.desired ?: (itemId in state.value.bookmarkedItemIds)
-        val desiredState = !displayedState
+        val displayedState = displayedState(itemId)
+        requestState(itemId, !displayedState, userId, displayedState)
+    }
+
+    fun bookmark(itemId: MarketplaceItemId, userId: String?) {
+        val displayedState = displayedState(itemId)
+        requestState(itemId, true, userId, displayedState)
+    }
+
+    private fun displayedState(itemId: MarketplaceItemId): Boolean =
+        pendingChanges[itemId]?.desired ?: (itemId in state.value.bookmarkedItemIds)
+
+    private fun requestState(
+        itemId: MarketplaceItemId,
+        desiredState: Boolean,
+        userId: String?,
+        displayedState: Boolean
+    ) {
+        if (displayedState == desiredState) return
         updateDisplayedBookmark(itemId, desiredState)
+        val pending = pendingChanges[itemId]
         if (pending != null) {
             pending.desired = desiredState
             return

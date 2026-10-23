@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.presentation.quickmessage.QUICK_MESSAGE_TRAY_HEIGHT
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -52,7 +53,8 @@ private const val PREFETCH_REMAINING_ITEMS = 2
 fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
-    onSendQuickMessage: suspend (com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem, String) -> Boolean = { _, _ -> false }
+    onSendQuickMessage: suspend (HomeFeedItem, String) -> Boolean = { _, _ -> false },
+    onSaveListing: (HomeFeedItem) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val items = uiState.feed
@@ -153,6 +155,7 @@ fun HomeScreen(
                                         )
                                         currentIndex++
                                     } else if (offsetX.value > thresholdPx) {
+                                        onSaveListing(currentItem)
                                         offsetX.animateTo(
                                             targetValue = screenWidthPx * 1.3f,
                                             animationSpec = tween(durationMillis = 200)

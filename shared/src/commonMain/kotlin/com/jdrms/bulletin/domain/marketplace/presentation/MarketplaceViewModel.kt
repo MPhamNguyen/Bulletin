@@ -224,6 +224,9 @@ class MarketplaceViewModel(
 
     fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) = bookmarkController.toggle(itemId, userId)
 
+    fun bookmarkListing(itemId: MarketplaceItemId, userId: String? = null) =
+        bookmarkController.bookmark(itemId, userId)
+
     private companion object {
         const val SEARCH_DEBOUNCE_MILLIS = 300L
     }
