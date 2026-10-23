@@ -1,10 +1,10 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.focusGroup
@@ -32,9 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
@@ -49,6 +49,11 @@ import kotlinx.coroutines.launch
 
 private val NavigationIconSize = 30.dp
 
+data class NavbarAnimationPreferences(
+    val profileSaveTrigger: Int = 0,
+    val reducedMotion: Boolean = false
+)
+
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 fun Navbar(
@@ -57,8 +62,7 @@ fun Navbar(
     onDestinationSelected: (AppDestination) -> Unit,
     onFocused: () -> Unit,
     onDestinationPositioned: (AppDestination, Offset) -> Unit = { _, _ -> },
-    profileSaveTrigger: Int = 0,
-    reducedMotion: Boolean = false,
+    animationPreferences: NavbarAnimationPreferences = NavbarAnimationPreferences(),
     modifier: Modifier = Modifier
 ) {
     val navbarIsVisible = isVisible() && !WindowInsets.isImeVisible
@@ -81,7 +85,13 @@ fun Navbar(
             .semantics { if (!navbarIsVisible) hideFromAccessibility() },
         contentAlignment = Alignment.Center
     ) {
-        NavbarContent(currentDestination, onDestinationSelected, onDestinationPositioned, profileSaveTrigger, reducedMotion)
+        NavbarContent(
+            currentDestination,
+            onDestinationSelected,
+            onDestinationPositioned,
+            animationPreferences.profileSaveTrigger,
+            animationPreferences.reducedMotion
+        )
     }
 }
 
@@ -150,8 +160,17 @@ private fun DestinationItem(
                 return@LaunchedEffect
             }
             kotlinx.coroutines.coroutineScope {
-                launch { bump.animateTo(1.25f, tween(170)); bump.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 420f)) }
-                launch { glow.animateTo(1f, tween(600)); glow.snapTo(0f) }
+                launch {
+                    bump.animateTo(
+                        1.25f,
+                        tween(170)
+                    )
+                    bump.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 420f))
+                }
+                launch {
+                    glow.animateTo(1f, tween(600))
+                    glow.snapTo(0f)
+                }
             }
         }
     }
@@ -163,24 +182,31 @@ private fun DestinationItem(
     )
     Surface(
         onClick = onClick,
-        modifier = modifier.height(60.dp).graphicsLayer { scaleX = bump.value; scaleY = bump.value }
+        modifier = modifier.height(60.dp).graphicsLayer {
+            scaleX = bump.value
+            scaleY = bump.value
+        }
             .onGloballyPositioned { coordinates ->
-            val position = coordinates.positionInRoot()
-            onPositioned(Offset(position.x + coordinates.size.width / 2f, position.y + coordinates.size.height / 2f))
-        }.semantics {
-            contentDescription = destination.label
-            this.selected = selected
-            role = Role.Tab
-        },
+                val position = coordinates.positionInRoot()
+                onPositioned(
+                    Offset(position.x + coordinates.size.width / 2f, position.y + coordinates.size.height / 2f)
+                )
+            }.semantics {
+                contentDescription = destination.label
+                this.selected = selected
+                role = Role.Tab
+            },
         shape = CircleShape,
         color = itemColor.value
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (destination == AppDestination.PROFILE && glow.value > 0f) {
                 Canvas(Modifier.size(54.dp)) {
-                    drawCircle(Color(0xFF4FAE9F).copy(alpha = (1f - glow.value) * 0.55f),
+                    drawCircle(
+                        Color(0xFF4FAE9F).copy(alpha = (1f - glow.value) * 0.55f),
                         radius = size.minDimension * (0.38f + glow.value * 0.26f),
-                        style = Stroke(2.dp.toPx()))
+                        style = Stroke(2.dp.toPx())
+                    )
                 }
             }
             DestinationIcon(destination, selected)

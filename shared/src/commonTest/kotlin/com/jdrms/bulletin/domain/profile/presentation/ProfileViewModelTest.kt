@@ -46,13 +46,7 @@ class ProfileViewModelTest {
     fun bookmarkedListingsLoadAndCanBeRemoved() = profileTest {
         val fixture = ProfileFixture()
         fixture.authenticate()
-        val listing = ProfileBookmarkedListing(
-            id = "listing-1",
-            title = "Desk Lamp",
-            sellerName = "Alex",
-            price = "${'$'}15.00",
-            category = "OTHER"
-        )
+        val listing = ProfileBookmarkedListing("listing-1", "Desk Lamp", "Alex", "${'$'}15.00", "OTHER")
         var bookmarks = listOf(listing)
         var bookmarkPageRequests = 0
         val bookmarksProvider = ProfileBookmarkedListingsProvider { _, _, _ ->

@@ -1,10 +1,10 @@
 package com.jdrms.bulletin.domain.home.presentation
 
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,11 +72,19 @@ internal class HomeCardMotion(val reducedMotion: Boolean) {
         coroutineScope {
             launch {
                 val destination = if (commit > 0 && saveTargetX != 0f) saveTargetX else width * 1.35f * commit
-                animate(offsetX, destination, animationSpec = tween(600, easing = FastOutLinearInEasing)) { v, _ -> offsetX = v }
+                animate(
+                    offsetX,
+                    destination,
+                    animationSpec = tween(600, easing = FastOutLinearInEasing)
+                ) { v, _ -> offsetX = v }
             }
             if (commit > 0) {
                 launch {
-                    animate(0f, 1f, animationSpec = tween(600, easing = FastOutLinearInEasing)) { v, _ -> exitProgress = v }
+                    animate(
+                        0f,
+                        1f,
+                        animationSpec = tween(600, easing = FastOutLinearInEasing)
+                    ) { v, _ -> exitProgress = v }
                 }
                 launch { animate(nextProgress, 1f, animationSpec = tween(600)) { v, _ -> nextProgress = v } }
             } else {

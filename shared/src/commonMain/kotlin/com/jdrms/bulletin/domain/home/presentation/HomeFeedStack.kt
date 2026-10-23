@@ -23,8 +23,8 @@ import androidx.compose.ui.zIndex
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.presentation.quickmessage.QUICK_MESSAGE_TRAY_HEIGHT
 import com.jdrms.bulletin.domain.home.presentation.quickmessage.QuickMessageActions
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal data class HomeFeedActions(
     val onSendQuickMessage: suspend (String) -> Boolean,
@@ -114,7 +114,9 @@ private fun HomeFrontFeedCard(
             onSendFailed = { motion.messageBusy = false },
             onAnimationComplete = { scope.launch { motion.exitAfterMessage(actions.onAdvance) } }
         ),
-        modifier = Modifier.fillMaxSize().zIndex(if (motion.saveCelebrating) 101f else 0f).onGloballyPositioned { coordinates ->
+        modifier = Modifier.fillMaxSize().zIndex(
+            if (motion.saveCelebrating) 101f else 0f
+        ).onGloballyPositioned { coordinates ->
             val origin = coordinates.positionInRoot()
             motion.saveTargetX = profileTargetPosition.x - origin.x - coordinates.size.width / 2f
             motion.saveTargetY = profileTargetPosition.y - origin.y - coordinates.size.height / 2f

@@ -54,6 +54,12 @@ class MarketplaceViewModel(
         viewModelScope,
         layoutPreferenceStore
     )
+    private val detailController = MarketplaceDetailController(
+        _uiState,
+        viewModelScope,
+        viewMarketplaceListing,
+        currentUserIdProvider
+    )
     val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
@@ -62,7 +68,7 @@ class MarketplaceViewModel(
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
                 refreshListings()
-                _uiState.value.detail.listingId?.let(::loadListingDetail)
+                _uiState.value.detail.listingId?.let(detailController::load)
             }
         }
     }
@@ -170,7 +176,7 @@ class MarketplaceViewModel(
         _uiState.update {
             it.copy(detail = MarketplaceDetailState(listingId = listingId, isLoading = true, isOpen = true))
         }
-        loadListingDetail(listingId)
+        detailController.load(listingId)
     }
 
     fun retryLoadListingDetail() {
@@ -178,44 +184,7 @@ class MarketplaceViewModel(
         _uiState.update {
             it.copy(detail = it.detail.copy(isLoading = true, errorMessage = null))
         }
-        loadListingDetail(listingId)
-    }
-
-    private fun loadListingDetail(listingId: String) {
-        viewModelScope.launch {
-            when (val result = viewMarketplaceListing(listingId, currentUserIdProvider())) {
-                is com.jdrms.bulletin.core.common.Result.Success -> {
-                    val listing = result.data
-                    val canonicalId = MarketplaceItemId(listingId)
-                    val isBookmarked = _uiState.value.bookmarkedItemIds.contains(canonicalId)
-                    val currentUserId = currentUserIdProvider()
-                    val hasReview = currentUserId?.let {
-                        viewMarketplaceListing.hasReview(listing.id.value, it)
-                    } ?: false
-                    _uiState.update {
-                        it.copy(
-                            detail = it.detail.copy(
-                                listing = listing.copy(id = canonicalId, isBookmarked = isBookmarked),
-                                isLoading = false,
-                                errorMessage = null,
-                                hasReview = hasReview
-                            ),
-                            currentUserId = currentUserId
-                        )
-                    }
-                }
-                is com.jdrms.bulletin.core.common.Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            detail = it.detail.copy(
-                                isLoading = false,
-                                errorMessage = result.exception.message ?: "Failed to load listing details."
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        detailController.load(listingId)
     }
 
     fun dismissListingDetail() {

@@ -14,8 +14,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -194,8 +194,10 @@ fun MainAppScaffold(
                 onDestinationPositioned = { destination, center ->
                     if (destination == AppDestination.PROFILE) profileTabCenter = center
                 },
-                profileSaveTrigger = profileSaveTrigger,
-                reducedMotion = platformReducedMotion(),
+                animationPreferences = NavbarAnimationPreferences(
+                    profileSaveTrigger = profileSaveTrigger,
+                    reducedMotion = platformReducedMotion()
+                ),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(100f)

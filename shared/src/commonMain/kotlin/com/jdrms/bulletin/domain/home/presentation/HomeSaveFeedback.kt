@@ -5,12 +5,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -65,8 +65,11 @@ internal fun HomeSaveCelebration(modifier: Modifier = Modifier, reducedMotion: B
             androidx.compose.foundation.Canvas(Modifier.size(180.dp)) {
                 val ringProgress = (progress.value / 0.684f).coerceIn(0f, 1f)
                 val radius = 44.dp.toPx() * (0.4f + ringProgress * 2.4f)
-                drawCircle(Color(0xFF9FD8CF).copy(alpha = 0.8f * (1f - ringProgress)), radius,
-                    style = Stroke(3.dp.toPx()))
+                drawCircle(
+                    Color(0xFF9FD8CF).copy(alpha = 0.8f * (1f - ringProgress)),
+                    radius,
+                    style = Stroke(3.dp.toPx())
+                )
                 repeat(8) { index ->
                     val dotProgress = ((progress.value - index * 0.037f) / 0.78f).coerceIn(0f, 1f)
                     val angle = index * (Math.PI / 4.0) - Math.PI / 2.0
@@ -93,18 +96,26 @@ internal fun HomeSaveCelebration(modifier: Modifier = Modifier, reducedMotion: B
             contentDescription = null,
             tint = SaveTeal,
             modifier = Modifier.graphicsLayer {
-                alpha = if (reducedMotion) 1f - progress.value else (1f - ((progress.value - 0.5f) / 0.5f).coerceIn(0f, 1f))
+                alpha = if (reducedMotion) {
+                    1f - progress.value
+                } else {
+                    1f - ((progress.value - 0.5f) / 0.5f).coerceIn(0f, 1f)
+                }
                 translationY = if (reducedMotion) 0f else -progress.value * 24.dp.toPx()
                 scaleX = iconScale
                 scaleY = iconScale
             }
         )
         if (!reducedMotion) {
-            Text("Saved", color = Color.White, style = MaterialTheme.typography.labelLarge,
+            Text(
+                "Saved",
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.align(Alignment.Center).padding(top = 76.dp).graphicsLayer {
                     alpha = ((progress.value - 0.12f) / 0.72f).coerceIn(0f, 1f) *
                         (1f - ((progress.value - 0.6f) / 0.4f).coerceIn(0f, 1f))
-                })
+                }
+            )
         }
     }
 }
