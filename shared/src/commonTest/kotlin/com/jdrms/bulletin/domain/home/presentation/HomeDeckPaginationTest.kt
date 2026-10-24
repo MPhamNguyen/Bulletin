@@ -115,7 +115,12 @@ class HomeDeckPaginationTest {
         val stale = CompletableDeferred<Unit>()
         f.page("old", cursor = "old")
         advanceUntilIdle()
-        f.responses.add { withContext(NonCancellable) { stale.await(); homePage("stale") } }
+        f.responses.add {
+            withContext(NonCancellable) {
+                stale.await()
+                homePage("stale")
+            }
+        }
         f.viewModel.loadNextPage()
         runCurrent()
         f.page("fresh")
@@ -131,7 +136,10 @@ class HomeDeckPaginationTest {
         val next = CompletableDeferred<Unit>()
         f.page("first", cursor = "first")
         advanceUntilIdle()
-        f.responses.add { next.await(); homePage("second", cursor = "second") }
+        f.responses.add {
+            next.await()
+            homePage("second", cursor = "second")
+        }
         f.viewModel.loadNextPage()
         f.viewModel.advanceCard(0)
         runCurrent()

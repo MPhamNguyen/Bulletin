@@ -5,9 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
+import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCursor
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
-import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import kotlinx.coroutines.CancellationException
@@ -58,7 +58,11 @@ class HomeViewModel(
         _uiState.update { state ->
             if (state.deckGeneration != expectedGeneration || state.currentIndex != expectedIndex ||
                 expectedIndex !in state.feed.indices
-            ) state else state.copy(currentIndex = expectedIndex + 1, prefetchEnabled = true)
+            ) {
+                state
+            } else {
+                state.copy(currentIndex = expectedIndex + 1, prefetchEnabled = true)
+            }
         }
     }
 
@@ -67,7 +71,8 @@ class HomeViewModel(
         _uiState.update { state ->
             val consumed = deck.eligible(state.feed.take(state.currentIndex)).size
             state.copy(
-                feed = deck.eligible(state.loadedItems), currentIndex = consumed,
+                feed = deck.eligible(state.loadedItems),
+                currentIndex = consumed,
                 deckGeneration = state.deckGeneration + 1
             )
         }

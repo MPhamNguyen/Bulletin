@@ -1,7 +1,7 @@
 package com.jdrms.bulletin.domain.home.presentation
 
-import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jdrms.bulletin.core.common.Result
@@ -31,11 +31,16 @@ import kotlinx.coroutines.test.setMain
 import kotlin.time.Instant
 
 internal fun homeItem(id: String) = HomeFeedItem(
-    HomeItemId(id), "Listing $id", "Available", HomePrice(10.0), HomeFeedCategory.TEXTBOOKS
+    HomeItemId(id),
+    "Listing $id",
+    "Available",
+    HomePrice(10.0),
+    HomeFeedCategory.TEXTBOOKS
 )
 
 internal fun homePage(vararg ids: String, cursor: String? = null) = HomeFeedPage(
-    ids.map(::homeItem), cursor?.let { HomeFeedCursor(Instant.fromEpochMilliseconds(100), HomeItemId(it)) }
+    ids.map(::homeItem),
+    cursor?.let { HomeFeedCursor(Instant.fromEpochMilliseconds(100), HomeItemId(it)) }
 )
 
 internal class HomeDeckFixture : HomeRepository, SessionRepository {
@@ -44,9 +49,18 @@ internal class HomeDeckFixture : HomeRepository, SessionRepository {
     var cancellations = 0
     override val state = MutableStateFlow<SessionState>(SessionState.Unauthenticated)
     val store = ViewModelStore()
-    val viewModel = ViewModelProvider.create(store, viewModelFactory {
-        initializer { HomeViewModel(GetPersonalizedFeed(this@HomeDeckFixture), UpdateUserPreferences(this@HomeDeckFixture), this@HomeDeckFixture) }
-    })[HomeViewModel::class]
+    val viewModel = ViewModelProvider.create(
+        store,
+        viewModelFactory {
+            initializer {
+                HomeViewModel(
+                    GetPersonalizedFeed(this@HomeDeckFixture),
+                    UpdateUserPreferences(this@HomeDeckFixture),
+                    this@HomeDeckFixture
+                )
+            }
+        }
+    )[HomeViewModel::class]
 
     fun page(vararg ids: String, cursor: String? = null) {
         responses.add { homePage(*ids, cursor = cursor) }
@@ -61,7 +75,10 @@ internal class HomeDeckFixture : HomeRepository, SessionRepository {
         return responses.removeFirst().invoke()
     }
     override suspend fun getPreferences(userId: String?) = UserPreferences()
-    override suspend fun updatePreferences(userId: String, preferences: UserPreferences): Result<Unit> = Result.Success(Unit)
+    override suspend fun updatePreferences(
+        userId: String,
+        preferences: UserPreferences
+    ): Result<Unit> = Result.Success(Unit)
     override suspend fun restore(): Result<StudentProfile?> = Result.Success(null)
     override fun authenticated(profile: StudentProfile) { state.value = SessionState.Authenticated(profile) }
     override fun unauthenticated() { state.value = SessionState.Unauthenticated }
