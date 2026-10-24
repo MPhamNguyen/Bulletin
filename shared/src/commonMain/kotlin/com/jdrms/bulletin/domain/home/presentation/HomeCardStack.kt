@@ -45,7 +45,7 @@ internal fun HomeCardStack(
     val motion = remember(current.id, state.deckGeneration, durationScale) { HomeCardMotion(durationScale) }
     val tray = remember(motion) { HomeTrayMotion(durationScale) }
     val trayScope = rememberCoroutineScope()
-    LaunchedEffect(state.interaction.card, state.interaction.tray.sentReceiptId) {
+    LaunchedEffect(tray, state.interaction.card, state.interaction.tray.sentReceiptId) {
         tray.settle(
             state.interaction.isTrayOpen || state.interaction.card == CardState.Leaving &&
                 state.interaction.departure?.kind == HomeDepartureKind.SENT,

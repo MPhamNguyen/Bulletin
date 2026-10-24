@@ -56,13 +56,13 @@ class HomeSaveCelebrationDeviceTest {
     }
 
     @Test
-    fun zero_scale_completes_save_and_consumes_confirmation_without_animation() {
+    fun zero_scale_completes_save_and_delivers_celebration_once() {
         var celebrations = 0
         fixture.show(compose, anchor = anchor, onCelebrate = { celebrations++ })
         swipeRight()
         compose.runOnIdle {
             assertEquals(1, fixture.home.uiState.value.currentIndex)
-            assertEquals(0, celebrations)
+            assertEquals(1, celebrations)
             assertTrue(fixture.home.uiState.value.interaction.pendingEffects.isEmpty())
         }
     }

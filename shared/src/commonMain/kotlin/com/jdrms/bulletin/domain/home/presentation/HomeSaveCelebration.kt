@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.home.presentation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -31,14 +32,13 @@ internal fun HomeConfirmedSaveCelebration(
     val celebrate by rememberUpdatedState(onCelebrate)
     val announcements = LocalHomeAnnouncements.current
     val saved = stringResource(Res.string.home_saved)
+    val delivered = remember(actions) { mutableSetOf<Long>() }
     val confirmed = state.pendingEffects.filterIsInstance<HomeEffect.SaveConfirmed>()
     LaunchedEffect(confirmed, state.departure?.id, anchor == null, durationScale) {
         confirmed.forEach { effect ->
             announcements.once("save:${effect.id}", saved)
-            if (anchor == null || durationScale == 0f) {
-                actions.onEffectConsumed(effect.id)
-            } else if (homeSaveCelebrationReady(effect, state)) {
-                celebrate(durationScale)
+            if (homeSaveCelebrationReady(effect, state) && delivered.add(effect.id)) {
+                if (anchor != null || durationScale == 0f) celebrate(durationScale)
                 actions.onEffectConsumed(effect.id)
             }
         }

@@ -21,6 +21,7 @@ internal class HomePlatformDeviceHarness {
     val celebrations = mutableListOf<Float>()
     val announcements = HomeAnnouncements()
     lateinit var actions: HomeCardActions
+    var replayedConfirmation by mutableStateOf<HomeEffect.SaveConfirmed?>(null)
     var scale by mutableFloatStateOf(0f)
     var tick by mutableIntStateOf(0)
 
@@ -39,7 +40,7 @@ internal class HomePlatformDeviceHarness {
                 CompositionLocalProvider(LocalHomeAnnouncements provides announcements) {
                     HomeStateAnnouncements(announcements, state.interaction)
                     Box(Modifier.fillMaxSize()) { HomeCardStack(state, actions, scale) }
-                    HomeConfirmedSaveCelebration(state.interaction, actions, Rect(0f, 0f, 48f, 48f), scale) {
+                    HomeConfirmedSaveCelebration(state.interaction.copy(pendingEffects = state.interaction.pendingEffects + listOfNotNull(replayedConfirmation)), actions, Rect(0f, 0f, 48f, 48f), scale) {
                         celebrations += it
                     }
                 }

@@ -25,13 +25,13 @@ internal class HomeTrayMotion(private val durationScale: Float) {
     fun follow(dyDp: Float, open: Boolean, scope: CoroutineScope) {
         job?.cancel()
         visible = true
-        job = scope.launch { progress.snapTo(homeTrayDragProgress(dyDp, open)) }
+        job = scope.launch(HomeMotionClock) { progress.snapTo(homeTrayDragProgress(dyDp, open)) }
     }
 
     fun settle(open: Boolean, scope: CoroutineScope) {
         job?.cancel()
         if (open) visible = true
-        job = scope.launch {
+        job = scope.launch(HomeMotionClock) {
             progress.animateTo(
                 if (open) 1f else 0f,
                 tween(homeMotionMillis(500, durationScale), easing = TraySettleEasing)

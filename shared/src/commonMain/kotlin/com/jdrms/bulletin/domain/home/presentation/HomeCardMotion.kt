@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val SnapEasing = CubicBezierEasing(0.2f, 0.9f, 0.3f, 1.15f)
 private val SettleEasing = CubicBezierEasing(0.22f, 0.85f, 0.25f, 1f)
@@ -60,7 +61,7 @@ internal class HomeCardMotion(private val durationScale: Float = 1f) {
 
     fun snapBack(scope: CoroutineScope) {
         snapJob?.cancel()
-        snapJob = scope.launch {
+        snapJob = scope.launch(HomeMotionClock) {
             animate(dragDp, 0f, animationSpec = tween(homeMotionMillis(320, durationScale), easing = SnapEasing)) {
                     value, _ ->
                 drag(value)
@@ -68,7 +69,7 @@ internal class HomeCardMotion(private val durationScale: Float = 1f) {
         }
     }
 
-    suspend fun leave(departure: HomeDeparture) {
+    suspend fun leave(departure: HomeDeparture): Unit = withContext(HomeMotionClock) {
         snapJob?.cancel()
         kind = departure.kind
         val duration = when (departure.kind) {

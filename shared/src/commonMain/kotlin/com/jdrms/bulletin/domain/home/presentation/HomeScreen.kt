@@ -34,7 +34,7 @@ private const val PREFETCH_REMAINING_ITEMS = 2
 fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
-    motionDurationScale: Float = 1f,
+    motionDurationScale: Float = rememberHomeMotionDurationScale(),
     profileAnchorInWindow: Rect? = null,
     onSaveCelebration: (Float) -> Unit = {},
     photoPlaybackPaused: Boolean = false

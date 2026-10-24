@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.domain.home.presentation.HomeMotionClock
 import com.jdrms.bulletin.domain.home.presentation.homeMotionMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -37,26 +38,31 @@ internal class ProfileTabCelebration {
     }
 
     fun play(scope: CoroutineScope, durationScale: Float, haptics: HapticFeedback) {
-        if (durationScale == 0f) return
         job?.cancel()
-        job = scope.launch {
+        job = scope.launch(HomeMotionClock) {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             ripple.snapTo(0f)
             pulse.snapTo(1f)
             coroutineScope {
                 launch { ripple.animateTo(1f, tween(homeMotionMillis(800, durationScale))) }
-                launch {
-                    pulse.animateTo(
-                        1f,
-                        keyframes {
-                            durationMillis = homeMotionMillis(420, durationScale)
-                            val ease = CubicBezierEasing(0.2f, 0.9f, 0.3f, 1.3f)
-                            1.25f at homeMotionMillis(126, durationScale) using ease
-                            1f at homeMotionMillis(420, durationScale) using ease
-                        }
-                    )
-                }
+                launch { animatePulse(durationScale) }
             }
         }
+    }
+
+    private suspend fun animatePulse(durationScale: Float) {
+        pulse.animateTo(
+            1f,
+            if (durationScale == 0f) {
+                tween(0)
+            } else {
+                keyframes {
+                    durationMillis = homeMotionMillis(420, durationScale)
+                    val ease = CubicBezierEasing(0.2f, 0.9f, 0.3f, 1.3f)
+                    1.25f at homeMotionMillis(126, durationScale) using ease
+                    1f at homeMotionMillis(420, durationScale) using ease
+                }
+            }
+        )
     }
 }
