@@ -79,6 +79,7 @@ fun MainAppScaffold(
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     val navigation = remember { MutableMainNavigationState() }
+    val profileTabAnchor = remember { ProfileTabAnchor() }
     val density = androidx.compose.ui.platform.LocalDensity.current
     val navigationBarInset = with(density) {
         WindowInsets.navigationBars.getBottom(this).toDp()
@@ -159,6 +160,7 @@ fun MainAppScaffold(
                 },
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
                 onFocused = navbarScrollBehavior::reveal,
+                profileIconModifier = profileTabAnchor.modifier,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(100f)
