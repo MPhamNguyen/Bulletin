@@ -5,6 +5,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.hasProgressBarRangeInfo
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
@@ -101,7 +103,7 @@ class HomeDeckCharacterizationTest {
     }
 
     @Test
-    fun exhaustedDeckCurrentlyShowsCaughtUpWhileAppending() {
+    fun exhaustedDeckShowsLoadingWhileAppendingThenContinues() {
         val cursor = HomeFeedCursor(Instant.fromEpochMilliseconds(100), HomeItemId("first"))
         val append = CompletableDeferred<HomeFeedPage>()
         val repository = DeckCharacterizationRepository(listOf(deckItem("first")), cursor, append)
@@ -110,11 +112,13 @@ class HomeDeckCharacterizationTest {
 
         swipeCard(right = true)
 
-        // Known bug: Feature 2 must replace this expectation with append-loading feedback.
-        compose.onNodeWithText("You're All Caught Up").assertExists()
+        compose.onNodeWithText("You're All Caught Up").assertDoesNotExist()
+        compose.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
         compose.runOnIdle { append.complete(HomeFeedPage(listOf(deckItem("second")), null)) }
         compose.onNodeWithText("Listing second").assertExists()
         compose.onNodeWithText("You're All Caught Up").assertDoesNotExist()
+        swipeCard(right = false)
+        compose.onNodeWithText("You're All Caught Up").assertExists()
     }
 
     private fun showDeck(

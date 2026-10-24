@@ -141,7 +141,7 @@ fun HomeScreen(
                         )
                     }
             )
-        } else if (uiState.isLoading) {
+        } else if (uiState.isDeckLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center

@@ -15,4 +15,6 @@ data class HomeUiState(
     val hasMore: Boolean = false,
     val nextCursor: HomeFeedCursor? = null,
     val errorMessage: String? = null
-)
+) {
+    val isDeckLoading: Boolean get() = isLoading || isLoadingMore
+}
