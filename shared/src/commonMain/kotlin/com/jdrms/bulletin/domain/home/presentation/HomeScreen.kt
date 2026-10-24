@@ -15,9 +15,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -43,6 +45,30 @@ fun HomeScreen(
             viewModel.loadNextPage()
         }
     }
+    val announcements = remember(viewModel) { HomeAnnouncements() }
+    CompositionLocalProvider(LocalHomeAnnouncements provides announcements) {
+        HomeScreenBody(
+            state,
+            viewModel,
+            motionDurationScale,
+            profileAnchorInWindow,
+            onSaveCelebration,
+            photoPlaybackPaused,
+            modifier
+        )
+    }
+}
+
+@Composable
+private fun HomeScreenBody(
+    state: HomeUiState,
+    viewModel: HomeViewModel,
+    motionDurationScale: Float,
+    profileAnchorInWindow: Rect?,
+    onSaveCelebration: (Float) -> Unit,
+    photoPlaybackPaused: Boolean,
+    modifier: Modifier
+) {
     HomeConfirmedSaveCelebration(
         state.interaction,
         viewModel,
@@ -52,6 +78,7 @@ fun HomeScreen(
     )
     val error = state.errorMessage
     Box(modifier = modifier.fillMaxSize()) {
+        HomeAnnouncementRegion(LocalHomeAnnouncements.current, state.interaction)
         HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow, photoPlaybackPaused)
         HomeSaveRetrySnackbar(state, viewModel, Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(1f))
         HomeAccountNotice(state.interaction.accountNotice, Modifier.align(Alignment.BottomCenter).padding(16.dp))

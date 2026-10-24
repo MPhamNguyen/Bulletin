@@ -24,8 +24,11 @@ import org.jetbrains.compose.resources.stringResource
 internal fun HomeSentReceiptHandshake(state: HomeInteractionState, actions: HomeCardActions, durationScale: Float) {
     val latest by rememberUpdatedState(state)
     val receiptId = state.tray.sentReceiptId
+    val announcements = LocalHomeAnnouncements.current
+    val sent = stringResource(Res.string.home_sent)
     LaunchedEffect(state.listingId, receiptId) {
         if (receiptId == null || !homeReceiptMatches(receiptId, state.listingId, state)) return@LaunchedEffect
+        announcements.once("sent:$receiptId", sent)
         delay(homeMotionMillis(HOME_RECEIPT_DWELL_MILLIS, durationScale).toLong())
         if (homeReceiptMatches(receiptId, state.listingId, latest)) actions.onSentReceiptCompleted(receiptId)
     }

@@ -16,17 +16,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import bulletin.shared.generated.resources.*
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import kotlinx.coroutines.CoroutineScope
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun HomeCardStack(
@@ -47,11 +52,26 @@ internal fun HomeCardStack(
             trayScope
         )
     }
+    val cardFocus = remember { FocusRequester() }
+    val composerFocus = remember { FocusRequester() }
+    HomeTrayFocus(state.interaction.card, cardFocus, composerFocus)
     val session = rememberHomeGestureSession(state.interaction, actions, motion, tray)
     HomeSentReceiptHandshake(state.interaction, actions, durationScale)
     HomeDepartureAnimation(state.interaction, current, actions, motion)
     val presentation =
         HomeStackPresentation(motion, tray, session, state.interaction, actions, durationScale, profileAnchor)
+    HomeStackDeck(state, current, photoPlaybackPaused, presentation, cardFocus, composerFocus)
+}
+
+@Composable
+private fun HomeStackDeck(
+    state: HomeUiState,
+    current: HomeFeedItem,
+    photoPlaybackPaused: Boolean,
+    presentation: HomeStackPresentation,
+    cardFocus: FocusRequester,
+    composerFocus: FocusRequester
+) {
     val cards = listOfNotNull(state.feed.getOrNull(state.currentIndex + 1), current)
     cards.forEach { item ->
         key(item.id) {
@@ -62,7 +82,9 @@ internal fun HomeCardStack(
                 front,
                 front && !photoPlaybackPaused && !state.interaction.isTrayOpen &&
                     state.interaction.card != CardState.Leaving,
-                presentation
+                presentation,
+                cardFocus,
+                composerFocus
             )
         }
     }
@@ -84,7 +106,9 @@ private fun HomeStackCard(
     index: Int,
     front: Boolean,
     active: Boolean,
-    presentation: HomeStackPresentation
+    presentation: HomeStackPresentation,
+    cardFocus: FocusRequester,
+    composerFocus: FocusRequester
 ) {
     val motion = presentation.motion
     val session = presentation.session
@@ -92,14 +116,22 @@ private fun HomeStackCard(
     // Pointer coordinates belong to this stationary wrapper; only its child is transformed.
     Box(
         Modifier.fillMaxSize().onGloballyPositioned { center.value = it.boundsInWindow().center }
-            .then(if (front) Modifier.homeCardGestures(session) else Modifier)
+            .then(
+                if (front) {
+                    Modifier.homeCardGestures(session).then(
+                        homeCardAccessibility(item, presentation.interaction, presentation.actions, cardFocus)
+                    )
+                } else {
+                    Modifier.semantics { hideFromAccessibility() }
+                }
+            )
     ) {
         Box(
             Modifier.fillMaxSize().homeCardLayer(front, motion) { density ->
                 homeSaveTarget(presentation.profileAnchor, center.value, density)
             }
         ) {
-            HomeStackCardContents(item, index, front, active, presentation)
+            HomeStackCardContents(item, index, front, active, presentation, composerFocus)
         }
     }
 }
@@ -110,32 +142,32 @@ private fun androidx.compose.foundation.layout.BoxScope.HomeStackCardContents(
     index: Int,
     front: Boolean,
     active: Boolean,
-    presentation: HomeStackPresentation
+    presentation: HomeStackPresentation,
+    composerFocus: FocusRequester
 ) {
-    val motion = presentation.motion
-    val tray = presentation.tray
     HomeFeedCard(
         item = item,
         cardIndex = index,
         isActive = active,
         modifier = Modifier.fillMaxSize(),
         mediaModifier = Modifier.graphicsLayer {
-            if (front) translationY = -tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
+            if (front) translationY = -presentation.tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
         }
     )
-    if (front && tray.visible) {
+    if (front && presentation.tray.visible) {
         HomeTrayPeek(
             presentation.interaction,
             presentation.actions,
-            { tray.progress.value },
+            { presentation.tray.progress.value },
             presentation.durationScale,
-            Modifier.align(Alignment.BottomCenter).padding(8.dp)
+            Modifier.align(Alignment.BottomCenter).padding(8.dp),
+            composerFocus
         )
     }
     if (front) {
-        HomeSwipeFeedback(motion::saveProgress, motion::passProgress, Modifier.padding(8.dp))
+        HomeSwipeFeedback(presentation.motion::saveProgress, presentation.motion::passProgress, Modifier.padding(8.dp))
     } else {
-        HomeNextCardShade(motion)
+        HomeNextCardShade(presentation.motion)
     }
 }
 
@@ -148,8 +180,11 @@ private fun HomeDepartureAnimation(
 ) {
     val latest by rememberUpdatedState(interaction)
     val departure = interaction.departure
+    val announcements = LocalHomeAnnouncements.current
+    val passed = stringResource(Res.string.home_passed)
     LaunchedEffect(motion, departure?.id) {
         if (departure == null || !homeDepartureMatches(departure, interaction, current.id)) return@LaunchedEffect
+        if (departure.kind == HomeDepartureKind.PASS) announcements.once("pass:${departure.id}", passed)
         motion.leave(departure)
         if (homeDepartureMatches(departure, latest, current.id)) actions.onExitCompleted(departure.id)
     }

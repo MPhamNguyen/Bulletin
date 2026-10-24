@@ -8,6 +8,8 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -18,30 +20,56 @@ import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun HomeTrayComposer(state: HomeInteractionState, actions: HomeTrayActions) {
+internal fun HomeTrayComposer(
+    state: HomeInteractionState,
+    actions: HomeTrayActions,
+    focus: FocusRequester
+) {
     val active = state.card == CardState.Open && state.messageAvailable && !state.tray.sent
+    val announcements = LocalHomeAnnouncements.current
+    val submit = {
+        announcements.beginSend()
+        actions.sendMessage()
+    }
     val valid = SellerMessage.create(state.tray.draft) is Result.Success
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = state.tray.draft,
-            onValueChange = actions::onDraftChanged,
-            enabled = active,
-            singleLine = true,
-            label = { Text(stringResource(Res.string.home_message_label)) },
-            placeholder = { Text(stringResource(Res.string.home_message_placeholder)) },
-            supportingText = { Text("${state.tray.draft.trim().length}/${SellerMessage.MAX_LENGTH}") },
-            isError = state.tray.error != null,
-            colors = BulletinTextFieldDefaults.colors(),
-            shape = MaterialTheme.shapes.medium,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                imeAction = ImeAction.Send
-            ),
-            keyboardActions = KeyboardActions(onSend = { if (active && valid) actions.sendMessage() }),
-            modifier = Modifier.weight(1f)
-        )
-        HomeSendButton(active && valid, state.card == CardState.Sending && !state.tray.sent, actions::sendMessage)
+        HomeComposerField(state, active, focus, submit, actions::onDraftChanged)
+        HomeSendButton(active && valid, state.card == CardState.Sending && !state.tray.sent, submit)
     }
+}
+
+@Composable
+private fun RowScope.HomeComposerField(
+    state: HomeInteractionState,
+    active: Boolean,
+    focus: FocusRequester,
+    submit: () -> Unit,
+    onDraftChanged: (String) -> Unit
+) {
+    val valid = SellerMessage.create(state.tray.draft) is Result.Success
+    OutlinedTextField(
+        value = state.tray.draft,
+        onValueChange = onDraftChanged,
+        enabled = active,
+        singleLine = true,
+        label = { Text(stringResource(Res.string.home_message_label)) },
+        placeholder = { Text(stringResource(Res.string.home_message_placeholder)) },
+        supportingText = {
+            Text(
+                stringResource(Res.string.home_message_length, state.tray.draft.trim().length, SellerMessage.MAX_LENGTH)
+            )
+        },
+        isError = state.tray.error != null,
+        colors = BulletinTextFieldDefaults.colors(),
+        shape = MaterialTheme.shapes.medium,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            imeAction = ImeAction.Send
+        ),
+        keyboardActions = KeyboardActions(onSend = { if (active && valid) submit() }),
+        modifier = Modifier.weight(1f).heightIn(min = 48.dp).focusRequester(focus)
+            .homeFocusTarget(HOME_COMPOSER_FOCUS_TAG)
+    )
 }
 
 @Composable

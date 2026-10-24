@@ -19,4 +19,11 @@
     <string name="home_decision_failed">Could not update this listing.</string>
     <string name="home_save_failed">Could not save listing.</string>
     <string name="home_retry">Retry</string>
+    <string name="home_action_save">Save</string>
+    <string name="home_action_pass">Pass</string>
+    <string name="home_action_message">Message seller</string>
+    <string name="home_saved">Saved</string>
+    <string name="home_passed">Passed</string>
+    <string name="home_card_description">%1$s, %2$s. Available actions: %3$s.</string>
+    <string name="home_message_length">%1$d/%2$d</string>
 </resources>

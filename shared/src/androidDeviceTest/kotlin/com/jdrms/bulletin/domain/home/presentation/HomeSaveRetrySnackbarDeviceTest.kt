@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -61,6 +63,15 @@ class HomeSaveRetrySnackbarDeviceTest {
         compose.runOnIdle { fixture.saveResult = { Result.Success(Unit) } }
         compose.onNodeWithText("Retry").performClick()
         compose.runOnIdle { assertEquals(2, fixture.saves.size) }
+    }
+
+    @Test
+    fun failure_snackbar_is_polite_and_retry_is_reachable() {
+        showFailure()
+        val polite = SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+        compose.onNode(hasText("Could not save listing.") and hasAnyAncestor(polite), useUnmergedTree = true)
+            .assertExists()
+        compose.onNodeWithText("Retry").assertHasClickAction().assertIsEnabled()
     }
 
     private fun showFailure() {

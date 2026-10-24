@@ -6,6 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import bulletin.shared.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 internal data class HomeSaveTarget(val xDp: Float, val yDp: Float)
 
@@ -27,9 +29,12 @@ internal fun HomeConfirmedSaveCelebration(
     onCelebrate: (Float) -> Unit
 ) {
     val celebrate by rememberUpdatedState(onCelebrate)
+    val announcements = LocalHomeAnnouncements.current
+    val saved = stringResource(Res.string.home_saved)
     val confirmed = state.pendingEffects.filterIsInstance<HomeEffect.SaveConfirmed>()
     LaunchedEffect(confirmed, state.departure?.id, anchor == null, durationScale) {
         confirmed.forEach { effect ->
+            announcements.once("save:${effect.id}", saved)
             if (anchor == null || durationScale == 0f) {
                 actions.onEffectConsumed(effect.id)
             } else if (homeSaveCelebrationReady(effect, state)) {
