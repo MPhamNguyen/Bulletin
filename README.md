@@ -39,7 +39,7 @@ Students can discover campus listings, buy or sell items, communicate with other
 | 👤 **Student Profiles** | View and edit student profile information and profile photos. |
 | 🚩 **Reporting & Blocking** | Report users or messages and block users. |
 | 📍 **Campus Discovery** | Support campus-relevant discovery without exposing precise locations to other users. |
-| 🏠 **Home Feed** | Provide a home feed; its repository currently uses in-memory data. |
+| 🏠 **Home Feed** | Discover listings through `MarketplaceHomeRepository`, backed by the Supabase marketplace source when configured. |
 
 > Feature availability depends on backend configuration. Recommendation personalization and production readiness are not claimed by the repository status below.
 
@@ -98,7 +98,7 @@ Save / Message ←→ Student Profile
 
 ### Home & Recommendations
 
-The home context currently uses an in-memory repository. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
+Home uses `MarketplaceHomeRepository` with the Supabase marketplace listing source when configured; Home preferences remain in memory. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
 
 ---
 
@@ -141,7 +141,7 @@ Business contexts use four layers:
 
 ### Backend Status
 
-`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home remains in memory. These bindings describe code paths, not verification against a deployed Supabase project.
+`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home reads through `MarketplaceHomeRepository`; Home preferences remain in memory. These bindings describe code paths, not verification against a deployed Supabase project.
 
 | Repository or port | Configured binding | In-memory use | Live project verification |
 | --- | --- | --- | --- |
