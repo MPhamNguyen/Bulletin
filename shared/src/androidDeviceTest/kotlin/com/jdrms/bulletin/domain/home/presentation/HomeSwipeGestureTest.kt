@@ -85,6 +85,16 @@ class HomeSwipeGestureTest {
     }
 
     @Test
+    fun fastFlingBelowDistanceThresholdCommits() {
+        showDeck()
+        compose.onRoot().performTouchInput {
+            swipe(Offset(width * 0.5f, height * 0.25f), Offset(width * 0.6f, height * 0.25f), durationMillis = 40)
+        }
+        compose.runOnIdle { assertEquals(listOf(HomeItemId("first")), saves.saved) }
+        compose.onNodeWithText("Listing first").assertDoesNotExist()
+    }
+
+    @Test
     fun secondPointerCancelsDrag() {
         showDeck()
         compose.onRoot().performTouchInput {

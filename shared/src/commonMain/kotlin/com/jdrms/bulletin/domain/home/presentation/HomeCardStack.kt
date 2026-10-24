@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.home.presentation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,9 +12,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import kotlinx.coroutines.CoroutineScope
@@ -51,22 +55,13 @@ private fun HomeStackCard(
 ) {
     // Pointer coordinates belong to this stationary wrapper; only its child is transformed.
     Box(Modifier.fillMaxSize().then(if (front) Modifier.homeCardGestures(session) else Modifier)) {
-        Box(
-            Modifier.fillMaxSize().graphicsLayer {
-                if (front) {
-                    val pose = motion.pose(size.width / density)
-                    translationX = pose.xDp * density
-                    translationY = pose.yDp * density
-                    rotationZ = pose.rotation
-                    scaleX = pose.scale
-                    scaleY = pose.scale
-                    alpha = pose.alpha
-                    transformOrigin = TransformOrigin(0.5f, pose.pivotY)
-                }
-            }
-        ) {
+        Box(Modifier.fillMaxSize().homeCardLayer(front, motion)) {
             HomeFeedCard(item = item, cardIndex = index, isActive = active, modifier = Modifier.fillMaxSize())
-            if (front) HomeSwipeFeedback(motion::saveProgress, motion::passProgress, Modifier.padding(8.dp))
+            if (front) {
+                HomeSwipeFeedback(motion::saveProgress, motion::passProgress, Modifier.padding(8.dp))
+            } else {
+                HomeNextCardShade(motion)
+            }
         }
     }
 }
@@ -134,3 +129,34 @@ internal fun homeDepartureMatches(
     currentId: HomeItemId
 ): Boolean = interaction.card == CardState.Leaving && interaction.departure == departure &&
     departure.listingId == currentId
+
+private fun Modifier.homeCardLayer(front: Boolean, motion: HomeCardMotion): Modifier = graphicsLayer {
+    if (front) {
+        val pose = motion.pose(size.width / density)
+        translationX = pose.xDp * density
+        translationY = pose.yDp * density
+        rotationZ = pose.rotation
+        scaleX = pose.scale
+        scaleY = pose.scale
+        alpha = pose.alpha
+        transformOrigin = TransformOrigin(0.5f, pose.pivotY)
+    } else {
+        val pose = homeNextCardPose(motion.promotion)
+        translationX = 0f
+        translationY = 0f
+        rotationZ = 0f
+        alpha = 1f
+        scaleX = pose.scale
+        scaleY = pose.scale
+        transformOrigin = TransformOrigin(0.5f, 0f)
+    }
+}
+
+@Composable
+private fun HomeNextCardShade(motion: HomeCardMotion) {
+    Box(
+        Modifier.fillMaxSize().padding(8.dp).clip(MaterialTheme.shapes.large).drawBehind {
+            drawRect(BulletinFeedCardDefaults.scrim.copy(alpha = homeNextCardPose(motion.promotion).shadeAlpha))
+        }
+    )
+}
