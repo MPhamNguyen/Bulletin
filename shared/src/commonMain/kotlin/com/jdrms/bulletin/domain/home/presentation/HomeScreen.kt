@@ -20,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,16 +28,29 @@ import androidx.compose.ui.unit.dp
 private const val PREFETCH_REMAINING_ITEMS = 2
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier, motionDurationScale: Float = 1f) {
+fun HomeScreen(
+    viewModel: HomeViewModel,
+    modifier: Modifier = Modifier,
+    motionDurationScale: Float = 1f,
+    profileAnchorInWindow: Rect? = null,
+    onSaveCelebration: (Float) -> Unit = {}
+) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(state.currentIndex, state.feed.size, state.hasMore, state.nextCursor) {
         if (state.prefetchEnabled && shouldPrefetchHomeFeedPage(state.currentIndex, state.feed.size, state.hasMore)) {
             viewModel.loadNextPage()
         }
     }
+    HomeConfirmedSaveCelebration(
+        state.interaction,
+        viewModel,
+        profileAnchorInWindow,
+        motionDurationScale,
+        onSaveCelebration
+    )
     val error = state.errorMessage
     Box(modifier = modifier.fillMaxSize()) {
-        HomeDeckContent(state, viewModel, motionDurationScale)
+        HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow)
         state.interaction.accountNotice?.let {
             Text(
                 homeInteractionErrorText(it),
@@ -57,9 +71,9 @@ fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier, motionDu
 }
 
 @Composable
-private fun HomeDeckContent(state: HomeUiState, viewModel: HomeViewModel, durationScale: Float) {
+private fun HomeDeckContent(state: HomeUiState, viewModel: HomeViewModel, durationScale: Float, anchor: Rect?) {
     when {
-        state.feed.getOrNull(state.currentIndex) != null -> HomeCardStack(state, viewModel, durationScale)
+        state.feed.getOrNull(state.currentIndex) != null -> HomeCardStack(state, viewModel, durationScale, anchor)
         state.isDeckLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }

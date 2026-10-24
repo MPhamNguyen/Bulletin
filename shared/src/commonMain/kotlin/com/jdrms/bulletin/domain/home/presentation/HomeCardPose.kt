@@ -9,7 +9,13 @@ internal data class HomeCardPose(
     val pivotY: Float = 0.9f
 )
 
-internal fun homeCardPose(dragDp: Float, kind: HomeDepartureKind?, exit: Float, widthDp: Float): HomeCardPose {
+internal fun homeCardPose(
+    dragDp: Float,
+    kind: HomeDepartureKind?,
+    exit: Float,
+    widthDp: Float,
+    target: HomeSaveTarget? = null
+): HomeCardPose {
     val rotation = dragDp * 0.05f
     val progress = exit.coerceIn(0f, 1f)
     return when (kind) {
@@ -19,9 +25,9 @@ internal fun homeCardPose(dragDp: Float, kind: HomeDepartureKind?, exit: Float, 
             rotation = interpolate(rotation, -22f, progress),
             alpha = 1f - progress
         )
-        // Profile targeting belongs to 7B. Retain the release position and existing card shape for now.
         HomeDepartureKind.SAVE -> HomeCardPose(
-            xDp = dragDp,
+            xDp = interpolate(dragDp, target?.xDp ?: dragDp, progress),
+            yDp = interpolate(0f, target?.yDp ?: 0f, progress),
             rotation = rotation * (1f - progress),
             scale = interpolate(1f, 0.05f, progress),
             alpha = 1f - progress,

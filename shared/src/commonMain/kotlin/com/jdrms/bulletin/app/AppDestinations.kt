@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.blockedUsersViewModelFactory
@@ -34,10 +35,16 @@ internal fun MainAppContent(
     navigation: MutableMainNavigationState,
     models: MainScaffoldModels,
     profilePresentation: ProfilePresentation,
-    onContentNoLongerScrollable: () -> Unit
+    onContentNoLongerScrollable: () -> Unit,
+    profileAnchorInWindow: Rect? = null,
+    onSaveCelebration: (Float) -> Unit = {}
 ) {
     when (navigation.currentDestination) {
-        AppDestination.HOME -> HomeScreen(models.home)
+        AppDestination.HOME -> HomeScreen(
+            models.home,
+            profileAnchorInWindow = profileAnchorInWindow,
+            onSaveCelebration = onSaveCelebration
+        )
         AppDestination.MARKETPLACE -> {
             val conversationActions = ListingConversationActions(container, navigation, models.messages)
             MarketplaceScreen(
@@ -185,4 +192,3 @@ private fun profileReviewCallback(
             comment = comment
         )
     }
-

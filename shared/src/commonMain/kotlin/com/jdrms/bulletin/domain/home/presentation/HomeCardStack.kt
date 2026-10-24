@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -15,8 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
@@ -24,7 +29,12 @@ import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import kotlinx.coroutines.CoroutineScope
 
 @Composable
-internal fun HomeCardStack(state: HomeUiState, actions: HomeCardActions, durationScale: Float) {
+internal fun HomeCardStack(
+    state: HomeUiState,
+    actions: HomeCardActions,
+    durationScale: Float,
+    profileAnchor: Rect? = null
+) {
     val current = state.feed.getOrNull(state.currentIndex) ?: return
     val motion = remember(current.id, state.deckGeneration, durationScale) { HomeCardMotion(durationScale) }
     val tray = remember(motion) { HomeTrayMotion(durationScale) }
@@ -39,7 +49,8 @@ internal fun HomeCardStack(state: HomeUiState, actions: HomeCardActions, duratio
     val session = rememberHomeGestureSession(state.interaction, actions, motion, tray)
     HomeSentReceiptHandshake(state.interaction, actions, durationScale)
     HomeDepartureAnimation(state.interaction, current, actions, motion)
-    val presentation = HomeStackPresentation(motion, tray, session, state.interaction, actions, durationScale)
+    val presentation =
+        HomeStackPresentation(motion, tray, session, state.interaction, actions, durationScale, profileAnchor)
     val cards = listOfNotNull(state.feed.getOrNull(state.currentIndex + 1), current)
     cards.forEach { item ->
         key(item.id) {
@@ -61,7 +72,8 @@ private data class HomeStackPresentation(
     val session: HomeGestureSession,
     val interaction: HomeInteractionState,
     val actions: HomeCardActions,
-    val durationScale: Float
+    val durationScale: Float,
+    val profileAnchor: Rect?
 )
 
 @Composable
@@ -73,34 +85,55 @@ private fun HomeStackCard(
     presentation: HomeStackPresentation
 ) {
     val motion = presentation.motion
-    val tray = presentation.tray
     val session = presentation.session
+    val center = remember { mutableStateOf<Offset?>(null) }
     // Pointer coordinates belong to this stationary wrapper; only its child is transformed.
-    Box(Modifier.fillMaxSize().then(if (front) Modifier.homeCardGestures(session) else Modifier)) {
-        Box(Modifier.fillMaxSize().homeCardLayer(front, motion)) {
-            HomeFeedCard(
-                item = item,
-                cardIndex = index,
-                isActive = active,
-                modifier = Modifier.fillMaxSize().graphicsLayer {
-                    if (front) translationY = -tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
-                }
-            )
-            if (front && tray.visible) {
-                HomeTrayPeek(
-                    presentation.interaction,
-                    presentation.actions,
-                    { tray.progress.value },
-                    presentation.durationScale,
-                    Modifier.align(Alignment.BottomCenter).padding(8.dp)
-                )
+    Box(
+        Modifier.fillMaxSize().onGloballyPositioned { center.value = it.boundsInWindow().center }
+            .then(if (front) Modifier.homeCardGestures(session) else Modifier)
+    ) {
+        Box(
+            Modifier.fillMaxSize().homeCardLayer(front, motion) { density ->
+                homeSaveTarget(presentation.profileAnchor, center.value, density)
             }
-            if (front) {
-                HomeSwipeFeedback(motion::saveProgress, motion::passProgress, Modifier.padding(8.dp))
-            } else {
-                HomeNextCardShade(motion)
-            }
+        ) {
+            HomeStackCardContents(item, index, front, active, presentation)
         }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.HomeStackCardContents(
+    item: HomeFeedItem,
+    index: Int,
+    front: Boolean,
+    active: Boolean,
+    presentation: HomeStackPresentation
+) {
+    val motion = presentation.motion
+    val tray = presentation.tray
+    HomeFeedCard(
+        item = item,
+        cardIndex = index,
+        isActive = active,
+        modifier = Modifier.fillMaxSize(),
+        mediaModifier = Modifier.graphicsLayer {
+            if (front) translationY = -tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
+        }
+    )
+    if (front && tray.visible) {
+        HomeTrayPeek(
+            presentation.interaction,
+            presentation.actions,
+            { tray.progress.value },
+            presentation.durationScale,
+            Modifier.align(Alignment.BottomCenter).padding(8.dp)
+        )
+    }
+    if (front) {
+        HomeSwipeFeedback(motion::saveProgress, motion::passProgress, Modifier.padding(8.dp))
+    } else {
+        HomeNextCardShade(motion)
     }
 }
 
@@ -177,9 +210,13 @@ internal fun homeDepartureMatches(
 ): Boolean = interaction.card == CardState.Leaving && interaction.departure == departure &&
     departure.listingId == currentId
 
-private fun Modifier.homeCardLayer(front: Boolean, motion: HomeCardMotion): Modifier = graphicsLayer {
+private fun Modifier.homeCardLayer(
+    front: Boolean,
+    motion: HomeCardMotion,
+    target: (Float) -> HomeSaveTarget?
+): Modifier = graphicsLayer {
     if (front) {
-        val pose = motion.pose(size.width / density)
+        val pose = motion.pose(size.width / density, target(density))
         translationX = pose.xDp * density
         translationY = pose.yDp * density
         rotationZ = pose.rotation

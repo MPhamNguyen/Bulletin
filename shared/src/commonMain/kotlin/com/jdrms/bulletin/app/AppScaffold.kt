@@ -2,8 +2,10 @@ package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -12,14 +14,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -38,6 +43,7 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
@@ -68,6 +74,7 @@ internal class MainScaffoldModels(
     val messages: MessagesViewModel
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MainAppScaffold(
     appContainer: AppContainer? = null,
@@ -80,6 +87,10 @@ fun MainAppScaffold(
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     val navigation = remember { MutableMainNavigationState() }
     val profileTabAnchor = remember { ProfileTabAnchor() }
+    val profileCelebration = remember { ProfileTabCelebration() }
+    val celebrationScope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
+    val keyboardVisible = WindowInsets.isImeVisible
     val density = androidx.compose.ui.platform.LocalDensity.current
     val navigationBarInset = with(density) {
         WindowInsets.navigationBars.getBottom(this).toDp()
@@ -119,6 +130,14 @@ fun MainAppScaffold(
         navbarScrollBehavior.onDestinationChanged()
     }
 
+    val homeState by models.home.uiState.collectAsState()
+    LaunchedEffect(navigation.currentDestination, homeState.interaction.pendingEffects) {
+        if (navigation.currentDestination != AppDestination.HOME) {
+            homeState.interaction.pendingEffects.filterIsInstance<
+                com.jdrms.bulletin.domain.home.presentation.HomeEffect.SaveConfirmed
+                >().forEach { models.home.onEffectConsumed(it.id) }
+        }
+    }
     BulletinTheme(darkTheme = darkTheme) {
         Box(Modifier.fillMaxSize()) {
             Scaffold(
@@ -148,7 +167,11 @@ fun MainAppScaffold(
                             navigation,
                             models,
                             profilePresentation,
-                            onContentNoLongerScrollable = navbarScrollBehavior::reveal
+                            onContentNoLongerScrollable = navbarScrollBehavior::reveal,
+                            profileAnchorInWindow = profileTabAnchor.bounds(
+                                navigation.showsBottomNavigation && navbarScrollBehavior.isVisible && !keyboardVisible
+                            ),
+                            onSaveCelebration = { scale -> profileCelebration.play(celebrationScope, scale, haptics) }
                         )
                     }
                 }
@@ -160,7 +183,9 @@ fun MainAppScaffold(
                 },
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
                 onFocused = navbarScrollBehavior::reveal,
-                profileIconModifier = profileTabAnchor.modifier,
+                profileIconModifier = profileTabAnchor.modifier.then(
+                    profileCelebration.modifier(BulletinExtras.colors.success)
+                ),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(100f)

@@ -56,7 +56,8 @@ fun HomeFeedCard(
     item: HomeFeedItem,
     modifier: Modifier = Modifier,
     cardIndex: Int = 0,
-    isActive: Boolean = true
+    isActive: Boolean = true,
+    mediaModifier: Modifier = Modifier
 ) {
     var descriptionExpanded by rememberSaveable(item.id.value, cardIndex) { mutableStateOf(false) }
     val photoUrls = remember(item.photoUrls, item.imageUrl) {
@@ -85,6 +86,7 @@ fun HomeFeedCard(
             .fillMaxSize()
             .padding(8.dp)
             .clip(MaterialTheme.shapes.large)
+            .then(mediaModifier)
             .pointerInput(item.id.value, cardIndex) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)

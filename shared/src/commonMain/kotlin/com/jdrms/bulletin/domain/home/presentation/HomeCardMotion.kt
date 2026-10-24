@@ -38,7 +38,13 @@ internal class HomeCardMotion(private val durationScale: Float = 1f) {
         promotion = homeDragPromotion(valueDp)
     }
 
-    fun pose(widthDp: Float): HomeCardPose = homeCardPose(dragDp, kind, exit, widthDp)
+    fun pose(widthDp: Float, target: HomeSaveTarget? = null): HomeCardPose = homeCardPose(
+        dragDp,
+        kind,
+        exit,
+        widthDp,
+        target
+    )
 
     fun saveProgress(): Float = if (kind == HomeDepartureKind.SAVE) {
         1f
