@@ -1,0 +1,60 @@
+package com.jdrms.bulletin.domain.home.presentation
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
+import bulletin.shared.generated.resources.*
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
+import org.jetbrains.compose.resources.stringResource
+
+@Composable
+internal fun HomeTrayComposer(state: HomeInteractionState, actions: HomeTrayActions) {
+    val active = state.card == CardState.Open && state.messageAvailable && !state.tray.sent
+    val valid = SellerMessage.create(state.tray.draft) is Result.Success
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = state.tray.draft,
+            onValueChange = actions::onDraftChanged,
+            enabled = active,
+            singleLine = true,
+            label = { Text(stringResource(Res.string.home_message_label)) },
+            placeholder = { Text(stringResource(Res.string.home_message_placeholder)) },
+            supportingText = { Text("${state.tray.draft.trim().length}/${SellerMessage.MAX_LENGTH}") },
+            isError = state.tray.error != null,
+            colors = BulletinTextFieldDefaults.colors(),
+            shape = MaterialTheme.shapes.medium,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Send
+            ),
+            keyboardActions = KeyboardActions(onSend = { if (active && valid) actions.sendMessage() }),
+            modifier = Modifier.weight(1f)
+        )
+        HomeSendButton(active && valid, state.card == CardState.Sending && !state.tray.sent, actions::sendMessage)
+    }
+}
+
+@Composable
+private fun HomeSendButton(enabled: Boolean, sending: Boolean, onSend: () -> Unit) {
+    IconButton(onClick = onSend, enabled = enabled, modifier = Modifier.size(48.dp)) {
+        if (sending) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else {
+            Icon(Icons.AutoMirrored.Filled.Send, stringResource(Res.string.home_send))
+        }
+    }
+}

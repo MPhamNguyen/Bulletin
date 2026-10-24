@@ -1,0 +1,22 @@
+<resources>
+    <string name="home_reply_available">Is this still available?</string>
+    <string name="home_reply_meet">Where can we meet?</string>
+    <string name="home_reply_photos">Can I see more photos?</string>
+    <string name="home_reply_price">Is the price negotiable?</string>
+    <string name="home_message_placeholder">Write a message…</string>
+    <string name="home_message_label">Message to seller</string>
+    <string name="home_send">Send message</string>
+    <string name="home_sending">Sending…</string>
+    <string name="home_sent">Message sent</string>
+    <string name="home_message_bubble">Message</string>
+    <string name="home_close_tray">Close message tray</string>
+    <string name="home_blank_message">Write a message before sending.</string>
+    <string name="home_long_message">Your message is too long.</string>
+    <string name="home_signed_out">Sign in to save listings or message sellers.</string>
+    <string name="home_listing_unavailable">This listing is no longer available.</string>
+    <string name="home_own_listing">You cannot message yourself.</string>
+    <string name="home_message_failed">Message not sent. Try again.</string>
+    <string name="home_decision_failed">Could not update this listing.</string>
+    <string name="home_save_failed">Could not save listing.</string>
+    <string name="home_retry">Retry</string>
+</resources>

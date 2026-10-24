@@ -37,6 +37,14 @@ fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier, motionDu
     val error = state.errorMessage
     Box(modifier = modifier.fillMaxSize()) {
         HomeDeckContent(state, viewModel, motionDurationScale)
+        state.interaction.accountNotice?.let {
+            Text(
+                homeInteractionErrorText(it),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+            )
+        }
         if (state.feed.getOrNull(state.currentIndex) != null && error != null) {
             NextPageError(
                 message = error,

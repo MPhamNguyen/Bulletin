@@ -15,7 +15,9 @@ internal class HomeGestureSession(
     val onAxis: (CardGestureResolver.Axis) -> Unit,
     val onDrag: (Float) -> Unit,
     val onRelease: (CardGestureResolver.Release) -> Unit,
-    val onCancel: () -> Unit
+    val onCancel: () -> Unit,
+    val onVerticalDrag: (Float, Boolean) -> Unit = { _, _ -> },
+    val isTapOnMedia: (Float, Float) -> Boolean = { _, _ -> true }
 )
 
 /** Attach to a wrapper OUTSIDE the card's graphicsLayer. Children retain taps and consumed scrolls. */
@@ -28,7 +30,13 @@ internal fun Modifier.homeCardGestures(session: HomeGestureSession): Modifier = 
         var completed = false
         try {
             val sample = readHomeCardDrag(down, session, density, viewConfiguration.touchSlop, isOpen)
-            if (sample.cancelled) session.onCancel() else session.onRelease(sample.resolve(isOpen))
+            if (sample.cancelled) {
+                session.onCancel()
+            } else {
+                session.onRelease(
+                    sample.resolve(isOpen, session.isTapOnMedia(down.position.y / density, size.height / density))
+                )
+            }
             completed = true
         } finally {
             if (!completed) session.onCancel()
@@ -63,7 +71,11 @@ private class HomePointerDrag(val down: PointerInputChange, val density: Float, 
         }
         if (axis != null) {
             change.consume()
-            if (axis == CardGestureResolver.Axis.X) session.onDrag(sample.dxDp)
+            if (axis == CardGestureResolver.Axis.X) {
+                session.onDrag(sample.dxDp)
+            } else {
+                session.onVerticalDrag(sample.dyDp, isOpen)
+            }
         }
     }
 }
@@ -91,5 +103,5 @@ private suspend fun AwaitPointerEventScope.readHomeCardDrag(
     }
 }
 
-private fun HomeGestureSample.resolve(isOpen: Boolean): CardGestureResolver.Release =
-    CardGestureResolver.resolveRelease(axis, dxDp, dyDp, vxDpPerMs, vyDpPerMs, isOpen, tapOnMedia = true)
+private fun HomeGestureSample.resolve(isOpen: Boolean, tapOnMedia: Boolean): CardGestureResolver.Release =
+    CardGestureResolver.resolveRelease(axis, dxDp, dyDp, vxDpPerMs, vyDpPerMs, isOpen, tapOnMedia)

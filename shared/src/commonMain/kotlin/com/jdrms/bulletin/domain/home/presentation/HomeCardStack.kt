@@ -11,6 +11,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -26,8 +27,19 @@ import kotlinx.coroutines.CoroutineScope
 internal fun HomeCardStack(state: HomeUiState, actions: HomeCardActions, durationScale: Float) {
     val current = state.feed.getOrNull(state.currentIndex) ?: return
     val motion = remember(current.id, state.deckGeneration, durationScale) { HomeCardMotion(durationScale) }
-    val session = rememberHomeGestureSession(state.interaction, actions, motion)
+    val tray = remember(motion) { HomeTrayMotion(durationScale) }
+    val trayScope = rememberCoroutineScope()
+    LaunchedEffect(state.interaction.card, state.interaction.tray.sentReceiptId) {
+        tray.settle(
+            state.interaction.isTrayOpen || state.interaction.card == CardState.Leaving &&
+                state.interaction.departure?.kind == HomeDepartureKind.SENT,
+            trayScope
+        )
+    }
+    val session = rememberHomeGestureSession(state.interaction, actions, motion, tray)
+    HomeSentReceiptHandshake(state.interaction, actions, durationScale)
     HomeDepartureAnimation(state.interaction, current, actions, motion)
+    val presentation = HomeStackPresentation(motion, tray, session, state.interaction, actions, durationScale)
     val cards = listOfNotNull(state.feed.getOrNull(state.currentIndex + 1), current)
     cards.forEach { item ->
         key(item.id) {
@@ -37,12 +49,20 @@ internal fun HomeCardStack(state: HomeUiState, actions: HomeCardActions, duratio
                 state.currentIndex + if (front) 0 else 1,
                 front,
                 front && !state.interaction.isTrayOpen && state.interaction.card != CardState.Leaving,
-                motion,
-                session
+                presentation
             )
         }
     }
 }
+
+private data class HomeStackPresentation(
+    val motion: HomeCardMotion,
+    val tray: HomeTrayMotion,
+    val session: HomeGestureSession,
+    val interaction: HomeInteractionState,
+    val actions: HomeCardActions,
+    val durationScale: Float
+)
 
 @Composable
 private fun HomeStackCard(
@@ -50,13 +70,31 @@ private fun HomeStackCard(
     index: Int,
     front: Boolean,
     active: Boolean,
-    motion: HomeCardMotion,
-    session: HomeGestureSession
+    presentation: HomeStackPresentation
 ) {
+    val motion = presentation.motion
+    val tray = presentation.tray
+    val session = presentation.session
     // Pointer coordinates belong to this stationary wrapper; only its child is transformed.
     Box(Modifier.fillMaxSize().then(if (front) Modifier.homeCardGestures(session) else Modifier)) {
         Box(Modifier.fillMaxSize().homeCardLayer(front, motion)) {
-            HomeFeedCard(item = item, cardIndex = index, isActive = active, modifier = Modifier.fillMaxSize())
+            HomeFeedCard(
+                item = item,
+                cardIndex = index,
+                isActive = active,
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    if (front) translationY = -tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
+                }
+            )
+            if (front && tray.visible) {
+                HomeTrayPeek(
+                    presentation.interaction,
+                    presentation.actions,
+                    { tray.progress.value },
+                    presentation.durationScale,
+                    Modifier.align(Alignment.BottomCenter).padding(8.dp)
+                )
+            }
             if (front) {
                 HomeSwipeFeedback(motion::saveProgress, motion::passProgress, Modifier.padding(8.dp))
             } else {
@@ -86,7 +124,8 @@ private fun HomeDepartureAnimation(
 private fun rememberHomeGestureSession(
     interaction: HomeInteractionState,
     actions: HomeCardActions,
-    motion: HomeCardMotion
+    motion: HomeCardMotion,
+    tray: HomeTrayMotion
 ): HomeGestureSession {
     val latest by rememberUpdatedState(interaction)
     val scope = rememberCoroutineScope()
@@ -98,8 +137,16 @@ private fun rememberHomeGestureSession(
                 actions.onGestureEvent(if (axis == CardGestureResolver.Axis.X) CardEvent.DRAG_X else CardEvent.DRAG_Y)
             },
             onDrag = motion::drag,
-            onRelease = { release -> releaseHomeCard(release, latest, actions, motion, scope) },
-            onCancel = { releaseHomeCard(CardGestureResolver.Release.CANCEL, latest, actions, motion, scope) }
+            onRelease = { release ->
+                releaseHomeCard(release, latest, actions, motion, scope)
+                tray.settle(latest.isTrayOpen, scope)
+            },
+            onCancel = {
+                releaseHomeCard(CardGestureResolver.Release.CANCEL, latest, actions, motion, scope)
+                tray.settle(latest.isTrayOpen, scope)
+            },
+            onVerticalDrag = { dy, open -> if (latest.messageAvailable) tray.follow(dy, open, scope) },
+            isTapOnMedia = { yDp, heightDp -> yDp < heightDp - HOME_TRAY_LIFT_DP * tray.progress.value }
         )
     }
 }
