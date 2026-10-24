@@ -53,7 +53,8 @@ object SupabaseMessagesMapper {
             participants = dto.participants.map { participant ->
                 ConversationParticipant(
                     id = SenderId(participant.userId),
-                    displayName = participant.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME
+                    displayName = participant.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
+                    lastReadAt = participant.lastReadAt?.let(Instant::parse)
                 )
             },
             listingId = dto.listingId?.let(::ListingReferenceId),
@@ -66,7 +67,8 @@ object SupabaseMessagesMapper {
     fun toParticipant(dto: SupabaseConversationParticipantDto): ConversationParticipant {
         return ConversationParticipant(
             id = SenderId(dto.userId),
-            displayName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME
+            displayName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
+            lastReadAt = dto.lastReadAt?.let(Instant::parse)
         )
     }
 

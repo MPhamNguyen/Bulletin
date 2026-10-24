@@ -96,6 +96,9 @@ class InboxStateOwner(
     fun reconcileMessages(conversationId: ConversationId, messages: List<Message>): Result<Unit> =
         updateConversation(conversationId) { conversation -> conversation.reconcileMessages(messages) }
 
+    fun recordReadAt(conversationId: ConversationId, readerId: SenderId, readAt: kotlin.time.Instant): Result<Unit> =
+        updateConversation(conversationId) { conversation -> conversation.recordReadAt(readerId, readAt) }
+
     private fun updateConversation(
         conversationId: ConversationId,
         change: (Conversation) -> Result<Conversation>
@@ -142,6 +145,7 @@ class InboxStateOwner(
 
     private suspend fun refreshFor(userId: SenderId) = refreshMutex.withLock {
         if (state.value.viewerId != userId) return@withLock
+        mutableState.update { it.copy(isLoading = true) }
         val result = getConversations()
         if (state.value.viewerId != userId) return@withLock
         when (result) {

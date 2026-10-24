@@ -39,6 +39,7 @@ class InMemoryMarketplaceRepository(
                 condition = listing.condition.toMarketplaceCondition(),
                 isBookmarked = listing.isBookmarked,
                 createdAtMillis = listing.createdAtMillis,
+                photos = listing.photos,
                 updatedAtMillis = listing.updatedAtMillis
             )
         }

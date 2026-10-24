@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,18 @@ object BulletinFeedCardDefaults {
     val scrim = Color(0xFF070B13)
     val content = Color(0xFFF0F4F8)
     val secondaryContent = Color(0xFFD3E0F0)
+}
+
+object BulletinConversationDefaults {
+    private val isDark: Boolean
+        @Composable get() = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+    val unreadGradientStart: Color
+        @Composable get() = if (isDark) Color(0xFF193A67) else Color(0xFFDCEBFF)
+    val unreadGradientEnd: Color
+        @Composable get() = if (isDark) Color(0xFF22495D) else Color(0xFFDDF3F0)
+    val unreadBorder: Color
+        @Composable get() = if (isDark) Color(0xFF77A7F7) else Color(0xFF3E5C76)
 }
 
 // Derived tints/shades (light)

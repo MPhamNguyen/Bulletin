@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
@@ -37,11 +39,13 @@ class InMemoryMessagesRepository(
 ) : MessagesRepository, MessagesObserver, InboxObserver {
     private val mutex = Mutex()
     private val inserts = MutableSharedFlow<Message>(extraBufferCapacity = 64)
+    private val readChanges = MutableSharedFlow<InboxInvalidation.Changed>(extraBufferCapacity = 64)
     private val conversations = initialConversations.map {
         MessagesMapper.toDomain(it)
     }.associateBy { it.id }.toMutableMap()
     private val hiddenBy = mutableMapOf<ConversationId, MutableSet<SenderId>>()
     private val historyVisibleAfter = mutableMapOf<Pair<ConversationId, SenderId>, Instant>()
+    private val readAtByParticipant = mutableMapOf<Pair<ConversationId, SenderId>, Instant>()
     private val activeReports = mutableSetOf<Pair<SenderId, MessageId>>()
     private val messagesByConvId = initialMessages.mapKeys { ConversationId(it.key) }.mapValues { entry ->
         entry.value.map { MessagesMapper.toDomain(it) }.toMutableList()
@@ -114,13 +118,33 @@ class InMemoryMessagesRepository(
         }
     }
 
+    override suspend fun markConversationRead(
+        userId: SenderId,
+        conversationId: ConversationId
+    ): Result<Instant> {
+        val markedAt = mutex.withLock {
+            val conversation = conversations[conversationId]
+            if (conversation?.includes(userId) != true) return@withLock null
+            val now = now()
+            val lastReadAt = readAtByParticipant[conversationId to userId]?.let { maxOf(it, now) } ?: now
+            readAtByParticipant[conversationId to userId] = lastReadAt
+            lastReadAt
+        } ?: return Result.Error(ConversationAccessException())
+        readChanges.emit(InboxInvalidation.Changed(conversationId))
+        return Result.Success(markedAt)
+    }
+
     private fun Message.cursor() = MessageCursor(orderingTimestamp, id)
 
     private fun Conversation.forViewer(userId: SenderId): Conversation {
         val cutoff = this@InMemoryMessagesRepository.historyVisibleAfter[id to userId]
         return Conversation(
             id,
-            participants,
+            participants.map { participant ->
+                participant.copy(
+                    lastReadAt = readAtByParticipant[id to participant.id] ?: participant.lastReadAt
+                )
+            },
             lastMessage?.takeIf { cutoff == null || it.orderingTimestamp > cutoff },
             updatedAtMillis,
             listingId,
@@ -193,9 +217,15 @@ class InMemoryMessagesRepository(
 
     override fun observe(userId: SenderId): Flow<InboxInvalidation> = flow {
         emit(InboxInvalidation.Subscribed)
-        inserts.collect { message ->
-            val allowed = mutex.withLock { conversations[message.conversationId]?.includes(userId) == true }
-            if (allowed) emit(InboxInvalidation.Changed(message.conversationId))
-        }
+        merge(
+            inserts.mapNotNull { message ->
+                val allowed = mutex.withLock { conversations[message.conversationId]?.includes(userId) == true }
+                if (allowed) InboxInvalidation.Changed(message.conversationId) else null
+            },
+            readChanges.mapNotNull { changed ->
+                val allowed = mutex.withLock { conversations[changed.conversationId]?.includes(userId) == true }
+                if (allowed) changed else null
+            }
+        ).collect { invalidation -> emit(invalidation) }
     }
 }
