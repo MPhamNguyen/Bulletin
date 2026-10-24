@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.Modifier
@@ -12,6 +11,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.domain.home.presentation.HomeMotionClock
+import com.jdrms.bulletin.domain.home.presentation.HomeSafeCubicBezierEasing
 import com.jdrms.bulletin.domain.home.presentation.homeMotionMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -58,7 +58,7 @@ internal class ProfileTabCelebration {
             } else {
                 keyframes {
                     durationMillis = homeMotionMillis(420, durationScale)
-                    val ease = CubicBezierEasing(0.2f, 0.9f, 0.3f, 1.3f)
+                    val ease = HomeSafeCubicBezierEasing(0.2f, 0.9f, 0.3f, 1.3f)
                     1.25f at homeMotionMillis(126, durationScale) using ease
                     1f at homeMotionMillis(420, durationScale) using ease
                 }
