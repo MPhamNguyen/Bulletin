@@ -30,7 +30,8 @@ fun MarketplaceScreen(
         viewModel,
         sellerProfileViewModel,
         userReportViewModel,
-        userBlockViewModel
+        userBlockViewModel,
+        listingReportViewModel
     )
     if (!MarketplaceSellerProfileFlow(flowState, flowViewModels, actions) { destination = it }) {
         MarketplaceCatalogContent(
@@ -62,15 +63,15 @@ private fun MarketplaceSellerProfileFlow(
         )
         return true
     }
-    if (state.destination != MarketplaceDestination.SELLER_PROFILE) return false
+    if (!state.destination.showsSellerProfile) return false
 
     SellerProfileScreen(
         state = state.sellerProfileState,
         messageActions = state.messageActions(actions),
         listingActions = SellerProfileListingActions(
             onListingClick = { listingId ->
-                onNavigate(MarketplaceDestination.CATALOG)
                 viewModels.marketplace.onListingClicked(listingId)
+                onNavigate(MarketplaceDestination.SELLER_LISTING)
             },
             onCategorySelected = viewModels.sellerProfile::onCategorySelected,
             onConditionSelected = viewModels.sellerProfile::onConditionSelected
@@ -86,6 +87,20 @@ private fun MarketplaceSellerProfileFlow(
             isBlocking = state.blockState.isBlocking
         )
     )
+    if (state.destination == MarketplaceDestination.SELLER_LISTING) {
+        MarketplaceDetailFlow(
+            state = state.marketplaceState,
+            viewModel = viewModels.marketplace,
+            sellerProfileViewModel = viewModels.sellerProfile,
+            listingReportViewModel = viewModels.listingReport,
+            actions = actions,
+            onNavigate = onNavigate,
+            onDetailDismiss = {
+                viewModels.marketplace.dismissListingDetail()
+                onNavigate(MarketplaceDestination.SELLER_PROFILE)
+            }
+        )
+    }
     LaunchedEffect(state.sellerProfileState.profile?.sellerId) {
         state.sellerProfileState.profile?.sellerId?.let(viewModels.block::begin)
             ?: viewModels.block.reset()
@@ -132,14 +147,19 @@ private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
     val sellerProfile: SellerProfileViewModel,
     val report: MarketplaceUserReportViewModel,
-    val block: MarketplaceUserBlockViewModel
+    val block: MarketplaceUserBlockViewModel,
+    val listingReport: ListingReportViewModel
 )
 
 internal enum class MarketplaceDestination {
     CATALOG,
     SELLER_PROFILE,
+    SELLER_LISTING,
     REPORT_USER
 }
+
+private val MarketplaceDestination.showsSellerProfile: Boolean
+    get() = this == MarketplaceDestination.SELLER_PROFILE || this == MarketplaceDestination.SELLER_LISTING
 
 internal fun canMessageMarketplaceSeller(
     currentUserId: String?,
