@@ -77,7 +77,7 @@ private fun HomeScreenBody(
         onSaveCelebration
     )
     val error = state.errorMessage
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().then(homeTrayDismissal(state.interaction.card, viewModel))) {
         HomeAnnouncementRegion(LocalHomeAnnouncements.current, state.interaction)
         HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow, photoPlaybackPaused)
         HomeSaveRetrySnackbar(state, viewModel, Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(1f))

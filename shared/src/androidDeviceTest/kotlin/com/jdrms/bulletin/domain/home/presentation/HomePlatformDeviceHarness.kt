@@ -39,7 +39,7 @@ internal class HomePlatformDeviceHarness {
             BulletinTheme {
                 CompositionLocalProvider(LocalHomeAnnouncements provides announcements) {
                     HomeStateAnnouncements(announcements, state.interaction)
-                    Box(Modifier.fillMaxSize()) { HomeCardStack(state, actions, scale) }
+                    Box(Modifier.fillMaxSize().then(homeTrayDismissal(state.interaction.card, actions))) { HomeCardStack(state, actions, scale) }
                     HomeConfirmedSaveCelebration(state.interaction.copy(pendingEffects = state.interaction.pendingEffects + listOfNotNull(replayedConfirmation)), actions, Rect(0f, 0f, 48f, 48f), scale) {
                         celebrations += it
                     }
