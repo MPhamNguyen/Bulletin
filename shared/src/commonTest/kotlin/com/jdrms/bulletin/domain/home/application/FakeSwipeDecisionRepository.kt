@@ -28,6 +28,11 @@ internal class FakeSwipeDecisionRepository : SwipeDecisionRepository {
         return Result.Success(Unit)
     }
 
+    override suspend fun removeSave(userId: String, listingId: HomeItemId): Result<Unit> {
+        if (decisions[userId]?.get(listingId) == SwipeVerdict.SAVE) decisions[userId]?.remove(listingId)
+        return Result.Success(Unit)
+    }
+
     override suspend fun clearAllDecisions(userId: String): Result<Unit> {
         decisions.remove(userId)
         return Result.Success(Unit)

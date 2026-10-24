@@ -20,6 +20,9 @@ interface SwipeDecisionRepository {
     /** Replay clears only Pass decisions, retaining Save decisions. */
     suspend fun clearPassDecisions(userId: String): Result<Unit>
 
+    /** Removes only a current Save; a missing decision or a later Pass is untouched. */
+    suspend fun removeSave(userId: String, listingId: HomeItemId): Result<Unit>
+
     /** Sign-out clears all decisions for this user without affecting other users. */
     suspend fun clearAllDecisions(userId: String): Result<Unit>
 }

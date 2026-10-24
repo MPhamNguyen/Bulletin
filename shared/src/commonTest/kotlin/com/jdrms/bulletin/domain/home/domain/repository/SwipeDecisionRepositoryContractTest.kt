@@ -3,11 +3,13 @@ package com.jdrms.bulletin.domain.home.domain.repository
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import com.jdrms.bulletin.domain.home.domain.model.SwipeDecision
 import com.jdrms.bulletin.domain.home.domain.model.SwipeVerdict
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Reuse against the Feature 4 implementation; currently exercised only against the test fake. */
+/** Observable storage contract shared by the fake and process-local implementation. */
 abstract class SwipeDecisionRepositoryContractTest {
     protected abstract fun createRepository(): SwipeDecisionRepository
 
@@ -56,6 +58,55 @@ abstract class SwipeDecisionRepositoryContractTest {
         assertEquals(emptySet(), repository.getExcludedListingIds("first", SwipeVerdict.PASS).getOrThrow())
         assertEquals(emptySet(), repository.getExcludedListingIds("first", SwipeVerdict.SAVE).getOrThrow())
         assertEquals(setOf(listing), repository.getExcludedListingIds("second", SwipeVerdict.SAVE).getOrThrow())
+    }
+
+    @Test
+    fun recordingReplacesThePreviousVerdictIdempotently() = runTest {
+        val repository = createRepository()
+        val listing = HomeItemId("listing")
+        repository.record("viewer", SwipeDecision(listing, SwipeVerdict.PASS)).getOrThrow()
+        repeat(2) { repository.record("viewer", SwipeDecision(listing, SwipeVerdict.SAVE)).getOrThrow() }
+        assertEquals(emptySet(), repository.getExcludedListingIds("viewer", SwipeVerdict.PASS).getOrThrow())
+        assertEquals(setOf(listing), repository.getExcludedListingIds("viewer", SwipeVerdict.SAVE).getOrThrow())
+        repository.record("viewer", SwipeDecision(listing, SwipeVerdict.PASS)).getOrThrow()
+        assertEquals(emptySet(), repository.getExcludedListingIds("viewer", SwipeVerdict.SAVE).getOrThrow())
+        assertEquals(setOf(listing), repository.getExcludedListingIds("viewer", SwipeVerdict.PASS).getOrThrow())
+    }
+
+    @Test
+    fun removeSaveIsIsolatedAndDoesNotRemoveALaterPass() = runTest {
+        val repository = createRepository()
+        val listing = HomeItemId("listing")
+        repository.removeSave("first", listing).getOrThrow()
+        repository.record("first", SwipeDecision(listing, SwipeVerdict.SAVE)).getOrThrow()
+        repository.record("second", SwipeDecision(listing, SwipeVerdict.SAVE)).getOrThrow()
+        repository.removeSave("first", listing).getOrThrow()
+        repository.removeSave("first", listing).getOrThrow()
+        assertEquals(emptySet(), repository.getExcludedListingIds("first", SwipeVerdict.SAVE).getOrThrow())
+        assertEquals(setOf(listing), repository.getExcludedListingIds("second", SwipeVerdict.SAVE).getOrThrow())
+        repository.record("first", SwipeDecision(listing, SwipeVerdict.SAVE)).getOrThrow()
+        repository.record("first", SwipeDecision(listing, SwipeVerdict.PASS)).getOrThrow()
+        repository.removeSave("first", listing).getOrThrow()
+        assertEquals(setOf(listing), repository.getExcludedListingIds("first", SwipeVerdict.PASS).getOrThrow())
+    }
+
+    @Test
+    fun concurrentRecordsFinishWithOneVerdictPerListing() = runTest {
+        val repository = createRepository()
+        coroutineScope {
+            repeat(200) { index ->
+                launch {
+                    val listing = HomeItemId("listing-${index % 20}")
+                    repository.record("viewer", SwipeDecision(listing, SwipeVerdict.SAVE)).getOrThrow()
+                    repository.record("viewer", SwipeDecision(listing, SwipeVerdict.PASS)).getOrThrow()
+                }
+            }
+        }
+        assertEquals(emptySet(), repository.getExcludedListingIds("viewer", SwipeVerdict.SAVE).getOrThrow())
+        assertEquals(
+            (0 until 20).map { HomeItemId("listing-$it") }.toSet(),
+            repository.getExcludedListingIds("viewer", SwipeVerdict.PASS).getOrThrow()
+        )
     }
 
     @Test
