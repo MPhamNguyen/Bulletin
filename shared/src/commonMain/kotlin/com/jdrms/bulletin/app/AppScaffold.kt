@@ -107,6 +107,7 @@ fun MainAppScaffold(
         NavbarNestedScrollConnection(navbarScrollBehavior)
     }
     var navbarHeight by remember { mutableStateOf(0.dp) }
+    var isConversationOpen by remember { mutableStateOf(false) }
     val models = remember(container) {
         MainScaffoldModels(
             container.createHomeViewModel(),
@@ -166,6 +167,7 @@ fun MainAppScaffold(
                             profilePresentation,
                             onContentNoLongerScrollable = navbarScrollBehavior::reveal,
                             onConversationVisibilityChanged = { isOpen ->
+                                isConversationOpen = isOpen
                                 if (isOpen) navbarScrollBehavior.hide() else navbarScrollBehavior.reveal()
                             }
                         )
@@ -175,7 +177,9 @@ fun MainAppScaffold(
             Navbar(
                 currentDestination = navigation.currentDestination,
                 isVisible = {
-                    navigation.showsBottomNavigation && navbarScrollBehavior.isVisible
+                    navigation.showsBottomNavigation &&
+                        !isConversationOpen &&
+                        navbarScrollBehavior.isVisible
                 },
                 onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
                 onFocused = navbarScrollBehavior::reveal,
