@@ -14,6 +14,7 @@ enum class HomeInteractionError {
 sealed interface HomeEffect {
     val id: Long
     data class SaveRetryOffered(override val id: Long, val listingId: HomeItemId) : HomeEffect
+    data class SaveConfirmed(override val id: Long, val listingId: HomeItemId) : HomeEffect
 }
 
 data class HomeTrayState(

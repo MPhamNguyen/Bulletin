@@ -37,7 +37,7 @@ class HomeSaveInteractionTest {
         assertEquals(listOf("viewer" to HomeItemId("a"), "viewer" to HomeItemId("a")), f.saves)
         assertEquals("next listing draft", f.interaction.tray.draft)
         assertEquals(CardState.Open, f.interaction.card)
-        assertTrue(f.interaction.pendingEffects.isEmpty())
+        assertEquals(effect.listingId, (f.interaction.pendingEffects.single() as HomeEffect.SaveConfirmed).listingId)
         f.vm.dismissSaveRetry(effect.listingId)
         assertTrue(f.decisions.removals.isEmpty())
     }
@@ -114,7 +114,7 @@ class HomeSaveInteractionTest {
         f.decisions.recordFailure = null
         f.vm.retrySave(HomeItemId("a"))
         assertEquals(1, f.saves.size)
-        assertTrue(f.interaction.pendingEffects.isEmpty())
+        assertEquals(HomeItemId("a"), (f.interaction.pendingEffects.single() as HomeEffect.SaveConfirmed).listingId)
     }
 
     @Test

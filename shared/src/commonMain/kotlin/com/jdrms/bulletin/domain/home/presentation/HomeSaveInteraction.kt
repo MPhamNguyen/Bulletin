@@ -95,7 +95,7 @@ internal class HomeSaveInteraction(
                 }
                 if (!isCurrent(attempt) || attempts[id] !== attempt) return@launch
                 when (result) {
-                    is Result.Success -> attempts.remove(id)
+                    is Result.Success -> confirm(id)
                     is Result.Error -> offerRetry(id, attempt)
                 }
             } catch (cancellation: CancellationException) {
@@ -107,6 +107,11 @@ internal class HomeSaveInteraction(
 
     private fun isCurrent(attempt: Attempt): Boolean =
         attempt.viewer == store.viewer && attempt.lifecycle == store.lifecycle
+
+    private fun confirm(id: HomeItemId) {
+        attempts.remove(id)
+        store.edit { it.copy(pendingEffects = it.pendingEffects + HomeEffect.SaveConfirmed(store.nextId(), id)) }
+    }
 
     private fun offerRetry(id: HomeItemId, attempt: Attempt) {
         attempt.failed = true

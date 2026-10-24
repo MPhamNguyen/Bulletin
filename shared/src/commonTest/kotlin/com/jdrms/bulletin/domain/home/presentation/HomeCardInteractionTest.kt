@@ -76,7 +76,7 @@ class HomeCardInteractionTest {
         assertEquals(HomeItemId("b"), f.interaction.listingId)
         result.complete(Result.Success(Unit))
         advanceUntilIdle()
-        assertTrue(f.interaction.pendingEffects.isEmpty())
+        assertEquals(HomeItemId("a"), (f.interaction.pendingEffects.single() as HomeEffect.SaveConfirmed).listingId)
         assertEquals(setOf(HomeItemId("a")), f.decisions.getExcludedListingIds("viewer", SwipeVerdict.SAVE).getOrNull())
     }
 
