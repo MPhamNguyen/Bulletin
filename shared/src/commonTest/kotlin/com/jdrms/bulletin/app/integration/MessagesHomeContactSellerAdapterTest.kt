@@ -22,7 +22,9 @@ class MessagesHomeContactSellerAdapterTest {
         assertIs<Result.Success<Unit>>(f.adapter.send("viewer", actionListingId, actionMessage))
         assertEquals(listOf(actionListingId.value), f.lookupIds)
         assertEquals(actionMessage.text, f.sent.single().content)
-        assertEquals(actionListingId.value, f.marketplace.viewListing(actionListingId.value).getOrThrow().id.value)
+        assertEquals(actionListingId.value, f.resolvedListingId?.value)
+        assertEquals(f.listing.sellerId, f.resolvedSeller?.id?.value)
+        assertEquals(f.listing.sellerName, f.resolvedSeller?.displayName)
         assertEquals("viewer", f.visibilityRequests.single().viewerId)
     }
 
@@ -44,6 +46,7 @@ class MessagesHomeContactSellerAdapterTest {
             assertNull(failure.message)
             assertNull(failure.cause)
             assertEquals(emptyList(), f.sent)
+            assertEquals(0, f.senderCalls)
         }
     }
 
@@ -54,6 +57,7 @@ class MessagesHomeContactSellerAdapterTest {
         assertIs<ContactSellerFailure.OwnListing>(failure)
         assertEquals(emptyList(), f.sent)
         assertEquals(emptyList(), f.visibilityRequests)
+        assertEquals(0, f.senderCalls)
     }
 
     @Test
