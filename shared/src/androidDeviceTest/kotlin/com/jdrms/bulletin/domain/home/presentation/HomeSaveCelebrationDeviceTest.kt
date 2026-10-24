@@ -10,6 +10,7 @@ import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.application.SaveListingFailure
+import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.Rule
 import org.junit.Test
@@ -65,6 +66,37 @@ class HomeSaveCelebrationDeviceTest {
             assertEquals(1, celebrations)
             assertTrue(fixture.home.uiState.value.interaction.pendingEffects.isEmpty())
         }
+    }
+
+    @Test
+    fun confirmed_save_waits_for_normal_departure_then_celebrates_on_next_card_once() {
+        val result = CompletableDeferred<Result<Unit>>()
+        fixture.saveResult = { result.await() }
+        var celebrations = 0
+        fixture.show(compose, durationScale = 1f, anchor = anchor, onCelebrate = { celebrations++ })
+        compose.mainClock.autoAdvance = false
+        swipeRight()
+        compose.runOnIdle {
+            assertEquals(CardState.Leaving, fixture.home.uiState.value.interaction.card)
+            assertEquals(0, fixture.home.uiState.value.currentIndex)
+            result.complete(Result.Success(Unit))
+        }
+        compose.mainClock.advanceTimeBy(32)
+        compose.runOnIdle {
+            assertTrue(fixture.home.uiState.value.interaction.pendingEffects.any { it is HomeEffect.SaveConfirmed })
+            assertEquals(0, celebrations)
+        }
+        compose.mainClock.advanceTimeBy(1500)
+        compose.runOnIdle {
+            assertEquals(1, fixture.home.uiState.value.currentIndex)
+            assertEquals(CardState.Idle, fixture.home.uiState.value.interaction.card)
+            assertEquals(1, celebrations)
+            assertEquals(listOf(HomeItemId("first")), fixture.saves)
+            assertTrue(fixture.home.uiState.value.interaction.pendingEffects.isEmpty())
+        }
+        compose.mainClock.advanceTimeBy(1500)
+        compose.runOnIdle { assertEquals(1, celebrations) }
+        compose.mainClock.autoAdvance = true
     }
 
     private fun swipeRight() {

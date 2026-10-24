@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemorySwipeDecisionRepository
 import androidx.compose.ui.geometry.Rect
@@ -19,6 +20,7 @@ import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
 
 internal class HomeTrayDeviceFixture : ContactSellerPort, SaveListingPort {
     lateinit var home: HomeViewModel
+    lateinit var content: @Composable () -> Unit
     val decisions = InMemorySwipeDecisionRepository()
     val saves = mutableListOf<HomeItemId>()
     val sends = mutableListOf<Pair<HomeItemId, String>>()
@@ -31,19 +33,23 @@ internal class HomeTrayDeviceFixture : ContactSellerPort, SaveListingPort {
         durationScale: Float = 0f,
         anchor: Rect? = null,
         onCelebrate: (Float) -> Unit = {},
-        restoration: StateRestorationTester? = null
+        restoration: StateRestorationTester? = null,
+        modifier: Modifier = Modifier
     ) {
         val repository = DeckCharacterizationRepository(listOf(
             deckItem("first").copy(description = description), deckItem("second"), deckItem("third")
         ))
         val session = DeckCharacterizationSession()
-        val content: @Composable () -> Unit = {
+        content = {
             home = viewModel {
                 HomeViewModel(GetPersonalizedFeed(repository), UpdateUserPreferences(repository), session,
                     sendQuickMessage = SendQuickMessage(this@HomeTrayDeviceFixture), saveListing = this@HomeTrayDeviceFixture,
                     swipeDecisionRepository = decisions)
             }
-            BulletinTheme { HomeScreen(home, motionDurationScale = durationScale, profileAnchorInWindow = anchor, onSaveCelebration = onCelebrate) }
+            BulletinTheme {
+                HomeScreen(home, modifier = modifier, motionDurationScale = durationScale,
+                    profileAnchorInWindow = anchor, onSaveCelebration = onCelebrate)
+            }
         }
         if (restoration == null) compose.setContent(content) else restoration.setContent(content)
         compose.onNodeWithText("Listing first").assertExists()

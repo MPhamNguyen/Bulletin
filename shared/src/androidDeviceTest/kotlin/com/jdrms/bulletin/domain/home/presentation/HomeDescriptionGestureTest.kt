@@ -1,6 +1,11 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
@@ -56,6 +61,64 @@ class HomeDescriptionGestureTest {
             swipe(Offset(width * 0.8f, height * 0.75f), Offset(width * 0.05f, height * 0.75f), 400)
         }
         compose.runOnIdle { assertEquals(1, fixture.home.uiState.value.currentIndex) }
+    }
+
+    @Test
+    fun released_description_fling_continues_without_opening_tray_or_nested_parent() {
+        var parentScrolls = 0
+        var parentFlings = 0
+        val parent = object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                parentScrolls++
+                return Offset.Zero
+            }
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                parentFlings++
+                return Velocity.Zero
+            }
+        }
+        fixture.show(compose, description, modifier = Modifier.nestedScroll(parent))
+        compose.onNodeWithText(description).performClick()
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("home-description-first").performTouchInput {
+            down(Offset(width * .5f, height * .85f))
+            moveTo(Offset(width * .5f, height * .65f), 40)
+            moveTo(Offset(width * .5f, height * .45f), 40)
+        }
+        val atRelease = scrollValue()
+        compose.onNodeWithTag("home-description-first").performTouchInput { up() }
+        compose.mainClock.advanceTimeBy(160)
+        compose.waitForIdle()
+        val afterRelease = scrollValue()
+        assertTrue(afterRelease > atRelease,
+            "Scroll after release: $atRelease -> $afterRelease, max=${scrollRange().maxValue()}")
+        compose.mainClock.advanceTimeBy(3000)
+        compose.runOnIdle {
+            assertEquals(CardState.Idle, fixture.home.uiState.value.interaction.card)
+            assertEquals(0, fixture.home.uiState.value.currentIndex)
+            assertEquals(0, parentScrolls)
+            assertEquals(0, parentFlings)
+            assertTrue(fixture.sends.isEmpty())
+        }
+        compose.mainClock.autoAdvance = true
+    }
+
+    @Test
+    fun child_keeps_boundary_crossing_gesture_then_new_drag_opens_tray() {
+        showExpanded()
+        repeat(40) {
+            if (scrollRange().value() < scrollRange().maxValue()) dragDescription(100)
+        }
+        compose.onNodeWithTag("home-description-first").performTouchInput {
+            swipe(Offset(width * .5f, height * .3f), Offset(width * .5f, height * .5f), 600)
+        }
+        assertTrue(scrollValue() < scrollRange().maxValue())
+        dragDescription(500)
+        assertEquals(scrollRange().maxValue(), scrollValue())
+        compose.runOnIdle { assertEquals(CardState.Idle, fixture.home.uiState.value.interaction.card) }
+        dragDescription()
+        compose.runOnIdle { assertEquals(CardState.Open, fixture.home.uiState.value.interaction.card) }
     }
 
     private fun showExpanded() {
