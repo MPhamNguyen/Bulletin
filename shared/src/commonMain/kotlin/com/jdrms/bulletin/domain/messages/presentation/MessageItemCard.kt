@@ -60,7 +60,6 @@ internal fun MessageItemCard(
             MessageBubble(message, presentation, actions)
             if (presentation.showSeenReceipt) SeenReceipt()
         }
-        if (presentation.isMine) Spacer(Modifier.width(40.dp))
     }
 }
 
