@@ -35,11 +35,19 @@ object CardGestureResolver {
         Axis.Y -> if (isOpen) {
             if (dyDp < -CardGestureThresholds.closeDistanceDp ||
                 vyDpPerMs < -CardGestureThresholds.openVelocityDpPerMs
-            ) Release.CLOSE else Release.STAY_OPEN
+            ) {
+                Release.CLOSE
+            } else {
+                Release.STAY_OPEN
+            }
         } else {
             if (dyDp > CardGestureThresholds.openDistanceDp ||
                 vyDpPerMs > CardGestureThresholds.openVelocityDpPerMs
-            ) Release.OPEN else Release.CANCEL
+            ) {
+                Release.OPEN
+            } else {
+                Release.CANCEL
+            }
         }
     }
 

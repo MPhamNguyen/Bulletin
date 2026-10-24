@@ -9,8 +9,12 @@ class CardGestureResolverTest {
     @Test
     fun horizontal_distance_boundaries_are_strict() {
         listOf(
-            89.99f to Release.CANCEL, 90f to Release.CANCEL, 90.01f to Release.SAVE,
-            -89.99f to Release.CANCEL, -90f to Release.CANCEL, -90.01f to Release.PASS,
+            89.99f to Release.CANCEL,
+            90f to Release.CANCEL,
+            90.01f to Release.SAVE,
+            -89.99f to Release.CANCEL,
+            -90f to Release.CANCEL,
+            -90.01f to Release.PASS,
         ).forEach { (dx, expected) ->
             assertEquals(expected, release(Axis.X, dxDp = dx), "dx=$dx")
         }
@@ -19,8 +23,12 @@ class CardGestureResolverTest {
     @Test
     fun horizontal_velocity_boundaries_are_strict_with_zero_or_agreeing_displacement() {
         listOf(
-            0.5999f to Release.CANCEL, 0.6f to Release.CANCEL, 0.6001f to Release.SAVE,
-            -0.5999f to Release.CANCEL, -0.6f to Release.CANCEL, -0.6001f to Release.PASS,
+            0.5999f to Release.CANCEL,
+            0.6f to Release.CANCEL,
+            0.6001f to Release.SAVE,
+            -0.5999f to Release.CANCEL,
+            -0.6f to Release.CANCEL,
+            -0.6001f to Release.PASS,
         ).forEach { (vx, expected) ->
             listOf(0f, vx).forEach { dx ->
                 assertEquals(expected, release(Axis.X, dxDp = dx, vxDpPerMs = vx), "dx=$dx vx=$vx")
@@ -31,9 +39,12 @@ class CardGestureResolverTest {
     @Test
     fun displacement_wins_over_opposing_velocity_only_past_the_distance_threshold() {
         listOf(
-            Triple(90.01f, -10f, Release.SAVE), Triple(-90.01f, 10f, Release.PASS),
-            Triple(90f, -10f, Release.CANCEL), Triple(-90f, 10f, Release.CANCEL),
-            Triple(1f, -10f, Release.CANCEL), Triple(-1f, 10f, Release.CANCEL),
+            Triple(90.01f, -10f, Release.SAVE),
+            Triple(-90.01f, 10f, Release.PASS),
+            Triple(90f, -10f, Release.CANCEL),
+            Triple(-90f, 10f, Release.CANCEL),
+            Triple(1f, -10f, Release.CANCEL),
+            Triple(-1f, 10f, Release.CANCEL),
         ).forEach { (dx, vx, expected) ->
             assertEquals(expected, release(Axis.X, dxDp = dx, vxDpPerMs = vx), "dx=$dx vx=$vx")
         }
@@ -42,10 +53,14 @@ class CardGestureResolverTest {
     @Test
     fun closed_vertical_distance_and_velocity_boundaries_are_strict() {
         listOf(
-            59.99f to Release.CANCEL, 60f to Release.CANCEL, 60.01f to Release.OPEN,
+            59.99f to Release.CANCEL,
+            60f to Release.CANCEL,
+            60.01f to Release.OPEN,
         ).forEach { (dy, expected) -> assertEquals(expected, release(Axis.Y, dyDp = dy)) }
         listOf(
-            0.4499f to Release.CANCEL, 0.45f to Release.CANCEL, 0.4501f to Release.OPEN,
+            0.4499f to Release.CANCEL,
+            0.45f to Release.CANCEL,
+            0.4501f to Release.OPEN,
         ).forEach { (vy, expected) -> assertEquals(expected, release(Axis.Y, vyDpPerMs = vy)) }
         assertEquals(Release.CANCEL, release(Axis.Y, dyDp = -100f, vyDpPerMs = -10f))
         assertEquals(Release.OPEN, release(Axis.Y, dyDp = 60.01f, vyDpPerMs = -10f))
@@ -66,10 +81,14 @@ class CardGestureResolverTest {
     @Test
     fun open_vertical_distance_and_velocity_boundaries_are_strict() {
         listOf(
-            -49.99f to Release.STAY_OPEN, -50f to Release.STAY_OPEN, -50.01f to Release.CLOSE,
+            -49.99f to Release.STAY_OPEN,
+            -50f to Release.STAY_OPEN,
+            -50.01f to Release.CLOSE,
         ).forEach { (dy, expected) -> assertEquals(expected, release(Axis.Y, dyDp = dy, isOpen = true)) }
         listOf(
-            -0.4499f to Release.STAY_OPEN, -0.45f to Release.STAY_OPEN, -0.4501f to Release.CLOSE,
+            -0.4499f to Release.STAY_OPEN,
+            -0.45f to Release.STAY_OPEN,
+            -0.4501f to Release.CLOSE,
         ).forEach { (vy, expected) -> assertEquals(expected, release(Axis.Y, vyDpPerMs = vy, isOpen = true)) }
         assertEquals(Release.STAY_OPEN, release(Axis.Y, dyDp = -1f, vyDpPerMs = -0.1f, isOpen = true))
         assertEquals(Release.STAY_OPEN, release(Axis.Y, dyDp = 100f, vyDpPerMs = 10f, isOpen = true))

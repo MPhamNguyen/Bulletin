@@ -59,7 +59,9 @@ class CardStateMachineTest {
                 val result = CardStateMachine.transition(state, event)
                 if (result is CardTransition.Accepted && result.next != CardState.Open &&
                     reachableWithoutOpen.add(result.next)
-                ) pending.add(result.next)
+                ) {
+                    pending.add(result.next)
+                }
             }
         }
         assertFalse(CardState.Sending in reachableWithoutOpen)
