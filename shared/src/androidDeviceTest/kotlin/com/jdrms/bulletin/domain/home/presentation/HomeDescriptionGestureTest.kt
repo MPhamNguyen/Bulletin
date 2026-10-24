@@ -2,14 +2,14 @@ package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.Velocity
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.unit.Velocity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -25,14 +25,14 @@ class HomeDescriptionGestureTest {
     private val description = "Description with more detail about the listing and campus pickup. ".repeat(150)
 
     @Test
-    fun collapsed_description_upward_drag_opens_tray() {
+    fun collapsedDescriptionUpwardDragOpensTray() {
         fixture.showWithZeroMotion(compose, description)
         dragDescription()
         compose.runOnIdle { assertEquals(CardState.Open, fixture.home.uiState.value.interaction.card) }
     }
 
     @Test
-    fun expanded_overflow_scrolls_and_keeps_tray_closed_including_fling() {
+    fun expandedOverflowScrollsAndKeepsTrayClosedIncludingFling() {
         showExpanded()
         val before = scrollValue()
         dragDescription(100)
@@ -41,7 +41,7 @@ class HomeDescriptionGestureTest {
     }
 
     @Test
-    fun new_upward_drag_at_end_opens_tray() {
+    fun newUpwardDragAtEndOpensTray() {
         showExpanded()
         repeat(40) {
             val range = scrollRange()
@@ -55,7 +55,7 @@ class HomeDescriptionGestureTest {
     }
 
     @Test
-    fun horizontal_swipe_over_description_still_passes() {
+    fun horizontalSwipeOverDescriptionStillPasses() {
         showExpanded()
         compose.onNodeWithTag("home-description-first").performTouchInput {
             swipe(Offset(width * 0.8f, height * 0.75f), Offset(width * 0.05f, height * 0.75f), 400)
@@ -64,7 +64,7 @@ class HomeDescriptionGestureTest {
     }
 
     @Test
-    fun released_description_fling_continues_without_opening_tray_or_nested_parent() {
+    fun releasedDescriptionFlingContinuesWithoutOpeningTrayOrNestedParent() {
         var parentScrolls = 0
         var parentFlings = 0
         val parent = object : NestedScrollConnection {
@@ -91,8 +91,10 @@ class HomeDescriptionGestureTest {
         compose.mainClock.advanceTimeBy(160)
         compose.waitForIdle()
         val afterRelease = scrollValue()
-        assertTrue(afterRelease > atRelease,
-            "Scroll after release: $atRelease -> $afterRelease, max=${scrollRange().maxValue()}")
+        assertTrue(
+            afterRelease > atRelease,
+            "Scroll after release: $atRelease -> $afterRelease, max=${scrollRange().maxValue()}"
+        )
         compose.mainClock.advanceTimeBy(3000)
         compose.runOnIdle {
             assertEquals(CardState.Idle, fixture.home.uiState.value.interaction.card)
@@ -105,7 +107,7 @@ class HomeDescriptionGestureTest {
     }
 
     @Test
-    fun child_keeps_boundary_crossing_gesture_then_new_drag_opens_tray() {
+    fun childKeepsBoundaryCrossingGestureThenNewDragOpensTray() {
         showExpanded()
         repeat(40) {
             if (scrollRange().value() < scrollRange().maxValue()) dragDescription(100)

@@ -1,9 +1,9 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -26,7 +26,7 @@ class HomeSaveRetrySnackbarDeviceTest {
     private val fixture = HomeTrayDeviceFixture()
 
     @Test
-    fun retry_after_advance_targets_original_listing_and_acknowledges_shown_effect() {
+    fun retryAfterAdvanceTargetsOriginalListingAndAcknowledgesShownEffect() {
         showFailure()
         compose.runOnIdle {
             assertEquals(1, fixture.home.uiState.value.currentIndex)
@@ -41,15 +41,18 @@ class HomeSaveRetrySnackbarDeviceTest {
     }
 
     @Test
-    fun dismiss_removes_failed_save() {
+    fun dismissRemovesFailedSave() {
         showFailure()
         compose.onNodeWithContentDescription("Dismiss").performClick()
         compose.waitForIdle()
-        assertTrue(runBlocking { fixture.decisions.getExcludedListingIds("home-test", SwipeVerdict.SAVE).getOrNull()!! }.isEmpty())
+        val excluded = runBlocking {
+            fixture.decisions.getExcludedListingIds("home-test", SwipeVerdict.SAVE).getOrNull()!!
+        }
+        assertTrue(excluded.isEmpty())
     }
 
     @Test
-    fun recreation_keeps_acknowledged_retry_available_without_dismissing_it() {
+    fun recreationKeepsAcknowledgedRetryAvailableWithoutDismissingIt() {
         val restoration = StateRestorationTester(compose)
         fixture.saveResult = { Result.Error(SaveListingFailure.Network()) }
         fixture.showWithZeroMotion(compose, restoration = restoration)
@@ -57,16 +60,19 @@ class HomeSaveRetrySnackbarDeviceTest {
         compose.onNodeWithText("Retry").assertExists()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Retry").assertExists()
-        assertEquals(setOf(HomeItemId("first")), runBlocking {
-            fixture.decisions.getExcludedListingIds("home-test", SwipeVerdict.SAVE).getOrNull()
-        })
+        assertEquals(
+            setOf(HomeItemId("first")),
+            runBlocking {
+                fixture.decisions.getExcludedListingIds("home-test", SwipeVerdict.SAVE).getOrNull()
+            }
+        )
         compose.runOnIdle { fixture.saveResult = { Result.Success(Unit) } }
         compose.onNodeWithText("Retry").performClick()
         compose.runOnIdle { assertEquals(2, fixture.saves.size) }
     }
 
     @Test
-    fun failure_snackbar_is_polite_and_retry_is_reachable() {
+    fun failureSnackbarIsPoliteAndRetryIsReachable() {
         showFailure()
         val polite = SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
         compose.onNode(hasText("Could not save listing.") and hasAnyAncestor(polite), useUnmergedTree = true)

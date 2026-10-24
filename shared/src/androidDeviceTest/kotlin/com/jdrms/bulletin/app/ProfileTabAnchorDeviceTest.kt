@@ -28,13 +28,18 @@ class ProfileTabAnchorDeviceTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun profile_hook_is_unique_and_does_not_change_navigation() {
+    fun profileHookIsUniqueAndDoesNotChangeNavigation() {
         val anchor = ProfileTabAnchor()
         var selected = AppDestination.HOME
         compose.setContent {
             BulletinTheme {
-                Navbar(AppDestination.HOME, { true }, { selected = it }, {},
-                    profileIconModifier = anchor.modifier.testTag("profile-anchor"))
+                Navbar(
+                    AppDestination.HOME,
+                    { true },
+                    { selected = it },
+                    {},
+                    profileIconModifier = anchor.modifier.testTag("profile-anchor")
+                )
             }
         }
         compose.onNodeWithTag("profile-anchor", useUnmergedTree = true).assertExists()
@@ -47,7 +52,7 @@ class ProfileTabAnchorDeviceTest {
     }
 
     @Test
-    fun profile_center_updates_after_layout_resize() {
+    fun profileCenterUpdatesAfterLayoutResize() {
         val anchor = ProfileTabAnchor()
         val width = mutableStateOf(390.dp)
         compose.setContent {

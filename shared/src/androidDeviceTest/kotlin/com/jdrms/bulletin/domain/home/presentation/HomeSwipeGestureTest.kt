@@ -108,7 +108,9 @@ class HomeSwipeGestureTest {
     }
 
     private fun showDeck(guest: Boolean = false) {
-        val repository = DeckCharacterizationRepository(listOf(deckItem("first"), deckItem("second"), deckItem("third")))
+        val repository = DeckCharacterizationRepository(
+            listOf(deckItem("first"), deckItem("second"), deckItem("third"))
+        )
         val session = DeckCharacterizationSession().also { if (guest) it.unauthenticated() }
         compose.setContent {
             home = viewModel {

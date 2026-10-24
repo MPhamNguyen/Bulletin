@@ -1,21 +1,20 @@
 package com.jdrms.bulletin.domain.home.presentation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.SoftwareKeyboardController
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.domain.home.application.*
-import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import kotlinx.coroutines.CoroutineScope
 
 /** Commands and acknowledgements are counted at the real VM boundary, not inferred from animation frames. */
@@ -47,21 +46,41 @@ internal class HomePlatformDeviceHarness {
     private fun Content(capabilities: Boolean) {
         val scope = rememberCoroutineScope()
         ports.home = viewModel {
-            val repo = DeckCharacterizationRepository(listOf(deckItem("first"), deckItem("second"), deckItem("third")))
-            HomeViewModel(GetPersonalizedFeed(repo), UpdateUserPreferences(repo), DeckCharacterizationSession(),
-                sendQuickMessage = if (capabilities) SendQuickMessage(ports) else null,
-                saveListing = if (capabilities) ports else null)
+            val repo = DeckCharacterizationRepository(
+                listOf(deckItem("first"), deckItem("second"), deckItem("third"))
+            )
+            HomeViewModel(
+                GetPersonalizedFeed(repo), UpdateUserPreferences(repo), DeckCharacterizationSession(),
+                sendQuickMessage = if (capabilities) {
+                    SendQuickMessage(ports)
+                } else {
+                    null
+                },
+                saveListing = if (capabilities) ports else null
+            )
         }
         actions = remember { recordingActions(ports.home) }
         val state by ports.home.uiState.collectAsState()
-        @Suppress("UNUSED_VARIABLE") val recompose = tick
+
+        @Suppress("UNUSED_VARIABLE")
+        val recompose = tick
         BulletinTheme {
-            CompositionLocalProvider(LocalHomeAnnouncements provides announcements, LocalNavbarHeight provides navbarSpace) {
+            CompositionLocalProvider(
+                LocalHomeAnnouncements provides announcements,
+                LocalNavbarHeight provides navbarSpace
+            ) {
                 Deck(state)
                 HomeConfirmedSaveCelebration(
-                    state.interaction.copy(pendingEffects = state.interaction.pendingEffects + listOfNotNull(replayedConfirmation)),
-                    actions, Rect(0f, 0f, 48f, 48f), scale
-                ) { celebrations += it; onCelebration(scope, it) }
+                    state.interaction.copy(
+                        pendingEffects = state.interaction.pendingEffects + listOfNotNull(replayedConfirmation)
+                    ),
+                    actions,
+                    Rect(0f, 0f, 48f, 48f),
+                    scale
+                ) {
+                    celebrations += it
+                    onCelebration(scope, it)
+                }
             }
         }
     }
@@ -71,7 +90,10 @@ internal class HomePlatformDeviceHarness {
         keyboard = LocalSoftwareKeyboardController.current
         HomeStateAnnouncements(announcements, state.interaction)
         Box(Modifier.fillMaxSize().padding(bottom = navbarSpace)) {
-            HomeKeyboardViewport(Modifier.then(homeTrayDismissal(state.interaction.card, actions)), externallyPaused) { paused ->
+            HomeKeyboardViewport(
+                Modifier.then(homeTrayDismissal(state.interaction.card, actions)),
+                externallyPaused
+            ) { paused ->
                 SideEffect { photoPaused = paused }
                 val viewport = viewportHeight?.let { Modifier.fillMaxWidth().height(it) } ?: Modifier.fillMaxSize()
                 Box(viewport.testTag("home_test_viewport")) {
@@ -82,13 +104,37 @@ internal class HomePlatformDeviceHarness {
     }
 
     private fun recordingActions(home: HomeViewModel): HomeCardActions = object : HomeCardActions by home {
-        override fun sendMessage() { announcements.beginSend(); home.sendMessage() }
-        override fun saveCurrentCard() { commands += "save"; home.saveCurrentCard() }
-        override fun passCurrentCard() { commands += "pass"; home.passCurrentCard() }
-        override fun openTray() { commands += "open"; home.openTray() }
-        override fun closeTray() { commands += "close"; home.closeTray() }
-        override fun onExitCompleted(departureId: Long) { exits += departureId; home.onExitCompleted(departureId) }
-        override fun onSentReceiptCompleted(receiptId: Long) { receipts += receiptId; home.onSentReceiptCompleted(receiptId) }
-        override fun onEffectConsumed(id: Long) { consumed += id; home.onEffectConsumed(id) }
+        override fun sendMessage() {
+            announcements.beginSend()
+            home.sendMessage()
+        }
+        override fun saveCurrentCard() {
+            commands += "save"
+            home.saveCurrentCard()
+        }
+        override fun passCurrentCard() {
+            commands += "pass"
+            home.passCurrentCard()
+        }
+        override fun openTray() {
+            commands += "open"
+            home.openTray()
+        }
+        override fun closeTray() {
+            commands += "close"
+            home.closeTray()
+        }
+        override fun onExitCompleted(departureId: Long) {
+            exits += departureId
+            home.onExitCompleted(departureId)
+        }
+        override fun onSentReceiptCompleted(receiptId: Long) {
+            receipts += receiptId
+            home.onSentReceiptCompleted(receiptId)
+        }
+        override fun onEffectConsumed(id: Long) {
+            consumed += id
+            home.onEffectConsumed(id)
+        }
     }
 }

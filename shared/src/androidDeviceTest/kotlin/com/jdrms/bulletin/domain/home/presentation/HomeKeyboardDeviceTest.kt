@@ -24,7 +24,7 @@ class HomeKeyboardDeviceTest {
         compose.runOnUiThread { compose.activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
     }
 
-    @Test fun portrait_ime_keeps_composer_above_reserved_navbar_and_pauses_photo_seam() {
+    @Test fun portraitImeKeepsComposerAboveReservedNavbarAndPausesPhotoSeam() {
         show()
         open()
         assertComposerInViewport()
@@ -34,7 +34,7 @@ class HomeKeyboardDeviceTest {
         assertComposerInViewport()
     }
 
-    @Test fun landscape_ime_keeps_composer_in_available_viewport() {
+    @Test fun landscapeImeKeepsComposerInAvailableViewport() {
         show(landscape = true)
         open()
         assertComposerInViewport()
@@ -43,7 +43,7 @@ class HomeKeyboardDeviceTest {
         assertComposerInViewport()
     }
 
-    @Test fun closing_tray_with_ime_open_hides_keyboard_and_returns_card_focus() {
+    @Test fun closingTrayWithImeOpenHidesKeyboardAndReturnsCardFocus() {
         show()
         open()
         compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).performTextInput("typing")
@@ -54,10 +54,13 @@ class HomeKeyboardDeviceTest {
         compose.runOnIdle { assertTrue(harness.ports.sends.isEmpty()) }
     }
 
-    @Test fun keyboard_opening_during_drag_keeps_draft_and_does_not_send() {
+    @Test fun keyboardOpeningDuringDragKeepsDraftAndDoesNotSend() {
         show()
         open()
-        compose.runOnIdle { harness.actions.onDraftChanged("keep this"); harness.keyboard?.hide() }
+        compose.runOnIdle {
+            harness.actions.onDraftChanged("keep this")
+            harness.keyboard?.hide()
+        }
         compose.waitUntil(5000) { !harness.photoPaused }
         val card = compose.onNodeWithTag(HOME_CARD_FOCUS_TAG)
         card.performTouchInput {
@@ -66,7 +69,10 @@ class HomeKeyboardDeviceTest {
         }
         compose.runOnIdle { harness.keyboard?.show() }
         compose.waitUntil(5000) { harness.photoPaused }
-        card.performTouchInput { moveBy(Offset(0f, 2f)); up() }
+        card.performTouchInput {
+            moveBy(Offset(0f, 2f))
+            up()
+        }
         compose.waitForIdle()
         compose.runOnIdle {
             assertEquals(CardState.Open, harness.ports.home.uiState.value.interaction.card)
@@ -76,28 +82,34 @@ class HomeKeyboardDeviceTest {
         assertComposerInViewport()
     }
 
-    @Test fun short_viewport_gives_composer_priority_over_header() {
+    @Test fun shortViewportGivesComposerPriorityOverHeader() {
         harness.viewportHeight = 180.dp
         show()
         open()
         assertComposerInViewport()
     }
 
-    @Test fun explicit_photo_pause_survives_keyboard_hiding() {
+    @Test fun explicitPhotoPauseSurvivesKeyboardHiding() {
         harness.externallyPaused = true
         show()
         compose.runOnIdle { assertTrue(harness.photoPaused) }
         open()
         compose.runOnIdle { harness.actions.closeTray() }
         compose.waitForIdle()
-        compose.runOnIdle { assertTrue(harness.photoPaused); harness.externallyPaused = false }
+        compose.runOnIdle {
+            assertTrue(harness.photoPaused)
+            harness.externallyPaused = false
+        }
         compose.waitUntil(5000) { !harness.photoPaused }
     }
 
     private fun show(landscape: Boolean = false) {
         compose.runOnUiThread {
-            compose.activity.requestedOrientation = if (landscape) ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            compose.activity.requestedOrientation = if (landscape) {
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
         }
         val expected = if (landscape) Configuration.ORIENTATION_LANDSCAPE else Configuration.ORIENTATION_PORTRAIT
         compose.waitUntil(5000) { compose.activity.resources.configuration.orientation == expected }
@@ -113,7 +125,10 @@ class HomeKeyboardDeviceTest {
 
     private fun assertComposerInViewport() {
         val viewport = compose.onNodeWithTag("home_test_viewport").fetchSemanticsNode().boundsInRoot
-        val composer = compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val composer = compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG)
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .boundsInRoot
         assertTrue(composer.top >= viewport.top, "Composer top must fit in available content")
         assertTrue(composer.bottom <= viewport.bottom + 1f, "Composer bottom must fit above IME")
         compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).assertHeightIsAtLeast(48.dp)

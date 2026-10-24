@@ -6,7 +6,7 @@ import androidx.compose.animation.core.Easing
  * Inverts the monotone x coordinate without the float analytic solver's endpoint cancellation.
  * After 48 bisections the parameter bracket is at most 2^-48 wide. Double de Casteljau
  * evaluation preserves the original curve, including intentional y overshoot; only endpoints
- * are pinned. For Home's control points, solver error is far below Float rounding error.
+ * are pinned. For Home's control points, absolute solver error is below 1e-13 before Float conversion.
  */
 internal class HomeSafeCubicBezierEasing(
     private val x1: Float,

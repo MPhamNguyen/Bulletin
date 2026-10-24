@@ -26,7 +26,7 @@ class HomeSaveCelebrationDeviceTest {
     private val anchor = Rect(850f, 2100f, 950f, 2200f)
 
     @Test
-    fun late_success_celebrates_once_after_deck_has_advanced() {
+    fun lateSuccessCelebratesOnceAfterDeckHasAdvanced() {
         val result = CompletableDeferred<Result<Unit>>()
         fixture.saveResult = { result.await() }
         var celebrations = 0
@@ -45,7 +45,7 @@ class HomeSaveCelebrationDeviceTest {
     }
 
     @Test
-    fun failed_save_never_celebrates() {
+    fun failedSaveNeverCelebrates() {
         fixture.saveResult = { Result.Error(SaveListingFailure.Network()) }
         var celebrations = 0
         fixture.show(compose, durationScale = 1f, anchor = anchor, onCelebrate = { celebrations++ })
@@ -57,7 +57,7 @@ class HomeSaveCelebrationDeviceTest {
     }
 
     @Test
-    fun zero_scale_completes_save_and_delivers_celebration_once() {
+    fun zeroScaleCompletesSaveAndDeliversCelebrationOnce() {
         var celebrations = 0
         fixture.showWithZeroMotion(compose, anchor = anchor, onCelebrate = { celebrations++ })
         swipeRight()
@@ -69,7 +69,7 @@ class HomeSaveCelebrationDeviceTest {
     }
 
     @Test
-    fun confirmed_save_waits_for_normal_departure_then_celebrates_on_next_card_once() {
+    fun confirmedSaveWaitsForNormalDepartureThenCelebratesOnNextCardOnce() {
         val result = CompletableDeferred<Result<Unit>>()
         fixture.saveResult = { result.await() }
         var celebrations = 0

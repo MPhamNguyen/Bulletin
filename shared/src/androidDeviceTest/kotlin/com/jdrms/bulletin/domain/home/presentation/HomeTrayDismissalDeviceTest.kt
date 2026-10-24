@@ -21,7 +21,7 @@ class HomeTrayDismissalDeviceTest {
     private val harness = HomePlatformDeviceHarness()
     private var fallbacks = 0
 
-    @Test fun back_closes_open_tray_by_close_command_only() {
+    @Test fun backClosesOpenTrayByCloseCommandOnly() {
         show()
         open()
         back()
@@ -32,32 +32,38 @@ class HomeTrayDismissalDeviceTest {
         }
     }
 
-    @Test fun back_when_closed_delegates_to_existing_handler() {
+    @Test fun backWhenClosedDelegatesToExistingHandler() {
         show()
         back()
-        compose.runOnIdle { assertEquals(1, fallbacks); assertEquals(emptyList(), harness.commands) }
+        compose.runOnIdle {
+            assertEquals(1, fallbacks)
+            assertEquals(emptyList(), harness.commands)
+        }
     }
 
-    @Test fun escape_closes_open_tray_from_focused_composer() {
+    @Test fun escapeClosesOpenTrayFromFocusedComposer() {
         show()
         open()
         compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).performKeyInput { pressKey(Key.Escape) }
         compose.runOnIdle { assertEquals(listOf("open", "close"), harness.commands) }
     }
 
-    @Test fun escape_when_closed_does_not_issue_a_command() {
+    @Test fun escapeWhenClosedDoesNotIssueACommand() {
         show()
         compose.onNodeWithTag(HOME_CARD_FOCUS_TAG).performSemanticsAction(SemanticsActions.RequestFocus) { it() }
         compose.onNodeWithTag(HOME_CARD_FOCUS_TAG).performKeyInput { pressKey(Key.Escape) }
         compose.runOnIdle { assertEquals(emptyList(), harness.commands) }
     }
 
-    @Test fun sending_delegates_back_and_ignores_escape_without_losing_or_duplicating_message() {
+    @Test fun sendingDelegatesBackAndIgnoresEscapeWithoutLosingOrDuplicatingMessage() {
         val sent = CompletableDeferred<Result<Unit>>()
         harness.ports.sendResult = { sent.await() }
         show()
         open()
-        compose.runOnIdle { harness.actions.onDraftChanged("hello"); harness.actions.sendMessage() }
+        compose.runOnIdle {
+            harness.actions.onDraftChanged("hello")
+            harness.actions.sendMessage()
+        }
         compose.waitForIdle()
         back()
         compose.onRoot().performKeyInput { pressKey(Key.Escape) }
@@ -75,7 +81,7 @@ class HomeTrayDismissalDeviceTest {
         }
     }
 
-    @Test fun leaving_delegates_back_and_ignores_escape() {
+    @Test fun leavingDelegatesBackAndIgnoresEscape() {
         harness.scale = 1f
         show()
         compose.mainClock.autoAdvance = false
@@ -91,7 +97,7 @@ class HomeTrayDismissalDeviceTest {
         compose.mainClock.autoAdvance = true
     }
 
-    @Test fun cancelled_predictive_back_keeps_tray_open_and_commit_closes_once() {
+    @Test fun cancelledPredictiveBackKeepsTrayOpenAndCommitClosesOnce() {
         show()
         open()
         compose.runOnIdle {
@@ -107,9 +113,12 @@ class HomeTrayDismissalDeviceTest {
 
     private fun show() {
         compose.runOnUiThread {
-            compose.activity.onBackPressedDispatcher.addCallback(compose.activity, object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() { fallbacks++ }
-            })
+            compose.activity.onBackPressedDispatcher.addCallback(
+                compose.activity,
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() { fallbacks++ }
+                }
+            )
         }
         harness.show(compose)
     }

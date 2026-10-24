@@ -4,9 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
@@ -32,7 +32,7 @@ class HomeZeroMotionDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val harness = HomePlatformDeviceHarness()
 
-    @Test fun zero_scale_save_calls_exit_consumption_and_celebration_exactly_once() {
+    @Test fun zeroScaleSaveCallsExitConsumptionAndCelebrationExactlyOnce() {
         harness.show(compose)
         compose.runOnIdle { harness.actions.saveCurrentCard() }
         compose.waitForIdle()
@@ -53,7 +53,7 @@ class HomeZeroMotionDeviceTest {
         }
     }
 
-    @Test fun zero_scale_pass_calls_exit_once_without_celebration() {
+    @Test fun zeroScalePassCallsExitOnceWithoutCelebration() {
         harness.show(compose)
         compose.runOnIdle { harness.actions.passCurrentCard() }
         compose.waitForIdle()
@@ -65,9 +65,12 @@ class HomeZeroMotionDeviceTest {
         }
     }
 
-    @Test fun zero_scale_send_calls_receipt_and_exit_once_without_celebration() {
+    @Test fun zeroScaleSendCallsReceiptAndExitOnceWithoutCelebration() {
         harness.show(compose)
-        compose.runOnIdle { harness.actions.openTray(); harness.actions.onDraftChanged("hello") }
+        compose.runOnIdle {
+            harness.actions.openTray()
+            harness.actions.onDraftChanged("hello")
+        }
         compose.waitForIdle()
         compose.runOnIdle { harness.actions.sendMessage() }
         compose.waitForIdle()
@@ -81,10 +84,13 @@ class HomeZeroMotionDeviceTest {
             assertTrue(harness.celebrations.isEmpty())
         }
         compose.waitForIdle()
-        compose.runOnIdle { assertEquals(1, harness.exits.size); assertEquals(1, harness.receipts.size) }
+        compose.runOnIdle {
+            assertEquals(1, harness.exits.size)
+            assertEquals(1, harness.receipts.size)
+        }
     }
 
-    @Test fun retry_success_celebrates_without_another_departure() {
+    @Test fun retrySuccessCelebratesWithoutAnotherDeparture() {
         harness.ports.saveResult = { Result.Error(SaveListingFailure.Network()) }
         harness.show(compose)
         compose.runOnIdle { harness.actions.saveCurrentCard() }
@@ -102,7 +108,7 @@ class HomeZeroMotionDeviceTest {
         }
     }
 
-    @Test fun unavailable_save_never_delivers_a_celebration_or_exit() {
+    @Test fun unavailableSaveNeverDeliversACelebrationOrExit() {
         harness.show(compose, capabilities = false)
         compose.runOnIdle { harness.actions.saveCurrentCard() }
         compose.waitForIdle()
@@ -112,7 +118,7 @@ class HomeZeroMotionDeviceTest {
         }
     }
 
-    @Test fun changing_scale_mid_departure_does_not_duplicate_exit() {
+    @Test fun changingScaleMidDepartureDoesNotDuplicateExit() {
         harness.scale = 2f
         harness.show(compose)
         compose.mainClock.autoAdvance = false
@@ -125,15 +131,19 @@ class HomeZeroMotionDeviceTest {
         compose.runOnIdle { assertEquals(1, harness.exits.size) }
     }
 
-    @Test fun zero_scale_profile_ripple_and_pulse_finish_at_rest_and_keep_haptic() {
+    @Test fun zeroScaleProfileRippleAndPulseFinishAtRestAndKeepHaptic() {
         var haptics = 0
         compose.setContent {
             val scope = rememberCoroutineScope()
             val celebration = remember { ProfileTabCelebration() }
             LaunchedEffect(Unit) {
-                celebration.play(scope, 0f, object : HapticFeedback {
-                    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) { haptics++ }
-                })
+                celebration.play(
+                    scope,
+                    0f,
+                    object : HapticFeedback {
+                        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) { haptics++ }
+                    }
+                )
             }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Box(Modifier.size(48.dp).background(Color.White).then(celebration.modifier(Color.Red)).testTag("pulse"))

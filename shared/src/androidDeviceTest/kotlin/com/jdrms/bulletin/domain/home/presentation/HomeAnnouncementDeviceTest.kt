@@ -20,7 +20,7 @@ class HomeAnnouncementDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val harness = HomePlatformDeviceHarness()
 
-    @Test fun confirmed_save_and_pass_announce_once_despite_recomposition() {
+    @Test fun confirmedSaveAndPassAnnounceOnceDespiteRecomposition() {
         harness.show(compose)
         compose.runOnIdle { harness.actions.saveCurrentCard() }
         compose.waitForIdle()
@@ -40,7 +40,7 @@ class HomeAnnouncementDeviceTest {
         }
     }
 
-    @Test fun sent_receipt_announces_once_and_does_not_announce_saved() {
+    @Test fun sentReceiptAnnouncesOnceAndDoesNotAnnounceSaved() {
         harness.show(compose)
         compose.runOnIdle {
             harness.actions.openTray()
@@ -57,10 +57,13 @@ class HomeAnnouncementDeviceTest {
         compose.runOnIdle { assertNull(harness.announcements.messages.tryReceive().getOrNull()) }
     }
 
-    @Test fun send_failure_announces_once_and_again_for_an_explicit_new_attempt() {
+    @Test fun sendFailureAnnouncesOnceAndAgainForAnExplicitNewAttempt() {
         harness.ports.sendResult = { Result.Error(ContactSellerFailure.Network()) }
         harness.show(compose)
-        compose.runOnIdle { harness.actions.openTray(); harness.actions.onDraftChanged("hello") }
+        compose.runOnIdle {
+            harness.actions.openTray()
+            harness.actions.onDraftChanged("hello")
+        }
         compose.waitForIdle()
         compose.runOnIdle { harness.actions.sendMessage() }
         compose.waitForIdle()
@@ -80,21 +83,26 @@ class HomeAnnouncementDeviceTest {
         }
     }
 
-    @Test fun announcement_region_has_polite_semantics() {
+    @Test fun announcementRegionHasPoliteSemantics() {
         compose.setContent { HomeAnnouncementRegion(HomeAnnouncements(), HomeInteractionState(accountNotice = null)) }
         compose.onNodeWithTag("home_announcement").assert(
-            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+        )
     }
 
-    @Test fun guest_notice_announces_once() {
+    @Test fun guestNoticeAnnouncesOnce() {
         val announcements = HomeAnnouncements()
         var tick by mutableIntStateOf(0)
         compose.setContent {
-            @Suppress("UNUSED_VARIABLE") val recompose = tick
+            @Suppress("UNUSED_VARIABLE")
+            val recompose = tick
             HomeStateAnnouncements(announcements, HomeInteractionState())
         }
         compose.runOnIdle {
-            assertEquals("Sign in to save listings or message sellers.", announcements.messages.tryReceive().getOrNull())
+            assertEquals(
+                "Sign in to save listings or message sellers.",
+                announcements.messages.tryReceive().getOrNull()
+            )
             tick++
         }
         compose.waitForIdle()

@@ -18,13 +18,16 @@ class HomeNonzeroMotionDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val harness = HomePlatformDeviceHarness()
 
-    @Test fun save_departure_and_real_profile_celebration_complete_once() {
+    @Test fun saveDepartureAndRealProfileCelebrationCompleteOnce() {
         var haptics = 0
         val celebration = ProfileTabCelebration()
         harness.onCelebration = { scope, scale ->
-            celebration.play(scope, scale, object : HapticFeedback {
-                override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) { haptics++ }
-            })
+            celebration.play(
+                scope, scale,
+                object : HapticFeedback {
+                    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) { haptics++ }
+                }
+            )
         }
         start()
         compose.runOnIdle { harness.actions.saveCurrentCard() }
@@ -37,10 +40,13 @@ class HomeNonzeroMotionDeviceTest {
             assertEquals(1, harness.ports.home.uiState.value.currentIndex)
         }
         advanceFrames()
-        compose.runOnIdle { assertEquals(1, harness.exits.size); assertEquals(1, haptics) }
+        compose.runOnIdle {
+            assertEquals(1, harness.exits.size)
+            assertEquals(1, haptics)
+        }
     }
 
-    @Test fun pass_departure_completes_once() {
+    @Test fun passDepartureCompletesOnce() {
         start()
         compose.runOnIdle { harness.actions.passCurrentCard() }
         advanceFrames()
@@ -53,9 +59,12 @@ class HomeNonzeroMotionDeviceTest {
         compose.runOnIdle { assertEquals(1, harness.exits.size) }
     }
 
-    @Test fun send_receipt_and_departure_complete_once() {
+    @Test fun sendReceiptAndDepartureCompleteOnce() {
         start()
-        compose.runOnIdle { harness.actions.openTray(); harness.actions.onDraftChanged("hello") }
+        compose.runOnIdle {
+            harness.actions.openTray()
+            harness.actions.onDraftChanged("hello")
+        }
         advanceFrames()
         compose.runOnIdle { harness.actions.sendMessage() }
         advanceFrames()
@@ -66,7 +75,10 @@ class HomeNonzeroMotionDeviceTest {
             assertEquals(1, harness.ports.home.uiState.value.currentIndex)
         }
         advanceFrames()
-        compose.runOnIdle { assertEquals(1, harness.exits.size); assertEquals(1, harness.receipts.size) }
+        compose.runOnIdle {
+            assertEquals(1, harness.exits.size)
+            assertEquals(1, harness.receipts.size)
+        }
     }
 
     private fun start() {

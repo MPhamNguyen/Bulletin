@@ -63,20 +63,28 @@ class HomePhotoZoneGestureTest {
             val session = remember {
                 HomeGestureSession(
                     interaction = { HomeInteractionState() },
-                    onBegin = { drag.floatValue = 0f }, onAxis = {},
-                    onDrag = { drag.floatValue = it }, onRelease = releases::add,
+                    onBegin = { drag.floatValue = 0f },
+                    onAxis = {},
+                    onDrag = { drag.floatValue = it },
+                    onRelease = releases::add,
                     onCancel = { releases += CardGestureResolver.Release.CANCEL }
                 )
             }
             Box(Modifier.fillMaxSize().homeCardGestures(session)) {
-                Box(Modifier.fillMaxSize().graphicsLayer {
-                    translationX = drag.floatValue * density
-                    rotationZ = drag.floatValue * 0.05f
-                }) {
-                    Box(Modifier.align(Alignment.TopStart).fillMaxWidth(0.38f).fillMaxHeight()
-                        .clickable { previous++ })
-                    Box(Modifier.align(Alignment.TopEnd).fillMaxWidth(0.38f).fillMaxHeight()
-                        .clickable { next++ })
+                Box(
+                    Modifier.fillMaxSize().graphicsLayer {
+                        translationX = drag.floatValue * density
+                        rotationZ = drag.floatValue * 0.05f
+                    }
+                ) {
+                    Box(
+                        Modifier.align(Alignment.TopStart).fillMaxWidth(0.38f).fillMaxHeight()
+                            .clickable { previous++ }
+                    )
+                    Box(
+                        Modifier.align(Alignment.TopEnd).fillMaxWidth(0.38f).fillMaxHeight()
+                            .clickable { next++ }
+                    )
                 }
             }
         }

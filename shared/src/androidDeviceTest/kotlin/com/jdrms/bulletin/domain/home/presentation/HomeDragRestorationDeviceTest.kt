@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 class HomeDragRestorationDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun activity_recreation_during_drag_cancels_without_committing() {
+    @Test fun activityRecreationDuringDragCancelsWithoutCommitting() {
         val fixture = HomeTrayDeviceFixture()
         fixture.showWithZeroMotion(compose)
         compose.onNodeWithTag(HOME_CARD_FOCUS_TAG).performTouchInput {
@@ -40,7 +40,7 @@ class HomeDragRestorationDeviceTest {
         compose.runOnIdle { assertEquals(1, fixture.home.uiState.value.currentIndex) }
     }
 
-    @Test fun saved_state_recreation_during_drag_cancels_without_committing_and_accepts_next_swipe() {
+    @Test fun savedStateRecreationDuringDragCancelsWithoutCommittingAndAcceptsNextSwipe() {
         val fixture = HomeTrayDeviceFixture()
         val restoration = StateRestorationTester(compose)
         fixture.showWithZeroMotion(compose, restoration = restoration)

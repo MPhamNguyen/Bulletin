@@ -20,21 +20,21 @@ class HomeAccessibilityDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val harness = HomePlatformDeviceHarness()
 
-    @Test fun save_action_and_right_swipe_call_same_command() {
+    @Test fun saveActionAndRightSwipeCallSameCommand() {
         harness.show(compose)
         action("Save")
         swipe(right = true)
         compose.runOnIdle { assertEquals(listOf("save", "save"), harness.commands) }
     }
 
-    @Test fun pass_action_and_left_swipe_call_same_command() {
+    @Test fun passActionAndLeftSwipeCallSameCommand() {
         harness.show(compose)
         action("Pass")
         swipe(right = false)
         compose.runOnIdle { assertEquals(listOf("pass", "pass"), harness.commands) }
     }
 
-    @Test fun message_action_and_upward_drag_call_same_command_and_focus_composer() {
+    @Test fun messageActionAndUpwardDragCallSameCommandAndFocusComposer() {
         harness.show(compose)
         action("Message seller")
         compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).assertIsFocused()
@@ -46,24 +46,29 @@ class HomeAccessibilityDeviceTest {
         compose.runOnIdle { assertEquals(listOf("open", "close", "open"), harness.commands) }
     }
 
-    @Test fun unavailable_save_and_message_actions_are_absent_and_arrows_do_nothing() {
+    @Test fun unavailableSaveAndMessageActionsAreAbsentAndArrowsDoNothing() {
         harness.show(compose, capabilities = false)
         val card = compose.onNodeWithTag(HOME_CARD_FOCUS_TAG)
         assertEquals(listOf("Pass"), card.fetchSemanticsNode().config[SemanticsActions.CustomActions].map { it.label })
         card.performSemanticsAction(SemanticsActions.RequestFocus) { it() }
-        card.performKeyInput { pressKey(Key.DirectionRight); pressKey(Key.DirectionUp) }
+        card.performKeyInput {
+            pressKey(Key.DirectionRight)
+            pressKey(Key.DirectionUp)
+        }
         compose.runOnIdle { assertTrue(harness.commands.isEmpty()) }
     }
 
-    @Test fun actions_are_absent_outside_idle_and_closed_tray_has_no_composer() {
+    @Test fun actionsAreAbsentOutsideIdleAndClosedTrayHasNoComposer() {
         harness.show(compose)
         compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).assertDoesNotExist()
         action("Message seller")
-        assertTrue(compose.onNodeWithTag(HOME_CARD_FOCUS_TAG).fetchSemanticsNode()
-            .config[SemanticsActions.CustomActions].isEmpty())
+        assertTrue(
+            compose.onNodeWithTag(HOME_CARD_FOCUS_TAG).fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions].isEmpty()
+        )
     }
 
-    @Test fun focused_card_arrows_map_to_the_same_commands() {
+    @Test fun focusedCardArrowsMapToTheSameCommands() {
         harness.show(compose)
         val card = compose.onNodeWithTag(HOME_CARD_FOCUS_TAG)
         card.performSemanticsAction(SemanticsActions.RequestFocus) { it() }
@@ -75,7 +80,7 @@ class HomeAccessibilityDeviceTest {
         compose.runOnIdle { assertEquals(listOf("save", "pass", "open"), harness.commands) }
     }
 
-    @Test fun description_contains_title_price_and_only_available_actions() {
+    @Test fun descriptionContainsTitlePriceAndOnlyAvailableActions() {
         harness.show(compose, capabilities = false)
         val description = compose.onNodeWithTag(HOME_CARD_FOCUS_TAG).fetchSemanticsNode()
             .config[SemanticsProperties.ContentDescription].single()

@@ -21,7 +21,7 @@ class HomeTrayGestureTest {
     private val fixture = HomeTrayDeviceFixture()
 
     @Test
-    fun upward_drag_opens_and_downward_drag_closes_without_sending() {
+    fun upwardDragOpensAndDownwardDragClosesWithoutSending() {
         fixture.showWithZeroMotion(compose)
         dragUp()
         assertOpen()
@@ -33,7 +33,7 @@ class HomeTrayGestureTest {
     }
 
     @Test
-    fun fast_upward_flick_only_opens_and_quick_reply_only_fills_draft() {
+    fun fastUpwardFlickOnlyOpensAndQuickReplyOnlyFillsDraft() {
         fixture.showWithZeroMotion(compose)
         dragUp(40)
         assertOpen()
@@ -45,7 +45,7 @@ class HomeTrayGestureTest {
     }
 
     @Test
-    fun button_send_failure_restores_draft_and_keeps_tray_open() {
+    fun buttonSendFailureRestoresDraftAndKeepsTrayOpen() {
         fixture.sendResult = { Result.Error(ContactSellerFailure.Network()) }
         fixture.showWithZeroMotion(compose)
         dragUp()
@@ -60,7 +60,7 @@ class HomeTrayGestureTest {
     }
 
     @Test
-    fun ime_send_receipt_dwell_then_departure_and_duplicate_tokens_are_harmless() {
+    fun imeSendReceiptDwellThenDepartureAndDuplicateTokensAreHarmless() {
         val result = CompletableDeferred<Result<Unit>>()
         fixture.sendResult = { result.await() }
         fixture.show(compose, durationScale = 1f)
