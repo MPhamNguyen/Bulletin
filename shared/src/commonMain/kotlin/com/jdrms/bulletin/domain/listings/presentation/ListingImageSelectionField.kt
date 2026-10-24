@@ -28,11 +28,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -46,6 +48,8 @@ import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun ListingImageSelectionField(
@@ -134,11 +138,21 @@ private fun ListingPhotoImage(
     description: String,
     modifier: Modifier = Modifier
 ) {
+    when (photo) {
+        is ListingPhotoDraft.Existing -> ExistingListingPhotoImage(photo, crop, description, modifier)
+        is ListingPhotoDraft.Pending -> PendingListingPhotoImage(photo, crop, description, modifier)
+    }
+}
+
+@Composable
+private fun ExistingListingPhotoImage(
+    photo: ListingPhotoDraft.Existing,
+    crop: ImageCropSettings,
+    description: String,
+    modifier: Modifier
+) {
     SubcomposeAsyncImage(
-        model = when (photo) {
-            is ListingPhotoDraft.Existing -> photo.url.imageRequestUrl()
-            is ListingPhotoDraft.Pending -> photo.upload.bytes
-        },
+        model = photo.url.imageRequestUrl(),
         contentDescription = description,
         modifier = modifier,
         contentScale = ContentScale.Fit,
@@ -155,6 +169,34 @@ private fun ListingPhotoImage(
             )
         }
     )
+}
+
+@Composable
+private fun PendingListingPhotoImage(
+    photo: ListingPhotoDraft.Pending,
+    crop: ImageCropSettings,
+    description: String,
+    modifier: Modifier
+) {
+    val bitmap by produceState<ImageBitmap?>(null, photo.upload) {
+        value = withContext(Dispatchers.Default) { decodeListingImagePreview(photo.upload.bytes) }
+    }
+    val preview = bitmap
+    if (preview == null) {
+        Box(modifier = modifier) { PhotoPlaceholder() }
+    } else {
+        androidx.compose.foundation.Image(
+            bitmap = preview,
+            contentDescription = description,
+            modifier = modifier.graphicsLayer {
+                scaleX = crop.scale
+                scaleY = crop.scale
+                translationX = -crop.offsetX * size.width * crop.scale
+                translationY = -crop.offsetY * size.height * crop.scale
+            },
+            contentScale = ContentScale.Fit
+        )
+    }
 }
 
 @Composable
