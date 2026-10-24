@@ -6,6 +6,9 @@ import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.UserPreferences
 
 data class HomeUiState(
+    val loadedItems: List<HomeFeedItem> = emptyList(),
+    val deckGeneration: Long = 0,
+    val prefetchEnabled: Boolean = true,
     val currentIndex: Int = 0,
     val feed: List<HomeFeedItem> = emptyList(),
     val preferences: UserPreferences = UserPreferences(),

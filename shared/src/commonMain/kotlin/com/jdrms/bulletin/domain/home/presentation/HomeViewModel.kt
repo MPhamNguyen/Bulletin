@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
+import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCursor
+import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionState
@@ -27,6 +29,8 @@ class HomeViewModel(
     private var currentUserId: String? = null
     private var hasResolvedSession = false
     private var feedJob: Job? = null
+    private val deck = HomeDeckPolicy()
+    private var requestGeneration = 0L
 
     init {
         listingChangedSignal?.let { signal ->
@@ -41,6 +45,7 @@ class HomeViewModel(
                 if (session == SessionState.Checking) return@collect
                 val userId = (session as? SessionState.Authenticated)?.profile?.id?.value
                 if (!hasResolvedSession || userId != currentUserId) {
+                    deck.changeAccount(userId)
                     currentUserId = userId
                     hasResolvedSession = true
                     loadFeed()
@@ -49,22 +54,41 @@ class HomeViewModel(
         }
     }
 
-    fun advanceCard(expectedIndex: Int) {
+    fun advanceCard(expectedIndex: Int, expectedGeneration: Long = _uiState.value.deckGeneration) {
         _uiState.update { state ->
-            if (state.currentIndex != expectedIndex || expectedIndex !in state.feed.indices) state
-            else state.copy(currentIndex = expectedIndex + 1)
+            if (state.deckGeneration != expectedGeneration || state.currentIndex != expectedIndex ||
+                expectedIndex !in state.feed.indices
+            ) state else state.copy(currentIndex = expectedIndex + 1, prefetchEnabled = true)
+        }
+    }
+
+    internal fun excludeLoadedCard(id: HomeItemId, exclusion: HomeDeckExclusion) {
+        deck.exclude(id, exclusion)
+        _uiState.update { state ->
+            val consumed = deck.eligible(state.feed.take(state.currentIndex)).size
+            state.copy(
+                feed = deck.eligible(state.loadedItems), currentIndex = consumed,
+                deckGeneration = state.deckGeneration + 1
+            )
         }
     }
 
     fun replayLoadedCards() {
-        _uiState.update { it.copy(currentIndex = 0) }
+        _uiState.update(deck::replay)
     }
+
+    fun refresh() = loadFeed()
 
     fun loadFeed() {
         feedJob?.cancel()
+        val generation = ++requestGeneration
+        deck.resetPagination()
         _uiState.update {
             it.copy(
+                loadedItems = emptyList(),
+                deckGeneration = it.deckGeneration + 1,
                 currentIndex = 0,
+                prefetchEnabled = true,
                 feed = emptyList(),
                 isLoading = true,
                 isLoadingMore = false,
@@ -73,23 +97,7 @@ class HomeViewModel(
                 errorMessage = null
             )
         }
-        feedJob = viewModelScope.launch {
-            try {
-                val page = getPersonalizedFeed(currentUserId)
-                _uiState.update {
-                    it.copy(
-                        feed = page.items,
-                        isLoading = false,
-                        hasMore = page.nextCursor != null,
-                        nextCursor = page.nextCursor
-                    )
-                }
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (_: Exception) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = FEED_LOAD_ERROR) }
-            }
-        }
+        feedJob = viewModelScope.launch { retrievePages(null, generation, currentUserId) }
     }
 
     fun loadNextPage() {
@@ -97,22 +105,25 @@ class HomeViewModel(
         val cursor = state.nextCursor ?: return
         if (state.isLoading || state.isLoadingMore || !state.hasMore) return
         _uiState.update { it.copy(isLoadingMore = true, errorMessage = null) }
-        feedJob = viewModelScope.launch {
-            try {
-                val page = getPersonalizedFeed(currentUserId, cursor)
-                _uiState.update { current ->
-                    val existingIds = current.feed.mapTo(mutableSetOf()) { it.id }
-                    current.copy(
-                        feed = current.feed + page.items.filterNot { it.id in existingIds },
-                        isLoadingMore = false,
-                        hasMore = page.nextCursor != null,
-                        nextCursor = page.nextCursor
-                    )
-                }
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (_: Exception) {
-                _uiState.update { it.copy(isLoadingMore = false, errorMessage = FEED_LOAD_ERROR) }
+        val generation = requestGeneration
+        feedJob = viewModelScope.launch { retrievePages(cursor, generation, currentUserId) }
+    }
+
+    private suspend fun retrievePages(cursor: HomeFeedCursor?, generation: Long, userId: String?) {
+        var next = cursor
+        try {
+            do {
+                val page = getPersonalizedFeed(userId, next)
+                if (generation != requestGeneration) return
+                _uiState.update { deck.acceptPage(it, page) }
+                next = page.nextCursor
+            } while (deck.shouldContinue(_uiState.value))
+            _uiState.update { it.copy(isLoading = false, isLoadingMore = false) }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            if (generation == requestGeneration) {
+                _uiState.update { it.copy(isLoading = false, isLoadingMore = false, errorMessage = FEED_LOAD_ERROR) }
             }
         }
     }
