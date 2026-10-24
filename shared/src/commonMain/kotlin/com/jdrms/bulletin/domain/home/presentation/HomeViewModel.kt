@@ -4,13 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
+import com.jdrms.bulletin.domain.home.application.RecordSwipeDecision
+import com.jdrms.bulletin.domain.home.application.SendQuickMessage
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCursor
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
+import com.jdrms.bulletin.domain.home.domain.repository.SwipeDecisionRepository
+import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemorySwipeDecisionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,14 +27,17 @@ class HomeViewModel(
     private val getPersonalizedFeed: GetPersonalizedFeed,
     private val updateUserPreferences: UpdateUserPreferences,
     private val sessionRepository: SessionRepository,
-    private val listingChangedSignal: RefreshSignal? = null
+    private val listingChangedSignal: RefreshSignal? = null,
+    swipeDecisionRepository: SwipeDecisionRepository = InMemorySwipeDecisionRepository(),
+    private val recordSwipeDecision: RecordSwipeDecision = RecordSwipeDecision(swipeDecisionRepository),
+    private val sendQuickMessage: SendQuickMessage? = null
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState = _uiState.asStateFlow()
     private var currentUserId: String? = null
     private var hasResolvedSession = false
     private var feedJob: Job? = null
-    private val deck = HomeDeckPolicy()
+    private val deck = HomeDeckPolicy(swipeDecisionRepository)
     private var requestGeneration = 0L
 
     init {
@@ -67,19 +75,29 @@ class HomeViewModel(
     }
 
     internal fun excludeLoadedCard(id: HomeItemId, exclusion: HomeDeckExclusion) {
-        deck.exclude(id, exclusion)
-        _uiState.update { state ->
-            val consumed = deck.eligible(state.feed.take(state.currentIndex)).size
-            state.copy(
-                feed = deck.eligible(state.loadedItems),
-                currentIndex = consumed,
-                deckGeneration = state.deckGeneration + 1
-            )
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            val userId = currentUserId
+            deck.exclude(id, exclusion)
+            val excluded = deck.excludedIds()
+            if (userId != currentUserId) return@launch
+            _uiState.update { state ->
+                val consumed = deck.eligible(state.feed.take(state.currentIndex), excluded).size
+                state.copy(
+                    feed = deck.eligible(state.loadedItems, excluded),
+                    currentIndex = consumed,
+                    deckGeneration = state.deckGeneration + 1
+                )
+            }
         }
     }
 
     fun replayLoadedCards() {
-        _uiState.update(deck::replay)
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            val userId = currentUserId
+            deck.clearPassDecisions()
+            val excluded = deck.excludedIds()
+            if (userId == currentUserId) _uiState.update { deck.replay(it, excluded) }
+        }
     }
 
     fun refresh() = loadFeed()
@@ -119,8 +137,9 @@ class HomeViewModel(
         try {
             do {
                 val page = getPersonalizedFeed(userId, next)
+                val excluded = deck.excludedIds()
                 if (generation != requestGeneration) return
-                _uiState.update { deck.acceptPage(it, page) }
+                _uiState.update { deck.acceptPage(it, page, excluded) }
                 next = page.nextCursor
             } while (deck.shouldContinue(_uiState.value))
             _uiState.update { it.copy(isLoading = false, isLoadingMore = false) }

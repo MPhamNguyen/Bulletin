@@ -10,6 +10,8 @@ import com.jdrms.bulletin.app.integration.ListingsActiveListingsCountProvider
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
 import com.jdrms.bulletin.app.integration.ListingsSoldListingsCountProvider
+import com.jdrms.bulletin.app.integration.MarketplaceHomeSaveAdapter
+import com.jdrms.bulletin.app.integration.MessagesHomeContactSellerAdapter
 import com.jdrms.bulletin.app.integration.MarketplaceHomeRepository
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceBlockedUserProvider
@@ -22,6 +24,9 @@ import com.jdrms.bulletin.core.common.FlowUserMessenger
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
+import com.jdrms.bulletin.domain.home.application.RecordSwipeDecision
+import com.jdrms.bulletin.domain.home.application.SendQuickMessage
+import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemorySwipeDecisionRepository
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
@@ -269,6 +274,13 @@ class AppContainer(
     val userMessenger by lazy { FlowUserMessenger() }
     val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }
     val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
+    val swipeDecisionRepository by lazy { InMemorySwipeDecisionRepository() }
+    val homeSaveListing by lazy { MarketplaceHomeSaveAdapter(bookmarkMarketplaceListing) }
+    val homeContactSeller by lazy {
+        MessagesHomeContactSellerAdapter(viewMarketplaceListing, getVisibleMarketplaceListings, messageSeller)
+    }
+    val recordSwipeDecision by lazy { RecordSwipeDecision(swipeDecisionRepository) }
+    val sendQuickMessage by lazy { SendQuickMessage(homeContactSeller) }
     private val marketplaceBlockedUserProvider by lazy {
         ProfileMarketplaceBlockedUserProvider(userBlockRepository)
     }

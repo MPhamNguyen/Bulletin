@@ -23,7 +23,10 @@ fun AppContainer.createHomeViewModel() = HomeViewModel(
     getPersonalizedFeed,
     updateUserPreferences,
     sessionRepository,
-    listingChangedSignal
+    listingChangedSignal,
+    swipeDecisionRepository,
+    recordSwipeDecision,
+    sendQuickMessage
 )
 
 fun AppContainer.createMarketplaceViewModel() = MarketplaceViewModel(
