@@ -26,7 +26,7 @@ class HomeDescriptionGestureTest {
 
     @Test
     fun collapsed_description_upward_drag_opens_tray() {
-        fixture.show(compose, description)
+        fixture.showWithZeroMotion(compose, description)
         dragDescription()
         compose.runOnIdle { assertEquals(CardState.Open, fixture.home.uiState.value.interaction.card) }
     }
@@ -77,7 +77,7 @@ class HomeDescriptionGestureTest {
                 return Velocity.Zero
             }
         }
-        fixture.show(compose, description, modifier = Modifier.nestedScroll(parent))
+        fixture.showWithZeroMotion(compose, description, modifier = Modifier.nestedScroll(parent))
         compose.onNodeWithText(description).performClick()
         compose.waitForIdle()
         compose.mainClock.autoAdvance = false
@@ -122,7 +122,7 @@ class HomeDescriptionGestureTest {
     }
 
     private fun showExpanded() {
-        fixture.show(compose, description)
+        fixture.showWithZeroMotion(compose, description)
         compose.onNodeWithText(description).performClick()
         compose.waitForIdle()
         assertTrue(scrollRange().maxValue() > 0f, compose.onRoot().printToString())

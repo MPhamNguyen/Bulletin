@@ -27,6 +27,17 @@ internal class HomeTrayDeviceFixture : ContactSellerPort, SaveListingPort {
     var sendResult: suspend () -> Result<Unit> = { Result.Success(Unit) }
     var saveResult: suspend () -> Result<Unit> = { Result.Success(Unit) }
 
+    /** Zero-motion variant: intentionally bypasses interpolation, retaining gesture/state coverage. */
+    fun showWithZeroMotion(
+        compose: ComposeContentTestRule,
+        description: String = "Available",
+        anchor: Rect? = null,
+        onCelebrate: (Float) -> Unit = {},
+        restoration: StateRestorationTester? = null,
+        modifier: Modifier = Modifier
+    ) = show(compose, description, 0f, anchor, onCelebrate, restoration, modifier)
+
+    /** Prefer showWithZeroMotion for tests that intentionally skip interpolation. */
     fun show(
         compose: ComposeContentTestRule,
         description: String = "Available",

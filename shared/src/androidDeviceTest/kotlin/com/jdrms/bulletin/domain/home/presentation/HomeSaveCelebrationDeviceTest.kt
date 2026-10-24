@@ -59,7 +59,7 @@ class HomeSaveCelebrationDeviceTest {
     @Test
     fun zero_scale_completes_save_and_delivers_celebration_once() {
         var celebrations = 0
-        fixture.show(compose, anchor = anchor, onCelebrate = { celebrations++ })
+        fixture.showWithZeroMotion(compose, anchor = anchor, onCelebrate = { celebrations++ })
         swipeRight()
         compose.runOnIdle {
             assertEquals(1, fixture.home.uiState.value.currentIndex)

@@ -22,7 +22,7 @@ class HomeTrayGestureTest {
 
     @Test
     fun upward_drag_opens_and_downward_drag_closes_without_sending() {
-        fixture.show(compose)
+        fixture.showWithZeroMotion(compose)
         dragUp()
         assertOpen()
         compose.onRoot().performTouchInput {
@@ -34,7 +34,7 @@ class HomeTrayGestureTest {
 
     @Test
     fun fast_upward_flick_only_opens_and_quick_reply_only_fills_draft() {
-        fixture.show(compose)
+        fixture.showWithZeroMotion(compose)
         dragUp(40)
         assertOpen()
         compose.onNodeWithText("Is this still available?").performClick()
@@ -47,7 +47,7 @@ class HomeTrayGestureTest {
     @Test
     fun button_send_failure_restores_draft_and_keeps_tray_open() {
         fixture.sendResult = { Result.Error(ContactSellerFailure.Network()) }
-        fixture.show(compose)
+        fixture.showWithZeroMotion(compose)
         dragUp()
         compose.onNode(hasSetTextAction()).performTextInput("meet on campus")
         compose.onNodeWithContentDescription("Send message").performClick()

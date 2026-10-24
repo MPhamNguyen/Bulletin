@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.application.*
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
+import kotlinx.coroutines.CoroutineScope
 
 /** Commands and acknowledgements are counted at the real VM boundary, not inferred from animation frames. */
 internal class HomePlatformDeviceHarness {
@@ -25,6 +26,7 @@ internal class HomePlatformDeviceHarness {
     val receipts = mutableListOf<Long>()
     val consumed = mutableListOf<Long>()
     val celebrations = mutableListOf<Float>()
+    var onCelebration: (CoroutineScope, Float) -> Unit = { _, _ -> }
     val announcements = HomeAnnouncements()
     lateinit var actions: HomeCardActions
     var replayedConfirmation by mutableStateOf<HomeEffect.SaveConfirmed?>(null)
@@ -43,6 +45,7 @@ internal class HomePlatformDeviceHarness {
 
     @Composable
     private fun Content(capabilities: Boolean) {
+        val scope = rememberCoroutineScope()
         ports.home = viewModel {
             val repo = DeckCharacterizationRepository(listOf(deckItem("first"), deckItem("second"), deckItem("third")))
             HomeViewModel(GetPersonalizedFeed(repo), UpdateUserPreferences(repo), DeckCharacterizationSession(),
@@ -58,7 +61,7 @@ internal class HomePlatformDeviceHarness {
                 HomeConfirmedSaveCelebration(
                     state.interaction.copy(pendingEffects = state.interaction.pendingEffects + listOfNotNull(replayedConfirmation)),
                     actions, Rect(0f, 0f, 48f, 48f), scale
-                ) { celebrations += it }
+                ) { celebrations += it; onCelebration(scope, it) }
             }
         }
     }

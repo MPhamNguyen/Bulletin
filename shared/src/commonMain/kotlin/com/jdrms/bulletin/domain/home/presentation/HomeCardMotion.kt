@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.home.presentation
 
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
@@ -13,9 +12,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val SnapEasing = CubicBezierEasing(0.2f, 0.9f, 0.3f, 1.15f)
-private val SettleEasing = CubicBezierEasing(0.22f, 0.85f, 0.25f, 1f)
-private val ExitEasing = CubicBezierEasing(0.5f, 0f, 0.85f, 0.45f)
+private val SnapEasing = HomeSafeCubicBezierEasing(0.2f, 0.9f, 0.3f, 1.15f)
+private val SettleEasing = HomeSafeCubicBezierEasing(0.22f, 0.85f, 0.25f, 1f)
+private val ExitEasing = HomeSafeCubicBezierEasing(0.5f, 0f, 0.85f, 0.45f)
 
 /** UI-local motion. Read its values only from graphics/draw lambdas, not card composition. */
 internal class HomeCardMotion(private val durationScale: Float = 1f) {

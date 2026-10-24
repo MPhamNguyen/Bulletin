@@ -19,7 +19,7 @@ class HomeDragRestorationDeviceTest {
 
     @Test fun activity_recreation_during_drag_cancels_without_committing() {
         val fixture = HomeTrayDeviceFixture()
-        fixture.show(compose)
+        fixture.showWithZeroMotion(compose)
         compose.onNodeWithTag(HOME_CARD_FOCUS_TAG).performTouchInput {
             down(Offset(width * .5f, height * .25f))
             moveBy(Offset(50f, 0f))
@@ -43,7 +43,7 @@ class HomeDragRestorationDeviceTest {
     @Test fun saved_state_recreation_during_drag_cancels_without_committing_and_accepts_next_swipe() {
         val fixture = HomeTrayDeviceFixture()
         val restoration = StateRestorationTester(compose)
-        fixture.show(compose, restoration = restoration)
+        fixture.showWithZeroMotion(compose, restoration = restoration)
         val card = compose.onNodeWithTag(HOME_CARD_FOCUS_TAG)
         card.performTouchInput {
             down(Offset(width * .5f, height * .25f))

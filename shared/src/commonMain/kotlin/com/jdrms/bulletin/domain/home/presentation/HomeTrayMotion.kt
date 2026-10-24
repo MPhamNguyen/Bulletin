@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,7 +12,7 @@ import kotlinx.coroutines.launch
 
 internal const val HOME_TRAY_LIFT_DP = 220f
 internal const val HOME_RECEIPT_DWELL_MILLIS = 1300
-private val TraySettleEasing = CubicBezierEasing(0.22f, 0.85f, 0.25f, 1f)
+private val TraySettleEasing = HomeSafeCubicBezierEasing(0.22f, 0.85f, 0.25f, 1f)
 
 /** One progress value, observed by graphics layers only. No draft or business state lives here. */
 internal class HomeTrayMotion(private val durationScale: Float) {

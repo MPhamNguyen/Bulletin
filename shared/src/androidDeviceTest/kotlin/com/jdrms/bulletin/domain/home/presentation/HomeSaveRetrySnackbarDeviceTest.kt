@@ -52,7 +52,7 @@ class HomeSaveRetrySnackbarDeviceTest {
     fun recreation_keeps_acknowledged_retry_available_without_dismissing_it() {
         val restoration = StateRestorationTester(compose)
         fixture.saveResult = { Result.Error(SaveListingFailure.Network()) }
-        fixture.show(compose, restoration = restoration)
+        fixture.showWithZeroMotion(compose, restoration = restoration)
         swipeRight()
         compose.onNodeWithText("Retry").assertExists()
         restoration.emulateSavedInstanceStateRestore()
@@ -76,7 +76,7 @@ class HomeSaveRetrySnackbarDeviceTest {
 
     private fun showFailure() {
         fixture.saveResult = { Result.Error(SaveListingFailure.Network()) }
-        fixture.show(compose)
+        fixture.showWithZeroMotion(compose)
         swipeRight()
         compose.onNodeWithText("Retry").assertExists()
     }
