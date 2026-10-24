@@ -8,9 +8,13 @@ import kotlin.test.fail
 
 class HomeSafeCubicBezierEasingTest {
     @Test fun exit() = sweep(0.5f, 0f, 0.85f, 0.45f)
+
     @Test fun snapBack() = sweep(0.2f, 0.9f, 0.3f, 1.15f)
+
     @Test fun promotion() = sweep(0.22f, 0.85f, 0.25f, 1f)
+
     @Test fun tray() = sweep(0.22f, 0.85f, 0.25f, 1f)
+
     @Test fun pulse() = sweep(0.2f, 0.9f, 0.3f, 1.3f)
 
     private fun sweep(x1: Float, y1: Float, x2: Float, y2: Float) {
