@@ -49,10 +49,22 @@ class HomeViewModel(
         }
     }
 
+    fun advanceCard(expectedIndex: Int) {
+        _uiState.update { state ->
+            if (state.currentIndex != expectedIndex || expectedIndex !in state.feed.indices) state
+            else state.copy(currentIndex = expectedIndex + 1)
+        }
+    }
+
+    fun replayLoadedCards() {
+        _uiState.update { it.copy(currentIndex = 0) }
+    }
+
     fun loadFeed() {
         feedJob?.cancel()
         _uiState.update {
             it.copy(
+                currentIndex = 0,
                 feed = emptyList(),
                 isLoading = true,
                 isLoadingMore = false,

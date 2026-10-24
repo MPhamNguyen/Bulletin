@@ -27,10 +27,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -52,7 +50,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val items = uiState.feed
     val errorMessage = uiState.errorMessage
-    var currentIndex by remember { mutableStateOf(0) }
+    val currentIndex = uiState.currentIndex
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
 
@@ -63,9 +61,6 @@ fun HomeScreen(
         if (shouldPrefetchHomeFeedPage(currentIndex, items.size, uiState.hasMore)) {
             viewModel.loadNextPage()
         }
-    }
-    LaunchedEffect(uiState.isLoading) {
-        if (uiState.isLoading) currentIndex = 0
     }
 
     BoxWithConstraints(
@@ -111,13 +106,13 @@ fun HomeScreen(
                                             targetValue = -screenWidthPx * 1.3f,
                                             animationSpec = tween(durationMillis = 200)
                                         )
-                                        currentIndex++
+                                        viewModel.advanceCard(currentIndex)
                                     } else if (offsetX.value > thresholdPx) {
                                         offsetX.animateTo(
                                             targetValue = screenWidthPx * 1.3f,
                                             animationSpec = tween(durationMillis = 200)
                                         )
-                                        currentIndex++
+                                        viewModel.advanceCard(currentIndex)
                                     } else {
                                         offsetX.animateTo(
                                             targetValue = 0f,
@@ -163,7 +158,7 @@ fun HomeScreen(
         } else {
             // The feed intentionally stops here instead of looping back through the items.
             EmptyFeedState(
-                onReset = { currentIndex = 0 },
+                onReset = viewModel::replayLoadedCards,
                 modifier = Modifier.fillMaxSize()
             )
         }
