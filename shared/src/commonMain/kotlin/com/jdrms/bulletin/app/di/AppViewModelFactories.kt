@@ -26,7 +26,8 @@ fun AppContainer.createHomeViewModel() = HomeViewModel(
     listingChangedSignal,
     swipeDecisionRepository,
     recordSwipeDecision,
-    sendQuickMessage
+    sendQuickMessage,
+    homeSaveListing
 )
 
 fun AppContainer.createMarketplaceViewModel() = MarketplaceViewModel(

@@ -17,7 +17,8 @@ data class HomeUiState(
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = false,
     val nextCursor: HomeFeedCursor? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val interaction: HomeInteractionState = HomeInteractionState()
 ) {
     val isDeckLoading: Boolean get() = isLoading || isLoadingMore
 }
