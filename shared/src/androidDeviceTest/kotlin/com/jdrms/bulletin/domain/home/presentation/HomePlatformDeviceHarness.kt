@@ -1,7 +1,13 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -23,30 +29,53 @@ internal class HomePlatformDeviceHarness {
     lateinit var actions: HomeCardActions
     var replayedConfirmation by mutableStateOf<HomeEffect.SaveConfirmed?>(null)
     var scale by mutableFloatStateOf(0f)
+    var navbarSpace by mutableStateOf(0.dp)
+    var viewportHeight by mutableStateOf<Dp?>(null)
+    var externallyPaused by mutableStateOf(false)
+    var photoPaused by mutableStateOf(false)
+    var keyboard: SoftwareKeyboardController? = null
     var tick by mutableIntStateOf(0)
 
     fun show(compose: ComposeContentTestRule, capabilities: Boolean = true) {
-        compose.setContent {
-            ports.home = viewModel {
-                val repo = DeckCharacterizationRepository(listOf(deckItem("first"), deckItem("second"), deckItem("third")))
-                HomeViewModel(GetPersonalizedFeed(repo), UpdateUserPreferences(repo), DeckCharacterizationSession(),
-                    sendQuickMessage = if (capabilities) SendQuickMessage(ports) else null,
-                    saveListing = if (capabilities) ports else null)
+        compose.setContent { Content(capabilities) }
+        compose.waitForIdle()
+    }
+
+    @Composable
+    private fun Content(capabilities: Boolean) {
+        ports.home = viewModel {
+            val repo = DeckCharacterizationRepository(listOf(deckItem("first"), deckItem("second"), deckItem("third")))
+            HomeViewModel(GetPersonalizedFeed(repo), UpdateUserPreferences(repo), DeckCharacterizationSession(),
+                sendQuickMessage = if (capabilities) SendQuickMessage(ports) else null,
+                saveListing = if (capabilities) ports else null)
+        }
+        actions = remember { recordingActions(ports.home) }
+        val state by ports.home.uiState.collectAsState()
+        @Suppress("UNUSED_VARIABLE") val recompose = tick
+        BulletinTheme {
+            CompositionLocalProvider(LocalHomeAnnouncements provides announcements, LocalNavbarHeight provides navbarSpace) {
+                Deck(state)
+                HomeConfirmedSaveCelebration(
+                    state.interaction.copy(pendingEffects = state.interaction.pendingEffects + listOfNotNull(replayedConfirmation)),
+                    actions, Rect(0f, 0f, 48f, 48f), scale
+                ) { celebrations += it }
             }
-            actions = remember { recordingActions(ports.home) }
-            val state by ports.home.uiState.collectAsState()
-            @Suppress("UNUSED_VARIABLE") val recompose = tick
-            BulletinTheme {
-                CompositionLocalProvider(LocalHomeAnnouncements provides announcements) {
-                    HomeStateAnnouncements(announcements, state.interaction)
-                    Box(Modifier.fillMaxSize().then(homeTrayDismissal(state.interaction.card, actions))) { HomeCardStack(state, actions, scale) }
-                    HomeConfirmedSaveCelebration(state.interaction.copy(pendingEffects = state.interaction.pendingEffects + listOfNotNull(replayedConfirmation)), actions, Rect(0f, 0f, 48f, 48f), scale) {
-                        celebrations += it
-                    }
+        }
+    }
+
+    @Composable
+    private fun Deck(state: HomeUiState) {
+        keyboard = LocalSoftwareKeyboardController.current
+        HomeStateAnnouncements(announcements, state.interaction)
+        Box(Modifier.fillMaxSize().padding(bottom = navbarSpace)) {
+            HomeKeyboardViewport(Modifier.then(homeTrayDismissal(state.interaction.card, actions)), externallyPaused) { paused ->
+                SideEffect { photoPaused = paused }
+                val viewport = viewportHeight?.let { Modifier.fillMaxWidth().height(it) } ?: Modifier.fillMaxSize()
+                Box(viewport.testTag("home_test_viewport")) {
+                    HomeCardStack(state, actions, scale, photoPlaybackPaused = paused)
                 }
             }
         }
-        compose.waitForIdle()
     }
 
     private fun recordingActions(home: HomeViewModel): HomeCardActions = object : HomeCardActions by home {

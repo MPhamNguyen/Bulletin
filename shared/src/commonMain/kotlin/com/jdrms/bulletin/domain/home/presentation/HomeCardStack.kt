@@ -55,6 +55,7 @@ internal fun HomeCardStack(
     val cardFocus = remember { FocusRequester() }
     val composerFocus = remember { FocusRequester() }
     HomeTrayFocus(state.interaction.card, cardFocus, composerFocus)
+    HomeTrayKeyboard(state.interaction.isTrayOpen)
     val session = rememberHomeGestureSession(state.interaction, actions, motion, tray)
     HomeSentReceiptHandshake(state.interaction, actions, durationScale)
     HomeDepartureAnimation(state.interaction, current, actions, motion)

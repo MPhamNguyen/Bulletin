@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -38,30 +39,24 @@ internal fun HomeTrayPeek(
         ).fillMaxWidth().height(HOME_TRAY_LIFT_DP.dp).graphicsLayer {
             alpha = homeTrayAlpha(progress())
             translationY = (1f - progress()) * 28.dp.toPx()
-        }.background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.large).padding(12.dp),
+        }.clipToBounds().background(
+            MaterialTheme.colorScheme.surfaceContainer,
+            MaterialTheme.shapes.large
+        ).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom)
     ) {
-        HomeTrayCloseButton(active, actions::closeTray)
-        if (state.card == CardState.Sending) {
-            HomeTrayReceipt(state.tray.sent, durationScale)
-        } else {
-            HomeQuickReplyRow(active, actions::onQuickReplySelected)
-        }
-        state.tray.error?.let {
-            Text(
-                homeInteractionErrorText(it),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
+        // Measure the composer first. Optional header content yields space on short IME viewports.
+        Column(Modifier.weight(1f, fill = false)) {
+            HomeTrayHeader(state, active, actions, durationScale)
         }
         HomeTrayComposer(state, actions, composerFocus)
     }
 }
 
 @Composable
-private fun HomeQuickReplyRow(active: Boolean, onSelected: (String) -> Unit) {
+private fun HomeQuickReplyRow(active: Boolean, onSelected: (String) -> Unit, modifier: Modifier = Modifier) {
     Row(
-        Modifier.heightIn(min = 48.dp).fillMaxWidth().horizontalScroll(rememberScrollState(), enabled = active),
+        modifier.heightIn(min = 48.dp).fillMaxWidth().horizontalScroll(rememberScrollState(), enabled = active),
         Arrangement.spacedBy(8.dp)
     ) {
         homeQuickReplies().forEach { reply ->
@@ -73,10 +68,27 @@ private fun HomeQuickReplyRow(active: Boolean, onSelected: (String) -> Unit) {
 }
 
 @Composable
-private fun HomeTrayCloseButton(active: Boolean, onClose: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        IconButton(onClick = onClose, enabled = active, modifier = Modifier.size(48.dp)) {
+private fun HomeTrayHeader(
+    state: HomeInteractionState,
+    active: Boolean,
+    actions: HomeTrayActions,
+    durationScale: Float
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        if (state.card == CardState.Sending) {
+            Box(Modifier.weight(1f)) { HomeTrayReceipt(state.tray.sent, durationScale) }
+        } else {
+            HomeQuickReplyRow(active, actions::onQuickReplySelected, Modifier.weight(1f))
+        }
+        IconButton(onClick = actions::closeTray, enabled = active, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Default.Close, stringResource(Res.string.home_close_tray))
         }
+    }
+    state.tray.error?.let {
+        Text(
+            homeInteractionErrorText(it),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
