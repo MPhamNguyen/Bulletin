@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.home.application.SaveListingPort
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCursor
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
@@ -59,5 +60,13 @@ internal class DeckCharacterizationSession : SessionRepository {
 
     override fun unauthenticated() {
         state.value = SessionState.Unauthenticated
+    }
+}
+
+internal class DeckCharacterizationSavePort : SaveListingPort {
+    val saved = mutableListOf<HomeItemId>()
+    override suspend fun save(userId: String, listingId: HomeItemId): Result<Unit> {
+        saved += listingId
+        return Result.Success(Unit)
     }
 }

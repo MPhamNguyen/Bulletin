@@ -80,9 +80,7 @@ private suspend fun AwaitPointerEventScope.readHomeCardDrag(
         // Main pass reaches a parent after its children, so a consuming scroll keeps ownership.
         val event = awaitPointerEvent()
         val change = event.changes.firstOrNull { it.id == down.id } ?: return drag.sample(cancelled = true)
-        val moved = change.position != change.previousPosition
-        val childOwnsDrag = change.isConsumed && moved && change.pressed
-        if (event.changes.count { it.pressed } > 1 || childOwnsDrag) {
+        if (event.changes.count { it.pressed } > 1 || change.isConsumed) {
             return drag.sample(cancelled = true)
         }
         drag.move(change, session, slopPx)

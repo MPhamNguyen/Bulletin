@@ -57,7 +57,7 @@ class HomeDeckCharacterizationTest {
         compose.mainClock.advanceTimeBy(64)
         compose.onNodeWithText("Listing first").assertExists()
 
-        compose.mainClock.advanceTimeBy(500)
+        compose.mainClock.advanceTimeBy(800)
         assertAdvancedOnce()
     }
 
@@ -131,7 +131,8 @@ class HomeDeckCharacterizationTest {
                 HomeViewModel(
                     GetPersonalizedFeed(repository),
                     UpdateUserPreferences(repository),
-                    DeckCharacterizationSession()
+                    DeckCharacterizationSession(),
+                    saveListing = DeckCharacterizationSavePort()
                 )
             }
             BulletinTheme { HomeScreen(home) }
