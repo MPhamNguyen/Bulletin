@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,10 +29,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -44,10 +47,15 @@ import kotlin.math.min
 
 @Composable
 internal fun HomeFeedInformation(item: HomeFeedItem, expanded: Boolean, onToggle: () -> Unit, modifier: Modifier) {
+    val scroll = rememberScrollState()
+    val fling = ScrollableDefaults.flingBehavior()
+    val scope = rememberCoroutineScope()
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .testTag("home-description-${item.id.value}")
+            .homeDescriptionScroll(expanded, scroll, fling, scope)
+            .verticalScroll(scroll, enabled = false)
             .padding(horizontal = 18.dp, vertical = 16.dp)
     ) {
         HomeFeedDetails(item)
@@ -138,7 +146,7 @@ private fun HomeFeedDescription(description: String, expanded: Boolean, onToggle
             maxLines = if (expanded) Int.MAX_VALUE else 1,
             overflow = TextOverflow.Ellipsis,
             onTextLayout = {
-                if (!expanded) descriptionOverflows = it.didOverflowWidth
+                if (!expanded) descriptionOverflows = it.hasVisualOverflow
             }
         )
         if (descriptionOverflows) {
