@@ -45,22 +45,7 @@ internal fun MainAppContent(
             profileAnchorInWindow = profileAnchorInWindow,
             onSaveCelebration = onSaveCelebration
         )
-        AppDestination.MARKETPLACE -> {
-            val conversationActions = ListingConversationActions(container, navigation, models.messages)
-            MarketplaceScreen(
-                viewModel = models.marketplace,
-                sellerProfileViewModel = models.sellerProfile,
-                userReportViewModel = models.marketplaceUserReport,
-                listingReportViewModel = models.listingReport,
-                userBlockViewModel = models.marketplaceUserBlock,
-                onContentNoLongerScrollable = onContentNoLongerScrollable,
-                actions = MarketplaceScreenActions(
-                    onMessageSeller = conversationActions::messageSeller,
-                    hasExistingConversation = conversationActions::hasExistingConversation,
-                    onSeeChat = conversationActions::seeChat
-                )
-            )
-        }
+        AppDestination.MARKETPLACE -> MarketplaceDestination(container, navigation, models, onContentNoLongerScrollable)
         AppDestination.LISTINGS -> ListingsScreen(models.listings)
         AppDestination.MESSAGES -> MessagesScreen(models.messages)
         AppDestination.PROFILE -> ProfileDestinationContent(
@@ -71,6 +56,29 @@ internal fun MainAppContent(
             models.messages
         )
     }
+}
+
+@Composable
+private fun MarketplaceDestination(
+    container: AppContainer,
+    navigation: MutableMainNavigationState,
+    models: MainScaffoldModels,
+    onContentNoLongerScrollable: () -> Unit
+) {
+    val conversationActions = ListingConversationActions(container, navigation, models.messages)
+    MarketplaceScreen(
+        viewModel = models.marketplace,
+        sellerProfileViewModel = models.sellerProfile,
+        userReportViewModel = models.marketplaceUserReport,
+        listingReportViewModel = models.listingReport,
+        userBlockViewModel = models.marketplaceUserBlock,
+        onContentNoLongerScrollable = onContentNoLongerScrollable,
+        actions = MarketplaceScreenActions(
+            onMessageSeller = conversationActions::messageSeller,
+            hasExistingConversation = conversationActions::hasExistingConversation,
+            onSeeChat = conversationActions::seeChat
+        )
+    )
 }
 
 @Composable

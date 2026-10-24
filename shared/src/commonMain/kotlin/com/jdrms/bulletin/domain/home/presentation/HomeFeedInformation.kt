@@ -115,24 +115,7 @@ private fun HomeFeedCategoryPill(category: HomeFeedCategory, modifier: Modifier 
 private fun HomeFeedDescription(description: String, expanded: Boolean, onToggle: () -> Unit) {
     if (description.isBlank()) return
     var descriptionOverflows by remember(description) { mutableStateOf(false) }
-    val descriptionModifier = Modifier
-        .fillMaxWidth()
-        .padding(top = 4.dp)
-        .heightIn(min = 48.dp)
-        .then(
-            if (descriptionOverflows) {
-                Modifier
-                    .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
-                    .clickable(
-                        role = Role.Button,
-                        onClickLabel = if (expanded) "Collapse description" else "Expand description",
-                        onClick = onToggle
-                    )
-            } else {
-                Modifier
-            }
-        )
-        .padding(vertical = 10.dp)
+    val descriptionModifier = homeDescriptionModifier(descriptionOverflows, expanded, onToggle)
     Row(
         modifier = descriptionModifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -159,3 +142,23 @@ private fun HomeFeedDescription(description: String, expanded: Boolean, onToggle
         }
     }
 }
+
+private fun homeDescriptionModifier(descriptionOverflows: Boolean, expanded: Boolean, onToggle: () -> Unit): Modifier =
+    Modifier
+        .fillMaxWidth()
+        .padding(top = 4.dp)
+        .heightIn(min = 48.dp)
+        .then(
+            if (descriptionOverflows) {
+                Modifier
+                    .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
+                    .clickable(
+                        role = Role.Button,
+                        onClickLabel = if (expanded) "Collapse description" else "Expand description",
+                        onClick = onToggle
+                    )
+            } else {
+                Modifier
+            }
+        )
+        .padding(vertical = 10.dp)

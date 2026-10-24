@@ -1,34 +1,18 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.createHomeViewModel
@@ -44,13 +28,10 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
-import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryNavigation
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
-import com.jdrms.bulletin.domain.home.presentation.LocalHomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
@@ -78,7 +59,6 @@ internal class MainScaffoldModels(
     val messages: MessagesViewModel
 )
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MainAppScaffold(
     appContainer: AppContainer? = null,
@@ -90,23 +70,20 @@ fun MainAppScaffold(
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     val navigation = remember { MutableMainNavigationState() }
-    val profileTabAnchor = remember { ProfileTabAnchor() }
-    val profileCelebration = remember { ProfileTabCelebration() }
-    val celebrationScope = rememberCoroutineScope()
-    val haptics = LocalHapticFeedback.current
-    val keyboardVisible = WindowInsets.isImeVisible
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    val navigationBarInset = with(density) {
-        WindowInsets.navigationBars.getBottom(this).toDp()
+    val chrome = rememberMainAppChrome()
+    val models = rememberMainScaffoldModels(container)
+    val profile = rememberProfilePresentation(profileViewModel, container, themeViewModel, onSignOut)
+    val retries = rememberSaveable(saver = HomeSaveRetryPresentation.saver) { HomeSaveRetryPresentation() }
+    LaunchedEffect(navigation.currentDestination) { chrome.behavior.onDestinationChanged() }
+    MainHomeEffects(navigation, models, retries)
+    BulletinTheme(darkTheme = darkTheme) {
+        MainAppLayout(MainAppContentState(container, navigation, models, profile), chrome, retries)
     }
-    val navbarScrollBehavior = remember(density) {
-        NavbarScrollBehavior(with(density) { NAVBAR_SCROLL_THRESHOLD_DP.dp.toPx() })
-    }
-    val navbarNestedScrollConnection = remember(navbarScrollBehavior) {
-        NavbarNestedScrollConnection(navbarScrollBehavior)
-    }
-    var navbarHeight by remember { mutableStateOf(0.dp) }
-    val models = remember(container) {
+}
+
+@Composable
+private fun rememberMainScaffoldModels(container: AppContainer): MainScaffoldModels {
+    return remember(container) {
         MainScaffoldModels(
             container.createHomeViewModel(),
             container.createMarketplaceViewModel(),
@@ -118,8 +95,16 @@ fun MainAppScaffold(
             container.createMessagesViewModel()
         )
     }
-    // Keep the profile read model alive for the authenticated app session so its summary is
-    // fetched alongside the other app models, before the user opens the Profile destination.
+}
+
+@Composable
+private fun rememberProfilePresentation(
+    profileViewModel: ProfileViewModel?,
+    container: AppContainer,
+    themeViewModel: ThemeViewModel?,
+    onSignOut: () -> Unit
+): ProfilePresentation {
+    // Keep the profile read model alive for the authenticated app session.
     val resolvedProfileViewModel = remember(profileViewModel, container) {
         resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
     }
@@ -128,14 +113,16 @@ fun MainAppScaffold(
             if (profileViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
         }
     }
-    val profilePresentation = ProfilePresentation(resolvedProfileViewModel, themeViewModel, onSignOut)
+    return ProfilePresentation(resolvedProfileViewModel, themeViewModel, onSignOut)
+}
 
-    LaunchedEffect(navigation.currentDestination) {
-        navbarScrollBehavior.onDestinationChanged()
-    }
-
+@Composable
+private fun MainHomeEffects(
+    navigation: MutableMainNavigationState,
+    models: MainScaffoldModels,
+    saveRetries: HomeSaveRetryPresentation
+) {
     val homeState by models.home.uiState.collectAsState()
-    val saveRetries = rememberSaveable(saver = HomeSaveRetryPresentation.saver) { HomeSaveRetryPresentation() }
     HomeSaveRetryNavigation(navigation.currentDestination == AppDestination.HOME, homeState, saveRetries, models.home)
     LaunchedEffect(navigation.currentDestination, homeState.interaction.pendingEffects) {
         if (navigation.currentDestination != AppDestination.HOME) {
@@ -144,71 +131,29 @@ fun MainAppScaffold(
                 >().forEach { models.home.onEffectConsumed(it.id) }
         }
     }
-    BulletinTheme(darkTheme = darkTheme) {
-        Box(Modifier.fillMaxSize()) {
-            Scaffold(
-                containerColor = MaterialTheme.colorScheme.background,
-                contentColor = MaterialTheme.colorScheme.onBackground
-            ) { paddingValues ->
-                val contentModifier = Modifier
-                    .padding(paddingValues)
-                    .then(
-                        if (navigation.currentDestination.hidesOnScroll || !navigation.showsBottomNavigation) {
-                            Modifier
-                        } else {
-                            Modifier.padding(bottom = navbarHeight)
-                        }
-                    )
-                    .fillMaxSize()
-                CompositionLocalProvider(
-                    LocalNavbarHeight provides navbarHeight,
-                    LocalHomeSaveRetryPresentation provides saveRetries
-                ) {
-                    Box(
-                        modifier = if (navigation.currentDestination.hidesOnScroll) {
-                            contentModifier.nestedScroll(navbarNestedScrollConnection)
-                        } else {
-                            contentModifier
-                        }
-                    ) {
-                        MainAppContent(
-                            container,
-                            navigation,
-                            models,
-                            profilePresentation,
-                            onContentNoLongerScrollable = navbarScrollBehavior::reveal,
-                            profileAnchorInWindow = profileTabAnchor.bounds(
-                                navigation.showsBottomNavigation && navbarScrollBehavior.isVisible && !keyboardVisible
-                            ),
-                            onSaveCelebration = { scale -> profileCelebration.play(celebrationScope, scale, haptics) }
-                        )
-                    }
-                }
-            }
-            Navbar(
-                currentDestination = navigation.currentDestination,
-                isVisible = {
-                    navigation.showsBottomNavigation && navbarScrollBehavior.isVisible
-                },
-                onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
-                onFocused = navbarScrollBehavior::reveal,
-                profileIconModifier = profileTabAnchor.modifier.then(
-                    profileCelebration.modifier(BulletinExtras.colors.success)
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .zIndex(100f)
-                    .onSizeChanged {
-                        navbarHeight = with(density) { it.height.toDp() } - navigationBarInset
-                    }
-            )
-        }
+}
+
+@Composable
+private fun rememberMainAppChrome(): MainAppChrome {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
+    return remember(density, scope, haptics) {
+        val behavior = NavbarScrollBehavior(with(density) { NAVBAR_SCROLL_THRESHOLD_DP.dp.toPx() })
+        MainAppChrome(
+            behavior,
+            NavbarNestedScrollConnection(behavior),
+            ProfileTabAnchor(),
+            ProfileTabCelebration(),
+            scope,
+            haptics
+        )
     }
 }
 
 private const val NAVBAR_SCROLL_THRESHOLD_DP = 32
 
-private fun navigateTo(
+internal fun navigateTo(
     destination: AppDestination,
     navigation: MutableMainNavigationState,
     listings: ListingsViewModel

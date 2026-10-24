@@ -34,7 +34,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     motionDurationScale: Float = 1f,
     profileAnchorInWindow: Rect? = null,
-    onSaveCelebration: (Float) -> Unit = {}
+    onSaveCelebration: (Float) -> Unit = {},
+    photoPlaybackPaused: Boolean = false
 ) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(state.currentIndex, state.feed.size, state.hasMore, state.nextCursor) {
@@ -51,16 +52,9 @@ fun HomeScreen(
     )
     val error = state.errorMessage
     Box(modifier = modifier.fillMaxSize()) {
-        HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow)
+        HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow, photoPlaybackPaused)
         HomeSaveRetrySnackbar(state, viewModel, Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(1f))
-        state.interaction.accountNotice?.let {
-            Text(
-                homeInteractionErrorText(it),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
-            )
-        }
+        HomeAccountNotice(state.interaction.accountNotice, Modifier.align(Alignment.BottomCenter).padding(16.dp))
         if (state.feed.getOrNull(state.currentIndex) != null && error != null) {
             NextPageError(
                 message = error,
@@ -73,9 +67,33 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeDeckContent(state: HomeUiState, viewModel: HomeViewModel, durationScale: Float, anchor: Rect?) {
+private fun HomeAccountNotice(notice: HomeInteractionError?, modifier: Modifier) {
+    notice?.let {
+        Text(
+            homeInteractionErrorText(it),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun HomeDeckContent(
+    state: HomeUiState,
+    viewModel: HomeViewModel,
+    durationScale: Float,
+    anchor: Rect?,
+    photoPlaybackPaused: Boolean
+) {
     when {
-        state.feed.getOrNull(state.currentIndex) != null -> HomeCardStack(state, viewModel, durationScale, anchor)
+        state.feed.getOrNull(state.currentIndex) != null -> HomeCardStack(
+            state,
+            viewModel,
+            durationScale,
+            anchor,
+            photoPlaybackPaused
+        )
         state.isDeckLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }

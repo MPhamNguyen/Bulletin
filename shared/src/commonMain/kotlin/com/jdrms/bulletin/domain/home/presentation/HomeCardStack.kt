@@ -33,7 +33,8 @@ internal fun HomeCardStack(
     state: HomeUiState,
     actions: HomeCardActions,
     durationScale: Float,
-    profileAnchor: Rect? = null
+    profileAnchor: Rect? = null,
+    photoPlaybackPaused: Boolean = false
 ) {
     val current = state.feed.getOrNull(state.currentIndex) ?: return
     val motion = remember(current.id, state.deckGeneration, durationScale) { HomeCardMotion(durationScale) }
@@ -59,7 +60,8 @@ internal fun HomeCardStack(
                 item,
                 state.currentIndex + if (front) 0 else 1,
                 front,
-                front && !state.interaction.isTrayOpen && state.interaction.card != CardState.Leaving,
+                front && !photoPlaybackPaused && !state.interaction.isTrayOpen &&
+                    state.interaction.card != CardState.Leaving,
                 presentation
             )
         }
