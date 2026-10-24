@@ -17,7 +17,8 @@ class HomeActionsIntegrationTest {
     fun wiredSaveAndContactUseExistingContextsWithoutRecordingDecisions() = runTest {
         val container = AppContainer(isInspectionMode = true)
         val viewer = container.authRepository.login(
-            StudentEmail("dominic.alfonso@student.csulb.edu"), "password123"
+            StudentEmail("dominic.alfonso@student.csulb.edu"),
+            "password123"
         ).getOrThrow()
         container.sessionRepository.authenticated(viewer)
         val listing = container.marketplaceRepository.getCatalog().first { it.sellerId != viewer.id.value }

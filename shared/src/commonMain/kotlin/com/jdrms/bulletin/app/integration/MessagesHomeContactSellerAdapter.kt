@@ -60,18 +60,20 @@ class MessagesHomeContactSellerAdapter(
     private suspend fun isVisible(userId: String, listingId: HomeItemId, sellerId: String): Boolean {
         var cursor: MarketplacePageCursor? = null
         do {
-            val page = getVisibleListings(MarketplacePageRequest(viewerId = userId, sellerId = sellerId, cursor = cursor))
+            val page =
+                getVisibleListings(MarketplacePageRequest(viewerId = userId, sellerId = sellerId, cursor = cursor))
             if (page.listings.any { it.id == listingId.value }) return true
             cursor = page.nextCursor
         } while (cursor != null)
         return false
     }
 
-    private fun contactFailure(exception: Throwable): ContactSellerFailure = when (classifyHomeAdapterFailure(exception)) {
-        HomeAdapterFailure.NOT_SIGNED_IN -> ContactSellerFailure.NotSignedIn()
-        HomeAdapterFailure.UNAVAILABLE -> ContactSellerFailure.ListingUnavailable()
-        HomeAdapterFailure.OWN_LISTING -> ContactSellerFailure.OwnListing()
-        HomeAdapterFailure.NETWORK -> ContactSellerFailure.Network()
-        HomeAdapterFailure.UNKNOWN -> ContactSellerFailure.Unknown()
-    }
+    private fun contactFailure(exception: Throwable): ContactSellerFailure =
+        when (classifyHomeAdapterFailure(exception)) {
+            HomeAdapterFailure.NOT_SIGNED_IN -> ContactSellerFailure.NotSignedIn()
+            HomeAdapterFailure.UNAVAILABLE -> ContactSellerFailure.ListingUnavailable()
+            HomeAdapterFailure.OWN_LISTING -> ContactSellerFailure.OwnListing()
+            HomeAdapterFailure.NETWORK -> ContactSellerFailure.Network()
+            HomeAdapterFailure.UNKNOWN -> ContactSellerFailure.Unknown()
+        }
 }

@@ -27,7 +27,9 @@ class MarketplaceHomeSaveAdapterTest {
     fun successAndRetryUseTheOriginalUserAndListingIdEveryTime() = runTest {
         val f = HomeSaveFixture()
         f.failure = IOException("offline")
-        assertIs<SaveListingFailure.Network>(assertIs<Result.Error>(f.adapter.save("viewer", actionListingId)).exception)
+        assertIs<SaveListingFailure.Network>(
+            assertIs<Result.Error>(f.adapter.save("viewer", actionListingId)).exception
+        )
         f.failure = null
         assertIs<Result.Success<Unit>>(f.adapter.save("viewer", actionListingId))
         assertEquals(List(2) { "viewer" to MarketplaceItemId(actionListingId.value) }, f.calls)
@@ -66,7 +68,10 @@ class MarketplaceHomeSaveAdapterTest {
             try {
                 val response = client.get("https://example.test")
                 val f = HomeSaveFixture().apply { failure = RestException("private", null, response) }
-                assertEquals(expected, assertIs<Result.Error>(f.adapter.save("viewer", actionListingId)).exception::class)
+                assertEquals(
+                    expected,
+                    assertIs<Result.Error>(f.adapter.save("viewer", actionListingId)).exception::class
+                )
                 f.failure = PostgrestRestException("private", null, null, "23503", response)
                 assertIs<SaveListingFailure.ListingUnavailable>(
                     assertIs<Result.Error>(f.adapter.save("viewer", actionListingId)).exception
@@ -80,7 +85,9 @@ class MarketplaceHomeSaveAdapterTest {
     @Test
     fun thrownUnknownFailuresAreTranslatedAndCancellationPropagates() = runTest {
         val f = HomeSaveFixture().apply { thrown = IllegalStateException("raw backend error") }
-        assertIs<SaveListingFailure.Unknown>(assertIs<Result.Error>(f.adapter.save("viewer", actionListingId)).exception)
+        assertIs<SaveListingFailure.Unknown>(
+            assertIs<Result.Error>(f.adapter.save("viewer", actionListingId)).exception
+        )
         f.thrown = CancellationException()
         assertFailsWith<CancellationException> { f.adapter.save("viewer", actionListingId) }
         f.thrown = null

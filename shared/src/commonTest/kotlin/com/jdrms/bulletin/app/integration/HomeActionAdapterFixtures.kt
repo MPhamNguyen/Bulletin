@@ -33,8 +33,12 @@ internal val actionMessage = SellerMessage.create("  Still available?  ").getOrT
 
 internal class HomeContactFixture {
     var listing = Listing(
-        MarketplaceItemId(actionListingId.value), "private-seller-id", sellerName = "Private Seller",
-        title = "Textbook", description = "A book", price = MarketplacePrice(10.0),
+        MarketplaceItemId(actionListingId.value),
+        "private-seller-id",
+        sellerName = "Private Seller",
+        title = "Textbook",
+        description = "A book",
+        price = MarketplacePrice(10.0),
         category = MarketplaceCategory.TEXTBOOKS
     )
     var lookupFailure: Throwable? = null
@@ -92,7 +96,8 @@ internal class HomeContactFixture {
         MarketplaceReportedListingProvider { reported }
     )
     val adapter = MessagesHomeContactSellerAdapter(
-        ViewMarketplaceListing(marketplace), visibility,
+        ViewMarketplaceListing(marketplace),
+        visibility,
         MessageSeller(
             messages,
             CurrentMessageSenderProvider {

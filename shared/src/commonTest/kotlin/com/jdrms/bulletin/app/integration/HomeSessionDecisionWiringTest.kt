@@ -42,7 +42,10 @@ class HomeSessionDecisionWiringTest {
         assertFalse(recreated.uiState.value.feed.any { it.id == saved })
         assertEquals(setOf(saved), f.excluded("first", SwipeVerdict.SAVE))
         val fresh = AppContainer(isInspectionMode = true)
-        assertEquals(emptySet(), fresh.swipeDecisionRepository.getExcludedListingIds("first", SwipeVerdict.SAVE).getOrThrow())
+        assertEquals(
+            emptySet(),
+            fresh.swipeDecisionRepository.getExcludedListingIds("first", SwipeVerdict.SAVE).getOrThrow()
+        )
     }
 
     @Test

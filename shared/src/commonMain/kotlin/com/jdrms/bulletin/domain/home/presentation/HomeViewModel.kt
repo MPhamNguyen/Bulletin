@@ -29,7 +29,9 @@ class HomeViewModel(
     private val sessionRepository: SessionRepository,
     private val listingChangedSignal: RefreshSignal? = null,
     swipeDecisionRepository: SwipeDecisionRepository = InMemorySwipeDecisionRepository(),
+    @Suppress("UnusedPrivateProperty") // Held for the Feature 6 action flow.
     private val recordSwipeDecision: RecordSwipeDecision = RecordSwipeDecision(swipeDecisionRepository),
+    @Suppress("UnusedPrivateProperty") // Held for the Feature 6 send flow.
     private val sendQuickMessage: SendQuickMessage? = null
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
