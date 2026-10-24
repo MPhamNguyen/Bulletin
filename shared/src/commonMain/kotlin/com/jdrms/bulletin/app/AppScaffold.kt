@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +47,10 @@ import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
+import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryNavigation
+import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
+import com.jdrms.bulletin.domain.home.presentation.LocalHomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
@@ -131,6 +135,8 @@ fun MainAppScaffold(
     }
 
     val homeState by models.home.uiState.collectAsState()
+    val saveRetries = rememberSaveable(saver = HomeSaveRetryPresentation.saver) { HomeSaveRetryPresentation() }
+    HomeSaveRetryNavigation(navigation.currentDestination == AppDestination.HOME, homeState, saveRetries, models.home)
     LaunchedEffect(navigation.currentDestination, homeState.interaction.pendingEffects) {
         if (navigation.currentDestination != AppDestination.HOME) {
             homeState.interaction.pendingEffects.filterIsInstance<
@@ -154,7 +160,10 @@ fun MainAppScaffold(
                         }
                     )
                     .fillMaxSize()
-                CompositionLocalProvider(LocalNavbarHeight provides navbarHeight) {
+                CompositionLocalProvider(
+                    LocalNavbarHeight provides navbarHeight,
+                    LocalHomeSaveRetryPresentation provides saveRetries
+                ) {
                     Box(
                         modifier = if (navigation.currentDestination.hidesOnScroll) {
                             contentModifier.nestedScroll(navbarNestedScrollConnection)

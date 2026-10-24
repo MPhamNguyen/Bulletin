@@ -1,5 +1,8 @@
 package com.jdrms.bulletin.domain.home.presentation
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.test.junit4.StateRestorationTester
+import com.jdrms.bulletin.domain.home.infrastructure.repository.InMemorySwipeDecisionRepository
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithText
@@ -16,6 +19,8 @@ import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
 
 internal class HomeTrayDeviceFixture : ContactSellerPort, SaveListingPort {
     lateinit var home: HomeViewModel
+    val decisions = InMemorySwipeDecisionRepository()
+    val saves = mutableListOf<HomeItemId>()
     val sends = mutableListOf<Pair<HomeItemId, String>>()
     var sendResult: suspend () -> Result<Unit> = { Result.Success(Unit) }
     var saveResult: suspend () -> Result<Unit> = { Result.Success(Unit) }
@@ -25,23 +30,29 @@ internal class HomeTrayDeviceFixture : ContactSellerPort, SaveListingPort {
         description: String = "Available",
         durationScale: Float = 0f,
         anchor: Rect? = null,
-        onCelebrate: (Float) -> Unit = {}
+        onCelebrate: (Float) -> Unit = {},
+        restoration: StateRestorationTester? = null
     ) {
         val repository = DeckCharacterizationRepository(listOf(
             deckItem("first").copy(description = description), deckItem("second"), deckItem("third")
         ))
         val session = DeckCharacterizationSession()
-        compose.setContent {
+        val content: @Composable () -> Unit = {
             home = viewModel {
                 HomeViewModel(GetPersonalizedFeed(repository), UpdateUserPreferences(repository), session,
-                    sendQuickMessage = SendQuickMessage(this@HomeTrayDeviceFixture), saveListing = this@HomeTrayDeviceFixture)
+                    sendQuickMessage = SendQuickMessage(this@HomeTrayDeviceFixture), saveListing = this@HomeTrayDeviceFixture,
+                    swipeDecisionRepository = decisions)
             }
             BulletinTheme { HomeScreen(home, motionDurationScale = durationScale, profileAnchorInWindow = anchor, onSaveCelebration = onCelebrate) }
         }
+        if (restoration == null) compose.setContent(content) else restoration.setContent(content)
         compose.onNodeWithText("Listing first").assertExists()
     }
 
-    override suspend fun save(userId: String, listingId: HomeItemId): Result<Unit> = saveResult()
+    override suspend fun save(userId: String, listingId: HomeItemId): Result<Unit> {
+        saves += listingId
+        return saveResult()
+    }
 
     override suspend fun send(userId: String, listingId: HomeItemId, message: SellerMessage): Result<Unit> {
         sends += listingId to message.text

@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 
 private const val PREFETCH_REMAINING_ITEMS = 2
 
@@ -51,6 +52,7 @@ fun HomeScreen(
     val error = state.errorMessage
     Box(modifier = modifier.fillMaxSize()) {
         HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow)
+        HomeSaveRetrySnackbar(state, viewModel, Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(1f))
         state.interaction.accountNotice?.let {
             Text(
                 homeInteractionErrorText(it),
