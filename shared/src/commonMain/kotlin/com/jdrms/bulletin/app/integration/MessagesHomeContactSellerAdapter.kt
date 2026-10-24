@@ -47,7 +47,7 @@ class MessagesHomeContactSellerAdapter(
         }
         return when (
             val result = messageSeller(
-                ListingReferenceId(listingId.value),
+                ListingReferenceId(listingId.value.removePrefix(LISTING_ID_PREFIX)),
                 ConversationParticipant(SenderId(listing.sellerId), listing.sellerName),
                 message.text
             )
@@ -76,4 +76,8 @@ class MessagesHomeContactSellerAdapter(
             HomeAdapterFailure.NETWORK -> ContactSellerFailure.Network()
             HomeAdapterFailure.UNKNOWN -> ContactSellerFailure.Unknown()
         }
+
+    private companion object {
+        const val LISTING_ID_PREFIX = "listing:"
+    }
 }

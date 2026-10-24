@@ -22,7 +22,7 @@ class MessagesHomeContactSellerAdapterTest {
         assertIs<Result.Success<Unit>>(f.adapter.send("viewer", actionListingId, actionMessage))
         assertEquals(listOf(actionListingId.value), f.lookupIds)
         assertEquals(actionMessage.text, f.sent.single().content)
-        assertEquals(actionListingId.value, f.resolvedListingId?.value)
+        assertEquals("original", f.resolvedListingId?.value)
         assertEquals(f.listing.sellerId, f.resolvedSeller?.id?.value)
         assertEquals(f.listing.sellerName, f.resolvedSeller?.displayName)
         assertEquals("viewer", f.visibilityRequests.single().viewerId)
