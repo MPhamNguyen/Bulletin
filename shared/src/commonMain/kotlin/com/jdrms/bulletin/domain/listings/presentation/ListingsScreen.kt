@@ -219,25 +219,9 @@ private fun MyListingCard(
     onMarkSold: () -> Unit
 ) {
     BulletinCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = listing.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = listing.price.formatted,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+        ListingThumbnail(listing)
+        Spacer(modifier = Modifier.height(8.dp))
+        ActiveListingTitleAndPrice(listing)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Category: ${listing.category.name} • Condition: ${listing.condition.name.replace("_", " ")}",
@@ -251,26 +235,49 @@ private fun MyListingCard(
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+        ActiveListingActions(onDelete, onMarkSold)
+    }
+}
+
+@Composable
+private fun ActiveListingTitleAndPrice(listing: Listing) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = listing.title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = listing.price.formatted,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun ActiveListingActions(onDelete: () -> Unit, onMarkSold: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        FilledTonalButton(
+            onClick = onMarkSold,
+            shape = MaterialTheme.shapes.small,
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        ) { Text("Mark as sold") }
+        TextButton(
+            onClick = onDelete,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
         ) {
-            FilledTonalButton(
-                onClick = onMarkSold,
-                shape = MaterialTheme.shapes.small,
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            ) { Text("Mark as sold") }
-            TextButton(
-                onClick = onDelete,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Delete Listing")
-            }
+            Text("Delete Listing")
         }
     }
 }
