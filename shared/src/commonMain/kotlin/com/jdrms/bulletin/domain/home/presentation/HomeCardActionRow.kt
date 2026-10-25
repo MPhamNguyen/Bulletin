@@ -1,6 +1,6 @@
 package com.jdrms.bulletin.domain.home.presentation
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -13,6 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -69,15 +73,16 @@ internal fun HomeCardActionRow(
     Row(
         modifier.fillMaxWidth().height(IntrinsicSize.Min).graphicsLayer { alpha = homeActionRowAlpha(progress) }
             .then(if (hidden || homeActionRowAlpha(progress) == 0f) Modifier.clearAndSetSemantics { } else Modifier),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         buttons.forEach { button ->
             val enabled = button.enabled && !hidden && progress == 0f
+            val diameter = if (button.action == CardAction.Message) 72.dp else 60.dp
             HomeActionButton(
                 button.copy(enabled = enabled),
                 { onAction(button.action) },
-                Modifier.weight(1f).fillMaxHeight().then(actionModifier(button.action, enabled))
+                Modifier.size(diameter).then(actionModifier(button.action, enabled))
             )
         }
     }
@@ -86,32 +91,34 @@ internal fun HomeCardActionRow(
 @Composable
 private fun HomeActionButton(button: ActionButtonUi, onClick: () -> Unit, modifier: Modifier) {
     val interaction = remember { MutableInteractionSource() }
-    val frame = homeActionFrame(modifier, interaction, button.disabledHint)
-    if (button.action == CardAction.Message) {
-        Button(
-            onClick,
-            frame,
-            enabled = button.enabled,
-            shape = BulletinFeedCardDefaults.actionShape,
-            colors = homeActionColors(true),
-            contentPadding = PaddingValues(8.dp),
-            interactionSource = interaction
-        ) {
-            HomeActionContent(button)
-        }
+    val shape = BulletinFeedCardDefaults.actionShape
+    val isMessage = button.action == CardAction.Message
+    val background = if (button.action == CardAction.Message) {
+        Brush.linearGradient(
+            listOf(BulletinFeedCardDefaults.actionMessageStart, BulletinFeedCardDefaults.actionMessageEnd)
+        )
     } else {
-        OutlinedButton(
-            onClick,
-            frame,
-            enabled = button.enabled,
-            shape = BulletinFeedCardDefaults.actionShape,
-            colors = homeActionColors(false),
-            contentPadding = PaddingValues(8.dp),
-            interactionSource = interaction,
-            border = BorderStroke(1.5.dp, BulletinFeedCardDefaults.actionOutline)
-        ) {
-            HomeActionContent(button)
-        }
+        Brush.verticalGradient(
+            listOf(BulletinFeedCardDefaults.actionGlassHighlight, BulletinFeedCardDefaults.actionGlass)
+        )
+    }
+    val outline = if (isMessage) {
+        BulletinFeedCardDefaults.actionMessageOutline
+    } else {
+        BulletinFeedCardDefaults.actionGlassOutline
+    }
+    Button(
+        onClick = onClick,
+        modifier = Modifier.shadow(if (isMessage) 8.dp else 6.dp, shape).background(background, shape)
+            .border(1.dp, outline, shape)
+            .then(homeActionFrame(modifier, interaction, button.disabledHint, shape)),
+        enabled = button.enabled,
+        shape = shape,
+        colors = homeActionColors(),
+        contentPadding = PaddingValues(0.dp),
+        interactionSource = interaction
+    ) {
+        HomeActionContent(button)
     }
 }
 
@@ -119,18 +126,19 @@ private fun HomeActionButton(button: ActionButtonUi, onClick: () -> Unit, modifi
 private fun homeActionFrame(
     modifier: Modifier,
     interaction: MutableInteractionSource,
-    disabledHint: StringResource?
+    disabledHint: StringResource?,
+    shape: Shape
 ): Modifier {
     val focused by interaction.collectIsFocusedAsState()
     val hint = disabledHint?.let { stringResource(it) }
-    return modifier.heightIn(min = 48.dp)
+    return modifier.heightIn(min = 40.dp)
         .then(
             if (focused) {
                 Modifier.border(
                     3.dp,
                     BulletinFeedCardDefaults.actionFocusRing,
-                    BulletinFeedCardDefaults.actionShape
-                ).border(6.dp, BulletinFeedCardDefaults.scrim, BulletinFeedCardDefaults.actionShape)
+                    shape
+                ).border(6.dp, BulletinFeedCardDefaults.scrim, shape)
             } else {
                 Modifier
             }
@@ -139,22 +147,13 @@ private fun homeActionFrame(
 }
 
 @Composable
-private fun homeActionColors(primary: Boolean): ButtonColors {
-    val container = if (primary) {
-        BulletinFeedCardDefaults.actionMessageContainer
-    } else {
-        BulletinFeedCardDefaults.actionSurface
-    }
-    val content = if (primary) {
-        BulletinFeedCardDefaults.actionMessageContent
-    } else {
-        BulletinFeedCardDefaults.actionContent
-    }
+private fun homeActionColors(): ButtonColors {
+    val transparent = Color.Transparent
     return ButtonDefaults.buttonColors(
-        containerColor = container,
-        contentColor = content,
-        disabledContainerColor = container.copy(alpha = .65f),
-        disabledContentColor = content.copy(alpha = .6f)
+        containerColor = transparent,
+        contentColor = Color.White,
+        disabledContainerColor = transparent,
+        disabledContentColor = Color.White.copy(alpha = .6f)
     )
 }
 
@@ -168,13 +167,16 @@ private fun RowScope.HomeActionContent(button: ActionButtonUi) {
     Icon(
         button.icon,
         contentDescription = null,
-        modifier = Modifier.size(20.dp),
-        tint = tint.copy(alpha = if (button.enabled) 1f else .6f)
+        modifier = Modifier.size(if (button.action == CardAction.Message) 32.dp else 26.dp),
+        tint = if (button.action == CardAction.Message) {
+            Color.White
+        } else {
+            tint.copy(alpha = if (button.enabled) 1f else .6f)
+        }
     )
-    Spacer(Modifier.width(6.dp))
     Text(
         stringResource(button.label),
-        modifier = Modifier.weight(1f, fill = false),
+        modifier = Modifier.size(1.dp).graphicsLayer { alpha = 0f },
         style = MaterialTheme.typography.labelLarge
     )
 }
