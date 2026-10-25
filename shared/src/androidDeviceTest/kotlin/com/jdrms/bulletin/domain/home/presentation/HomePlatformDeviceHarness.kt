@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.InputModeManager
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -35,6 +37,7 @@ internal class HomePlatformDeviceHarness {
     var externallyPaused by mutableStateOf(false)
     var photoPaused by mutableStateOf(false)
     var keyboard: SoftwareKeyboardController? = null
+    var inputMode: InputModeManager? = null
     var tick by mutableIntStateOf(0)
 
     fun show(compose: ComposeContentTestRule, capabilities: Boolean = true) {
@@ -88,6 +91,7 @@ internal class HomePlatformDeviceHarness {
     @Composable
     private fun Deck(state: HomeUiState) {
         keyboard = LocalSoftwareKeyboardController.current
+        inputMode = LocalInputModeManager.current
         HomeStateAnnouncements(announcements, state.interaction)
         Box(Modifier.fillMaxSize().padding(bottom = navbarSpace)) {
             HomeKeyboardViewport(

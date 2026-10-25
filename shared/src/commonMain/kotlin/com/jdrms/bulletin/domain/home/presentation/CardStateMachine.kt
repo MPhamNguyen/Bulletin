@@ -1,6 +1,6 @@
 package com.jdrms.bulletin.domain.home.presentation
 
-enum class CardState { Idle, Swiping, Peeking, Open, Sending, Leaving }
+typealias CardState = com.jdrms.bulletin.domain.home.domain.model.CardState
 
 enum class CardEvent { DRAG_X, DRAG_Y, OPEN, COMMIT, CANCEL, CLOSE, SEND, SENT, FAIL, DONE }
 

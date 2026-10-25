@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,8 +13,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
-import bulletin.shared.generated.resources.*
-import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun HomeTrayPeek(
@@ -79,9 +75,6 @@ private fun HomeTrayHeader(
             Box(Modifier.weight(1f)) { HomeTrayReceipt(state.tray.sent, durationScale) }
         } else {
             HomeQuickReplyRow(active, actions::onQuickReplySelected, Modifier.weight(1f))
-        }
-        IconButton(onClick = actions::closeTray, enabled = active, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.Close, stringResource(Res.string.home_close_tray))
         }
     }
     state.tray.error?.let {

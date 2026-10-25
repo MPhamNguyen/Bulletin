@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.home.presentation
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.application.RecordSwipeDecision
 import com.jdrms.bulletin.domain.home.application.SaveListingPort
+import com.jdrms.bulletin.domain.home.domain.model.CardAction
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import com.jdrms.bulletin.domain.home.domain.model.SwipeDecision
 import com.jdrms.bulletin.domain.home.domain.model.SwipeVerdict
@@ -29,7 +30,7 @@ internal class HomeSaveInteraction(
     private var passJob: Job? = null
 
     fun saveCurrent() {
-        if (!store.interaction.saveAvailable) return
+        if (!store.interaction.availableActions.allows(CardAction.Save)) return
         val capture = store.capture() ?: return
         val viewer = capture.viewer ?: return
         if (capture.listingId in attempts || !store.transition(CardEvent.COMMIT)) return
@@ -40,6 +41,7 @@ internal class HomeSaveInteraction(
     }
 
     fun passCurrent() {
+        if (!store.interaction.availableActions.allows(CardAction.Pass)) return
         val capture = store.capture() ?: return
         if (!store.transition(CardEvent.COMMIT)) return
         store.requestDeparture(HomeDepartureKind.PASS)

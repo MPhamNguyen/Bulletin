@@ -49,6 +49,17 @@ object BulletinFeedCardDefaults {
     val scrim = Color(0xFF070B13)
     val content = Color(0xFFF0F4F8)
     val secondaryContent = Color(0xFFD3E0F0)
+
+    // Controls stay over dark artwork in both app themes.
+    val actionPassTint = Color(0xFFB3261E)
+    val actionSaveTint = Color(0xFF1D6B60)
+    val actionSurface = Color.White
+    val actionOutline = Color(0xFFBCC7D8)
+    val actionContent = Color(0xFF1F2D44)
+    val actionMessageContainer = Color(0xFF3A5272)
+    val actionMessageContent = Color.White
+    val actionFocusRing = Color.White
+    val actionShape = RoundedCornerShape(24.dp)
 }
 
 object BulletinConversationDefaults {

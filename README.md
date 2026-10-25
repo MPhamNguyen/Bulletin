@@ -141,6 +141,21 @@ Business contexts use four layers:
 
 `AppContainer` composes `HomeModule`, `ListingsModule`, `MarketplaceModule`, `MessagesModule`, and `ProfileModule`, and holds application-wide messaging, refresh signaling, and theme preferences. `InfrastructureModule` owns lazy client creation and the shared fallback policy. Feature modules own lazy repositories and use cases; repositories are internal or private, and ViewModel factories depend on feature modules instead of the whole container. Cross-context wiring stays in feature composition and its ViewModel factories, including the profile activity adapters. Marketplace owns its read cache; the composition root explicitly connects successful Supabase listing mutations to marketplace cache invalidation. Home swipe decisions are intentionally process-local for both backend configurations and survive ViewModel recreation only within the same container.
 
+Home's Pass / Message / Save buttons call the same guarded commands as swipes,
+card accessibility actions, and arrow keys. `CardState.availableActions` in the
+Home domain derives availability from the interaction phase, session, and
+configured capabilities. Presentation maps those results to Material icons,
+resource labels, and disabled hints. The row stays outside the departing card,
+reserves its measured height above listing details, and fades out as the tray
+opens. Fully faded controls release touch input to the tray, and keyboard focus
+returns to the initiating control once it re-enables. Save feedback still waits
+for persistence confirmation; a departure alone does not mean a save succeeded.
+Android activities use `adjustResize` so platform window panning does not move
+the tray above the screen while Compose applies its keyboard insets.
+`HomeDomainBoundaryTest` runs with the normal Android host tests and rejects
+imports outside Kotlin, shared common primitives, and Home's own domain package.
+The layers remain packages within `shared`; they are not separate Gradle modules.
+
 ### Backend Status
 
 `AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home reads through `MarketplaceHomeRepository`; Home preferences remain in memory. These bindings describe code paths, not verification against a deployed Supabase project.

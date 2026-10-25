@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.home.presentation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,22 +11,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
+import com.jdrms.bulletin.domain.home.domain.model.CardAction
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import kotlinx.coroutines.CoroutineScope
@@ -54,18 +54,56 @@ internal fun HomeCardStack(
     }
     val cardFocus = remember { FocusRequester() }
     val composerFocus = remember { FocusRequester() }
-    HomeTrayFocus(state.interaction.card, cardFocus, composerFocus)
+    val actionFocus = remember(state.deckGeneration) { HomeActionFocus() }
+    HomeTrayFocus(state.interaction.card, cardFocus, composerFocus, actionFocus.restoreAction == null)
     HomeTrayKeyboard(state.interaction.isTrayOpen)
     val session = rememberHomeGestureSession(state.interaction, actions, motion, tray)
     HomeSentReceiptHandshake(state.interaction, actions, durationScale)
     HomeDepartureAnimation(state.interaction, current, actions, motion)
     val presentation =
         HomeStackPresentation(motion, tray, session, state.interaction, actions, durationScale, profileAnchor)
-    HomeStackDeck(state, current, photoPlaybackPaused, presentation, cardFocus, composerFocus)
+    HomeStackDeck(state, current, photoPlaybackPaused, presentation, cardFocus, composerFocus, actionFocus)
 }
 
 @Composable
 private fun HomeStackDeck(
+    state: HomeUiState,
+    current: HomeFeedItem,
+    photoPlaybackPaused: Boolean,
+    presentation: HomeStackPresentation,
+    cardFocus: FocusRequester,
+    composerFocus: FocusRequester,
+    actionFocus: HomeActionFocus
+) {
+    var actionHeight by remember { mutableStateOf(64.dp) }
+    val density = LocalDensity.current
+    Box(Modifier.fillMaxSize()) {
+        HomeDeckCards(
+            state,
+            current,
+            photoPlaybackPaused,
+            presentation.copy(actionHeight = actionHeight),
+            cardFocus,
+            composerFocus
+        )
+        HomeCardActionRow(
+            state.interaction.availableActions.toButtonUi(),
+            { action ->
+                actionFocus.prepare(action)
+                presentation.actions.perform(action)
+            },
+            presentation.tray.progress.value,
+            state.interaction.isTrayOpen || state.interaction.card == CardState.Peeking,
+            Modifier.align(Alignment.BottomCenter).padding(horizontal = 20.dp).padding(bottom = 20.dp)
+                .onSizeChanged { actionHeight = with(density) { it.height.toDp() } + 12.dp },
+            reservedHeight = actionHeight - 12.dp,
+            actionModifier = { action, enabled -> actionFocus.modifier(action, enabled) }
+        )
+    }
+}
+
+@Composable
+private fun HomeDeckCards(
     state: HomeUiState,
     current: HomeFeedItem,
     photoPlaybackPaused: Boolean,
@@ -98,7 +136,8 @@ private data class HomeStackPresentation(
     val interaction: HomeInteractionState,
     val actions: HomeCardActions,
     val durationScale: Float,
-    val profileAnchor: Rect?
+    val profileAnchor: Rect?,
+    val actionHeight: Dp = 64.dp
 )
 
 @Composable
@@ -151,6 +190,7 @@ private fun androidx.compose.foundation.layout.BoxScope.HomeStackCardContents(
         cardIndex = index,
         isActive = active,
         modifier = Modifier.fillMaxSize(),
+        informationBottomPadding = presentation.actionHeight,
         mediaModifier = Modifier.graphicsLayer {
             if (front) translationY = -presentation.tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
         }
@@ -229,7 +269,7 @@ private fun releaseHomeCard(
     motion: HomeCardMotion,
     scope: CoroutineScope
 ) {
-    when (homeReleaseCommand(release, interaction.saveAvailable)) {
+    when (homeReleaseCommand(release, interaction.availableActions.allows(CardAction.Save))) {
         HomeReleaseCommand.SAVE -> actions.saveCurrentCard()
         HomeReleaseCommand.PASS -> actions.passCurrentCard()
         HomeReleaseCommand.CANCEL -> {
@@ -247,38 +287,3 @@ internal fun homeDepartureMatches(
     currentId: HomeItemId
 ): Boolean = interaction.card == CardState.Leaving && interaction.departure == departure &&
     departure.listingId == currentId
-
-private fun Modifier.homeCardLayer(
-    front: Boolean,
-    motion: HomeCardMotion,
-    target: (Float) -> HomeSaveTarget?
-): Modifier = graphicsLayer {
-    if (front) {
-        val pose = motion.pose(size.width / density, target(density))
-        translationX = pose.xDp * density
-        translationY = pose.yDp * density
-        rotationZ = pose.rotation
-        scaleX = pose.scale
-        scaleY = pose.scale
-        alpha = pose.alpha
-        transformOrigin = TransformOrigin(0.5f, pose.pivotY)
-    } else {
-        val pose = homeNextCardPose(motion.promotion)
-        translationX = 0f
-        translationY = 0f
-        rotationZ = 0f
-        alpha = 1f
-        scaleX = pose.scale
-        scaleY = pose.scale
-        transformOrigin = TransformOrigin(0.5f, 0f)
-    }
-}
-
-@Composable
-private fun HomeNextCardShade(motion: HomeCardMotion) {
-    Box(
-        Modifier.fillMaxSize().padding(8.dp).clip(MaterialTheme.shapes.large).drawBehind {
-            drawRect(BulletinFeedCardDefaults.scrim.copy(alpha = homeNextCardPose(motion.promotion).shadeAlpha))
-        }
-    )
-}
