@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockVi
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
+import com.jdrms.bulletin.domain.messages.presentation.MessageThreadOperations
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.presentation.AccountViewModel
 import com.jdrms.bulletin.domain.profile.presentation.BlockedUsersViewModel
@@ -73,7 +74,7 @@ fun AppContainer.createMessagesViewModel() = MessagesViewModel(
     reportMessage,
     hideConversation,
     conversationListingPreviewProvider,
-    markConversationRead
+    MessageThreadOperations(markConversationRead, editMessage)
 )
 
 fun AppContainer.createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)

@@ -144,7 +144,7 @@ class ConversationTest {
     @Test
     fun reportingPreservesMessageIdentityAndContent() {
         val message = message()
-        assertEquals(message.copy(isReported = true), message.report())
+        assertEquals(message.copy(isReported = true, isEditLocked = true), message.report())
         assertFalse(message.isReported)
     }
 

@@ -7,7 +7,10 @@ data class MessageDto(
     val senderName: String,
     val content: String,
     val timestampMillis: Long = 0L,
-    val isReported: Boolean = false
+    val isReported: Boolean = false,
+    val editedAt: kotlin.time.Instant? = null,
+    val deletedAt: kotlin.time.Instant? = null,
+    val isEditLocked: Boolean? = false
 )
 
 data class ConversationDto(
