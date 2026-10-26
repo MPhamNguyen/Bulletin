@@ -15,10 +15,7 @@ import com.jdrms.bulletin.app.integration.MarketplaceHomeRepository
 import com.jdrms.bulletin.app.integration.MarketplaceHomeSaveAdapter
 import com.jdrms.bulletin.app.integration.MarketplaceProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.app.integration.MessagesHomeContactSellerAdapter
-import com.jdrms.bulletin.app.integration.ProfileMarketplaceBlockedUserProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
-import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserBlocker
-import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserReporter
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.core.common.FlowUserMessenger
@@ -83,77 +80,33 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseInbo
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
-import com.jdrms.bulletin.domain.profile.application.BlockUser
-import com.jdrms.bulletin.domain.profile.application.GetBlockedUsers
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
 import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
-import com.jdrms.bulletin.domain.profile.application.PublishStudentReview
-import com.jdrms.bulletin.domain.profile.application.RegisterStudent
-import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
-import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
-import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
-import com.jdrms.bulletin.domain.profile.application.SignInUser
-import com.jdrms.bulletin.domain.profile.application.SignOutUser
-import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
-import com.jdrms.bulletin.domain.profile.application.SubmitStudentReview
-import com.jdrms.bulletin.domain.profile.application.SubmitUserReport
-import com.jdrms.bulletin.domain.profile.application.UnblockUser
-import com.jdrms.bulletin.domain.profile.application.UpdatePassword
-import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
-import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
-import com.jdrms.bulletin.domain.profile.application.VerifyPasswordResetCode
-import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
-import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
-import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
-import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
-import com.jdrms.bulletin.domain.profile.domain.repository.UserBlockRepository
-import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.AuthSessionRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryUserBlockRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryUserReportRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.ProfileReadCache
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserBlockRepository
-import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserReportRepository
 import io.github.jan.supabase.SupabaseClient
+
 class AppContainer(
     val supabaseConfig: SupabaseConfig = SupabaseConfig(),
-    private val isInspectionMode: Boolean = false,
-    private val allowInMemoryFallback: Boolean = false,
+    isInspectionMode: Boolean = false,
+    allowInMemoryFallback: Boolean = false,
     themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
     marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore =
         InMemoryMarketplaceLayoutPreferenceStore(),
-    private val providedSupabaseClient: SupabaseClient? = null
+    providedSupabaseClient: SupabaseClient? = null
 ) {
     internal val themePreferenceStore = themePreferenceStore
     internal val marketplaceLayoutPreferenceStore = marketplaceLayoutPreferenceStore
     val listingChangedSignal: RefreshSignal by lazy { RefreshSignal() }
     private val marketplaceReadCache by lazy { MarketplaceReadCache() }
-    private val profileReadCache by lazy { ProfileReadCache() }
-    val supabaseClient: SupabaseClient? by lazy {
-        if (providedSupabaseClient != null) {
-            providedSupabaseClient
-        } else if (!isInspectionMode && supabaseConfig.isConfigured) {
-            runCatching {
-                supabaseConfig.createClient()
-            }.fold(
-                onSuccess = { it },
-                onFailure = { error ->
-                    println("Failed to initialize SupabaseClient: ${error.message}")
-                    null
-                }
-            )
-        } else {
-            null
-        }
-    }
+    private val infrastructure = InfrastructureModule(
+        supabaseConfig,
+        isInspectionMode,
+        allowInMemoryFallback,
+        providedSupabaseClient
+    )
+    private val profile = ProfileModule(infrastructure)
+    val supabaseClient: SupabaseClient? get() = infrastructure.client
 
     val getVisibleMarketplaceListings by lazy {
         GetVisibleMarketplaceListings(
@@ -164,115 +117,57 @@ class AppContainer(
     }
     val homeRepository by lazy { MarketplaceHomeRepository(getVisibleMarketplaceListings) }
     val marketplaceRepository: MarketplaceRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseMarketplaceRepository(client, readCache = marketplaceReadCache)
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled.")
-            }
-            InMemoryMarketplaceRepository()
-        }
+        infrastructure.backend(
+            supabase = { SupabaseMarketplaceRepository(it, readCache = marketplaceReadCache) },
+            inMemory = { InMemoryMarketplaceRepository() }
+        )
     }
     val listingsRepository: ListingsRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseListingsRepository(client) { marketplaceReadCache.invalidateAll() }
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled.")
-            }
-            InMemoryListingsRepository()
-        }
+        infrastructure.backend(
+            supabase = { client -> SupabaseListingsRepository(client) { marketplaceReadCache.invalidateAll() } },
+            inMemory = { InMemoryListingsRepository() }
+        )
     }
     val listingImagesRepository: ListingImagesRepository by lazy {
-        supabaseClient?.let(::SupabaseListingImagesRepository) ?: InMemoryListingImagesRepository()
+        infrastructure.backend(
+            supabase = ::SupabaseListingImagesRepository,
+            inMemory = ::InMemoryListingImagesRepository
+        )
     }
     val marketplaceListingSource: MarketplaceListingSource by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseMarketplaceListingSource(client, marketplaceReadCache)
-        } else {
-            CompositeMarketplaceListingSource(
-                ListingsMarketplaceListingSource(listingsRepository),
-                MarketplaceRepositoryListingSource(marketplaceRepository)
-            )
-        }
-    }
-    val messagesRepository: MessagesRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseMessagesRepository(client, instrumentation = ConsoleMessagesInstrumentation)
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled.")
+        infrastructure.backend(
+            supabase = { SupabaseMarketplaceListingSource(it, marketplaceReadCache) },
+            inMemory = {
+                CompositeMarketplaceListingSource(
+                    ListingsMarketplaceListingSource(listingsRepository),
+                    MarketplaceRepositoryListingSource(marketplaceRepository)
+                )
             }
-            InMemoryMessagesRepository()
-        }
+        )
+    }
+    private val inMemoryMessages by lazy { InMemoryMessagesRepository() }
+    val messagesRepository: MessagesRepository by lazy {
+        infrastructure.backend(
+            supabase = { SupabaseMessagesRepository(it, instrumentation = ConsoleMessagesInstrumentation) },
+            inMemory = { inMemoryMessages }
+        )
     }
     val messagesObserver: MessagesObserver by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseMessagesObserver(client, messagesRepository)
-        } else {
-            messagesRepository as InMemoryMessagesRepository
-        }
+        infrastructure.backend(
+            supabase = { SupabaseMessagesObserver(it, messagesRepository) },
+            inMemory = { inMemoryMessages }
+        )
     }
     val inboxObserver: InboxObserver by lazy {
-        supabaseClient?.let(::SupabaseInboxObserver) ?: (messagesRepository as InMemoryMessagesRepository)
+        infrastructure.backend(
+            supabase = ::SupabaseInboxObserver,
+            inMemory = { inMemoryMessages }
+        )
     }
-    val profileRepository: ProfileRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseProfileRepository(client, readCache = profileReadCache)
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled.")
-            }
-            InMemoryProfileRepository()
-        }
-    }
-    private val userReportRepository: UserReportRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseUserReportRepository(client)
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled.")
-            }
-            InMemoryUserReportRepository()
-        }
-    }
-    private val userBlockRepository: UserBlockRepository by lazy {
-        if (supabaseClient == null && !allowInMemoryFallback && !isInspectionMode) {
-            error("Supabase client is not configured and in-memory fallback is disabled.")
-        }
-        supabaseClient?.let(::SupabaseUserBlockRepository) ?: InMemoryUserBlockRepository()
-    }
-    val profilePhotoRepository: ProfilePhotoRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseProfilePhotoRepository(client)
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled.")
-            }
-            InMemoryProfilePhotoRepository()
-        }
-    }
-    val authRepository: AuthRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseAuthRepository(client, profileRepository) { profileReadCache.clearCurrentSession() }
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled.")
-            }
-            InMemoryAuthRepository(profileRepository)
-        }
-    }
-    val sessionRepository by lazy { AuthSessionRepository(authRepository) }
-
+    val profileRepository get() = profile.profileRepository
+    val profilePhotoRepository get() = profile.profilePhotoRepository
+    val authRepository get() = profile.authRepository
+    val sessionRepository get() = profile.sessionRepository
     val userMessenger by lazy { FlowUserMessenger() }
     val getPersonalizedFeed by lazy { GetPersonalizedFeed(homeRepository) }
     val updateUserPreferences by lazy { UpdateUserPreferences(homeRepository) }
@@ -283,9 +178,7 @@ class AppContainer(
     }
     val recordSwipeDecision by lazy { RecordSwipeDecision(swipeDecisionRepository) }
     val sendQuickMessage by lazy { SendQuickMessage(homeContactSeller) }
-    private val marketplaceBlockedUserProvider by lazy {
-        ProfileMarketplaceBlockedUserProvider(userBlockRepository)
-    }
+    private val marketplaceBlockedUserProvider get() = profile.marketplaceBlockedUserProvider
     val searchMarketplace by lazy {
         SearchMarketplace(
             repository = marketplaceRepository,
@@ -301,15 +194,10 @@ class AppContainer(
     val removeMarketplaceListingBookmark by lazy { RemoveMarketplaceListingBookmark(marketplaceRepository) }
     private val marketplaceSellerProfileProvider by lazy { ProfileMarketplaceSellerNameProvider(profileRepository) }
     private val listingReportRepository: ListingReportRepository by lazy {
-        val client = supabaseClient
-        if (client != null) {
-            SupabaseListingReportRepository(client)
-        } else {
-            if (!allowInMemoryFallback && !isInspectionMode) {
-                error("Supabase client is not configured and in-memory fallback is disabled in release builds.")
-            }
-            InMemoryListingReportRepository()
-        }
+        infrastructure.backend(
+            supabase = ::SupabaseListingReportRepository,
+            inMemory = ::InMemoryListingReportRepository
+        )
     }
     private val marketplaceReportedListingProvider by lazy {
         GetMarketplaceReportedListings(AuthMarketplaceReportIdentity(authRepository), listingReportRepository)
@@ -334,14 +222,12 @@ class AppContainer(
         )
     }
 
-    private val submitUserReport by lazy { SubmitUserReport(authRepository, userReportRepository) }
     internal val reportMarketplaceUser by lazy {
-        ReportMarketplaceUser(ProfileMarketplaceUserReporter(submitUserReport))
+        ReportMarketplaceUser(profile.marketplaceUserReporter)
     }
-    private val blockUser by lazy { BlockUser(authRepository, userBlockRepository) }
-    internal val blockMarketplaceUser by lazy { BlockMarketplaceUser(ProfileMarketplaceUserBlocker(blockUser)) }
-    internal val unblockUser by lazy { UnblockUser(authRepository, userBlockRepository) }
-    internal val getBlockedUsers by lazy { GetBlockedUsers(authRepository, userBlockRepository, profileRepository) }
+    internal val blockMarketplaceUser by lazy { BlockMarketplaceUser(profile.marketplaceUserBlocker) }
+    internal val unblockUser get() = profile.unblockUser
+    internal val getBlockedUsers get() = profile.getBlockedUsers
     val createListing by lazy { CreateListing(listingsRepository) }
     val manageListing by lazy { ManageListing(listingsRepository) }
     val manageListingImages by lazy { ManageListingImages(listingImagesRepository) }
@@ -372,20 +258,20 @@ class AppContainer(
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }
-    val signInUser by lazy { SignInUser(authRepository) }
-    val registerStudent by lazy { RegisterStudent(authRepository) }
-    val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }
-    val signOutUser by lazy { SignOutUser(authRepository) }
-    val resendVerificationCode by lazy { ResendVerificationCode(authRepository) }
-    val verifyStudentEmail by lazy { VerifyStudentEmail(authRepository) }
-    val requestPasswordReset by lazy { RequestPasswordReset(authRepository) }
-    val verifyPasswordResetCode by lazy { VerifyPasswordResetCode(authRepository) }
-    val updatePassword by lazy { UpdatePassword(authRepository) }
-    val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
-    val uploadProfilePhoto by lazy { UploadProfilePhoto(profilePhotoRepository, profileRepository) }
-    val softDeleteProfile by lazy { SoftDeleteProfile(profileRepository, signOutUser) }
-    val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
-    val publishStudentReview by lazy { PublishStudentReview(submitStudentReview) }
+    val signInUser get() = profile.signInUser
+    val registerStudent get() = profile.registerStudent
+    val restoreAuthenticatedProfile get() = profile.restoreAuthenticatedProfile
+    val signOutUser get() = profile.signOutUser
+    val resendVerificationCode get() = profile.resendVerificationCode
+    val verifyStudentEmail get() = profile.verifyStudentEmail
+    val requestPasswordReset get() = profile.requestPasswordReset
+    val verifyPasswordResetCode get() = profile.verifyPasswordResetCode
+    val updatePassword get() = profile.updatePassword
+    val updateStudentProfile get() = profile.updateStudentProfile
+    val uploadProfilePhoto get() = profile.uploadProfilePhoto
+    val softDeleteProfile get() = profile.softDeleteProfile
+    val submitStudentReview get() = profile.submitStudentReview
+    val publishStudentReview get() = profile.publishStudentReview
     val profileActiveListingsProvider by lazy { ListingsActiveListingsCountProvider(listingsRepository) }
     val profileSoldListingsProvider by lazy { ListingsSoldListingsCountProvider(listingsRepository) }
     val getProfileOverview by lazy { GetProfileOverview(profileRepository, profileActiveListingsProvider) }

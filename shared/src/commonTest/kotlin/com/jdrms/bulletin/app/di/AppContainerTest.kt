@@ -14,7 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import kotlin.test.assertSame
 
 class AppContainerTest {
 
@@ -37,7 +37,8 @@ class AppContainerTest {
     fun messagingUsesTheSameAuthSessionAndKeepsInMemoryStorage() = runTest {
         val container = AppContainer(isInspectionMode = true)
         assertIs<InMemoryMessagesRepository>(container.messagesRepository)
-        assertTrue(container.messagesRepository === container.messagesObserver)
+        assertSame<Any>(container.messagesRepository, container.messagesObserver)
+        assertSame<Any>(container.messagesRepository, container.inboxObserver)
         assertIs<MessagingAuthenticationRequiredException>(
             assertIs<Result.Error>(container.getConversations()).exception
         )
@@ -62,20 +63,41 @@ class AppContainerTest {
             isInspectionMode = false
         )
 
-        assertFailsWith<IllegalStateException> {
-            container.profileRepository
-        }
-
-        assertFailsWith<IllegalStateException> {
-            container.authRepository
-        }
-
-        assertFailsWith<IllegalStateException> {
-            container.messagesRepository
-        }
-
-        assertFailsWith<IllegalStateException> {
-            container.profilePhotoRepository
+        backendBindings(container).forEach { binding ->
+            val failure = assertFailsWith<IllegalStateException> { binding() }
+            assertEquals(
+                "Supabase client is not configured and in-memory fallback is disabled.",
+                failure.message
+            )
         }
     }
+
+    @Test
+    fun explicitFallbackAndInspectionAllowAllBackendBindings() {
+        listOf(
+            AppContainer(allowInMemoryFallback = true),
+            AppContainer(isInspectionMode = true)
+        ).forEach { container ->
+            backendBindings(container).forEach { it() }
+            assertSame<Any>(container.inboxObserver, container.messagesRepository)
+            assertSame<Any>(container.messagesObserver, container.messagesRepository)
+            assertSame(container.signInUser, container.signInUser)
+        }
+    }
+
+    private fun backendBindings(container: AppContainer): List<() -> Any> = listOf(
+        { container.profileRepository },
+        { container.authRepository },
+        { container.messagesRepository },
+        { container.messagesObserver },
+        { container.inboxObserver },
+        { container.profilePhotoRepository },
+        { container.listingsRepository },
+        { container.listingImagesRepository },
+        { container.marketplaceRepository },
+        { container.marketplaceListingSource },
+        { container.reportMarketplaceListing },
+        { container.reportMarketplaceUser },
+        { container.blockMarketplaceUser }
+    )
 }

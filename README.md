@@ -111,7 +111,7 @@ Home uses `MarketplaceHomeRepository` with the Supabase marketplace listing sour
 | **Backend** | Supabase client adapters for configured backend-backed contexts |
 | **Authentication** | Supabase Auth adapter, with university-email validation in shared business logic |
 | **Persistence** | Supabase PostgREST and Storage adapters; in-memory repositories for tests and local/inspection use |
-| **Dependency injection** | Manual composition in `AppContainer` |
+| **Dependency injection** | Manual composition in `AppContainer`, with shared backend selection and a profile/auth module |
 | **Build system** | Gradle wrapper and version catalog in `gradle/libs.versions.toml` |
 
 ---
@@ -139,6 +139,8 @@ Business contexts use four layers:
 - `infrastructure/`: Supabase and in-memory adapters, DTOs, and mapping.
 - `presentation/`: Compose screens, ViewModels, and UI state.
 
+`AppContainer` remains the composition entry point. `InfrastructureModule` owns lazy client creation and the shared fallback policy; `ProfileModule` owns profile/auth construction and use cases. Other feature wiring and cross-context adapters remain in the container for incremental extraction. Existing container properties delegate to the same lazy profile/auth instances.
+
 ### Backend Status
 
 `AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home reads through `MarketplaceHomeRepository`; Home preferences remain in memory. These bindings describe code paths, not verification against a deployed Supabase project.
@@ -147,6 +149,8 @@ Business contexts use four layers:
 | --- | --- | --- | --- |
 | Home feed | Supabase marketplace listing source when configured | Marketplace listing source with in-memory fallback | Not verified here; home preferences remain in-memory |
 | Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters | Not verified here |
+| Listing images | Supabase Storage adapter | Guarded in-memory adapter for tests, inspection, or explicit fallback | Not verified here |
+| Listing reports | Supabase adapter | Guarded in-memory adapter for tests, inspection, or explicit fallback | Not verified here |
 | Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter | Not verified here |
 | Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
 | Profile repository | Supabase adapter | In-memory adapter | Not verified here |
