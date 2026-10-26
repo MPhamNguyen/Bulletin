@@ -26,6 +26,11 @@ actual fun formatConversationDate(timestampMillis: Long, nowMillis: Long): Strin
     return "$month $day${dayOrdinalSuffix(day)} AT $time"
 }
 
+actual fun conversationLocalDayKey(timestampMillis: Long): Int = Calendar.getInstance().run {
+    timeInMillis = timestampMillis
+    get(Calendar.YEAR) * 1_000 + get(Calendar.DAY_OF_YEAR)
+}
+
 private fun weekStart(timestampMillis: Long): Long = Calendar.getInstance().run {
     timeInMillis = timestampMillis
     set(Calendar.HOUR_OF_DAY, 0)
