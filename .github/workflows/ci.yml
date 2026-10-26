@@ -1,5 +1,7 @@
 name: CI
 
+run-name: "CI · ${{ github.event_name == 'merge_group' && 'merge queue' || github.event_name == 'schedule' && 'weekly full run' || github.event_name == 'workflow_dispatch' && 'manual run' || github.ref_name }}"
+
 on:
   push:
     # Branch pushes cover PR branches; tags are excluded.
@@ -22,7 +24,7 @@ env:
 
 jobs:
   scope:
-    name: Decide scope
+    name: "🔎 Decide scope"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -49,6 +51,7 @@ jobs:
           set -euo pipefail
           ALL_DOMAINS="home marketplace listings messages profile"
           mode=full
+          reason="no diff range for $EVENT on ${REF#refs/heads/}, so running everything (safe default)"
           range=()
           if [ "$EVENT" = "push" ] && [ "$REF" != "refs/heads/main" ]; then
             base=$(git merge-base origin/main "$AFTER" 2>/dev/null || true)
@@ -58,6 +61,7 @@ jobs:
           domain_changed=false
           android_app_changed=false
           admin_changed=false
+          full_reason=""
           if [ ${#range[@]} -gt 0 ]; then
             count=0
             docs=0
@@ -75,17 +79,35 @@ jobs:
                   case "$d" in
                     home|marketplace|listings|messages|profile)
                       changed="$changed $d"; domain_changed=true ;;
-                    *) force_full=true ;;
+                    *)
+                      force_full=true
+                      : "${full_reason:=unrecognized domain package: $path}" ;;
                   esac ;;
                 androidApp/*) android_app_changed=true ;;
                 admin/*) admin_changed=true ;;
-                *) force_full=true ;; # Build configuration, shared code, or unknown paths.
+                build.gradle*|settings.gradle*|gradle.properties|gradle/*|buildSrc/*|build-logic/*|gradlew|gradlew.bat|.github/*)
+                  force_full=true
+                  : "${full_reason:=build-wide file changed: $path}" ;;
+                shared/*)
+                  force_full=true
+                  : "${full_reason:=shared code outside the domain packages: $path}" ;;
+                *)
+                  force_full=true
+                  : "${full_reason:=unrecognized path: $path}" ;;
               esac
             done < "$RUNNER_TEMP/ci-paths"
-            if [ "$count" -eq 0 ]; then mode=full
-            elif [ "$count" -eq "$docs" ]; then mode=skip
-            elif [ "$force_full" = true ]; then mode=full
-            else mode=affected
+            if [ "$count" -eq 0 ]; then
+              mode=full
+              reason="empty diff against main, so running everything (safe default)"
+            elif [ "$count" -eq "$docs" ]; then
+              mode=skip
+              reason="only docs changed ($count files)"
+            elif [ "$force_full" = true ]; then
+              mode=full
+              reason="$full_reason"
+            else
+              mode=affected
+              reason="$count files changed against main; running only what they touch"
             fi
           fi
           selected=""
@@ -106,16 +128,39 @@ jobs:
             echo "android_app_changed=$android_app_changed"
             echo "admin_changed=$admin_changed"
           } >> "$GITHUB_OUTPUT"
+          flag() { if [ "$1" = true ]; then echo "✏️ changed"; else echo "—"; fi; }
+          runs="size rules"
+          case "$mode" in
+            full)
+              icon="🟥"
+              runs="$runs, static analysis, $TEST_SHARD_COUNT test shards, admin tests" ;;
+            affected)
+              icon="🟨"
+              if [ "$domain_changed" = true ]; then
+                domains="${selected# }"
+                runs="$runs, static analysis, domain tests (${domains// /, }), app & core tests"
+              elif [ "$android_app_changed" = true ]; then
+                runs="$runs, static analysis"
+              fi
+              if [ "$admin_changed" = true ]; then runs="$runs, admin tests"; fi ;;
+            skip) icon="🟩"; runs="nothing" ;;
+          esac
           {
-            echo "**Scope:** \`$mode\`"
-            echo "**Domains:** \`$domains_json\`"
-            echo "**Domain tree changed:** $domain_changed"
-            echo "**androidApp changed:** $android_app_changed"
-            echo "**admin changed:** $admin_changed"
+            echo "### $icon Scope: \`$mode\`"
+            echo
+            echo "_${reason}_"
+            echo
+            echo "**Will run:** $runs"
+            echo
+            echo "| Area | Status |"
+            echo "| --- | --- |"
+            echo "| 🧩 Domain packages | $(flag "$domain_changed") |"
+            echo "| 📱 androidApp | $(flag "$android_app_changed") |"
+            echo "| 🐍 admin | $(flag "$admin_changed") |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   size-check:
-    name: File length and size suppressions
+    name: "📏 Size rules"
     needs: scope
     if: needs.scope.outputs.mode != 'skip'
     runs-on: ubuntu-latest
@@ -132,12 +177,12 @@ jobs:
           # Size-rule suppressions (must return nothing)
           if command -v rg >/dev/null 2>&1; then
             if rg -n '@(file:)?Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
-              echo "Error: Forbidden size-rule suppressions found!" >&2
+              echo "::error title=Size rules::Forbidden size-rule suppressions found (see log)"
               exit 1
             fi
           else
             if grep -rnE '@(file:)?Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
-              echo "Error: Forbidden size-rule suppressions found!" >&2
+              echo "::error title=Size rules::Forbidden size-rule suppressions found (see log)"
               exit 1
             fi
           fi
@@ -156,6 +201,7 @@ jobs:
             "shared/src/commonTest/kotlin/com/jdrms/bulletin/domain/profile/presentation/ProfileViewModelTest.kt"
           )
 
+          failed=false
           oversized=$(find shared/src -name '*.kt' -print0 | xargs -0 -r wc -l | awk '$1 > 400 && $2 != "total" {print $2}')
           for file in $oversized; do
             found=false
@@ -166,14 +212,15 @@ jobs:
               fi
             done
             if [ "$found" = "false" ]; then
-              echo "Error: $file is over 400 lines and not in known legacy files!" >&2
-              exit 1
+              echo "::error file=$file,title=File too long::Over 400 lines and not in the known-legacy list"
+              failed=true
             fi
           done
+          [ "$failed" = false ]
 
   # check retains Android app tests, lint and detekt; host tests run separately.
   static:
-    name: Static analysis
+    name: "🧹 Static analysis"
     needs: scope
     if: >-
       needs.scope.outputs.mode == 'full' ||
@@ -203,7 +250,7 @@ jobs:
             **/build/test-results/**
 
   full-tests:
-    name: Full tests (shard ${{ matrix.index }})
+    name: "🧪 Full tests"
     needs: scope
     if: needs.scope.outputs.mode == 'full'
     runs-on: ubuntu-latest
@@ -211,7 +258,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        index: [0, 1, 2, 3]
+        shard: ["1 of 4", "2 of 4", "3 of 4", "4 of 4"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -219,19 +266,26 @@ jobs:
           persist-credentials: false
       - name: Setup JDK and Gradle
         uses: ./.github/actions/setup-gradle
-      - name: Run shard
+      - name: Run test shard ${{ matrix.shard }}
         env:
-          SHARD_INDEX: ${{ matrix.index }}
+          SHARD: ${{ matrix.shard }}
         run: |
+          set -euo pipefail
+          index=$(( ${SHARD%% *} - 1 ))
           ./gradlew :shared:testAndroidHostTest \
             -PtestShardCount="$TEST_SHARD_COUNT" \
-            -PtestShardIndex="$SHARD_INDEX" \
+            -PtestShardIndex="$index" \
             --stacktrace --continue --console=plain
+      - name: Summarize test results
+        if: always()
+        uses: ./.github/actions/test-summary
+        with:
+          title: Shard ${{ matrix.shard }}
       - name: Upload build reports
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ci-reports-full-shard-${{ matrix.index }}
+          name: ci-reports-full-shard-${{ strategy.job-index }}
           if-no-files-found: ignore
           retention-days: 7
           path: |
@@ -239,7 +293,7 @@ jobs:
             **/build/test-results/**
 
   domain-tests:
-    name: Domain tests (${{ matrix.domain }})
+    name: "🧩 Domain tests"
     needs: scope
     if: needs.scope.outputs.mode == 'affected' && needs.scope.outputs.domains != '[]'
     runs-on: ubuntu-latest
@@ -263,6 +317,11 @@ jobs:
           ./gradlew :shared:compileAndroidMain :shared:testAndroidHostTest \
             --tests "com.jdrms.bulletin.domain.${DOMAIN}.*" \
             --stacktrace --continue --console=plain
+      - name: Summarize test results
+        if: always()
+        uses: ./.github/actions/test-summary
+        with:
+          title: ${{ matrix.domain }} domain
       - name: Upload build reports
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -275,7 +334,7 @@ jobs:
             **/build/test-results/**
 
   shared-tests:
-    name: App and core tests
+    name: "🧱 App & core tests"
     needs: scope
     if: needs.scope.outputs.mode == 'affected' && needs.scope.outputs.domain_changed == 'true'
     runs-on: ubuntu-latest
@@ -294,6 +353,11 @@ jobs:
             --tests "com.jdrms.bulletin.app.*" \
             --tests "com.jdrms.bulletin.core.*" \
             --stacktrace --continue --console=plain
+      - name: Summarize test results
+        if: always()
+        uses: ./.github/actions/test-summary
+        with:
+          title: App & core
       - name: Upload build reports
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -306,7 +370,7 @@ jobs:
             **/build/test-results/**
 
   admin:
-    name: Admin tests
+    name: "🐍 Admin tests"
     needs: scope
     if: needs.scope.outputs.mode == 'full' || needs.scope.outputs.admin_changed == 'true'
     runs-on: ubuntu-latest
@@ -338,6 +402,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Summarize job results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          {
+            echo "### 🚦 Gate"
+            echo
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            echo "$NEEDS_JSON" | jq -r '
+              def icon: {"success":"✅","failure":"❌","cancelled":"🚫","skipped":"⏭️"}[.] // "❔";
+              to_entries[] | "| \(.key) | \(.value.result | icon) \(.value.result) |"'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Evaluate results
         env:
           SCOPE_RESULT: ${{ needs.scope.result }}
@@ -347,5 +425,5 @@ jobs:
           echo "Upstream results: $RESULTS"
           test "$SCOPE_RESULT" = success
           case "$RESULTS" in
-            *failure*|*cancelled*) echo "One or more required jobs failed." >&2; exit 1 ;;
+            *failure*|*cancelled*) echo "::error title=Gate::One or more required jobs failed."; exit 1 ;;
           esac
