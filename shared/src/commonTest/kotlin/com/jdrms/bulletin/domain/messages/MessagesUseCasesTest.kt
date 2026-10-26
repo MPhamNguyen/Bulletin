@@ -133,7 +133,15 @@ class MessagesUseCasesTest {
             assertEquals(failure, GetConversations(repository, provider)())
             assertEquals(failure, GetConversationMessages(repository, provider)(conversationId))
             assertEquals(failure, SendMessage(repository, provider)(conversationId, "Hello"))
-            assertEquals(failure, ReportMessage(repository, provider)(conversationId, message().id, ReportReason.SPAM, ""))
+            assertEquals(
+                failure,
+                ReportMessage(repository, provider)(
+                    conversationId,
+                    message().id,
+                    ReportReason.SPAM,
+                    ""
+                )
+            )
         }
         assertTrue(repository.callers.isEmpty())
     }
