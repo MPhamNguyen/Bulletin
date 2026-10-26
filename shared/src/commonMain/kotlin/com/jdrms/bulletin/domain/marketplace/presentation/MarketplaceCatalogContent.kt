@@ -106,13 +106,14 @@ internal fun MarketplaceCatalogContent(
             marketplacePaginationItem(state)
             marketplaceErrorItems(state, viewModel)
         }
-        MarketplaceCatalogOverlays(
+        MarketplaceDetailFlow(
             state,
             viewModel,
             sellerProfileViewModel,
             listingReportViewModel,
             actions,
-            onNavigate
+            onNavigate,
+            viewModel::dismissListingDetail
         )
     }
 }
@@ -216,13 +217,14 @@ private fun LazyGridScope.fullWidthItem(
 private const val PREFETCH_ITEM_THRESHOLD = 6
 
 @Composable
-private fun MarketplaceCatalogOverlays(
+internal fun MarketplaceDetailFlow(
     state: MarketplaceUiState,
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
     listingReportViewModel: ListingReportViewModel,
     actions: MarketplaceScreenActions,
-    onNavigate: (MarketplaceDestination) -> Unit
+    onNavigate: (MarketplaceDestination) -> Unit,
+    onDetailDismiss: () -> Unit
 ) {
     if (!state.detail.isOpen) return
     MarketplaceDetailOverlay(
@@ -231,11 +233,12 @@ private fun MarketplaceCatalogOverlays(
         sellerProfileViewModel = sellerProfileViewModel,
         listingReportViewModel = listingReportViewModel,
         actions = actions,
-        onNavigate = onNavigate
+        onNavigate = onNavigate,
+        onDetailDismiss = onDetailDismiss
     )
     MarketplaceListingReportFlow(listingReportViewModel) {
         listingReportViewModel.dismiss()
-        viewModel.dismissListingDetail()
+        onDetailDismiss()
         viewModel.refreshListings()
     }
     if (state.detail.isReviewDialogOpen) {
@@ -255,7 +258,8 @@ private fun MarketplaceDetailOverlay(
     sellerProfileViewModel: SellerProfileViewModel,
     listingReportViewModel: ListingReportViewModel,
     actions: MarketplaceScreenActions,
-    onNavigate: (MarketplaceDestination) -> Unit
+    onNavigate: (MarketplaceDestination) -> Unit,
+    onDetailDismiss: () -> Unit
 ) {
     MarketplaceDetailBottomSheet(
         state = MarketplaceDetailSheetState(
@@ -268,7 +272,7 @@ private fun MarketplaceDetailOverlay(
             hasReview = state.detail.hasReview
         ),
         actions = MarketplaceDetailSheetActions(
-            onDismiss = viewModel::dismissListingDetail,
+            onDismiss = onDetailDismiss,
             onRetry = viewModel::retryLoadListingDetail,
             onToggleBookmark = { state.detail.listing?.let { viewModel.toggleBookmark(it.id) } },
             onLeaveReview = viewModel.reviewActions::openReviewDialog,

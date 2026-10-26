@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 
 data class MarketplaceScreenNavigation(
     val sellerProfileIdToOpen: String? = null,
@@ -30,44 +31,57 @@ fun MarketplaceScreen(
     val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
     val blockState by userBlockViewModel.uiState.collectAsState()
-    var destination by remember {
+    var sellerNavigation by remember {
         mutableStateOf(
-            if (navigation.sellerProfileIdToOpen != null) {
-                MarketplaceDestination.SELLER_PROFILE
-            } else {
-                MarketplaceDestination.CATALOG
-            }
+            MarketplaceSellerNavigationState(
+                destination = if (navigation.sellerProfileIdToOpen != null) {
+                    MarketplaceDestination.SELLER_PROFILE
+                } else {
+                    MarketplaceDestination.CATALOG
+                }
+            )
         )
     }
-    var sellerProfileOpenedFromInbox by remember {
-        mutableStateOf(navigation.sellerProfileIdToOpen != null)
-    }
+    var sellerProfileOpenedFromInbox by remember { mutableStateOf(navigation.sellerProfileIdToOpen != null) }
 
     LaunchedEffect(navigation.sellerProfileIdToOpen) {
         navigation.sellerProfileIdToOpen?.let { sellerId ->
+            sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.SELLER_PROFILE)
+            sellerProfileOpenedFromInbox = true
             sellerProfileViewModel.load(sellerId)
             navigation.onSellerProfileRequestHandled()
         }
     }
 
-    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, destination)
+    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, sellerNavigation)
     val flowViewModels = MarketplaceSellerFlowViewModels(
         viewModel,
         sellerProfileViewModel,
         userReportViewModel,
-        userBlockViewModel
+        userBlockViewModel,
+        listingReportViewModel
     )
+    val navigate = { destination: MarketplaceDestination ->
+        sellerNavigation = sellerNavigation.navigate(destination)
+    }
     if (!MarketplaceSellerProfileFlow(
             flowState,
             flowViewModels,
             actions,
-            onNavigate = { destination = it },
+            onOpenListing = { listingId ->
+                val context = sellerProfileState.listings
+                    .firstOrNull { it.id.value == listingId }
+                    ?.toSellerListingContext()
+                viewModel.onListingClicked(listingId)
+                sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.SELLER_LISTING, context)
+            },
+            onNavigate = navigate,
             onBackFromSellerProfile = {
                 if (sellerProfileOpenedFromInbox) {
                     sellerProfileOpenedFromInbox = false
                     navigation.onReturnToInboxChat()
                 } else {
-                    destination = MarketplaceDestination.CATALOG
+                    navigate(MarketplaceDestination.CATALOG)
                 }
             }
         )
@@ -79,9 +93,12 @@ fun MarketplaceScreen(
             listingReportViewModel = listingReportViewModel,
             actions = actions,
             onContentNoLongerScrollable = navigation.onContentNoLongerScrollable,
-            onNavigate = {
-                if (it == MarketplaceDestination.SELLER_PROFILE) sellerProfileOpenedFromInbox = false
-                destination = it
+            onNavigate = { destination ->
+                val context = state.detail.listing
+                    ?.takeIf { destination == MarketplaceDestination.SELLER_PROFILE }
+                    ?.toSellerListingContext()
+                if (destination == MarketplaceDestination.SELLER_PROFILE) sellerProfileOpenedFromInbox = false
+                sellerNavigation = sellerNavigation.navigate(destination, context)
             }
         )
     }
@@ -92,6 +109,7 @@ private fun MarketplaceSellerProfileFlow(
     state: MarketplaceSellerFlowUiState,
     viewModels: MarketplaceSellerFlowViewModels,
     actions: MarketplaceScreenActions,
+    onOpenListing: (String) -> Unit,
     onNavigate: (MarketplaceDestination) -> Unit,
     onBackFromSellerProfile: () -> Unit
 ): Boolean {
@@ -105,16 +123,13 @@ private fun MarketplaceSellerProfileFlow(
         )
         return true
     }
-    if (state.destination != MarketplaceDestination.SELLER_PROFILE) return false
+    if (!state.destination.showsSellerProfile) return false
 
     SellerProfileScreen(
         state = state.sellerProfileState,
         messageActions = state.messageActions(actions),
         listingActions = SellerProfileListingActions(
-            onListingClick = { listingId ->
-                onNavigate(MarketplaceDestination.CATALOG)
-                viewModels.marketplace.onListingClicked(listingId)
-            },
+            onListingClick = onOpenListing,
             onCategorySelected = viewModels.sellerProfile::onCategorySelected,
             onConditionSelected = viewModels.sellerProfile::onConditionSelected
         ),
@@ -129,6 +144,20 @@ private fun MarketplaceSellerProfileFlow(
             isBlocking = state.blockState.isBlocking
         )
     )
+    if (state.destination == MarketplaceDestination.SELLER_LISTING) {
+        MarketplaceDetailFlow(
+            state = state.marketplaceState,
+            viewModel = viewModels.marketplace,
+            sellerProfileViewModel = viewModels.sellerProfile,
+            listingReportViewModel = viewModels.listingReport,
+            actions = actions,
+            onNavigate = onNavigate,
+            onDetailDismiss = {
+                viewModels.marketplace.dismissListingDetail()
+                onNavigate(MarketplaceDestination.SELLER_PROFILE)
+            }
+        )
+    }
     LaunchedEffect(state.sellerProfileState.profile?.sellerId) {
         state.sellerProfileState.profile?.sellerId?.let(viewModels.block::begin)
             ?: viewModels.block.reset()
@@ -148,41 +177,58 @@ private data class MarketplaceSellerFlowUiState(
     val sellerProfileState: SellerProfileUiState,
     val reportState: MarketplaceUserReportUiState,
     val blockState: MarketplaceUserBlockUiState,
-    val destination: MarketplaceDestination
+    val navigation: MarketplaceSellerNavigationState
 ) {
+    val destination: MarketplaceDestination
+        get() = navigation.destination
+
     fun messageActions(actions: MarketplaceScreenActions): MessageSellerQuickActionActions? {
         val profile = sellerProfileState.profile ?: return null
-        val listing = marketplaceState.detail.listing ?: return null
-        val canMessage = canMessageMarketplaceSeller(
+        return sellerProfileMessageActions(
             marketplaceState.currentUserId,
-            profile.sellerId,
-            listing.sellerId
-        )
-        if (!canMessage) return null
-        return MessageSellerQuickActionActions(
-            conversationKey = "${listing.id.value}:${profile.sellerId}",
-            hasExistingConversation = { actions.hasExistingConversation(listing.id.value, profile.sellerId) },
-            onSend = { content ->
-                actions.onMessageSeller(listing.id.value, profile.sellerId, profile.name ?: listing.sellerName, content)
-            },
-            onSent = {},
-            onSeeChat = { actions.onSeeChat(listing.id.value, profile.sellerId) }
+            profile,
+            navigation.listingContext,
+            actions
         )
     }
+}
+
+internal fun sellerProfileMessageActions(
+    currentUserId: String?,
+    profile: MarketplaceSellerProfile,
+    listing: SellerListingContext?,
+    actions: MarketplaceScreenActions
+): MessageSellerQuickActionActions? {
+    listing ?: return null
+    if (!canMessageMarketplaceSeller(currentUserId, profile.sellerId, listing.sellerId)) return null
+    return MessageSellerQuickActionActions(
+        conversationKey = "${listing.listingId}:${profile.sellerId}",
+        hasExistingConversation = { actions.hasExistingConversation(listing.listingId, profile.sellerId) },
+        onSend = { content ->
+            actions.onMessageSeller(listing.listingId, profile.sellerId, profile.name ?: listing.sellerName, content)
+        },
+        onSent = {},
+        onSeeChat = { actions.onSeeChat(listing.listingId, profile.sellerId) }
+    )
 }
 
 private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
     val sellerProfile: SellerProfileViewModel,
     val report: MarketplaceUserReportViewModel,
-    val block: MarketplaceUserBlockViewModel
+    val block: MarketplaceUserBlockViewModel,
+    val listingReport: ListingReportViewModel
 )
 
 internal enum class MarketplaceDestination {
     CATALOG,
     SELLER_PROFILE,
+    SELLER_LISTING,
     REPORT_USER
 }
+
+private val MarketplaceDestination.showsSellerProfile: Boolean
+    get() = this == MarketplaceDestination.SELLER_PROFILE || this == MarketplaceDestination.SELLER_LISTING
 
 internal fun canMessageMarketplaceSeller(
     currentUserId: String?,
