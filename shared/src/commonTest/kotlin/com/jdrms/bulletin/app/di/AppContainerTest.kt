@@ -29,30 +29,30 @@ class AppContainerTest {
             }
         )
 
-        assertIs<SupabaseMessagesRepository>(container.messagesRepository)
-        assertIs<SupabaseMessagesObserver>(container.messagesObserver)
+        assertIs<SupabaseMessagesRepository>(container.messages.messagesRepository)
+        assertIs<SupabaseMessagesObserver>(container.messages.messagesObserver)
     }
 
     @Test
     fun messagingUsesTheSameAuthSessionAndKeepsInMemoryStorage() = runTest {
         val container = AppContainer(isInspectionMode = true)
-        assertIs<InMemoryMessagesRepository>(container.messagesRepository)
-        assertSame<Any>(container.messagesRepository, container.messagesObserver)
-        assertSame<Any>(container.messagesRepository, container.inboxObserver)
+        assertIs<InMemoryMessagesRepository>(container.messages.messagesRepository)
+        assertSame<Any>(container.messages.messagesRepository, container.messages.messagesObserver)
+        assertSame<Any>(container.messages.messagesRepository, container.messages.inboxObserver)
         assertIs<MessagingAuthenticationRequiredException>(
-            assertIs<Result.Error>(container.getConversations()).exception
+            assertIs<Result.Error>(container.messages.getConversations()).exception
         )
-        val profile = container.authRepository.login(
+        val profile = container.profile.authRepository.login(
             StudentEmail("dominic.alfonso@student.csulb.edu"),
             "password123"
         ).getOrThrow()
-        val sender = container.currentMessageSenderProvider.getCurrentSender().getOrThrow()
+        val sender = container.messages.currentMessageSenderProvider.getCurrentSender().getOrThrow()
         assertEquals(profile.id.value, sender.id.value)
         assertEquals(profile.fullName, sender.displayName)
-        assertEquals(emptyList(), container.getConversations().getOrThrow().conversations)
-        container.signOutUser().getOrThrow()
+        assertEquals(emptyList(), container.messages.getConversations().getOrThrow().conversations)
+        container.profile.signOutUser().getOrThrow()
         assertIs<MessagingAuthenticationRequiredException>(
-            assertIs<Result.Error>(container.getConversations()).exception
+            assertIs<Result.Error>(container.messages.getConversations()).exception
         )
     }
 
@@ -79,25 +79,25 @@ class AppContainerTest {
             AppContainer(isInspectionMode = true)
         ).forEach { container ->
             backendBindings(container).forEach { it() }
-            assertSame<Any>(container.inboxObserver, container.messagesRepository)
-            assertSame<Any>(container.messagesObserver, container.messagesRepository)
-            assertSame(container.signInUser, container.signInUser)
+            assertSame<Any>(container.messages.inboxObserver, container.messages.messagesRepository)
+            assertSame<Any>(container.messages.messagesObserver, container.messages.messagesRepository)
+            assertSame(container.profile.signInUser, container.profile.signInUser)
         }
     }
 
     private fun backendBindings(container: AppContainer): List<() -> Any> = listOf(
-        { container.profileRepository },
-        { container.authRepository },
-        { container.messagesRepository },
-        { container.messagesObserver },
-        { container.inboxObserver },
-        { container.profilePhotoRepository },
-        { container.listingsRepository },
-        { container.listingImagesRepository },
-        { container.marketplaceRepository },
-        { container.marketplaceListingSource },
-        { container.reportMarketplaceListing },
-        { container.reportMarketplaceUser },
-        { container.blockMarketplaceUser }
+        { container.profile.profileRepository },
+        { container.profile.authRepository },
+        { container.messages.messagesRepository },
+        { container.messages.messagesObserver },
+        { container.messages.inboxObserver },
+        { container.profile.profilePhotoRepository },
+        { container.listings.listingsRepository },
+        { container.listings.listingImagesRepository },
+        { container.marketplace.marketplaceRepository },
+        { container.marketplace.marketplaceListingSource },
+        { container.marketplace.reportMarketplaceListing },
+        { container.marketplace.reportMarketplaceUser },
+        { container.marketplace.blockMarketplaceUser }
     )
 }

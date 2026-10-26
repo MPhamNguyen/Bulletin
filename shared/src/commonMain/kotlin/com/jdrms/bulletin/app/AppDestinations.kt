@@ -6,8 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
-import com.jdrms.bulletin.app.di.blockedUsersViewModelFactory
 import com.jdrms.bulletin.app.di.createAccountViewModel
+import com.jdrms.bulletin.app.di.createBlockedUsersViewModel
 import com.jdrms.bulletin.app.di.createEditProfileViewModel
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
@@ -32,15 +32,15 @@ import kotlinx.coroutines.cancel
 
 @Composable
 internal fun MainAppContent(
-    container: AppContainer,
-    navigation: MutableMainNavigationState,
-    models: MainScaffoldModels,
-    profilePresentation: ProfilePresentation,
+    content: MainAppContentState,
     onContentNoLongerScrollable: () -> Unit,
     onConversationVisibilityChanged: (Boolean) -> Unit,
     profileAnchorInWindow: Rect? = null,
     onSaveCelebration: (Float) -> Unit = {}
 ) {
+    val container = content.container
+    val navigation = content.navigation
+    val models = content.models
     when (navigation.currentDestination) {
         AppDestination.HOME -> HomeScreen(
             models.home,
@@ -61,7 +61,7 @@ internal fun MainAppContent(
             container,
             navigation,
             models.listings,
-            profilePresentation,
+            content.profile,
             models.messages
         )
     }
@@ -74,7 +74,7 @@ private fun MarketplaceDestination(
     models: MainScaffoldModels,
     onContentNoLongerScrollable: () -> Unit
 ) {
-    val conversationActions = ListingConversationActions(container, navigation, models.messages)
+    val conversationActions = ListingConversationActions(container.messages, navigation, models.messages)
     MarketplaceScreen(
         viewModel = models.marketplace,
         sellerProfileViewModel = models.sellerProfile,
@@ -136,10 +136,10 @@ private fun StudentProfileDestination(
     val resolvedProfileViewModel = profilePresentation.viewModel
     val profileFlows = remember(container, navigation.profileDestination) {
         ProfileScreenFlows(
-            editing = container.createEditProfileViewModel(),
-            account = container.createAccountViewModel(),
+            editing = container.profile.createEditProfileViewModel(container.userMessenger),
+            account = container.profile.createAccountViewModel(container.userMessenger),
             messenger = container.userMessenger,
-            blockedUsers = container.blockedUsersViewModelFactory()
+            blockedUsers = container.profile.createBlockedUsersViewModel(container.listingChangedSignal)
         )
     }
     DisposableEffect(profileFlows) {
@@ -171,7 +171,7 @@ private fun profileCallbacks(
     messagesViewModel: MessagesViewModel,
     onSignOut: () -> Unit
 ): ProfileScreenCallbacks {
-    val conversationActions = ListingConversationActions(container, navigation, messagesViewModel)
+    val conversationActions = ListingConversationActions(container.messages, navigation, messagesViewModel)
     return ProfileScreenCallbacks(
         onNavigate = { destination ->
             if (destination == ProfileDestination.EDIT_ACCOUNT) {
@@ -204,7 +204,7 @@ private fun profileReviewCallback(
     container: AppContainer
 ): suspend (ProfileBookmarkedListing, String, Int, String) -> Result<Unit> =
     { listing, reviewerId, score, comment ->
-        container.submitMarketplaceReview.submitForSoldListing(
+        container.marketplace.submitMarketplaceReview.submitForSoldListing(
             listingId = listing.id,
             buyerId = listing.buyerId,
             sellerId = listing.sellerId,

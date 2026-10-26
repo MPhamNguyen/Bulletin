@@ -1,10 +1,12 @@
 package com.jdrms.bulletin.app.application
 
+import com.jdrms.bulletin.domain.marketplace.application.DEFAULT_MARKETPLACE_PAGE_SIZE
 import com.jdrms.bulletin.domain.marketplace.application.EmptyMarketplaceReportedListingProvider
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceBlockedUserProvider
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
+import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceReportedListingProvider
 import com.jdrms.bulletin.domain.marketplace.application.toCursor
@@ -25,12 +27,9 @@ class GetVisibleMarketplaceListings(
             .orEmpty()
         val visible = mutableListOf<MarketplaceListingSnapshot>()
         var cursor = request.cursor
-        var sourceCursor: com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor?
+        var sourceCursor: MarketplacePageCursor?
         do {
-            // A targeted visibility check must page through the seller's listings. If the
-            // target ID is sent to the source, it can only ever return that one row and
-            // cannot establish its position in the filtered listing set.
-            val page = listingSource.getAvailableListings(request.copy(cursor = cursor, listingId = null))
+            val page = listingSource.getAvailableListings(request.forVisibilityScan(cursor))
             val allowed = page.listings.filterNot { listing ->
                 (request.listingId != null && listing.id != request.listingId) ||
                     listing.sellerId == request.viewerId || listing.sellerId in hiddenUserIds ||
@@ -53,4 +52,13 @@ class GetVisibleMarketplaceListings(
         } while (sourceCursor != null)
         return MarketplaceListingPage(visible, null)
     }
+
+    // A targeted visibility check must page through the seller's listings. If the
+    // target ID is sent to the source, it can only ever return that one row and
+    // cannot establish its position in the filtered listing set.
+    private fun MarketplacePageRequest.forVisibilityScan(cursor: MarketplacePageCursor?) = copy(
+        cursor = cursor,
+        listingId = null,
+        pageSize = if (listingId != null) maxOf(pageSize, DEFAULT_MARKETPLACE_PAGE_SIZE) else pageSize
+    )
 }

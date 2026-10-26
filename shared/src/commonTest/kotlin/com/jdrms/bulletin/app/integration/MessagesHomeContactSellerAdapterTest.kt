@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.integration
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.application.ContactSellerFailure
+import com.jdrms.bulletin.domain.marketplace.application.DEFAULT_MARKETPLACE_PAGE_SIZE
 import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
@@ -26,8 +27,8 @@ class MessagesHomeContactSellerAdapterTest {
         assertEquals(f.listing.sellerId, f.resolvedSeller?.id?.value)
         assertEquals(f.listing.sellerName, f.resolvedSeller?.displayName)
         assertEquals("viewer", f.visibilityRequests.single().viewerId)
-        assertEquals(actionListingId.value, f.visibilityRequests.single().listingId)
-        assertEquals(1, f.visibilityRequests.single().pageSize)
+        assertNull(f.visibilityRequests.single().listingId)
+        assertEquals(DEFAULT_MARKETPLACE_PAGE_SIZE, f.visibilityRequests.single().pageSize)
     }
 
     @Test

@@ -18,12 +18,12 @@ import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.createHomeViewModel
 import com.jdrms.bulletin.app.di.createListingReportViewModel
 import com.jdrms.bulletin.app.di.createListingsViewModel
+import com.jdrms.bulletin.app.di.createMarketplaceUserBlockViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceUserReportViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceViewModel
 import com.jdrms.bulletin.app.di.createMessagesViewModel
 import com.jdrms.bulletin.app.di.createProfileViewModel
 import com.jdrms.bulletin.app.di.createSellerProfileViewModel
-import com.jdrms.bulletin.app.di.marketplaceUserBlockViewModelFactory
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
@@ -85,14 +85,17 @@ fun MainAppScaffold(
 private fun rememberMainScaffoldModels(container: AppContainer): MainScaffoldModels {
     return remember(container) {
         MainScaffoldModels(
-            container.createHomeViewModel(),
-            container.createMarketplaceViewModel(),
-            container.createSellerProfileViewModel(),
-            container.createMarketplaceUserReportViewModel(),
-            container.createListingReportViewModel(),
-            container.marketplaceUserBlockViewModelFactory(),
-            container.createListingsViewModel(),
-            container.createMessagesViewModel()
+            container.home.createHomeViewModel(container.profile.sessionRepository, container.listingChangedSignal),
+            container.marketplace.createMarketplaceViewModel(container.listingChangedSignal),
+            container.marketplace.createSellerProfileViewModel(),
+            container.marketplace.createMarketplaceUserReportViewModel(),
+            container.marketplace.createListingReportViewModel(),
+            container.marketplace.createMarketplaceUserBlockViewModel(container.listingChangedSignal),
+            container.listings.createListingsViewModel(
+                container.messages.recentListingBuyersProvider,
+                container.listingChangedSignal
+            ),
+            container.messages.createMessagesViewModel()
         )
     }
 }
@@ -106,7 +109,13 @@ private fun rememberProfilePresentation(
 ): ProfilePresentation {
     // Keep the profile read model alive for the authenticated app session.
     val resolvedProfileViewModel = remember(profileViewModel, container) {
-        resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
+        resolveProvidedOrCreate(profileViewModel) {
+            container.profile.createProfileViewModel(
+                container.listings,
+                container.marketplace,
+                container.listingChangedSignal
+            )
+        }
     }
     DisposableEffect(resolvedProfileViewModel, profileViewModel) {
         onDispose {

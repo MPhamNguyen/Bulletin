@@ -111,7 +111,7 @@ Home uses `MarketplaceHomeRepository` with the Supabase marketplace listing sour
 | **Backend** | Supabase client adapters for configured backend-backed contexts |
 | **Authentication** | Supabase Auth adapter, with university-email validation in shared business logic |
 | **Persistence** | Supabase PostgREST and Storage adapters; in-memory repositories for tests and local/inspection use |
-| **Dependency injection** | Manual composition in `AppContainer`, with shared backend selection and a profile/auth module |
+| **Dependency injection** | Manual composition in `AppContainer`, with shared backend selection and feature modules |
 | **Build system** | Gradle wrapper and version catalog in `gradle/libs.versions.toml` |
 
 ---
@@ -139,7 +139,7 @@ Business contexts use four layers:
 - `infrastructure/`: Supabase and in-memory adapters, DTOs, and mapping.
 - `presentation/`: Compose screens, ViewModels, and UI state.
 
-`AppContainer` remains the composition entry point. `InfrastructureModule` owns lazy client creation and the shared fallback policy; `ProfileModule` owns profile/auth construction and use cases. Other feature wiring and cross-context adapters remain in the container for incremental extraction. Existing container properties delegate to the same lazy profile/auth instances.
+`AppContainer` composes `HomeModule`, `ListingsModule`, `MarketplaceModule`, `MessagesModule`, and `ProfileModule`, and holds application-wide messaging, refresh signaling, and theme preferences. `InfrastructureModule` owns lazy client creation and the shared fallback policy. Feature modules own lazy repositories and use cases; repositories are internal or private, and ViewModel factories depend on feature modules instead of the whole container. Cross-context wiring stays in feature composition and its ViewModel factories, including the profile activity adapters. Marketplace owns its read cache; the composition root explicitly connects successful Supabase listing mutations to marketplace cache invalidation. Home swipe decisions are intentionally process-local for both backend configurations and survive ViewModel recreation only within the same container.
 
 ### Backend Status
 

@@ -41,7 +41,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserR
 
 internal class ProfileModule(private val infrastructure: InfrastructureModule) {
     private val profileReadCache by lazy { ProfileReadCache() }
-    val profileRepository: ProfileRepository by lazy {
+    internal val profileRepository: ProfileRepository by lazy {
         infrastructure.backend(
             supabase = { SupabaseProfileRepository(it, readCache = profileReadCache) },
             inMemory = { InMemoryProfileRepository() }
@@ -59,13 +59,13 @@ internal class ProfileModule(private val infrastructure: InfrastructureModule) {
             inMemory = ::InMemoryUserBlockRepository
         )
     }
-    val profilePhotoRepository: ProfilePhotoRepository by lazy {
+    internal val profilePhotoRepository: ProfilePhotoRepository by lazy {
         infrastructure.backend(
             supabase = ::SupabaseProfilePhotoRepository,
             inMemory = ::InMemoryProfilePhotoRepository
         )
     }
-    val authRepository: AuthRepository by lazy {
+    internal val authRepository: AuthRepository by lazy {
         infrastructure.backend(
             supabase = { client ->
                 SupabaseAuthRepository(client, profileRepository) { profileReadCache.clearCurrentSession() }

@@ -108,10 +108,7 @@ private fun MainDestinationBody(
         ) {
             Box(mainContentModifier(padding, navbarHeight, content.navigation, chrome)) {
                 MainAppContent(
-                    content.container,
-                    content.navigation,
-                    content.models,
-                    content.profile,
+                    content,
                     onContentNoLongerScrollable = chrome.behavior::reveal,
                     onConversationVisibilityChanged = onConversationVisibilityChanged,
                     profileAnchorInWindow = anchor,

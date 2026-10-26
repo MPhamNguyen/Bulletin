@@ -44,7 +44,7 @@ class HomeSessionDecisionWiringTest {
         val fresh = AppContainer(isInspectionMode = true)
         assertEquals(
             emptySet(),
-            fresh.swipeDecisionRepository.getExcludedListingIds("first", SwipeVerdict.SAVE).getOrThrow()
+            fresh.home.swipeDecisionRepository.getExcludedListingIds("first", SwipeVerdict.SAVE).getOrThrow()
         )
     }
 
@@ -60,7 +60,7 @@ class HomeSessionDecisionWiringTest {
         assertEquals(emptySet(), f.excluded("first", SwipeVerdict.PASS))
         viewModel.excludeLoadedCard(listing, HomeDeckExclusion.SAVE)
         assertEquals(setOf(listing), f.excluded("second", SwipeVerdict.SAVE))
-        f.container.sessionRepository.unauthenticated()
+        f.container.profile.sessionRepository.unauthenticated()
         advanceUntilIdle()
         assertEquals(emptySet(), f.excluded("second", SwipeVerdict.SAVE))
         f.signIn("second")
@@ -90,19 +90,28 @@ private class HomeSessionFixture {
     init { signIn("first") }
 
     fun signIn(id: String) {
-        container.sessionRepository.authenticated(StudentProfile(UserId(id), StudentEmail("$id@university.edu"), id))
+        container.profile.sessionRepository.authenticated(
+            StudentProfile(UserId(id), StudentEmail("$id@university.edu"), id)
+        )
     }
 
     fun createViewModel(): HomeViewModel {
         val store = ViewModelStore().also(stores::add)
         return ViewModelProvider.create(
             store,
-            viewModelFactory { initializer { container.createHomeViewModel() } }
+            viewModelFactory {
+                initializer {
+                    container.home.createHomeViewModel(
+                        container.profile.sessionRepository,
+                        container.listingChangedSignal
+                    )
+                }
+            }
         )[HomeViewModel::class]
     }
 
     suspend fun excluded(userId: String, verdict: SwipeVerdict): Set<HomeItemId> =
-        container.swipeDecisionRepository.getExcludedListingIds(userId, verdict).getOrThrow()
+        container.home.swipeDecisionRepository.getExcludedListingIds(userId, verdict).getOrThrow()
 
     fun clearViewModels() {
         stores.forEach { it.clear() }

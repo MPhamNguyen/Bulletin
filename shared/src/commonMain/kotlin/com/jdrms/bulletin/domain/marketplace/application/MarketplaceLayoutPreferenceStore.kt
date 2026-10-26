@@ -10,15 +10,3 @@ interface MarketplaceLayoutPreferenceStore {
 
     suspend fun set(preference: MarketplaceLayoutPreference)
 }
-
-class InMemoryMarketplaceLayoutPreferenceStore(
-    initialPreference: MarketplaceLayoutPreference = MarketplaceLayoutPreference.TWO_PER_ROW
-) : MarketplaceLayoutPreferenceStore {
-    private var preference = initialPreference
-
-    override suspend fun get(): MarketplaceLayoutPreference = preference
-
-    override suspend fun set(preference: MarketplaceLayoutPreference) {
-        this.preference = preference
-    }
-}
