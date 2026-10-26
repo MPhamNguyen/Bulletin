@@ -16,7 +16,10 @@ object SupabaseRealtimeMessageMapper {
     fun toMessage(record: JsonObject, conversationId: ConversationId): Message {
         val dto = json.decodeFromJsonElement<SupabaseMessageDto>(record)
         if (dto.conversationId != conversationId.value) throw ConversationAccessException()
-        return SupabaseMessagesMapper.toMessage(dto)
+        // Row events omit report joins; unknown must not erase a previously known moderation lock.
+        return SupabaseMessagesMapper.toMessage(dto).let { message ->
+            if ("reports" in record) message else message.copy(isEditLocked = null)
+        }
     }
 
     fun toMessageOrNull(record: JsonObject, conversationId: ConversationId): Message? = try {

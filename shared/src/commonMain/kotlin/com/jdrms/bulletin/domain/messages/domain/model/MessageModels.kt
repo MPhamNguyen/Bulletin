@@ -36,7 +36,11 @@ data class Message(
     val content: String,
     val timestampMillis: Long = 0L,
     val isReported: Boolean = false,
-    val preciseCreatedAt: Instant? = null
+    val preciseCreatedAt: Instant? = null,
+    val editedAt: Instant? = null,
+    val deletedAt: Instant? = null,
+    /** Null means a realtime row omitted report metadata; the server always enforces private report locks. */
+    val isEditLocked: Boolean? = false
 ) {
     val orderingTimestamp: Instant get() = preciseCreatedAt ?: Instant.fromEpochMilliseconds(timestampMillis)
     init {
@@ -44,7 +48,7 @@ data class Message(
         require(content.length <= 1000) { "Message cannot exceed 1000 characters." }
     }
 
-    fun report(): Message = copy(isReported = true)
+    fun report(): Message = copy(isReported = true, isEditLocked = true)
 }
 
 class Conversation(
@@ -110,6 +114,12 @@ class Conversation(
             return Result.Error(ConversationAccessException())
         }
         val current = lastMessage
+        val currentEdit = current?.editedAt
+        val incomingEdit = message.editedAt
+        val isStaleVersion = currentEdit != null && (incomingEdit == null || currentEdit > incomingEdit)
+        if (current?.id == message.id && isStaleVersion) {
+            return Result.Success(this)
+        }
         val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
             (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
         if (!isNewer) return Result.Success(this)

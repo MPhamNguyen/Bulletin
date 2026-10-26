@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages.presentation
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -24,7 +25,9 @@ internal class ConversationMessagePageLoader(
 
     suspend fun load(conversationId: ConversationId) {
         uiState.update { it.copy(isLoadingMessages = true) }
-        val result = getConversationMessages(conversationId)
+        val oldestLoaded = uiState.value.currentMessages.firstOrNull()
+        val through = oldestLoaded?.let { MessageCursor(it.orderingTimestamp, it.id) }
+        val result = getConversationMessages(conversationId, through = through)
         if (uiState.value.selectedConversationId != conversationId) return
         when (result) {
             is Result.Error -> showFailure(result)

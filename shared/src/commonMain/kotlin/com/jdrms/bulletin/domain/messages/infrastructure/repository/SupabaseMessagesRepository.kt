@@ -12,6 +12,9 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditException
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditFailure
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
@@ -137,6 +140,25 @@ class SupabaseMessagesRepository internal constructor(
         submitReport(messageId, authenticatedReporterId)
     }
 
+    override suspend fun editMessage(userId: SenderId, edit: MessageEdit): Result<Message> = repositoryCall {
+        requireAuthenticatedUser(userId)
+        try {
+            SupabaseMessagesMapper.toMessage(messagesTable.editMessage(edit))
+        } catch (exception: PostgrestRestException) {
+            val failure = when (exception.code) {
+                "BM001" -> MessageEditFailure.UNAVAILABLE
+                "BM002" -> MessageEditFailure.EXPIRED
+                "BM003" -> MessageEditFailure.REPORTED
+                "BM004" -> MessageEditFailure.CONFLICT
+                "BM005" -> MessageEditFailure.INVALID
+                "42501" -> MessageEditFailure.UNAVAILABLE
+                else -> null
+            }
+            if (failure != null) throw MessageEditException(failure)
+            throw exception
+        }
+    }
+
     private suspend fun submitReport(messageId: MessageId, reporterId: SenderId) {
         try {
             messagesTable.insertReport(SupabaseMessagesMapper.toReportInsertDto(messageId, reporterId))
@@ -186,6 +208,8 @@ class SupabaseMessagesRepository internal constructor(
         } catch (exception: ConversationAccessException) {
             Result.Error(exception)
         } catch (exception: MessageReportAlreadySubmittedException) {
+            Result.Error(exception)
+        } catch (exception: MessageEditException) {
             Result.Error(exception)
         } catch (exception: Throwable) {
             Result.Error(MessagesPersistenceException(exception))

@@ -20,6 +20,8 @@ data class MessagesUiState(
     val isLoadingOlder: Boolean = false,
     val connectionState: MessageConnectionState = MessageConnectionState.CONNECTING,
     val messageInput: String = "",
+    val editState: MessageEditState = MessageEditState.Composing,
+    val editError: String? = null,
     val isLoading: Boolean = false,
     val isLoadingMessages: Boolean = false,
     val isSending: Boolean = false,

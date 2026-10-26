@@ -28,5 +28,6 @@ object InboxReconciliation {
 
     private fun Message.isNewerThan(other: Message?): Boolean = other == null ||
         orderingTimestamp > other.orderingTimestamp ||
-        (orderingTimestamp == other.orderingTimestamp && id.value > other.id.value)
+        (orderingTimestamp == other.orderingTimestamp && id.value > other.id.value) ||
+        (id == other.id && editedAt != null && (other.editedAt == null || editedAt > other.editedAt))
 }

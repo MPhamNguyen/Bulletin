@@ -4,6 +4,7 @@ import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.MarketplaceConversationListingPreviewProvider
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
+import com.jdrms.bulletin.domain.messages.application.EditMessage
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
@@ -58,6 +59,7 @@ internal class MessagesModule(
     val hasListingConversation by lazy { HasListingConversation(messagesRepository, currentMessageSenderProvider) }
     val getConversationMessages by lazy { GetConversationMessages(messagesRepository, currentMessageSenderProvider) }
     val markConversationRead by lazy { MarkConversationRead(messagesRepository, currentMessageSenderProvider) }
+    val editMessage by lazy { EditMessage(messagesRepository, currentMessageSenderProvider) }
     val observeConversationMessages by lazy {
         val observer = messagesObserver
         val sender = currentMessageSenderProvider
