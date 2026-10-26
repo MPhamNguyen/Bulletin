@@ -13,7 +13,7 @@ class SupabaseRealtimeMessageMapperTest {
     @Test
     fun insertPayloadMapsToConversationMessage() {
         val mapped = SupabaseRealtimeMessageMapper.toMessage(record(), conversationId)
-        assertEquals(message(), mapped)
+        assertEquals(message().copy(isEditLocked = null), mapped)
     }
 
     @Test
@@ -57,7 +57,7 @@ class SupabaseRealtimeMessageMapperTest {
     @Test
     fun validPayloadReturnsMessageFromToMessageOrNull() {
         val mapped = SupabaseRealtimeMessageMapper.toMessageOrNull(record(), conversationId)
-        assertEquals(message(), mapped)
+        assertEquals(message().copy(isEditLocked = null), mapped)
     }
 
     private fun record(

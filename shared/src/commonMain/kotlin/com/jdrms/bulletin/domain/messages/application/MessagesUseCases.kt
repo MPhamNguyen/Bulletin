@@ -40,12 +40,41 @@ class GetConversationMessages(
     private val repository: MessagesRepository,
     private val currentSenderProvider: CurrentMessageSenderProvider
 ) {
-    suspend operator fun invoke(conversationId: ConversationId, before: MessageCursor? = null): Result<MessagePage> {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        before: MessageCursor? = null,
+        through: MessageCursor? = null
+    ): Result<MessagePage> {
         return when (val sender = currentSenderProvider.getCurrentSender()) {
-            is Result.Success -> repository.getMessagePage(sender.data.id, conversationId, before)
+            is Result.Success -> loadPages(sender.data.id, conversationId, before, through)
             is Result.Error -> sender
         }
     }
+
+    private suspend fun loadPages(
+        viewerId: SenderId,
+        conversationId: ConversationId,
+        before: MessageCursor?,
+        through: MessageCursor?
+    ): Result<MessagePage> {
+        var cursor = before
+        val messages = mutableListOf<Message>()
+        do {
+            val page = when (val result = repository.getMessagePage(viewerId, conversationId, cursor)) {
+                is Result.Error -> return result
+                is Result.Success -> result.data
+            }
+            messages.addAll(0, page.messages)
+            val next = page.olderCursor
+            val reachedOldest = through?.let { target -> next?.isAtOrBefore(target) } ?: true
+            if (next == null || next == cursor || reachedOldest) {
+                return Result.Success(MessagePage(messages, next))
+            }
+            cursor = next
+        } while (true)
+    }
+    private fun MessageCursor.isAtOrBefore(other: MessageCursor): Boolean =
+        createdAt < other.createdAt || (createdAt == other.createdAt && id.value <= other.id.value)
 }
 
 class MarkConversationRead(

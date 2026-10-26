@@ -7,7 +7,6 @@ import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
 import com.jdrms.bulletin.domain.messages.application.EmptyConversationListingPreviewProvider
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.HideConversation
-import com.jdrms.bulletin.domain.messages.application.MarkConversationRead
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
 import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
@@ -30,18 +29,15 @@ class MessagesViewModel(
     reportMessage: ReportMessage,
     private val hideConversation: HideConversation,
     private val listingPreviewProvider: ConversationListingPreviewProvider = EmptyConversationListingPreviewProvider,
-    private val markConversationRead: MarkConversationRead? = null
+    threadOperations: MessageThreadOperations = MessageThreadOperations()
 ) : ViewModel() {
     private val threadState = MutableStateFlow(MessagesUiState())
     val uiState: StateFlow<MessagesUiState> = MessagesUiStateProjection(threadState, inbox.state, viewModelScope)
     val inboxState: StateFlow<InboxState> = inbox.state
     private var loadJob: Job? = null
     private var requestedConversationId: ConversationId? = null
-    private val listingPreviewLoader = ConversationListingPreviewLoader(
-        threadState,
-        listingPreviewProvider,
-        viewModelScope
-    )
+    private val listingPreviewLoader =
+        ConversationListingPreviewLoader(threadState, listingPreviewProvider, viewModelScope)
     private var observeJob: Job? = null
     private val destinationLifecycle = MessagesDestinationLifecycle(
         inbox,
@@ -78,18 +74,15 @@ class MessagesViewModel(
         ::selectConversation,
         showFailure
     )
+    private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
-    private val olderHistory = MessagesOlderHistoryLoader(
-        threadState,
-        getConversationMessages,
-        viewModelScope,
-        showFailure
-    )
+    private val olderHistory =
+        MessagesOlderHistoryLoader(threadState, getConversationMessages, viewModelScope, showFailure)
     private val readReceiptHandler = ConversationReadReceiptHandler(
         inbox,
         threadState,
         { visibleViewerId },
-        markConversationRead,
+        threadOperations.markRead,
         viewModelScope,
         showFailure
     )
@@ -176,6 +169,7 @@ class MessagesViewModel(
     }
 
     fun returnToInbox() {
+        editing.cancel()
         threadState.update { it.copy(isConversationOpen = false) }
     }
 
@@ -208,27 +202,30 @@ class MessagesViewModel(
         actions.hideConversation(conversationId, showFailure)
 
     fun onMessageInputChanged(input: String) {
-        threadState.update { it.copy(messageInput = input, errorMessage = null, statusMessage = null) }
-    }
-
-    fun toggleReportedMessageVisibility(messageId: MessageId) {
-        threadState.update { state ->
-            if (state.currentMessages.none { it.id == messageId && it.isReported }) {
-                state
-            } else {
-                state.copy(
-                    revealedReportedMessageIds = state.revealedReportedMessageIds.let { ids ->
-                        if (messageId in ids) ids - messageId else ids + messageId
-                    }
-                )
-            }
+        threadState.update {
+            it.copy(
+                messageInput = input,
+                editError = null,
+                errorMessage = null,
+                statusMessage = null
+            )
         }
     }
+
+    val toggleReportedMessageVisibility: (MessageId) -> Unit = actions::toggleVisibility
+
+    fun edit(messageId: MessageId) {
+        inbox.synchronizeIdentity()
+        applyInboxSelection(inbox.state.value)
+        editing.begin(messageId)
+    }
+
+    val cancelEditing: () -> Unit = editing::cancel
 
     fun sendCurrentMessage() {
         inbox.synchronizeIdentity()
         applyInboxSelection(inbox.state.value)
-        actions.send(showFailure)
+        if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send(showFailure)
     }
 
     val report: (MessageId) -> Unit = messageReportActions::begin

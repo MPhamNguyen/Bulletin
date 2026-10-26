@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
+import com.jdrms.bulletin.domain.messages.presentation.MessageThreadOperations
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -62,7 +63,7 @@ class MessagesReadReceiptViewModelTest {
             SendMessage(repository, provider),
             ReportMessage(repository, provider),
             HideConversation(repository, provider),
-            markConversationRead = MarkConversationRead(repository, provider)
+            threadOperations = MessageThreadOperations(markRead = MarkConversationRead(repository, provider))
         ).also { it.onDestinationActiveChanged(true) }
         advanceUntilIdle()
 

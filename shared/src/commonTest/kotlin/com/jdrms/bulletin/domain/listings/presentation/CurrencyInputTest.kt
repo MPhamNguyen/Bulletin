@@ -50,11 +50,11 @@ class CurrencyInputTest {
     }
 
     @Test
-    fun emptyAndZeroAreUnset() {
-        assertEquals("", normalizeCurrencyDigits("0"))
-        assertEquals("", normalizeCurrencyDigits("0000"))
+    fun emptyAndZeroRemainDistinct() {
+        assertEquals("0", normalizeCurrencyDigits("0"))
+        assertEquals("0", normalizeCurrencyDigits("0000"))
         assertEquals("", formatCurrencyDigits(""))
-        assertEquals("", formatCurrencyDigits("0"))
+        assertEquals("$0.00", formatCurrencyDigits("0"))
     }
 
     @Test
@@ -68,7 +68,7 @@ class CurrencyInputTest {
     fun amountConversionRoundsFloatingPointCents() {
         assertEquals("1999", amountToCurrencyDigits(19.99))
         assertEquals("5", amountToCurrencyDigits(0.05))
-        assertEquals("", amountToCurrencyDigits(0.0))
+        assertEquals("0", amountToCurrencyDigits(0.0))
     }
 
     @Test

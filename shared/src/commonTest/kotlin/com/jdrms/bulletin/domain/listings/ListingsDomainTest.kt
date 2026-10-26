@@ -29,6 +29,7 @@ class ListingsDomainTest {
 
     @Test
     fun testValidPriceFormatting() {
+        assertEquals("Free", ListingPrice(0.0).formatted)
         assertEquals("$40.00", ListingPrice(40.0).formatted)
         assertEquals("$19.99", ListingPrice(19.99).formatted)
         assertEquals("$25.50", ListingPrice(25.5).formatted)

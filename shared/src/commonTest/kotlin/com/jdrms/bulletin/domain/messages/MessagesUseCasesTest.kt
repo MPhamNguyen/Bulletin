@@ -248,6 +248,11 @@ class MessagesUseCasesTest {
             return failure ?: Result.Success(message)
         }
 
+        override suspend fun editMessage(
+            userId: SenderId,
+            edit: com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
+        ): Result<Message> = failure ?: Result.Success(message().copy(content = edit.content))
+
         override suspend fun reportMessage(
             userId: SenderId,
             conversationId: ConversationId,
