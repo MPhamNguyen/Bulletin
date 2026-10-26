@@ -24,7 +24,11 @@ class MessagesPolicy {
             return Result.Error(IllegalArgumentException("Report reason is not valid for messages."))
         }
         if (description.trim().length > MAX_REPORT_DESCRIPTION_LENGTH) {
-            return Result.Error(IllegalArgumentException("Description must be $MAX_REPORT_DESCRIPTION_LENGTH characters or fewer."))
+            return Result.Error(
+                IllegalArgumentException(
+                    "Description must be $MAX_REPORT_DESCRIPTION_LENGTH characters or fewer."
+                )
+            )
         }
         return Result.Success(Unit)
     }

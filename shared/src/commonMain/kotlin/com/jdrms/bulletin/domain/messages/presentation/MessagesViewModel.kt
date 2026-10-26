@@ -13,7 +13,6 @@ import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -223,15 +222,9 @@ class MessagesViewModel(
         if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send(showFailure)
     }
 
-    fun report(messageId: MessageId) {
-        messageReportActions.begin(messageId)
-    }
-
-    fun selectMessageReportReason(reason: ReportReason) = messageReportActions.selectReason(reason)
-
-    fun updateMessageReportDescription(description: String) = messageReportActions.updateDescription(description)
-
-    fun dismissMessageReport() = messageReportActions.dismiss()
-
-    fun submitMessageReport() = messageReportActions.submit(::applyInboxSelection)
+    val report: (MessageId) -> Unit = messageReportActions::begin
+    val selectMessageReportReason: (ReportReason) -> Unit = messageReportActions::selectReason
+    val updateMessageReportDescription: (String) -> Unit = messageReportActions::updateDescription
+    val dismissMessageReport: () -> Unit = messageReportActions::dismiss
+    val submitMessageReport: () -> Unit = { messageReportActions.submit(::applyInboxSelection) }
 }
