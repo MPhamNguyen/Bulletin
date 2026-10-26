@@ -2,160 +2,141 @@ name: CI
 
 on:
   push:
-    # Pull requests are covered by the branch-push check.
-
-  # Merge queue runs always do a full build (no diff range is computed for them).
+    # Branch pushes cover PR branches; tags are excluded.
+    branches: ["**"]
   merge_group:
   schedule:
     - cron: "19 2 * * 6"
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
 
-jobs:
-  # Keep this as ONE always-running job and mark it as the required check.
-  # Skipping happens at the step level, so docs-only changes still report
-  # success instead of leaving a required check pending forever.
-  build:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+env:
+  # Keep in sync with the full-tests matrix.
+  TEST_SHARD_COUNT: "4"
 
+jobs:
+  scope:
+    name: Decide scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      mode: ${{ steps.scope.outputs.mode }}
+      domains: ${{ steps.scope.outputs.domains }}
+      domain_changed: ${{ steps.scope.outputs.domain_changed }}
+      android_app_changed: ${{ steps.scope.outputs.android_app_changed }}
+      admin_changed: ${{ steps.scope.outputs.admin_changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Full history so we can diff against github.event.before on pushes.
           fetch-depth: 0
           persist-credentials: false
-
       - name: Decide scope
         id: scope
         env:
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
+          REF: ${{ github.ref }}
           AFTER: ${{ github.sha }}
+          # Set true to test all five domains on any domain change.
+          ALL_DOMAINS_ON_ANY_CHANGE: "false"
         run: |
           set -euo pipefail
-
-          mode=full     # full | affected | skip
-          tasks=""
-
-          # Compute a diff range only where it is reliable. Every other case
-          # (schedule, workflow_dispatch, merge_group, new branch, force push,
-          # missing parent commit) stays on the safe default: full.
+          ALL_DOMAINS="home marketplace listings messages profile"
+          mode=full
           range=()
-          if [ "$EVENT" = "pull_request" ] \
-            && git rev-parse --verify -q 'HEAD^1' >/dev/null; then
-            range=(HEAD^1 HEAD)
-          elif [ "$EVENT" = "push" ] \
-            && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
-            && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            range=("$BEFORE" "$AFTER")
+          if [ "$EVENT" = "push" ] && [ "$REF" != "refs/heads/main" ]; then
+            base=$(git merge-base origin/main "$AFTER" 2>/dev/null || true)
+            if [ -n "$base" ]; then range=("$base" "$AFTER"); fi
           fi
-
+          changed=""
+          domain_changed=false
+          android_app_changed=false
+          admin_changed=false
           if [ ${#range[@]} -gt 0 ]; then
             count=0
             docs=0
             force_full=false
-            domain_changed=false
-            android_app_changed=false
-
+            # Materialize the diff first: process-substitution errors must not be lost.
+            git diff -z --name-only --no-renames "${range[@]}" > "$RUNNER_TEMP/ci-paths"
             while IFS= read -r -d '' path; do
               count=$((count + 1))
-
               case "$path" in
                 *.md|docs/*|LICENSE|LICENSE.*) docs=$((docs + 1)); continue ;;
               esac
-
-              # Build-wide changes affect every module and every bounded context.
               case "$path" in
-                build.gradle*|settings.gradle*|gradle.properties|gradle/*|buildSrc/*|build-logic/*|gradlew|gradlew.bat|.github/*)
-                  force_full=true ;;
+                shared/src/*/kotlin/com/jdrms/bulletin/domain/*/*)
+                  d="${path#*/domain/}"; d="${d%%/*}"
+                  case "$d" in
+                    home|marketplace|listings|messages|profile)
+                      changed="$changed $d"; domain_changed=true ;;
+                    *) force_full=true ;;
+                  esac ;;
+                androidApp/*) android_app_changed=true ;;
+                admin/*) admin_changed=true ;;
+                *) force_full=true ;; # Build configuration, shared code, or unknown paths.
               esac
-
-              # Bounded contexts are source packages inside :shared, not Gradle
-              # modules. Anything unrecognized falls through to a full build.
-              case "$path" in
-                shared/src/*/kotlin/com/jdrms/bulletin/domain/home/* \
-                | shared/src/*/kotlin/com/jdrms/bulletin/domain/marketplace/* \
-                | shared/src/*/kotlin/com/jdrms/bulletin/domain/listings/* \
-                | shared/src/*/kotlin/com/jdrms/bulletin/domain/messages/* \
-                | shared/src/*/kotlin/com/jdrms/bulletin/domain/profile/*)
-                  domain_changed=true ;;
-                androidApp/*)
-                  android_app_changed=true ;;
-                shared/*)
-                  force_full=true ;;
-                *)
-                  force_full=true ;; # root-level or unknown path: fail safe
-              esac
-            done < <(git diff -z --name-only --no-renames "${range[@]}")
-
-            if [ "$count" -eq 0 ]; then
-              mode=full                       # empty/failed diff: fail safe
-            elif [ "$count" -eq "$docs" ]; then
-              mode=skip                       # docs only
-            elif [ "$force_full" = "true" ]; then
-              mode=full
-            else
-              mode=affected
-              # Domain aggregates can be consumed across contexts, so any
-              # domain change runs every domain test package, plus app/core
-              # tests that cover composition and shared infrastructure.
-              if [ "$domain_changed" = "true" ]; then
-                tasks="$tasks :shared:compileAndroidMain :shared:testAndroidHostTest"
-                for domain in home marketplace listings messages profile; do
-                  tasks="$tasks --tests com.jdrms.bulletin.domain.${domain}.*"
-                done
-                tasks="$tasks --tests com.jdrms.bulletin.app.* --tests com.jdrms.bulletin.core.*"
-              fi
-
-              if [ "$android_app_changed" = "true" ]; then
-                tasks="$tasks :androidApp:check"
-              fi
+            done < "$RUNNER_TEMP/ci-paths"
+            if [ "$count" -eq 0 ]; then mode=full
+            elif [ "$count" -eq "$docs" ]; then mode=skip
+            elif [ "$force_full" = true ]; then mode=full
+            else mode=affected
             fi
           fi
-
-          echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          echo "tasks=$tasks" >> "$GITHUB_OUTPUT"
-
+          selected=""
+          if [ "$mode" = affected ] && [ "$domain_changed" = true ]; then
+            for d in $ALL_DOMAINS; do
+              if [ "$ALL_DOMAINS_ON_ANY_CHANGE" = true ] || [[ " $changed " == *" $d "* ]]; then
+                selected="$selected $d"
+              fi
+            done
+          fi
+          # Domain names are a fixed allowlist; split them into jq arguments.
+          # shellcheck disable=SC2086
+          domains_json=$(jq -cn '$ARGS.positional' --args $selected)
+          {
+            echo "mode=$mode"
+            echo "domains=$domains_json"
+            echo "domain_changed=$domain_changed"
+            echo "android_app_changed=$android_app_changed"
+            echo "admin_changed=$admin_changed"
+          } >> "$GITHUB_OUTPUT"
           {
             echo "**Scope:** \`$mode\`"
-            if [ -n "$tasks" ]; then
-              echo "**Tasks:** \`$tasks\`"
-            fi
+            echo "**Domains:** \`$domains_json\`"
+            echo "**Domain tree changed:** $domain_changed"
+            echo "**androidApp changed:** $android_app_changed"
+            echo "**admin changed:** $admin_changed"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Setup Java
-        if: steps.scope.outputs.mode != 'skip'
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+  size-check:
+    name: File length and size suppressions
+    needs: scope
+    if: needs.scope.outputs.mode != 'skip'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          distribution: temurin
-          java-version: "21"
-
-      - name: Setup Gradle
-        if: steps.scope.outputs.mode != 'skip'
-        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-
+          persist-credentials: false
       - name: Check file length and size suppressions
-        if: steps.scope.outputs.mode != 'skip'
         run: |
           set -euo pipefail
 
           # Size-rule suppressions (must return nothing)
           if command -v rg >/dev/null 2>&1; then
-            if rg -n '@Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
+            if rg -n '@(file:)?Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
               echo "Error: Forbidden size-rule suppressions found!" >&2
               exit 1
             fi
           else
-            if grep -rnE '@Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
+            if grep -rnE '@(file:)?Suppress\(.*(LargeClass|LongParameterList|TooManyFunctions|LongMethod)' shared/src androidApp/src; then
               echo "Error: Forbidden size-rule suppressions found!" >&2
               exit 1
             fi
@@ -175,7 +156,7 @@ jobs:
             "shared/src/commonTest/kotlin/com/jdrms/bulletin/domain/profile/presentation/ProfileViewModelTest.kt"
           )
 
-          oversized=$(find shared/src -name '*.kt' -print0 | xargs -0 wc -l | awk '$1 > 400 && $2 != "total" {print $2}')
+          oversized=$(find shared/src -name '*.kt' -print0 | xargs -0 -r wc -l | awk '$1 > 400 && $2 != "total" {print $2}')
           for file in $oversized; do
             found=false
             for legacy in "${known_legacy[@]}"; do
@@ -190,29 +171,181 @@ jobs:
             fi
           done
 
-      - name: Run Gradle (full)
-        if: steps.scope.outputs.mode == 'full'
-        run: ./gradlew check --stacktrace --continue --console=plain
-
-      - name: Run Gradle (affected domains/modules)
-        if: steps.scope.outputs.mode == 'affected'
-        env:
-          TASKS: ${{ steps.scope.outputs.tasks }}
-        run: |
-          set -euo pipefail
-          # Keep Gradle's --tests patterns literal instead of allowing shell
-          # pathname expansion to alter them.
-          set -f
-          read -r -a gradle_tasks <<< "$TASKS"
-          ./gradlew "${gradle_tasks[@]}" --stacktrace --continue --console=plain
-
+  # check retains Android app tests, lint and detekt; host tests run separately.
+  static:
+    name: Static analysis
+    needs: scope
+    if: >-
+      needs.scope.outputs.mode == 'full' ||
+      (needs.scope.outputs.mode == 'affected' &&
+       (needs.scope.outputs.domain_changed == 'true' ||
+        needs.scope.outputs.android_app_changed == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup JDK and Gradle
+        uses: ./.github/actions/setup-gradle
+      - name: Run check without shared host tests
+        run: ./gradlew check -x :shared:testAndroidHostTest --stacktrace --continue --console=plain
       - name: Upload build reports
-        if: failure() && steps.scope.outputs.mode != 'skip'
+        if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ci-reports
+          name: ci-reports-static
           if-no-files-found: ignore
           retention-days: 7
           path: |
             **/build/reports/**
             **/build/test-results/**
+
+  full-tests:
+    name: Full tests (shard ${{ matrix.index }})
+    needs: scope
+    if: needs.scope.outputs.mode == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        index: [0, 1, 2, 3]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup JDK and Gradle
+        uses: ./.github/actions/setup-gradle
+      - name: Run shard
+        env:
+          SHARD_INDEX: ${{ matrix.index }}
+        run: |
+          ./gradlew :shared:testAndroidHostTest \
+            -PtestShardCount="$TEST_SHARD_COUNT" \
+            -PtestShardIndex="$SHARD_INDEX" \
+            --stacktrace --continue --console=plain
+      - name: Upload build reports
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-reports-full-shard-${{ matrix.index }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+
+  domain-tests:
+    name: Domain tests (${{ matrix.domain }})
+    needs: scope
+    if: needs.scope.outputs.mode == 'affected' && needs.scope.outputs.domains != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        domain: ${{ fromJSON(needs.scope.outputs.domains) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup JDK and Gradle
+        uses: ./.github/actions/setup-gradle
+      - name: Run domain tests
+        env:
+          DOMAIN: ${{ matrix.domain }}
+        run: |
+          set -euo pipefail
+          ./gradlew :shared:compileAndroidMain :shared:testAndroidHostTest \
+            --tests "com.jdrms.bulletin.domain.${DOMAIN}.*" \
+            --stacktrace --continue --console=plain
+      - name: Upload build reports
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-reports-domain-${{ matrix.domain }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+
+  shared-tests:
+    name: App and core tests
+    needs: scope
+    if: needs.scope.outputs.mode == 'affected' && needs.scope.outputs.domain_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup JDK and Gradle
+        uses: ./.github/actions/setup-gradle
+      - name: Run app and core tests
+        # HomeDomainBoundaryTest guards only Home and runs in its domain job.
+        run: |
+          ./gradlew :shared:compileAndroidMain :shared:testAndroidHostTest \
+            --tests "com.jdrms.bulletin.app.*" \
+            --tests "com.jdrms.bulletin.core.*" \
+            --stacktrace --continue --console=plain
+      - name: Upload build reports
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-reports-app-core
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+
+  admin:
+    name: Admin tests
+    needs: scope
+    if: needs.scope.outputs.mode == 'full' || needs.scope.outputs.admin_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: admin/requirements.txt
+      - name: Install portal dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Test authentication and moderation
+        run: python -B -m unittest discover -s tests -v
+
+  # Keep this required-check name stable. Failed or cancelled dependencies fail it.
+  build:
+    name: Build and Test
+    needs: [scope, size-check, static, full-tests, domain-tests, shared-tests, admin]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate results
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          echo "Upstream results: $RESULTS"
+          test "$SCOPE_RESULT" = success
+          case "$RESULTS" in
+            *failure*|*cancelled*) echo "One or more required jobs failed." >&2; exit 1 ;;
+          esac
