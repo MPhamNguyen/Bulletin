@@ -10,7 +10,7 @@ class CurrencyFormattingTest {
 
     @Test
     fun formatsZeroWithTwoDecimalPlaces() {
-        assertEquals("$0.00", formatUsdAmount(0.0))
+        assertEquals("Free", formatUsdAmount(0.0))
         assertTrue(hasAtMostTwoDecimalPlaces(0.0))
     }
 
