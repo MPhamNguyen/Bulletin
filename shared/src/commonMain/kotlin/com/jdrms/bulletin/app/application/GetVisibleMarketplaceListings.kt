@@ -27,9 +27,13 @@ class GetVisibleMarketplaceListings(
         var cursor = request.cursor
         var sourceCursor: com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor?
         do {
-            val page = listingSource.getAvailableListings(request.copy(cursor = cursor))
+            // A targeted visibility check must page through the seller's listings. If the
+            // target ID is sent to the source, it can only ever return that one row and
+            // cannot establish its position in the filtered listing set.
+            val page = listingSource.getAvailableListings(request.copy(cursor = cursor, listingId = null))
             val allowed = page.listings.filterNot { listing ->
-                listing.sellerId == request.viewerId || listing.sellerId in hiddenUserIds ||
+                (request.listingId != null && listing.id != request.listingId) ||
+                    listing.sellerId == request.viewerId || listing.sellerId in hiddenUserIds ||
                     MarketplaceItemId(listing.id) in reportedListingIds
             }
             val remaining = request.pageSize - visible.size
