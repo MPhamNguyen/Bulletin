@@ -6,7 +6,6 @@ import com.jdrms.bulletin.domain.home.application.ContactSellerFailure
 import com.jdrms.bulletin.domain.home.application.ContactSellerPort
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
-import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
@@ -40,9 +39,7 @@ class MessagesHomeContactSellerAdapter(
             is Result.Error -> return Result.Error(contactFailure(result.exception))
         }
         if (listing.sellerId == userId) return Result.Error(ContactSellerFailure.OwnListing())
-        if (listing.isSold || listing.status != "AVAILABLE" ||
-            !isVisible(userId, listingId, listing.sellerId)
-        ) {
+        if (listing.isSold || listing.status != "AVAILABLE" || !isVisible(userId, listingId, listing.sellerId)) {
             return Result.Error(ContactSellerFailure.ListingUnavailable())
         }
         return when (
@@ -58,14 +55,15 @@ class MessagesHomeContactSellerAdapter(
     }
 
     private suspend fun isVisible(userId: String, listingId: HomeItemId, sellerId: String): Boolean {
-        var cursor: MarketplacePageCursor? = null
-        do {
-            val page =
-                getVisibleListings(MarketplacePageRequest(viewerId = userId, sellerId = sellerId, cursor = cursor))
-            if (page.listings.any { it.id == listingId.value }) return true
-            cursor = page.nextCursor
-        } while (cursor != null)
-        return false
+        val page = getVisibleListings(
+            MarketplacePageRequest(
+                listingId = listingId.value,
+                sellerId = sellerId,
+                viewerId = userId,
+                pageSize = 1
+            )
+        )
+        return page.listings.any { it.id == listingId.value }
     }
 
     private fun contactFailure(exception: Throwable): ContactSellerFailure =

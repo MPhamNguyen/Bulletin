@@ -26,6 +26,8 @@ class MessagesHomeContactSellerAdapterTest {
         assertEquals(f.listing.sellerId, f.resolvedSeller?.id?.value)
         assertEquals(f.listing.sellerName, f.resolvedSeller?.displayName)
         assertEquals("viewer", f.visibilityRequests.single().viewerId)
+        assertEquals(actionListingId.value, f.visibilityRequests.single().listingId)
+        assertEquals(1, f.visibilityRequests.single().pageSize)
     }
 
     @Test
