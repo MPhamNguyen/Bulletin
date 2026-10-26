@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.home.domain.repository.SwipeDecisionRepository
 internal class FakeSwipeDecisionRepository : SwipeDecisionRepository {
     private val decisions = mutableMapOf<String, MutableMap<HomeItemId, SwipeVerdict>>()
     var failure: Throwable? = null
+    var clearAllFailure: Throwable? = null
     var recordCalls = 0
         private set
 
@@ -34,6 +35,7 @@ internal class FakeSwipeDecisionRepository : SwipeDecisionRepository {
     }
 
     override suspend fun clearAllDecisions(userId: String): Result<Unit> {
+        clearAllFailure?.let { return Result.Error(it) }
         decisions.remove(userId)
         return Result.Success(Unit)
     }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
+import com.jdrms.bulletin.domain.home.application.FakeSwipeDecisionRepository
 import com.jdrms.bulletin.domain.home.application.UpdateUserPreferences
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCursor
@@ -46,6 +47,7 @@ internal fun homePage(vararg ids: String, cursor: String? = null) = HomeFeedPage
 internal class HomeDeckFixture : HomeRepository, SessionRepository {
     val responses = ArrayDeque<suspend () -> HomeFeedPage>()
     val cursors = mutableListOf<HomeFeedCursor?>()
+    val decisions = FakeSwipeDecisionRepository()
     var cancellations = 0
     override val state = MutableStateFlow<SessionState>(SessionState.Unauthenticated)
     val store = ViewModelStore()
@@ -56,7 +58,8 @@ internal class HomeDeckFixture : HomeRepository, SessionRepository {
                 HomeViewModel(
                     GetPersonalizedFeed(this@HomeDeckFixture),
                     UpdateUserPreferences(this@HomeDeckFixture),
-                    this@HomeDeckFixture
+                    this@HomeDeckFixture,
+                    swipeDecisionRepository = decisions
                 )
             }
         }

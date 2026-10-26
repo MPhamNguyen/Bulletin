@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.home.presentation
 
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedPage
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
@@ -14,10 +15,12 @@ internal class HomeDeckPolicy(private val decisions: SwipeDecisionRepository) {
     private var userId: String? = null
     private var emptyPages = 0
 
-    suspend fun changeAccount(id: String?) {
-        userId?.let { decisions.clearAllDecisions(it).getOrThrow() }
+    suspend fun changeAccount(id: String?): Result<Unit> {
+        if (id == userId) return Result.Success(Unit)
+        val previousUserId = userId
         userId = id
         emptyPages = 0
+        return previousUserId?.let { decisions.clearAllDecisions(it) } ?: Result.Success(Unit)
     }
 
     fun resetPagination() {

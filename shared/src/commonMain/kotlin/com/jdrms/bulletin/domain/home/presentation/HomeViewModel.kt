@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.RecordSwipeDecision
@@ -73,10 +74,13 @@ class HomeViewModel private constructor(
                 if (!hasResolvedSession || userId != currentUserId) {
                     interactions.reset()
                     interactions.store.changeViewer(userId)
-                    deck.changeAccount(userId)
+                    val cleanup = deck.changeAccount(userId)
                     currentUserId = userId
                     hasResolvedSession = true
                     loadFeed()
+                    if (cleanup is Result.Error) {
+                        _uiState.update { it.copy(errorMessage = DECISION_CLEANUP_ERROR) }
+                    }
                 }
             }
         }
@@ -214,6 +218,7 @@ class HomeViewModel private constructor(
 
     private companion object {
         const val FEED_LOAD_ERROR = "Failed to load listings"
+        const val DECISION_CLEANUP_ERROR = "Could not clear previous deck decisions"
         const val PREFERENCES_REQUIRE_ACCOUNT = "Sign in to update feed preferences"
         const val PREFERENCES_UPDATE_ERROR = "Failed to update preferences"
     }

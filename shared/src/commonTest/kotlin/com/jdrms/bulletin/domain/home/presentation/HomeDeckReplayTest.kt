@@ -77,6 +77,23 @@ class HomeDeckReplayTest {
     }
 
     @Test
+    fun account_switch_continues_with_new_users_deck_when_old_decision_cleanup_fails() = homeDeckTest { f ->
+        f.signIn("first")
+        f.page("first-listing")
+        advanceUntilIdle()
+        f.viewModel.excludeLoadedCard(HomeItemId("first-listing"), HomeDeckExclusion.PASS)
+        advanceUntilIdle()
+        f.decisions.clearAllFailure = IllegalStateException("private storage failure")
+
+        f.page("second-listing")
+        f.signIn("second")
+        advanceUntilIdle()
+
+        assertEquals(listOf("second-listing"), f.viewModel.uiState.value.feed.map { it.id.value })
+        assertEquals("Could not clear previous deck decisions", f.viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
     fun empty_feed_and_replay_stay_empty_without_fetching() = homeDeckTest { f ->
         f.page()
         advanceUntilIdle()
