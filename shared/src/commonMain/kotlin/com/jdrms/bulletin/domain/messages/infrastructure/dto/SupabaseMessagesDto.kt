@@ -63,7 +63,9 @@ data class SupabaseMessageDto(
     @SerialName("body") val content: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("profiles") val senderProfile: SupabaseMessageProfileDto? = null,
-    @SerialName("reports") val reports: List<SupabaseMessageReportMarkerDto> = emptyList()
+    @SerialName("reports") val reports: List<SupabaseMessageReportMarkerDto> = emptyList(),
+    @SerialName("edited_at") val editedAt: String? = null,
+    @SerialName("deleted_at") val deletedAt: String? = null
 )
 
 @Serializable

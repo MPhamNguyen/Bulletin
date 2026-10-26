@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.domain.messages.domain.model.Message
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
+import kotlin.time.Clock
 
 internal data class MessageItemCardPresentation(
     val maxBubbleWidth: Dp,
@@ -41,7 +43,9 @@ internal data class MessageItemCardPresentation(
 
 internal data class MessageItemCardActions(
     val onReport: () -> Unit,
-    val onToggleVisibility: () -> Unit
+    val onToggleVisibility: () -> Unit,
+    val onEdit: () -> Unit = {},
+    val editingDisabled: Boolean = false
 )
 
 @Composable
@@ -79,6 +83,9 @@ private fun MessageBubble(
     actions: MessageItemCardActions
 ) {
     var reportMenuExpanded by remember(message.id) { mutableStateOf(false) }
+    val canEdit = !actions.editingDisabled && MessageEditing.canEdit(
+        message, message.senderId.takeIf { presentation.isMine }, Clock.System.now()
+    )
     val canReportMessage = !presentation.isMine && presentation.canReport && !message.isReported
     Box {
         Surface(
@@ -87,13 +94,18 @@ private fun MessageBubble(
             shape = messageBubbleShape(presentation),
             modifier = Modifier
                 .widthIn(max = presentation.maxBubbleWidth)
-                .then(reportableBubbleModifier(canReportMessage) { reportMenuExpanded = true })
+                .then(reportableBubbleModifier(canReportMessage || canEdit) { reportMenuExpanded = true })
         ) {
             MessageBubbleContent(message, presentation.isRevealed, actions.onToggleVisibility)
         }
         MessageReportMenu(
             expanded = reportMenuExpanded,
             canReport = canReportMessage,
+            canEdit = canEdit,
+            onEdit = {
+                reportMenuExpanded = false
+                actions.onEdit()
+            },
             onDismiss = { reportMenuExpanded = false },
             onReport = {
                 reportMenuExpanded = false
@@ -111,6 +123,7 @@ private fun MessageBubbleContent(
 ) {
     Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
         Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
+        if (message.editedAt != null) Text("Edited", style = MaterialTheme.typography.labelSmall)
         if (message.isReported) {
             Text("Reported for moderation", style = MaterialTheme.typography.labelSmall)
             TextButton(
@@ -130,15 +143,14 @@ private fun MessageBubbleContent(
 private fun MessageReportMenu(
     expanded: Boolean,
     canReport: Boolean,
+    canEdit: Boolean,
+    onEdit: () -> Unit,
     onDismiss: () -> Unit,
     onReport: () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        DropdownMenuItem(
-            text = { Text("Report message") },
-            onClick = onReport,
-            enabled = canReport
-        )
+        if (canEdit) DropdownMenuItem(text = { Text("Edit message") }, onClick = onEdit)
+        if (canReport) DropdownMenuItem(text = { Text("Report message") }, onClick = onReport)
     }
 }
 

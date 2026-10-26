@@ -60,6 +60,7 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseL
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
+import com.jdrms.bulletin.domain.messages.application.EditMessage
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
@@ -357,6 +358,7 @@ class AppContainer(
     val inboxStateOwner by lazy {
         InboxStateOwner(getConversations, observeInboxInvalidations, AuthInboxIdentity(sessionRepository))
     }
+    val editMessage by lazy { EditMessage(messagesRepository, currentMessageSenderProvider) }
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }

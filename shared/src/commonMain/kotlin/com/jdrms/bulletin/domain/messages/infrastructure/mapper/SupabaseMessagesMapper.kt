@@ -82,6 +82,9 @@ object SupabaseMessagesMapper {
             content = dto.content,
             timestampMillis = createdAt.toEpochMilliseconds(),
             isReported = dto.reports.isNotEmpty(),
+            editedAt = dto.editedAt?.let(Instant::parse),
+            deletedAt = dto.deletedAt?.let(Instant::parse),
+            isEditLocked = dto.reports.any { it.status != "dismissed" },
             preciseCreatedAt = createdAt.takeUnless { it == Instant.fromEpochMilliseconds(it.toEpochMilliseconds()) }
         )
     }

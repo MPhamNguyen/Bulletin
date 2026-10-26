@@ -8,6 +8,10 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditException
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditFailure
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
@@ -199,8 +203,43 @@ class InMemoryMessagesRepository(
         Result.Success(Unit)
     }
 
+    override suspend fun editMessage(userId: SenderId, edit: MessageEdit): Result<Message> {
+        val result = mutex.withLock { editStoredMessage(userId, edit) }
+        if (result is Result.Success) inserts.emit(result.data)
+        return result
+    }
+
+    private fun editStoredMessage(userId: SenderId, edit: MessageEdit): Result<Message> {
+        val conversation = conversations[edit.conversationId]
+        val messages = messagesByConvId[edit.conversationId]
+        val index = messages?.indexOfFirst { it.id == edit.messageId } ?: -1
+        val cutoff = historyVisibleAfter[edit.conversationId to userId]
+        val unavailable = conversation?.includes(userId) != true || userId in hiddenBy[edit.conversationId].orEmpty()
+        if (messages == null || index < 0 || unavailable) {
+            return Result.Error(MessageEditException(MessageEditFailure.UNAVAILABLE))
+        }
+        if (cutoff != null && messages[index].orderingTimestamp <= cutoff) {
+            return Result.Error(MessageEditException(MessageEditFailure.UNAVAILABLE))
+        }
+        return when (val edited = MessageEditing.apply(messages[index], userId, edit, now())) {
+            is Result.Error -> edited
+            is Result.Success -> {
+                messages[index] = edited.data
+                conversations[edit.conversationId] = checkNotNull(conversation).recordMessage(edited.data).getOrThrow()
+                edited
+            }
+        }
+    }
+
     internal suspend fun closeReport(userId: SenderId, messageId: MessageId): Boolean = mutex.withLock {
-        activeReports.remove(userId to messageId)
+        val removed = activeReports.remove(userId to messageId)
+        if (removed && activeReports.none { it.second == messageId }) {
+            messagesByConvId.values.forEach { messages ->
+                val index = messages.indexOfFirst { it.id == messageId }
+                if (index >= 0) messages[index] = messages[index].copy(isEditLocked = false)
+            }
+        }
+        removed
     }
 
     override fun observe(userId: SenderId, conversationId: ConversationId): Flow<MessageStreamEvent> = flow {
@@ -211,7 +250,12 @@ class InMemoryMessagesRepository(
         }
         emit(MessageStreamEvent.Connected)
         inserts.collect { message ->
-            if (message.conversationId == conversationId) emit(MessageStreamEvent.Received(message))
+            val visible = mutex.withLock {
+                val cutoff = historyVisibleAfter[conversationId to userId]
+                message.conversationId == conversationId && userId !in hiddenBy[conversationId].orEmpty() &&
+                    (cutoff == null || message.orderingTimestamp > cutoff)
+            }
+            if (visible) emit(MessageStreamEvent.Received(message))
         }
     }
 
