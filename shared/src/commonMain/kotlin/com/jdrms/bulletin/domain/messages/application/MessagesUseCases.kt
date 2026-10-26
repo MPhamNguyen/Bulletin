@@ -14,6 +14,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Instant
@@ -191,13 +192,18 @@ class ReportMessage(
     private val currentSenderProvider: CurrentMessageSenderProvider,
     private val policy: MessagesPolicy = MessagesPolicy()
 ) {
-    suspend operator fun invoke(conversationId: ConversationId, messageId: MessageId, reason: String): Result<Unit> {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        messageId: MessageId,
+        reason: ReportReason,
+        description: String
+    ): Result<Unit> {
         val sender = when (val result = currentSenderProvider.getCurrentSender()) {
             is Result.Success -> result.data
             is Result.Error -> return result
         }
-        val validation = policy.validateReportReason(reason)
+        val validation = policy.validateReport(reason, description)
         if (validation is Result.Error) return validation
-        return repository.reportMessage(sender.id, conversationId, messageId, reason)
+        return repository.reportMessage(sender.id, conversationId, messageId, reason.code, description.trim())
     }
 }

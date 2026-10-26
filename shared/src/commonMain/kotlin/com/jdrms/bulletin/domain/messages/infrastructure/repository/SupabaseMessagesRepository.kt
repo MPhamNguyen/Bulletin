@@ -130,14 +130,15 @@ class SupabaseMessagesRepository internal constructor(
         userId: SenderId,
         conversationId: ConversationId,
         messageId: MessageId,
-        reason: String
+        reason: String,
+        description: String
     ): Result<Unit> = repositoryCall {
         val authenticatedReporterId = requireAuthenticatedUser(userId)
         requireParticipant(authenticatedReporterId, conversationId)
         if (messagesTable.findMessage(conversationId.value, messageId.value) == null) {
             throw ConversationAccessException()
         }
-        submitReport(messageId, authenticatedReporterId)
+        submitReport(messageId, authenticatedReporterId, reason, description)
     }
 
     override suspend fun editMessage(userId: SenderId, edit: MessageEdit): Result<Message> = repositoryCall {
@@ -159,9 +160,11 @@ class SupabaseMessagesRepository internal constructor(
         }
     }
 
-    private suspend fun submitReport(messageId: MessageId, reporterId: SenderId) {
+    private suspend fun submitReport(messageId: MessageId, reporterId: SenderId, reason: String, description: String) {
         try {
-            messagesTable.insertReport(SupabaseMessagesMapper.toReportInsertDto(messageId, reporterId))
+            messagesTable.insertReport(
+                SupabaseMessagesMapper.toReportInsertDto(messageId, reporterId, reason, description)
+            )
         } catch (exception: PostgrestRestException) {
             if (exception.isDuplicateMessageReport()) throw MessageReportAlreadySubmittedException()
             throw exception

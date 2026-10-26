@@ -379,6 +379,8 @@ class MessagesViewModelTest {
         runCurrent()
         provider.result = Result.Error(MessagingAuthenticationRequiredException())
         viewModel.report(message().id)
+        viewModel.selectMessageReportReason(com.jdrms.bulletin.domain.reporting.domain.model.ReportReason.SPAM)
+        viewModel.submitMessageReport()
         advanceUntilIdle()
         assertEquals(emptyList(), viewModel.uiState.value.currentMessages)
         assertEquals(emptyList(), viewModel.uiState.value.conversations)
