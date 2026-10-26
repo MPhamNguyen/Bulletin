@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeDeckPaginationTest {
     @Test
-    fun exactly_three_empty_filtered_pages_stop_even_with_more_source_pages() = homeDeckTest { f ->
+    fun three_empty_filtered_pages_stop_prefetch_but_keep_manual_continuation() = homeDeckTest { f ->
         f.signIn("first")
         f.page("excluded")
         advanceUntilIdle()
@@ -29,11 +29,33 @@ class HomeDeckPaginationTest {
         assertEquals(4, f.cursors.size)
         assertEquals(1, f.responses.size)
         assertEquals(homePage(cursor = "cursor-2").nextCursor, f.viewModel.uiState.value.nextCursor)
-        assertFalse(f.viewModel.uiState.value.hasMore)
+        assertTrue(f.viewModel.uiState.value.hasMore)
         assertFalse(f.viewModel.uiState.value.isDeckLoading)
         f.viewModel.loadNextPage()
         advanceUntilIdle()
-        assertEquals(4, f.cursors.size)
+        assertEquals(5, f.cursors.size)
+        assertEquals(listOf("beyond-cap"), f.viewModel.uiState.value.feed.map { it.id.value })
+        assertTrue(f.viewModel.uiState.value.hasMore)
+    }
+
+    @Test
+    fun manual_continuation_can_reach_visible_page_after_empty_page_budget() = homeDeckTest { f ->
+        f.signIn("first")
+        f.page("saved")
+        advanceUntilIdle()
+        f.viewModel.excludeLoadedCard(HomeItemId("saved"), HomeDeckExclusion.SAVE)
+        repeat(3) { f.page("saved", cursor = "empty-$it") }
+        f.page("visible")
+        f.viewModel.refresh()
+        advanceUntilIdle()
+
+        assertEquals(emptyList(), f.viewModel.uiState.value.feed)
+        assertTrue(f.viewModel.uiState.value.hasMore)
+        f.viewModel.loadNextPage()
+        advanceUntilIdle()
+
+        assertEquals(listOf("visible"), f.viewModel.uiState.value.feed.map { it.id.value })
+        assertFalse(f.viewModel.uiState.value.hasMore)
     }
 
     @Test
@@ -42,7 +64,7 @@ class HomeDeckPaginationTest {
         advanceUntilIdle()
         assertEquals(3, f.cursors.size)
         assertEquals(emptyList(), f.viewModel.uiState.value.feed)
-        assertFalse(f.viewModel.uiState.value.hasMore)
+        assertTrue(f.viewModel.uiState.value.hasMore)
         assertFalse(f.viewModel.uiState.value.isDeckLoading)
     }
 
@@ -63,7 +85,7 @@ class HomeDeckPaginationTest {
         f.viewModel.loadNextPage()
         advanceUntilIdle()
         assertEquals(7, f.cursors.size)
-        assertFalse(f.viewModel.uiState.value.hasMore)
+        assertTrue(f.viewModel.uiState.value.hasMore)
     }
 
     @Test
