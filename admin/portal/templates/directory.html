@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Search All Users{% endblock %}
+{% block content %}
+<a href="{{ url_for('portal.home') }}">Home</a>
+<h1>Search All Users</h1>
+<form method="get" class="filters">
+  <div><label for="user-search">Name, email, or user ID</label><input type="search" id="user-search" name="q" value="{{ search }}" maxlength="320"></div>
+  <button type="submit">Search</button>
+  {% if search %}<a href="{{ url_for('directory.index') }}">Clear search</a>{% endif %}
+</form>
+<div class="table-scroll">
+<table>
+  <caption>User profiles · page {{ page }}</caption>
+  <thead><tr><th scope="col">User</th><th scope="col">University</th><th scope="col">Verification</th></tr></thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td><a href="{{ url_for('directory.detail', user_id=user.id) }}">{{ user.full_name or 'Unnamed user' }}</a><br>{{ user.id }}{% if user.deleted_at %}<br>Deleted profile{% endif %}</td>
+      <td>{{ user.university or 'Not provided' }}</td>
+      <td>{{ 'Verified' if user.is_verified is sameas true else 'Not verified' }}</td>
+    </tr>
+    {% else %}<tr><td colspan="3">No users found.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+<nav aria-label="User search pages">
+  {% if page > 1 %}<a href="{{ url_for('directory.index', q=search, page=page-1) }}">Previous users</a>{% endif %}
+  {% if has_next %}<a href="{{ url_for('directory.index', q=search, page=page+1) }}">Next users</a>{% endif %}
+</nav>
+{% endblock %}

@@ -75,7 +75,9 @@ fun AppContainer.createMessagesViewModel() = MessagesViewModel(
     observeConversationMessages,
     sendMessage,
     reportMessage,
-    hideConversation
+    hideConversation,
+    conversationListingPreviewProvider,
+    markConversationRead
 )
 
 fun AppContainer.createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)

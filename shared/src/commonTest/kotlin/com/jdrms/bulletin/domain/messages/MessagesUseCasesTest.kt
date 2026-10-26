@@ -218,6 +218,14 @@ class MessagesUseCasesTest {
             return failure ?: Result.Success(MessagePage(emptyList(), null))
         }
 
+        override suspend fun markConversationRead(
+            userId: SenderId,
+            conversationId: ConversationId
+        ): Result<kotlin.time.Instant> {
+            callers.add(userId)
+            return failure ?: Result.Success(kotlin.time.Instant.fromEpochMilliseconds(0L))
+        }
+
         override suspend fun sendMessage(message: Message): Result<Message> {
             sentMessageCount++
             callers.add(message.senderId)

@@ -38,14 +38,16 @@ data class SupabaseInboxMembershipDto(
 @Serializable
 data class SupabaseInboxParticipantDto(
     @SerialName("user_id") val userId: String,
-    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null
+    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null,
+    @SerialName("last_read_at") val lastReadAt: String? = null
 )
 
 @Serializable
 data class SupabaseConversationParticipantDto(
     @SerialName("conversation_id") val conversationId: String,
     @SerialName("user_id") val userId: String,
-    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null
+    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null,
+    @SerialName("last_read_at") val lastReadAt: String? = null
 )
 
 @Serializable

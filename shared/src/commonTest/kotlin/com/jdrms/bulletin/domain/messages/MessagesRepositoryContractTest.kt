@@ -130,6 +130,22 @@ abstract class MessagesRepositoryContractTest {
     }
 
     @Test
+    fun markingConversationReadStoresReceiptForOtherParticipantsAndRejectsOutsiders() = runTest {
+        val incoming = message(sender = carol)
+        val repository = createRepository(
+            listOf(conversation().recordMessage(incoming).getOrThrow()),
+            listOf(incoming)
+        )
+
+        val markedAt = repository.markConversationRead(alice.id, conversationId).getOrThrow()
+        val otherParticipantView = repository.getConversations(carol.id).getOrThrow().single()
+
+        assertEquals(markedAt, otherParticipantView.participants.single { it.id == alice.id }.lastReadAt)
+        assertAccessDenied(repository.markConversationRead(bob.id, conversationId))
+        assertAccessDenied(repository.markConversationRead(alice.id, ConversationId("missing")))
+    }
+
+    @Test
     fun sendingMessageKeepsListingReferenceInInboxSummary() = runTest {
         val listingId = ListingReferenceId("listing-a")
         val repository = createRepository(listOf(conversation().withListing(listingId)))

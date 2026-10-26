@@ -56,6 +56,7 @@ internal fun MainAppLayout(content: MainAppContentState, chrome: MainAppChrome, 
     val density = androidx.compose.ui.platform.LocalDensity.current
     val inset = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
     var navbarHeight by remember { mutableStateOf(0.dp) }
+    var isConversationOpen by remember { mutableStateOf(false) }
     val keyboardVisible = WindowInsets.isImeVisible
     Box(Modifier.fillMaxSize()) {
         MainDestinationBody(
@@ -63,11 +64,19 @@ internal fun MainAppLayout(content: MainAppContentState, chrome: MainAppChrome, 
             chrome,
             retries,
             navbarHeight,
-            chrome.anchor.bounds(navigation.showsBottomNavigation && chrome.behavior.isVisible && !keyboardVisible)
+            chrome.anchor.bounds(
+                navigation.showsBottomNavigation && chrome.behavior.isVisible && !isConversationOpen && !keyboardVisible
+            ),
+            onConversationVisibilityChanged = { isOpen ->
+                isConversationOpen = isOpen
+                if (isOpen) chrome.behavior.hide() else chrome.behavior.reveal()
+            }
         )
         Navbar(
             currentDestination = navigation.currentDestination,
-            isVisible = { navigation.showsBottomNavigation && chrome.behavior.isVisible },
+            isVisible = {
+                navigation.showsBottomNavigation && !isConversationOpen && chrome.behavior.isVisible
+            },
             onDestinationSelected = { navigateTo(it, navigation, content.models.listings) },
             onFocused = chrome.behavior::reveal,
             profileIconModifier = chrome.anchor.modifier.then(
@@ -86,7 +95,8 @@ private fun MainDestinationBody(
     chrome: MainAppChrome,
     retries: HomeSaveRetryPresentation,
     navbarHeight: Dp,
-    anchor: Rect?
+    anchor: Rect?,
+    onConversationVisibilityChanged: (Boolean) -> Unit
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -103,6 +113,7 @@ private fun MainDestinationBody(
                     content.models,
                     content.profile,
                     onContentNoLongerScrollable = chrome.behavior::reveal,
+                    onConversationVisibilityChanged = onConversationVisibilityChanged,
                     profileAnchorInWindow = anchor,
                     onSaveCelebration = { scale -> chrome.celebration.play(chrome.scope, scale, chrome.haptics) }
                 )

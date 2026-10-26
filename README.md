@@ -34,7 +34,7 @@ Students can discover campus listings, buy or sell items, communicate with other
 | 🛍️ **Campus Marketplace** | Browse listings and create, view, edit, or mark listings as sold. |
 | 🔎 **Search & Filters** | Search listings and refine results with marketplace filters and sorting. |
 | 🔖 **Saved Listings** | Bookmark listings for quick access later. |
-| 💬 **Messaging** | Start conversations, view inbox and thread history, and report messages. |
+| 💬 **Messaging** | Start conversations, view inbox and thread history, report messages, and see when a message has been read. |
 | ⭐ **Ratings & Reviews** | Submit and view reviews associated with completed/sold listings. |
 | 👤 **Student Profiles** | View and edit student profile information and profile photos. |
 | 🚩 **Reporting & Blocking** | Report users or messages and block users. |

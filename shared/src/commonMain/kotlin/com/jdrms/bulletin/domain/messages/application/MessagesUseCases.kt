@@ -16,6 +16,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Instant
 
 data class MessageInbox(val viewerId: SenderId, val conversations: List<Conversation>)
 
@@ -43,6 +44,19 @@ class GetConversationMessages(
             is Result.Success -> repository.getMessagePage(sender.data.id, conversationId, before)
             is Result.Error -> sender
         }
+    }
+}
+
+class MarkConversationRead(
+    private val repository: MessagesRepository,
+    private val currentSenderProvider: CurrentMessageSenderProvider
+) {
+    suspend operator fun invoke(conversationId: ConversationId): Result<Instant> {
+        val sender = when (val result = currentSenderProvider.getCurrentSender()) {
+            is Result.Success -> result.data
+            is Result.Error -> return result
+        }
+        return repository.markConversationRead(sender.id, conversationId)
     }
 }
 

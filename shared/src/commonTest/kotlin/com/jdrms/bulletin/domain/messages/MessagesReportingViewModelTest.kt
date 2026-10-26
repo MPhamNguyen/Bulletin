@@ -28,6 +28,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,17 +48,33 @@ class MessagesReportingViewModelTest {
 
     @Test
     fun reportUsesSelectedConversationAndRefreshesReportedMessage() = runTest {
-        val repository = messagesRepository(messages = listOf(message()))
+        val otherUsersMessage = message(sender = carol)
+        val repository = messagesRepository(messages = listOf(otherUsersMessage))
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.onMessageInputChanged("Unsent draft")
-        viewModel.report(message().id)
+        viewModel.report(otherUsersMessage.id)
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.currentMessages.single().isReported)
         assertEquals("Unsent draft", viewModel.uiState.value.messageInput)
-        assertEquals("Message reported.", viewModel.uiState.value.statusMessage)
+        assertNull(viewModel.uiState.value.statusMessage)
         assertFalse(viewModel.uiState.value.isReporting)
         assertEquals(emptySet(), viewModel.uiState.value.revealedReportedMessageIds)
+    }
+
+    @Test
+    fun ownMessageCannotBeReported() = runTest {
+        val ownMessage = message(sender = alice)
+        val repository = messagesRepository(messages = listOf(ownMessage))
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.report(ownMessage.id)
+        advanceUntilIdle()
+
+        assertEquals(ownMessage, repository.getMessages(alice.id, conversationId).getOrThrow().single())
+        assertFalse(viewModel.uiState.value.isReporting)
+        assertEquals(null, viewModel.uiState.value.statusMessage)
     }
 
     @Test
@@ -117,7 +134,8 @@ class MessagesReportingViewModelTest {
 
     @Test
     fun reportingFailureExposesProgressAndKeepsMessagesVisible() = runTest {
-        val backing = messagesRepository(messages = listOf(message()))
+        val otherUsersMessage = message(sender = carol)
+        val backing = messagesRepository(messages = listOf(otherUsersMessage))
         val repository = object : MessagesRepository by backing {
             override suspend fun reportMessage(
                 userId: SenderId,
@@ -131,12 +149,12 @@ class MessagesReportingViewModelTest {
         }
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.report(message().id)
+        viewModel.report(otherUsersMessage.id)
         runCurrent()
         assertTrue(viewModel.uiState.value.isReporting)
         advanceUntilIdle()
         assertFalse(viewModel.uiState.value.isReporting)
-        assertEquals(listOf(message()), viewModel.uiState.value.currentMessages)
+        assertEquals(listOf(otherUsersMessage), viewModel.uiState.value.currentMessages)
         assertNotNull(viewModel.uiState.value.errorMessage)
     }
 

@@ -21,6 +21,7 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
@@ -36,6 +37,7 @@ internal fun MainAppContent(
     models: MainScaffoldModels,
     profilePresentation: ProfilePresentation,
     onContentNoLongerScrollable: () -> Unit,
+    onConversationVisibilityChanged: (Boolean) -> Unit,
     profileAnchorInWindow: Rect? = null,
     onSaveCelebration: (Float) -> Unit = {}
 ) {
@@ -47,7 +49,14 @@ internal fun MainAppContent(
         )
         AppDestination.MARKETPLACE -> MarketplaceDestination(container, navigation, models, onContentNoLongerScrollable)
         AppDestination.LISTINGS -> ListingsScreen(models.listings)
-        AppDestination.MESSAGES -> MessagesScreen(models.messages)
+        AppDestination.MESSAGES -> MessagesScreen(
+            viewModel = models.messages,
+            onViewProfile = { sellerId ->
+                navigation.pendingSellerProfileId = sellerId
+                navigation.currentDestination = AppDestination.MARKETPLACE
+            },
+            onConversationVisibilityChanged = onConversationVisibilityChanged
+        )
         AppDestination.PROFILE -> ProfileDestinationContent(
             container,
             navigation,
@@ -72,7 +81,12 @@ private fun MarketplaceDestination(
         userReportViewModel = models.marketplaceUserReport,
         listingReportViewModel = models.listingReport,
         userBlockViewModel = models.marketplaceUserBlock,
-        onContentNoLongerScrollable = onContentNoLongerScrollable,
+        navigation = MarketplaceScreenNavigation(
+            sellerProfileIdToOpen = navigation.pendingSellerProfileId,
+            onSellerProfileRequestHandled = { navigation.pendingSellerProfileId = null },
+            onReturnToInboxChat = { navigation.currentDestination = AppDestination.MESSAGES },
+            onContentNoLongerScrollable = onContentNoLongerScrollable
+        ),
         actions = MarketplaceScreenActions(
             onMessageSeller = conversationActions::messageSeller,
             hasExistingConversation = conversationActions::hasExistingConversation,

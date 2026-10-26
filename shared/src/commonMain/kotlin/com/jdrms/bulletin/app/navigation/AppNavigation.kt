@@ -22,7 +22,12 @@ enum class AppDestination(
         hidesOnScroll = true
     ),
     LISTINGS("Post", Icons.Default.Add),
-    MESSAGES("Inbox", MessagesNavigationIcons.outline, MessagesNavigationIcons.filled),
+    MESSAGES(
+        "Inbox",
+        MessagesNavigationIcons.outline,
+        MessagesNavigationIcons.filled,
+        hidesOnScroll = true
+    ),
     PROFILE("Profile", Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)
 }
 
@@ -39,9 +44,6 @@ enum class ProfileDestination {
     BOOKMARKED_LISTINGS,
     BLOCKED_USERS,
     NOTIFICATIONS,
-    PRIVACY,
-    HELP_AND_SUPPORT,
-    TERMS_AND_CONDITIONS,
     PUBLIC_PROFILE,
     MY_LISTINGS,
     EDIT_LISTING
@@ -68,9 +70,6 @@ fun backFromProfile(destination: ProfileDestination): ProfileDestination {
         ProfileDestination.BOOKMARKED_LISTINGS -> ProfileDestination.PROFILE
         ProfileDestination.BLOCKED_USERS -> ProfileDestination.SETTINGS
         ProfileDestination.NOTIFICATIONS,
-        ProfileDestination.PRIVACY,
-        ProfileDestination.HELP_AND_SUPPORT,
-        ProfileDestination.TERMS_AND_CONDITIONS,
         ProfileDestination.PUBLIC_PROFILE -> ProfileDestination.SETTINGS
         ProfileDestination.MY_LISTINGS -> ProfileDestination.PROFILE
         ProfileDestination.EDIT_LISTING -> ProfileDestination.MY_LISTINGS

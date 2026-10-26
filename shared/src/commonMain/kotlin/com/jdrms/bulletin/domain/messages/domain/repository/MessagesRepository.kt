@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import kotlin.time.Instant
 
 /**
  * Every operation is scoped to a participant. Missing and inaccessible conversations return the same error.
@@ -34,6 +35,7 @@ interface MessagesRepository {
         before: MessageCursor? = null,
         limit: Int = MESSAGE_PAGE_SIZE
     ): Result<MessagePage>
+    suspend fun markConversationRead(userId: SenderId, conversationId: ConversationId): Result<Instant>
     suspend fun sendMessage(message: Message): Result<Message>
     suspend fun reportMessage(
         userId: SenderId,
