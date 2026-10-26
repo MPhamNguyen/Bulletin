@@ -75,13 +75,6 @@ class MessagesViewModel(
         showFailure
     )
     private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
-    private val messageReportActions = MessageReportActions(
-        threadState,
-        inbox,
-        actions,
-        ::selectConversation,
-        showFailure
-    )
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
     private val olderHistory =
         MessagesOlderHistoryLoader(threadState, getConversationMessages, viewModelScope, showFailure)
