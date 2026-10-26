@@ -19,7 +19,6 @@ permissions:
   contents: read
 
 env:
-  # Keep in sync with the full-tests matrix.
   TEST_SHARD_COUNT: "4"
 
 jobs:
@@ -33,6 +32,7 @@ jobs:
       domain_changed: ${{ steps.scope.outputs.domain_changed }}
       android_app_changed: ${{ steps.scope.outputs.android_app_changed }}
       admin_changed: ${{ steps.scope.outputs.admin_changed }}
+      shard_indices: ${{ steps.scope.outputs.shard_indices }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,6 +49,10 @@ jobs:
           ALL_DOMAINS_ON_ANY_CHANGE: "false"
         run: |
           set -euo pipefail
+          [[ "$TEST_SHARD_COUNT" =~ ^[1-9][0-9]*$ ]] || {
+            echo "::error title=CI configuration::TEST_SHARD_COUNT must be a positive integer"
+            exit 1
+          }
           ALL_DOMAINS="home marketplace listings messages profile"
           mode=full
           reason="no diff range for $EVENT on ${REF#refs/heads/}, so running everything (safe default)"
@@ -127,6 +131,7 @@ jobs:
             echo "domain_changed=$domain_changed"
             echo "android_app_changed=$android_app_changed"
             echo "admin_changed=$admin_changed"
+            echo "shard_indices=$(jq -cn --argjson count "$TEST_SHARD_COUNT" '[range(0; $count)]')"
           } >> "$GITHUB_OUTPUT"
           flag() { if [ "$1" = true ]; then echo "✏️ changed"; else echo "—"; fi; }
           runs="size rules"
@@ -258,7 +263,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ["1 of 4", "2 of 4", "3 of 4", "4 of 4"]
+        shard_index: ${{ fromJSON(needs.scope.outputs.shard_indices) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -266,21 +271,35 @@ jobs:
           persist-credentials: false
       - name: Setup JDK and Gradle
         uses: ./.github/actions/setup-gradle
-      - name: Run test shard ${{ matrix.shard }}
+      - name: Run test shard ${{ matrix.shard_index }}
         env:
-          SHARD: ${{ matrix.shard }}
+          SHARD_INDEX: ${{ matrix.shard_index }}
         run: |
           set -euo pipefail
-          index=$(( ${SHARD%% *} - 1 ))
           ./gradlew :shared:testAndroidHostTest \
             -PtestShardCount="$TEST_SHARD_COUNT" \
-            -PtestShardIndex="$index" \
+            -PtestShardIndex="$SHARD_INDEX" \
             --stacktrace --continue --console=plain
       - name: Summarize test results
+        id: summary
         if: always()
         uses: ./.github/actions/test-summary
         with:
-          title: Shard ${{ matrix.shard }}
+          title: Shard ${{ matrix.shard_index }}
+      - name: Record shard test count
+        if: always()
+        env:
+          SHARD_INDEX: ${{ matrix.shard_index }}
+          TEST_COUNT: ${{ steps.summary.outputs.test_count }}
+        run: echo "$SHARD_INDEX $TEST_COUNT" > "shard-count-$SHARD_INDEX.txt"
+      - name: Upload shard test count
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: shard-test-count-${{ matrix.shard_index }}
+          path: shard-count-${{ matrix.shard_index }}.txt
+          if-no-files-found: error
+          retention-days: 1
       - name: Upload build reports
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -415,6 +434,53 @@ jobs:
               def icon: {"success":"✅","failure":"❌","cancelled":"🚫","skipped":"⏭️"}[.] // "❔";
               to_entries[] | "| \(.key) | \(.value.result | icon) \(.value.result) |"'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Download shard test counts
+        if: needs.scope.outputs.mode == 'full'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: shard-test-count-*
+          path: shard-counts
+          merge-multiple: true
+
+      - name: Verify every shard ran tests
+        if: needs.scope.outputs.mode == 'full'
+        env:
+          EXPECTED_SHARDS: ${{ needs.scope.outputs.shard_indices }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import sys
+
+          expected = set(json.loads(os.environ["EXPECTED_SHARDS"]))
+          reports = list(Path("shard-counts").glob("shard-count-*.txt"))
+          observed = {}
+          for report in reports:
+              try:
+                  index_text, count_text = report.read_text(encoding="utf-8").split()
+                  index, count = int(index_text), int(count_text)
+              except (OSError, ValueError):
+                  print(f"Invalid shard count report: {report}", file=sys.stderr)
+                  raise SystemExit(1)
+              if index in observed:
+                  print(f"Duplicate report for shard {index}", file=sys.stderr)
+                  raise SystemExit(1)
+              observed[index] = count
+
+          missing = expected - observed.keys()
+          unexpected = observed.keys() - expected
+          empty = sorted(index for index, count in observed.items() if count <= 0)
+          if missing or unexpected or empty:
+              print(
+                  f"Shard coverage invalid: missing={sorted(missing)}, "
+                  f"unexpected={sorted(unexpected)}, empty={empty}",
+                  file=sys.stderr,
+              )
+              raise SystemExit(1)
+          print(f"Verified {len(expected)} shards and {sum(observed.values())} total tests.")
+          PY
 
       - name: Evaluate results
         env:

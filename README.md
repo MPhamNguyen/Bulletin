@@ -211,7 +211,10 @@ CI compares branch pushes with their merge-base with `main`; main pushes, merge
 queue runs, scheduled runs, and manual runs use the full path. Documentation-only
 branches skip checks, and admin-only branches run the Python suite without Gradle.
 Affected domain branches run their domain tests, app/core tests, and static checks.
-Full runs split shared host tests across four class-name hash shards while
+Full runs split shared host tests across class-name hash shards, with the shard
+matrix generated from `TEST_SHARD_COUNT` and a required gate that checks every
+shard reported at least one test. This prevents an empty or missing shard from
+passing silently. The shards run while
 `check -x :shared:testAndroidHostTest` retains lint, detekt, and Android app tests.
 To run a shard locally:
 
@@ -219,8 +222,7 @@ To run a shard locally:
 ./gradlew :shared:testAndroidHostTest -PtestShardCount=4 -PtestShardIndex=0 --no-daemon
 ```
 
-Set both shard properties or neither. Keep `TEST_SHARD_COUNT` and the CI shard
-matrix in sync. The required gate remains `Build and Test`. The separate Admin
+Set both shard properties or neither. The required gate remains `Build and Test`. The separate Admin
 Portal workflow also continues to run its existing check.
 
 Live Supabase tests are opt-in and require explicit configuration. Regular tests should not require live credentials or network access.

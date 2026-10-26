@@ -7,10 +7,16 @@ inputs:
     description: Heading for the summary section.
     default: Test results
 
+outputs:
+  test_count:
+    description: Number of test cases found in the JUnit XML reports.
+    value: ${{ steps.summarize.outputs.test_count }}
+
 runs:
   using: composite
   steps:
     - name: Summarize
+      id: summarize
       shell: bash
       env:
         TITLE: ${{ inputs.title }}
@@ -68,6 +74,10 @@ runs:
 
         if tests == 0:
             emit([f"### ⚪ {markdown(title)}", "", "_No test results were produced._"])
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+            output.write(f"test_count={tests}\n")
+
+        if tests == 0:
             raise SystemExit(0)
 
         failed = len(failures)
