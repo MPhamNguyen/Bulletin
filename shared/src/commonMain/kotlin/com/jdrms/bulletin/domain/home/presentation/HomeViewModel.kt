@@ -2,8 +2,8 @@ package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.RecordSwipeDecision
 import com.jdrms.bulletin.domain.home.application.SaveListingPort
@@ -79,7 +79,12 @@ class HomeViewModel private constructor(
                     hasResolvedSession = true
                     loadFeed()
                     if (cleanup is Result.Error) {
-                        _uiState.update { it.copy(errorMessage = DECISION_CLEANUP_ERROR) }
+                        _uiState.update {
+                            it.copy(
+                                errorMessage = DECISION_CLEANUP_ERROR,
+                                errorRetryAction = HomeErrorRetryAction.RELOAD_FEED
+                            )
+                        }
                     }
                 }
             }
@@ -122,11 +127,27 @@ class HomeViewModel private constructor(
         interactions.reset()
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             val userId = currentUserId
-            deck.clearPassDecisions()
-            val excluded = deck.excludedIds()
-            if (userId == currentUserId) {
-                _uiState.update { deck.replay(it, excluded) }
-                interactions.store.syncListing()
+            when (deck.clearPassDecisions()) {
+                is Result.Success -> {
+                    val excluded = deck.excludedIds()
+                    if (userId == currentUserId) {
+                        _uiState.update {
+                            deck.replay(it, excluded).copy(
+                                errorMessage = null,
+                                errorRetryAction = HomeErrorRetryAction.RELOAD_FEED
+                            )
+                        }
+                        interactions.store.syncListing()
+                    }
+                }
+                is Result.Error -> if (userId == currentUserId) {
+                    _uiState.update {
+                        it.copy(
+                            errorMessage = REPLAY_DECISIONS_ERROR,
+                            errorRetryAction = HomeErrorRetryAction.REPLAY
+                        )
+                    }
+                }
             }
         }
     }
@@ -149,7 +170,8 @@ class HomeViewModel private constructor(
                 isLoadingMore = false,
                 hasMore = false,
                 nextCursor = null,
-                errorMessage = null
+                errorMessage = null,
+                errorRetryAction = HomeErrorRetryAction.RELOAD_FEED
             )
         }
         interactions.store.syncListing()
@@ -160,7 +182,13 @@ class HomeViewModel private constructor(
         val state = _uiState.value
         val cursor = state.nextCursor ?: return
         if (state.isLoading || state.isLoadingMore || !state.hasMore) return
-        _uiState.update { it.copy(isLoadingMore = true, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                isLoadingMore = true,
+                errorMessage = null,
+                errorRetryAction = HomeErrorRetryAction.RELOAD_FEED
+            )
+        }
         val generation = requestGeneration
         feedJob = viewModelScope.launch { retrievePages(cursor, generation, currentUserId) }
     }
@@ -181,7 +209,14 @@ class HomeViewModel private constructor(
             throw cancellation
         } catch (_: Exception) {
             if (generation == requestGeneration) {
-                _uiState.update { it.copy(isLoading = false, isLoadingMore = false, errorMessage = FEED_LOAD_ERROR) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isLoadingMore = false,
+                        errorMessage = FEED_LOAD_ERROR,
+                        errorRetryAction = HomeErrorRetryAction.RELOAD_FEED
+                    )
+                }
             }
         }
     }
@@ -193,7 +228,12 @@ class HomeViewModel private constructor(
     fun updatePreferences(preferredCategories: List<HomeFeedCategory>, maxPrice: Double?) {
         val userId = currentUserId
         if (userId == null) {
-            _uiState.update { it.copy(errorMessage = PREFERENCES_REQUIRE_ACCOUNT) }
+            _uiState.update {
+                it.copy(
+                    errorMessage = PREFERENCES_REQUIRE_ACCOUNT,
+                    errorRetryAction = HomeErrorRetryAction.RELOAD_FEED
+                )
+            }
             return
         }
         val newPreferences = _uiState.value.preferences.copy(
@@ -206,7 +246,12 @@ class HomeViewModel private constructor(
                 _uiState.update { it.copy(preferences = newPreferences) }
                 loadFeed()
             } else {
-                _uiState.update { it.copy(errorMessage = PREFERENCES_UPDATE_ERROR) }
+                _uiState.update {
+                    it.copy(
+                        errorMessage = PREFERENCES_UPDATE_ERROR,
+                        errorRetryAction = HomeErrorRetryAction.RELOAD_FEED
+                    )
+                }
             }
         }
     }
@@ -219,6 +264,7 @@ class HomeViewModel private constructor(
     private companion object {
         const val FEED_LOAD_ERROR = "Failed to load listings"
         const val DECISION_CLEANUP_ERROR = "Could not clear previous deck decisions"
+        const val REPLAY_DECISIONS_ERROR = "Could not replay listings. Try again."
         const val PREFERENCES_REQUIRE_ACCOUNT = "Sign in to update feed preferences"
         const val PREFERENCES_UPDATE_ERROR = "Failed to update preferences"
     }

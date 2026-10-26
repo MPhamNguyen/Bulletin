@@ -128,9 +128,17 @@ private fun HomeDeckContent(
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         state.errorMessage != null -> FeedErrorState(
-            title = if (state.nextCursor == null) "Couldn't load listings" else "Couldn't load more listings",
+            title = when {
+                state.errorRetryAction == HomeErrorRetryAction.REPLAY -> "Couldn't replay listings"
+                state.nextCursor == null -> "Couldn't load listings"
+                else -> "Couldn't load more listings"
+            },
             message = state.errorMessage,
-            onRetry = if (state.nextCursor == null) viewModel::loadFeed else viewModel::loadNextPage,
+            onRetry = when (state.errorRetryAction) {
+                HomeErrorRetryAction.REPLAY -> viewModel::replayLoadedCards
+                HomeErrorRetryAction.RELOAD_FEED ->
+                    if (state.nextCursor == null) viewModel::loadFeed else viewModel::loadNextPage
+            },
             modifier = Modifier.fillMaxSize()
         )
         else -> EmptyFeedState(viewModel::replayLoadedCards, viewModel::refresh, Modifier.fillMaxSize())

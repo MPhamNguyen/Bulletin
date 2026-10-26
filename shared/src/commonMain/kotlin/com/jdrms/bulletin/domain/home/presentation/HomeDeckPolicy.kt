@@ -41,9 +41,8 @@ internal class HomeDeckPolicy(private val decisions: SwipeDecisionRepository) {
     fun eligible(items: List<HomeFeedItem>, excluded: Set<HomeItemId>): List<HomeFeedItem> =
         items.filterNot { it.id in excluded }
 
-    suspend fun clearPassDecisions() {
-        userId?.let { decisions.clearPassDecisions(it).getOrThrow() }
-    }
+    suspend fun clearPassDecisions(): Result<Unit> =
+        userId?.let { decisions.clearPassDecisions(it) } ?: Result.Success(Unit)
 
     fun replay(state: HomeUiState, excluded: Set<HomeItemId>): HomeUiState {
         // Resetting position must not turn replay into a screen-triggered fetch.

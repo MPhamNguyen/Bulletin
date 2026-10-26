@@ -10,6 +10,7 @@ internal class FakeSwipeDecisionRepository : SwipeDecisionRepository {
     private val decisions = mutableMapOf<String, MutableMap<HomeItemId, SwipeVerdict>>()
     var failure: Throwable? = null
     var clearAllFailure: Throwable? = null
+    var clearPassFailure: Throwable? = null
     var recordCalls = 0
         private set
 
@@ -25,6 +26,7 @@ internal class FakeSwipeDecisionRepository : SwipeDecisionRepository {
     }
 
     override suspend fun clearPassDecisions(userId: String): Result<Unit> {
+        clearPassFailure?.let { return Result.Error(it) }
         decisions[userId]?.entries?.removeAll { it.value == SwipeVerdict.PASS }
         return Result.Success(Unit)
     }

@@ -5,6 +5,8 @@ import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCursor
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.UserPreferences
 
+enum class HomeErrorRetryAction { RELOAD_FEED, REPLAY }
+
 data class HomeUiState(
     val loadedItems: List<HomeFeedItem> = emptyList(),
     val deckGeneration: Long = 0,
@@ -18,6 +20,7 @@ data class HomeUiState(
     val hasMore: Boolean = false,
     val nextCursor: HomeFeedCursor? = null,
     val errorMessage: String? = null,
+    val errorRetryAction: HomeErrorRetryAction = HomeErrorRetryAction.RELOAD_FEED,
     val interaction: HomeInteractionState = HomeInteractionState()
 ) {
     val isDeckLoading: Boolean get() = isLoading || isLoadingMore

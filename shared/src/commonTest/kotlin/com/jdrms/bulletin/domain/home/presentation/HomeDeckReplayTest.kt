@@ -26,6 +26,34 @@ class HomeDeckReplayTest {
     }
 
     @Test
+    fun failed_pass_cleanup_keeps_current_deck_and_replay_can_be_retried() = homeDeckTest { f ->
+        f.signIn("first")
+        f.page("passed", "available")
+        advanceUntilIdle()
+        f.viewModel.excludeLoadedCard(HomeItemId("passed"), HomeDeckExclusion.PASS)
+        advanceUntilIdle()
+        f.viewModel.advanceCard(0)
+        f.decisions.clearPassFailure = IllegalStateException("private storage failure")
+
+        f.viewModel.replayLoadedCards()
+        advanceUntilIdle()
+
+        assertEquals(1, f.viewModel.uiState.value.currentIndex)
+        assertEquals(listOf("available"), f.viewModel.uiState.value.feed.map { it.id.value })
+        assertEquals("Could not replay listings. Try again.", f.viewModel.uiState.value.errorMessage)
+        assertEquals(HomeErrorRetryAction.REPLAY, f.viewModel.uiState.value.errorRetryAction)
+
+        f.decisions.clearPassFailure = null
+        f.viewModel.replayLoadedCards()
+        advanceUntilIdle()
+
+        assertEquals(0, f.viewModel.uiState.value.currentIndex)
+        assertEquals(listOf("passed", "available"), f.viewModel.uiState.value.feed.map { it.id.value })
+        assertEquals(null, f.viewModel.uiState.value.errorMessage)
+        assertEquals(HomeErrorRetryAction.RELOAD_FEED, f.viewModel.uiState.value.errorRetryAction)
+    }
+
+    @Test
     fun replay_does_not_retrigger_screen_prefetch_until_the_next_advance() = homeDeckTest { f ->
         f.page("first", "second", cursor = "second")
         advanceUntilIdle()
