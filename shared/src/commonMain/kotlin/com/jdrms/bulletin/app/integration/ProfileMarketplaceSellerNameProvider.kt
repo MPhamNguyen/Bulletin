@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.integration
 
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfileProvider
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 
@@ -20,6 +21,14 @@ class ProfileMarketplaceSellerNameProvider(
                     avatarUrl = it.avatarUrl,
                     reputationScore = it.reputation?.averageRating,
                     reviewCount = it.reputation?.totalReviews,
+                    reviews = it.reputation?.reviews.orEmpty().map { review ->
+                        MarketplaceSellerReview(
+                            id = review.id.value,
+                            reviewerName = review.reviewerName,
+                            rating = review.rating.score,
+                            comment = review.comment
+                        )
+                    },
                     isVerified = it.isVerified || it.email.isUniversityEmail
                 )
             }

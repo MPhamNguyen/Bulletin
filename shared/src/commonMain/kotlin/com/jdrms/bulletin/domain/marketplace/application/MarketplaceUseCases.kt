@@ -210,7 +210,15 @@ data class MarketplaceSellerProfile(
     val avatarUrl: String? = null,
     val reputationScore: Double? = null,
     val reviewCount: Int? = null,
+    val reviews: List<MarketplaceSellerReview> = emptyList(),
     val isVerified: Boolean = true
+)
+
+data class MarketplaceSellerReview(
+    val id: String,
+    val reviewerName: String,
+    val rating: Int,
+    val comment: String
 )
 
 /** Provides seller profile details without coupling marketplace to a profile implementation. */

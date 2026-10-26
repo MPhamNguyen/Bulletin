@@ -61,6 +61,7 @@ fun SellerProfileScreen(
                 messageActions?.let { actions -> item { MessageSellerQuickAction(actions) } }
                 item { SellerProfileAbout(state.profile) }
                 item { SellerProfileVerification(state.profile) }
+                item { SellerProfileReviews(state.profile.reviews) }
                 item {
                     Text(
                         text = "Marketplace listings",
