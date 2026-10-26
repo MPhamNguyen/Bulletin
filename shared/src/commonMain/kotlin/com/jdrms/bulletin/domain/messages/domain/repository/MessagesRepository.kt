@@ -41,6 +41,7 @@ interface MessagesRepository {
         userId: SenderId,
         conversationId: ConversationId,
         messageId: MessageId,
-        reason: String
+        reason: String,
+        description: String = ""
     ): Result<Unit>
 }

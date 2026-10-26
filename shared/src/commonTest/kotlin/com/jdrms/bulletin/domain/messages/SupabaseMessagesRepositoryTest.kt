@@ -265,7 +265,7 @@ class SupabaseMessagesRepositoryTest {
     }
 
     @Test
-    fun reportWritesAuthenticatedReporterWithPlaceholderReason() = runTest {
+    fun reportWritesAuthenticatedReporterAndSelectedReasonAndDescription() = runTest {
         val table = FakeSupabaseMessagesTable(
             conversations = listOf(conversation()),
             messages = listOf(message()),
@@ -273,15 +273,16 @@ class SupabaseMessagesRepositoryTest {
         )
         val repository = SupabaseMessagesRepository(table)
 
-        repository.reportMessage(carol.id, conversationId, message().id, "Harassment").getOrThrow()
+        repository.reportMessage(carol.id, conversationId, message().id, "harassment_or_hate", "Additional details")
+            .getOrThrow()
 
         assertEquals(
             SupabaseMessageReportInsertDto(
                 "message-a",
                 "carol-id",
-                "inappropriate_content",
+                "harassment_or_hate",
                 SupabaseMessageReportType.MESSAGE,
-                null
+                "Additional details"
             ),
             table.insertedReport
         )
