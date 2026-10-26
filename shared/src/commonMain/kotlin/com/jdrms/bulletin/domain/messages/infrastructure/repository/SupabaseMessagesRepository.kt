@@ -104,6 +104,15 @@ class SupabaseMessagesRepository internal constructor(
         }
     }
 
+    override suspend fun markConversationRead(
+        userId: SenderId,
+        conversationId: ConversationId
+    ): Result<Instant> = repositoryCall {
+        val authenticatedUserId = requireAuthenticatedUser(userId)
+        requireParticipant(authenticatedUserId, conversationId)
+        messagesTable.markConversationRead(conversationId.value) ?: throw ConversationAccessException()
+    }
+
     override suspend fun sendMessage(message: Message): Result<Message> = repositoryCall {
         val authenticatedSenderId = requireAuthenticatedUser(message.senderId)
         requireParticipant(authenticatedSenderId, message.conversationId)

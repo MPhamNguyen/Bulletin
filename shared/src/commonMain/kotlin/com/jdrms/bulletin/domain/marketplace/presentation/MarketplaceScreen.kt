@@ -10,6 +10,13 @@ import androidx.compose.runtime.setValue
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 
+data class MarketplaceScreenNavigation(
+    val sellerProfileIdToOpen: String? = null,
+    val onSellerProfileRequestHandled: () -> Unit = {},
+    val onReturnToInboxChat: () -> Unit = {},
+    val onContentNoLongerScrollable: () -> Unit = {}
+)
+
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
@@ -18,15 +25,35 @@ fun MarketplaceScreen(
     listingReportViewModel: ListingReportViewModel,
     userBlockViewModel: MarketplaceUserBlockViewModel,
     actions: MarketplaceScreenActions = MarketplaceScreenActions(),
-    onContentNoLongerScrollable: () -> Unit = {}
+    navigation: MarketplaceScreenNavigation = MarketplaceScreenNavigation()
 ) {
     val state by viewModel.uiState.collectAsState()
     val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
     val blockState by userBlockViewModel.uiState.collectAsState()
-    var navigation by remember { mutableStateOf(MarketplaceSellerNavigationState()) }
+    var sellerNavigation by remember {
+        mutableStateOf(
+            MarketplaceSellerNavigationState(
+                destination = if (navigation.sellerProfileIdToOpen != null) {
+                    MarketplaceDestination.SELLER_PROFILE
+                } else {
+                    MarketplaceDestination.CATALOG
+                }
+            )
+        )
+    }
+    var sellerProfileOpenedFromInbox by remember { mutableStateOf(navigation.sellerProfileIdToOpen != null) }
 
-    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, navigation)
+    LaunchedEffect(navigation.sellerProfileIdToOpen) {
+        navigation.sellerProfileIdToOpen?.let { sellerId ->
+            sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.SELLER_PROFILE)
+            sellerProfileOpenedFromInbox = true
+            sellerProfileViewModel.load(sellerId)
+            navigation.onSellerProfileRequestHandled()
+        }
+    }
+
+    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, sellerNavigation)
     val flowViewModels = MarketplaceSellerFlowViewModels(
         viewModel,
         sellerProfileViewModel,
@@ -34,7 +61,9 @@ fun MarketplaceScreen(
         userBlockViewModel,
         listingReportViewModel
     )
-    val navigate = { destination: MarketplaceDestination -> navigation = navigation.navigate(destination) }
+    val navigate = { destination: MarketplaceDestination ->
+        sellerNavigation = sellerNavigation.navigate(destination)
+    }
     if (!MarketplaceSellerProfileFlow(
             flowState,
             flowViewModels,
@@ -44,9 +73,17 @@ fun MarketplaceScreen(
                     .firstOrNull { it.id.value == listingId }
                     ?.toSellerListingContext()
                 viewModel.onListingClicked(listingId)
-                navigation = navigation.navigate(MarketplaceDestination.SELLER_LISTING, context)
+                sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.SELLER_LISTING, context)
             },
-            onNavigate = navigate
+            onNavigate = navigate,
+            onBackFromSellerProfile = {
+                if (sellerProfileOpenedFromInbox) {
+                    sellerProfileOpenedFromInbox = false
+                    navigation.onReturnToInboxChat()
+                } else {
+                    navigate(MarketplaceDestination.CATALOG)
+                }
+            }
         )
     ) {
         MarketplaceCatalogContent(
@@ -55,12 +92,13 @@ fun MarketplaceScreen(
             sellerProfileViewModel = sellerProfileViewModel,
             listingReportViewModel = listingReportViewModel,
             actions = actions,
-            onContentNoLongerScrollable = onContentNoLongerScrollable,
+            onContentNoLongerScrollable = navigation.onContentNoLongerScrollable,
             onNavigate = { destination ->
                 val context = state.detail.listing
                     ?.takeIf { destination == MarketplaceDestination.SELLER_PROFILE }
                     ?.toSellerListingContext()
-                navigation = navigation.navigate(destination, context)
+                if (destination == MarketplaceDestination.SELLER_PROFILE) sellerProfileOpenedFromInbox = false
+                sellerNavigation = sellerNavigation.navigate(destination, context)
             }
         )
     }
@@ -72,7 +110,8 @@ private fun MarketplaceSellerProfileFlow(
     viewModels: MarketplaceSellerFlowViewModels,
     actions: MarketplaceScreenActions,
     onOpenListing: (String) -> Unit,
-    onNavigate: (MarketplaceDestination) -> Unit
+    onNavigate: (MarketplaceDestination) -> Unit,
+    onBackFromSellerProfile: () -> Unit
 ): Boolean {
     if (state.destination == MarketplaceDestination.REPORT_USER) {
         ReportMarketplaceUserScreen(
@@ -94,7 +133,7 @@ private fun MarketplaceSellerProfileFlow(
             onCategorySelected = viewModels.sellerProfile::onCategorySelected,
             onConditionSelected = viewModels.sellerProfile::onConditionSelected
         ),
-        onBack = { onNavigate(MarketplaceDestination.CATALOG) },
+        onBack = onBackFromSellerProfile,
         onReportUser = {
             state.sellerProfileState.profile?.sellerId?.let(viewModels.report::begin)
             if (state.sellerProfileState.profile != null) onNavigate(MarketplaceDestination.REPORT_USER)

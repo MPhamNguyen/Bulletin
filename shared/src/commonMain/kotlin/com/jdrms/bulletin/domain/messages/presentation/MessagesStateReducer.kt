@@ -24,8 +24,7 @@ internal fun MessagesUiState.withSentMessage(
                     currentMessages
                 },
                 messageInput = if (selectedConversationId == conversationId) "" else messageInput,
-                isSending = false,
-                statusMessage = "Message sent."
+                isSending = false
             )
         )
     }
