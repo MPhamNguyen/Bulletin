@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
@@ -44,7 +45,8 @@ fun HomeFeedCard(
     modifier: Modifier = Modifier,
     cardIndex: Int = 0,
     isActive: Boolean = true,
-    mediaModifier: Modifier = Modifier
+    mediaModifier: Modifier = Modifier,
+    informationBottomPadding: Dp = 0.dp
 ) {
     var descriptionExpanded by rememberSaveable(item.id.value, cardIndex) { mutableStateOf(false) }
     HomePhotoMedia(
@@ -58,7 +60,7 @@ fun HomeFeedCard(
             item = item,
             expanded = descriptionExpanded,
             onToggle = { descriptionExpanded = !descriptionExpanded },
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = informationBottomPadding)
         )
     }
 }

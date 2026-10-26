@@ -63,11 +63,12 @@ internal class HomeDeckPolicy(private val decisions: SwipeDecisionRepository) {
             loadedItems = loaded,
             feed = eligible(loaded, excluded),
             nextCursor = page.nextCursor,
-            hasMore = page.nextCursor != null && emptyPages < MAX_EMPTY_PAGES
+            hasMore = page.nextCursor != null
         )
     }
 
-    fun shouldContinue(state: HomeUiState): Boolean = emptyPages > 0 && state.hasMore
+    fun shouldContinue(state: HomeUiState): Boolean =
+        emptyPages > 0 && emptyPages < MAX_EMPTY_PAGES && state.hasMore
 
     private companion object {
         const val MAX_EMPTY_PAGES = 3

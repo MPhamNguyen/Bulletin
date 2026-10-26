@@ -2,11 +2,11 @@ package com.jdrms.bulletin.domain.messages.domain.service
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
 class MessagesPolicy {
     companion object {
-        val DEFAULT_REPORT_REASON = ReportReason.INAPPROPRIATE_CONTENT.label
-        val DEFAULT_REPORT_REASON_CODE = ReportReason.INAPPROPRIATE_CONTENT.code
+        const val MAX_REPORT_DESCRIPTION_LENGTH = 1_000
     }
 
     fun validateMessageContent(content: String): Result<Unit> {
@@ -19,9 +19,16 @@ class MessagesPolicy {
         return Result.Success(Unit)
     }
 
-    fun validateReportReason(reason: String): Result<Unit> {
-        if (reason.isBlank()) {
-            return Result.Error(IllegalArgumentException("Report reason cannot be empty."))
+    fun validateReport(reason: ReportReason, description: String): Result<Unit> {
+        if (!reason.appliesTo(ReportType.MESSAGE)) {
+            return Result.Error(IllegalArgumentException("Report reason is not valid for messages."))
+        }
+        if (description.trim().length > MAX_REPORT_DESCRIPTION_LENGTH) {
+            return Result.Error(
+                IllegalArgumentException(
+                    "Description must be $MAX_REPORT_DESCRIPTION_LENGTH characters or fewer."
+                )
+            )
         }
         return Result.Success(Unit)
     }

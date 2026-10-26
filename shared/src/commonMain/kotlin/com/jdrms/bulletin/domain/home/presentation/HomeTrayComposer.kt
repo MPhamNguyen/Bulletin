@@ -5,6 +5,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ internal fun HomeTrayComposer(
     }
     val valid = SellerMessage.create(state.tray.draft) is Result.Success
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        HomeComposerCloseButton(active, actions::closeTray)
         HomeComposerField(state, active, focus, submit, actions::onDraftChanged)
         HomeSendButton(active && valid, state.card == CardState.Sending && !state.tray.sent, submit)
     }
@@ -84,5 +86,12 @@ private fun HomeSendButton(enabled: Boolean, sending: Boolean, onSend: () -> Uni
         } else {
             Icon(Icons.AutoMirrored.Filled.Send, stringResource(Res.string.home_send))
         }
+    }
+}
+
+@Composable
+private fun HomeComposerCloseButton(enabled: Boolean, onClose: () -> Unit) {
+    IconButton(onClick = onClose, enabled = enabled, modifier = Modifier.size(48.dp)) {
+        Icon(Icons.Filled.Close, stringResource(Res.string.home_close_tray))
     }
 }

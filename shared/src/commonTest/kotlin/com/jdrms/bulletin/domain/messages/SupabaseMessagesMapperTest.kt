@@ -159,14 +159,14 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
-    fun reportMappingUsesStableReasonCodeWithoutDescription() {
-        val report = SupabaseMessagesMapper.toReportInsertDto(message().id, carol.id)
+    fun reportMappingUsesSelectedReasonAndDescription() {
+        val report = SupabaseMessagesMapper.toReportInsertDto(message().id, carol.id, "spam", "Additional details")
 
         assertEquals("message-a", report.messageId)
         assertEquals("carol-id", report.reporterId)
-        assertEquals("inappropriate_content", report.reason)
+        assertEquals("spam", report.reason)
         assertEquals(SupabaseMessageReportType.MESSAGE, report.type)
-        assertNull(report.description)
+        assertEquals("Additional details", report.description)
     }
 
     private fun participantDto(

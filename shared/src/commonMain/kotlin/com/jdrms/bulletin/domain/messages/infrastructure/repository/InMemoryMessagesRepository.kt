@@ -51,6 +51,7 @@ class InMemoryMessagesRepository(
     private val historyVisibleAfter = mutableMapOf<Pair<ConversationId, SenderId>, Instant>()
     private val readAtByParticipant = mutableMapOf<Pair<ConversationId, SenderId>, Instant>()
     private val activeReports = mutableSetOf<Pair<SenderId, MessageId>>()
+    private val reportHistory = mutableListOf<InMemoryMessageReport>()
     private val messagesByConvId = initialMessages.mapKeys { ConversationId(it.key) }.mapValues { entry ->
         entry.value.map { MessagesMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
@@ -181,7 +182,8 @@ class InMemoryMessagesRepository(
         userId: SenderId,
         conversationId: ConversationId,
         messageId: MessageId,
-        reason: String
+        reason: String,
+        description: String
     ): Result<Unit> = mutex.withLock {
         val conversation = conversations[conversationId]
         if (conversation?.includes(userId) != true) {
@@ -195,6 +197,7 @@ class InMemoryMessagesRepository(
         if (!activeReports.add(userId to messageId)) {
             return@withLock Result.Error(MessageReportAlreadySubmittedException())
         }
+        reportHistory += InMemoryMessageReport(userId, messageId, reason, description)
         val reported = messages[index].report()
         messages[index] = reported
         if (conversation.lastMessage?.id == messageId) {
@@ -242,6 +245,8 @@ class InMemoryMessagesRepository(
         removed
     }
 
+    internal fun reportsForTesting(): List<InMemoryMessageReport> = reportHistory.toList()
+
     override fun observe(userId: SenderId, conversationId: ConversationId): Flow<MessageStreamEvent> = flow {
         val allowed = mutex.withLock { conversations[conversationId]?.includes(userId) == true }
         if (!allowed) {
@@ -273,3 +278,10 @@ class InMemoryMessagesRepository(
         ).collect { invalidation -> emit(invalidation) }
     }
 }
+
+internal data class InMemoryMessageReport(
+    val reporterId: SenderId,
+    val messageId: MessageId,
+    val reason: String,
+    val description: String
+)

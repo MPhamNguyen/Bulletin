@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.home.presentation
 
+import com.jdrms.bulletin.domain.home.domain.model.HomeActionContext
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
+import com.jdrms.bulletin.domain.home.domain.model.availableActions
 
 enum class HomeDepartureKind { SAVE, PASS, SENT }
 
@@ -35,6 +37,14 @@ data class HomeInteractionState(
     val saveAvailable: Boolean = false,
     val messageAvailable: Boolean = false
 ) {
+    val availableActions get() = card.availableActions(
+        HomeActionContext(
+            hasListing = listingId != null,
+            signedIn = accountNotice != HomeInteractionError.NOT_SIGNED_IN,
+            canSave = saveAvailable,
+            canMessage = messageAvailable
+        )
+    )
     val isTrayOpen: Boolean get() = card == CardState.Open || card == CardState.Sending
 }
 

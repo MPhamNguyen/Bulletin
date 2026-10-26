@@ -141,7 +141,12 @@ private fun HomeDeckContent(
             },
             modifier = Modifier.fillMaxSize()
         )
-        else -> EmptyFeedState(viewModel::replayLoadedCards, viewModel::refresh, Modifier.fillMaxSize())
+        else -> EmptyFeedState(
+            onReset = viewModel::replayLoadedCards,
+            onRefresh = viewModel::refresh,
+            onLoadMore = if (state.hasMore) viewModel::loadNextPage else null,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
@@ -215,7 +220,12 @@ internal fun shouldPrefetchHomeFeedPage(currentIndex: Int, feedSize: Int, hasMor
 }
 
 @Composable
-private fun EmptyFeedState(onReset: () -> Unit, onRefresh: () -> Unit, modifier: Modifier = Modifier) {
+private fun EmptyFeedState(
+    onReset: () -> Unit,
+    onRefresh: () -> Unit,
+    onLoadMore: (() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier.background(MaterialTheme.colorScheme.background).padding(32.dp),
         contentAlignment = Alignment.Center
@@ -226,9 +236,18 @@ private fun EmptyFeedState(onReset: () -> Unit, onRefresh: () -> Unit, modifier:
         ) {
             Text(text = "✨", style = MaterialTheme.typography.displayMedium)
             FeedStateMessage(
-                title = "You're All Caught Up",
-                message = "You've swiped through all available listings. Check back later for new items."
+                title = if (onLoadMore == null) "You're All Caught Up" else "More Listings Available",
+                message = if (onLoadMore == null) {
+                    "You've swiped through all available listings. Check back later for new items."
+                } else {
+                    "Continue loading to check for more listings."
+                }
             )
+            onLoadMore?.let { loadMore ->
+                Button(onClick = loadMore, shape = MaterialTheme.shapes.medium) {
+                    Text("Load More", style = MaterialTheme.typography.labelLarge)
+                }
+            }
             TextButton(onClick = onRefresh) { Text("Refresh") }
             Button(onClick = onReset, shape = MaterialTheme.shapes.medium) {
                 Text(

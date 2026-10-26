@@ -12,7 +12,12 @@ import androidx.compose.ui.platform.LocalFocusManager
 
 /** Input focus and accessibility focus are separate requests. Never steal focus after a failed send. */
 @Composable
-internal fun HomeTrayFocus(state: CardState, cardFocus: FocusRequester, composerFocus: FocusRequester) {
+internal fun HomeTrayFocus(
+    state: CardState,
+    cardFocus: FocusRequester,
+    composerFocus: FocusRequester,
+    restoreCardFocus: Boolean = true
+) {
     var wasOpen by remember { mutableStateOf(false) }
     val manager = LocalFocusManager.current
     var target by remember { mutableStateOf<String?>(null) }
@@ -20,7 +25,7 @@ internal fun HomeTrayFocus(state: CardState, cardFocus: FocusRequester, composer
     val closing = state == CardState.Idle && wasOpen
     HomePlatformAccessibilityFocus(target)
     LaunchedEffect(state) {
-        if (opening || closing) {
+        if (opening || closing && restoreCardFocus) {
             withFrameNanos { }
             if (closing) manager.clearFocus(force = true)
             (if (opening) composerFocus else cardFocus).requestFocus()

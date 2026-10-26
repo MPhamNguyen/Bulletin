@@ -21,6 +21,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -116,7 +117,7 @@ class MessagesUseCasesTest {
             provider.result = Result.Success(sender)
             assertEquals(sender.id, conversations().getOrThrow().viewerId)
             messages(conversationId).getOrThrow()
-            report(conversationId, message().id, "Spam").getOrThrow()
+            report(conversationId, message().id, ReportReason.SPAM, "").getOrThrow()
             assertEquals(List(3) { sender.id }, repository.callers.takeLast(3))
         }
     }
@@ -132,7 +133,15 @@ class MessagesUseCasesTest {
             assertEquals(failure, GetConversations(repository, provider)())
             assertEquals(failure, GetConversationMessages(repository, provider)(conversationId))
             assertEquals(failure, SendMessage(repository, provider)(conversationId, "Hello"))
-            assertEquals(failure, ReportMessage(repository, provider)(conversationId, message().id, "Spam"))
+            assertEquals(
+                failure,
+                ReportMessage(repository, provider)(
+                    conversationId,
+                    message().id,
+                    ReportReason.SPAM,
+                    ""
+                )
+            )
         }
         assertTrue(repository.callers.isEmpty())
     }
@@ -147,8 +156,15 @@ class MessagesUseCasesTest {
     }
 
     @Test
-    fun blankReportReasonDoesNotCallRepository() = runTest {
-        assertTrue(ReportMessage(repository, provider)(conversationId, message().id, "  ").isError())
+    fun messageReportsRejectReasonsFromOtherTypes() = runTest {
+        assertTrue(
+            ReportMessage(repository, provider)(
+                conversationId,
+                message().id,
+                ReportReason.PROHIBITED_OR_ILLEGAL_ITEM,
+                ""
+            ).isError()
+        )
         assertTrue(repository.callers.isEmpty())
     }
 
@@ -159,7 +175,7 @@ class MessagesUseCasesTest {
         assertEquals(failure, GetConversations(repository, provider)())
         assertEquals(failure, GetConversationMessages(repository, provider)(conversationId))
         assertEquals(failure, SendMessage(repository, provider)(conversationId, "Hello"))
-        assertEquals(failure, ReportMessage(repository, provider)(conversationId, message().id, "Spam"))
+        assertEquals(failure, ReportMessage(repository, provider)(conversationId, message().id, ReportReason.SPAM, ""))
     }
 
     @Test
@@ -169,7 +185,7 @@ class MessagesUseCasesTest {
         assertFailsWith<CancellationException> { GetConversationMessages(repository, cancelled)(conversationId) }
         assertFailsWith<CancellationException> { SendMessage(repository, cancelled)(conversationId, "Hello") }
         assertFailsWith<CancellationException> {
-            ReportMessage(repository, cancelled)(conversationId, message().id, "Spam")
+            ReportMessage(repository, cancelled)(conversationId, message().id, ReportReason.SPAM, "")
         }
         assertTrue(repository.callers.isEmpty())
     }
@@ -241,7 +257,8 @@ class MessagesUseCasesTest {
             userId: SenderId,
             conversationId: ConversationId,
             messageId: MessageId,
-            reason: String
+            reason: String,
+            description: String
         ): Result<Unit> {
             callers.add(userId)
             return failure ?: Result.Success(Unit)

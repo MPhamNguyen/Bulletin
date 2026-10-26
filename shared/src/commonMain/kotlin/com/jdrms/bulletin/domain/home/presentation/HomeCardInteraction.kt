@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.home.presentation
 import com.jdrms.bulletin.domain.home.application.RecordSwipeDecision
 import com.jdrms.bulletin.domain.home.application.SaveListingPort
 import com.jdrms.bulletin.domain.home.application.SendQuickMessage
+import com.jdrms.bulletin.domain.home.domain.model.CardAction
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import com.jdrms.bulletin.domain.home.domain.repository.SwipeDecisionRepository
 import kotlinx.coroutines.flow.update
@@ -21,7 +22,7 @@ internal class HomeCardInteraction(
     override fun saveCurrentCard() = saves.saveCurrent()
     override fun passCurrentCard() = saves.passCurrent()
     override fun openTray() {
-        if (store.interaction.messageAvailable) store.transition(CardEvent.OPEN)
+        if (store.interaction.availableActions.allows(CardAction.Message)) store.transition(CardEvent.OPEN)
     }
     override fun closeTray() {
         store.transition(CardEvent.CLOSE)
@@ -38,7 +39,9 @@ internal class HomeCardInteraction(
         if (store.interaction.listingId == null) return
         when (event) {
             CardEvent.DRAG_X, CardEvent.CANCEL -> store.transition(event)
-            CardEvent.DRAG_Y -> if (store.interaction.messageAvailable) store.transition(event)
+            CardEvent.DRAG_Y -> {
+                if (store.interaction.availableActions.allows(CardAction.Message)) store.transition(event)
+            }
             else -> Unit
         }
     }

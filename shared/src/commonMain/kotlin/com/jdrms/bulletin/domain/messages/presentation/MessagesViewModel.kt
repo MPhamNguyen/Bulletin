@@ -13,7 +13,7 @@ import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +39,16 @@ class MessagesViewModel(
     private val listingPreviewLoader =
         ConversationListingPreviewLoader(threadState, listingPreviewProvider, viewModelScope)
     private var observeJob: Job? = null
-    private var destinationActive = false
+    private val destinationLifecycle = MessagesDestinationLifecycle(
+        inbox,
+        threadState,
+        listingPreviewLoader,
+        ::reloadSelectedConversation,
+        ::observeConversation
+    ) {
+        observeJob?.cancel()
+        observeJob = null
+    }
     private var visibleViewerId: SenderId? = null
     private val showFailure: (Result.Error) -> Unit = { error ->
         val presented = threadState.value.withFailure(error)
@@ -53,6 +62,13 @@ class MessagesViewModel(
     private val actions =
         MessagesActions(inbox, threadState, sendMessage, reportMessage, hideConversation, viewModelScope)
     private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
+    private val messageReportActions = MessageReportActions(
+        threadState,
+        inbox,
+        actions,
+        ::selectConversation,
+        showFailure
+    )
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
     private val olderHistory =
         MessagesOlderHistoryLoader(threadState, getConversationMessages, viewModelScope, showFailure)
@@ -71,6 +87,19 @@ class MessagesViewModel(
         readReceiptHandler,
         showFailure
     )
+    private val conversationSelection = MessagesConversationSelection(
+        threadState,
+        cancelCurrentLoads = {
+            loadJob?.cancel()
+            olderHistory.cancel()
+            observeJob?.cancel()
+            observeJob = null
+        },
+        resetPage = messagePageLoader::reset,
+        isDestinationActive = { destinationLifecycle.isActive },
+        reload = ::reloadSelectedConversation,
+        observe = ::observeConversation
+    )
     private val streamCallbacks = MessagesStreamCallbacksFactory(
         threadState,
         inbox,
@@ -88,20 +117,7 @@ class MessagesViewModel(
     }
 
     fun onDestinationActiveChanged(isActive: Boolean) {
-        if (destinationActive == isActive) return
-        destinationActive = isActive
-        if (isActive) {
-            listingPreviewLoader.load(inbox.state.value.conversations)
-            inbox.refresh()
-            threadState.value.selectedConversationId?.let { conversationId ->
-                reloadSelectedConversation(conversationId)
-                observeConversation(conversationId)
-            }
-        } else {
-            observeJob?.cancel()
-            observeJob = null
-            listingPreviewLoader.cancel()
-        }
+        destinationLifecycle.onActiveChanged(isActive)
     }
 
     private fun applyInboxSelection(snapshot: InboxState) {
@@ -122,47 +138,20 @@ class MessagesViewModel(
             }
         }
         if (snapshot.viewerId == null) return
-        if (destinationActive) listingPreviewLoader.load(snapshot.conversations)
+        if (destinationLifecycle.isActive) listingPreviewLoader.load(snapshot.conversations)
         if (snapshot.isLoading) return
         val current = threadState.value.selectedConversationId
         if (streamCallbacks.isWaitingForInbox(snapshot, current, requestedConversationId)) {
             requestedConversationId = current ?: requestedConversationId
-            if (current != null) selectLoadedConversation(null)
+            if (current != null) conversationSelection.select(null)
             return
         }
         val selected = snapshot.conversations.firstOrNull { it.id == requestedConversationId }
             ?: snapshot.conversations.firstOrNull { it.id == current }
             ?: snapshot.conversations.firstOrNull()
         if (selected?.id == requestedConversationId) requestedConversationId = null
-        if (selected?.id != current) selectLoadedConversation(selected?.id)
+        if (selected?.id != current) conversationSelection.select(selected?.id)
         streamCallbacks.onInboxSnapshot(snapshot)
-    }
-
-    private fun selectLoadedConversation(conversationId: ConversationId?) {
-        loadJob?.cancel()
-        olderHistory.cancel()
-        observeJob?.cancel()
-        observeJob = null
-        messagePageLoader.reset()
-        threadState.update {
-            it.copy(
-                selectedConversationId = conversationId,
-                editState = MessageEditState.Composing,
-                editError = null,
-                messageInput = if (it.selectedConversationId == conversationId) it.unsentInput else "",
-                currentMessages = emptyList(),
-                revealedReportedMessageIds = emptySet(),
-                olderCursor = null,
-                isLoadingMessages = conversationId != null,
-                isLoadingOlder = false,
-                errorMessage = null,
-                statusMessage = null
-            )
-        }
-        if (destinationActive && conversationId != null) {
-            reloadSelectedConversation(conversationId)
-            observeConversation(conversationId)
-        }
     }
 
     fun selectConversation(conversationId: ConversationId) {
@@ -170,7 +159,7 @@ class MessagesViewModel(
         requestedConversationId = null
         streamCallbacks.clearPending()
         threadState.update { it.copy(isConversationOpen = true) }
-        selectLoadedConversation(conversationId)
+        conversationSelection.select(conversationId)
     }
 
     fun returnToInbox() {
@@ -182,7 +171,7 @@ class MessagesViewModel(
         streamCallbacks.clearPending()
         requestedConversationId = conversationId
         threadState.update { it.copy(isConversationOpen = true) }
-        selectLoadedConversation(null)
+        conversationSelection.select(null)
         applyInboxSelection(inbox.state.value)
         inbox.refresh()
     }
@@ -233,9 +222,9 @@ class MessagesViewModel(
         if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send(showFailure)
     }
 
-    fun report(messageId: MessageId, reason: String = MessagesPolicy.DEFAULT_REPORT_REASON) {
-        inbox.synchronizeIdentity()
-        applyInboxSelection(inbox.state.value)
-        actions.report(messageId, reason, ::selectConversation, showFailure)
-    }
+    val report: (MessageId) -> Unit = messageReportActions::begin
+    val selectMessageReportReason: (ReportReason) -> Unit = messageReportActions::selectReason
+    val updateMessageReportDescription: (String) -> Unit = messageReportActions::updateDescription
+    val dismissMessageReport: () -> Unit = messageReportActions::dismiss
+    val submitMessageReport: () -> Unit = { messageReportActions.submit(::applyInboxSelection) }
 }

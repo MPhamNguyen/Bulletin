@@ -10,6 +10,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.*
 import bulletin.shared.generated.resources.*
+import com.jdrms.bulletin.domain.home.domain.model.CardAction
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import org.jetbrains.compose.resources.stringResource
 
@@ -45,7 +46,7 @@ private fun homeCardAccessibleActions(
     val message = stringResource(Res.string.home_action_message)
     if (state.card != CardState.Idle) return emptyList()
     return buildList {
-        if (state.saveAvailable) {
+        if (state.availableActions.allows(CardAction.Save)) {
             add(
                 CustomAccessibilityAction(save) {
                     actions.saveCurrentCard()
@@ -53,13 +54,15 @@ private fun homeCardAccessibleActions(
                 }
             )
         }
-        add(
-            CustomAccessibilityAction(pass) {
-                actions.passCurrentCard()
-                true
-            }
-        )
-        if (state.messageAvailable) {
+        if (state.availableActions.allows(CardAction.Pass)) {
+            add(
+                CustomAccessibilityAction(pass) {
+                    actions.passCurrentCard()
+                    true
+                }
+            )
+        }
+        if (state.availableActions.allows(CardAction.Message)) {
             add(
                 CustomAccessibilityAction(message) {
                     actions.openTray()
@@ -73,15 +76,15 @@ private fun homeCardAccessibleActions(
 internal fun homeCardArrow(key: Key, state: HomeInteractionState, actions: HomeCardActions): Boolean {
     if (state.card != CardState.Idle) return false
     return when {
-        key == Key.DirectionRight && state.saveAvailable -> {
+        key == Key.DirectionRight && state.availableActions.allows(CardAction.Save) -> {
             actions.saveCurrentCard()
             true
         }
-        key == Key.DirectionLeft -> {
+        key == Key.DirectionLeft && state.availableActions.allows(CardAction.Pass) -> {
             actions.passCurrentCard()
             true
         }
-        key == Key.DirectionUp && state.messageAvailable -> {
+        key == Key.DirectionUp && state.availableActions.allows(CardAction.Message) -> {
             actions.openTray()
             true
         }

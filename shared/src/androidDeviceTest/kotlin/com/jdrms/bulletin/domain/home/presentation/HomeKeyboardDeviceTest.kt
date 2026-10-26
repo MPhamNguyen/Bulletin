@@ -38,6 +38,8 @@ class HomeKeyboardDeviceTest {
         show(landscape = true)
         open()
         assertComposerInViewport()
+        compose.onNodeWithContentDescription("Close message tray").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Send message").assertIsDisplayed()
         compose.runOnIdle { harness.keyboard?.hide() }
         compose.waitUntil(5000) { !harness.photoPaused }
         assertComposerInViewport()
@@ -124,11 +126,16 @@ class HomeKeyboardDeviceTest {
     }
 
     private fun assertComposerInViewport() {
+        // IME visibility changes before the Android window finishes resizing in landscape.
+        // Compose idleness alone does not wait for that platform transition.
+        compose.waitUntil(5000) { compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).isDisplayed() }
         val viewport = compose.onNodeWithTag("home_test_viewport").fetchSemanticsNode().boundsInRoot
-        val composer = compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG)
-            .assertIsDisplayed()
-            .fetchSemanticsNode()
-            .boundsInRoot
+        val composerNode = compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG)
+        val composer = composerNode.fetchSemanticsNode().boundsInRoot
+        assertTrue(
+            composerNode.isDisplayed(),
+            "Composer $composer, unclipped ${composerNode.getUnclippedBoundsInRoot()}, viewport $viewport"
+        )
         assertTrue(composer.top >= viewport.top, "Composer top must fit in available content")
         assertTrue(composer.bottom <= viewport.bottom + 1f, "Composer bottom must fit above IME")
         compose.onNodeWithTag(HOME_COMPOSER_FOCUS_TAG).assertHeightIsAtLeast(48.dp)
