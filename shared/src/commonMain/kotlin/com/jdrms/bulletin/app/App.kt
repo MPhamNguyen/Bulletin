@@ -24,7 +24,6 @@ import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.createPasswordRecoveryViewModel
 import com.jdrms.bulletin.app.di.createRegistrationViewModel
 import com.jdrms.bulletin.app.di.createSignInViewModel
-import com.jdrms.bulletin.app.di.createThemeViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.domain.profile.application.SessionState
@@ -42,24 +41,24 @@ fun App(appContainer: AppContainer? = null) {
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     DisposableEffect(container) {
-        onDispose { container.inboxStateOwner.close() }
+        onDispose { container.messages.inboxStateOwner.close() }
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { container.inboxStateOwner.onForeground() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { container.messages.inboxStateOwner.onForeground() }
     val systemDarkTheme = isSystemInDarkTheme()
     val themeViewModel = remember { container.createThemeViewModel() }
     val themePreference by themeViewModel.themePreference.collectAsState()
-    val passwordRecoveryViewModel = remember { container.createPasswordRecoveryViewModel() }
+    val passwordRecoveryViewModel = remember { container.profile.createPasswordRecoveryViewModel() }
     val passwordRecoveryUiState by passwordRecoveryViewModel.uiState.collectAsState()
     val isPasswordRecovery = passwordRecoveryUiState.stage != PasswordRecoveryStage.NONE
     val isDarkTheme = resolveAppIsDarkTheme(themePreference, systemDarkTheme, isPasswordRecovery)
 
     com.jdrms.bulletin.core.designsystem.BulletinTheme(darkTheme = isDarkTheme) {
         var currentRootScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
-        val sessionState by container.sessionRepository.state.collectAsState()
+        val sessionState by container.profile.sessionRepository.state.collectAsState()
         val authSessionState = sessionState.toAuthSessionState()
         val effectiveRootScreen = resolveRootScreen(currentRootScreen, authSessionState)
 
-        LaunchedEffect(container) { container.sessionRepository.restore() }
+        LaunchedEffect(container) { container.profile.sessionRepository.restore() }
 
         LaunchedEffect(sessionState) {
             when (val session = sessionState) {
@@ -85,7 +84,7 @@ fun App(appContainer: AppContainer? = null) {
         } else {
             when (effectiveRootScreen) {
                 AppRootScreen.SIGN_IN -> {
-                    val signInViewModel = remember(container) { container.createSignInViewModel() }
+                    val signInViewModel = remember(container) { container.profile.createSignInViewModel() }
                     DisposableEffect(signInViewModel) {
                         onDispose { signInViewModel.viewModelScope.cancel() }
                     }
@@ -123,7 +122,7 @@ fun App(appContainer: AppContainer? = null) {
                     }
                 }
                 AppRootScreen.CREATE_PROFILE -> {
-                    val registrationViewModel = remember(container) { container.createRegistrationViewModel() }
+                    val registrationViewModel = remember(container) { container.profile.createRegistrationViewModel() }
                     DisposableEffect(registrationViewModel) {
                         onDispose { registrationViewModel.viewModelScope.cancel() }
                     }

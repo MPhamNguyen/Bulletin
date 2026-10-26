@@ -39,7 +39,7 @@ Students can discover campus listings, buy or sell items, communicate with other
 | 👤 **Student Profiles** | View and edit student profile information and profile photos. |
 | 🚩 **Reporting & Blocking** | Report users or messages and block users. |
 | 📍 **Campus Discovery** | Support campus-relevant discovery without exposing precise locations to other users. |
-| 🏠 **Home Feed** | Provide a home feed; its repository currently uses in-memory data. |
+| 🏠 **Home Feed** | Discover listings through `MarketplaceHomeRepository`, backed by the Supabase marketplace source when configured. |
 
 > Feature availability depends on backend configuration. Recommendation personalization and production readiness are not claimed by the repository status below.
 
@@ -98,7 +98,7 @@ Save / Message ←→ Student Profile
 
 ### Home & Recommendations
 
-The home context currently uses an in-memory repository. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
+Home uses `MarketplaceHomeRepository` with the Supabase marketplace listing source when configured; Home preferences remain in memory. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
 
 ---
 
@@ -111,7 +111,7 @@ The home context currently uses an in-memory repository. Personalized ranking an
 | **Backend** | Supabase client adapters for configured backend-backed contexts |
 | **Authentication** | Supabase Auth adapter, with university-email validation in shared business logic |
 | **Persistence** | Supabase PostgREST and Storage adapters; in-memory repositories for tests and local/inspection use |
-| **Dependency injection** | Manual composition in `AppContainer` |
+| **Dependency injection** | Manual composition in `AppContainer`, with shared backend selection and feature modules |
 | **Build system** | Gradle wrapper and version catalog in `gradle/libs.versions.toml` |
 
 ---
@@ -139,14 +139,33 @@ Business contexts use four layers:
 - `infrastructure/`: Supabase and in-memory adapters, DTOs, and mapping.
 - `presentation/`: Compose screens, ViewModels, and UI state.
 
+`AppContainer` composes `HomeModule`, `ListingsModule`, `MarketplaceModule`, `MessagesModule`, and `ProfileModule`, and holds application-wide messaging, refresh signaling, and theme preferences. `InfrastructureModule` owns lazy client creation and the shared fallback policy. Feature modules own lazy repositories and use cases; repositories are internal or private, and ViewModel factories depend on feature modules instead of the whole container. Cross-context wiring stays in feature composition and its ViewModel factories, including the profile activity adapters. Marketplace owns its read cache; the composition root explicitly connects successful Supabase listing mutations to marketplace cache invalidation. Home swipe decisions are intentionally process-local for both backend configurations and survive ViewModel recreation only within the same container.
+
+Home's Pass / Message / Save buttons call the same guarded commands as swipes,
+card accessibility actions, and arrow keys. `CardState.availableActions` in the
+Home domain derives availability from the interaction phase, session, and
+configured capabilities. Presentation maps those results to Material icons,
+resource labels, and disabled hints. The row stays outside the departing card,
+reserves its measured height above listing details, and fades out as the tray
+opens. Fully faded controls release touch input to the tray, and keyboard focus
+returns to the initiating control once it re-enables. Save feedback still waits
+for persistence confirmation; a departure alone does not mean a save succeeded.
+Android activities use `adjustResize` so platform window panning does not move
+the tray above the screen while Compose applies its keyboard insets.
+`HomeDomainBoundaryTest` runs with the normal Android host tests and rejects
+imports outside Kotlin, shared common primitives, and Home's own domain package.
+The layers remain packages within `shared`; they are not separate Gradle modules.
+
 ### Backend Status
 
-`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home remains in memory. These bindings describe code paths, not verification against a deployed Supabase project.
+`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home reads through `MarketplaceHomeRepository`; Home preferences remain in memory. These bindings describe code paths, not verification against a deployed Supabase project.
 
 | Repository or port | Configured binding | In-memory use | Live project verification |
 | --- | --- | --- | --- |
 | Home feed | Supabase marketplace listing source when configured | Marketplace listing source with in-memory fallback | Not verified here; home preferences remain in-memory |
 | Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters | Not verified here |
+| Listing images | Supabase Storage adapter | Guarded in-memory adapter for tests, inspection, or explicit fallback | Not verified here |
+| Listing reports | Supabase adapter | Guarded in-memory adapter for tests, inspection, or explicit fallback | Not verified here |
 | Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter | Not verified here |
 | Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
 | Profile repository | Supabase adapter | In-memory adapter | Not verified here |

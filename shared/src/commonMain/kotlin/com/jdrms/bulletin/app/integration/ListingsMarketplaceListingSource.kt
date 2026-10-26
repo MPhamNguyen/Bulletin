@@ -21,6 +21,7 @@ class ListingsMarketplaceListingSource(
             listingsRepository.getSellerListings(SellerId(sellerId))
         } ?: listingsRepository.getAllListings()
         return listings
+            .filter { request.listingId == null || "listing:${it.id.value}" == request.listingId }
             .filter { it.status == ListingStatus.AVAILABLE }
             .map { listing ->
                 MarketplaceListingSnapshot(

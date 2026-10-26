@@ -1,80 +1,54 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
-import com.jdrms.bulletin.app.di.blockedUsersViewModelFactory
-import com.jdrms.bulletin.app.di.createAccountViewModel
-import com.jdrms.bulletin.app.di.createEditProfileViewModel
 import com.jdrms.bulletin.app.di.createHomeViewModel
 import com.jdrms.bulletin.app.di.createListingReportViewModel
 import com.jdrms.bulletin.app.di.createListingsViewModel
+import com.jdrms.bulletin.app.di.createMarketplaceUserBlockViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceUserReportViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceViewModel
 import com.jdrms.bulletin.app.di.createMessagesViewModel
 import com.jdrms.bulletin.app.di.createProfileViewModel
 import com.jdrms.bulletin.app.di.createSellerProfileViewModel
-import com.jdrms.bulletin.app.di.marketplaceUserBlockViewModelFactory
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
-import com.jdrms.bulletin.app.navigation.backFromProfile
-import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
-import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
-import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
-import com.jdrms.bulletin.domain.home.presentation.HomeScreen
+import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryNavigation
+import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
-import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
-import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
-import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
-import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 import kotlinx.coroutines.cancel
 
-private class ProfilePresentation(
+internal class ProfilePresentation(
     val viewModel: ProfileViewModel,
     val themeViewModel: ThemeViewModel?,
     val onSignOut: () -> Unit
 )
 
-private class MainScaffoldModels(
+internal class MainScaffoldModels(
     val home: HomeViewModel,
     val marketplace: MarketplaceViewModel,
     val sellerProfile: SellerProfileViewModel,
@@ -96,107 +70,99 @@ fun MainAppScaffold(
     val isInspectionMode = LocalInspectionMode.current
     val container = appContainer ?: remember { AppContainer(isInspectionMode = isInspectionMode) }
     val navigation = remember { MutableMainNavigationState() }
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    val navigationBarInset = with(density) {
-        WindowInsets.navigationBars.getBottom(this).toDp()
+    val chrome = rememberMainAppChrome()
+    val models = rememberMainScaffoldModels(container)
+    val profile = rememberProfilePresentation(profileViewModel, container, themeViewModel, onSignOut)
+    val retries = rememberSaveable(saver = HomeSaveRetryPresentation.saver) { HomeSaveRetryPresentation() }
+    LaunchedEffect(navigation.currentDestination) { chrome.behavior.onDestinationChanged() }
+    MainHomeEffects(navigation, models, retries)
+    BulletinTheme(darkTheme = darkTheme) {
+        MainAppLayout(MainAppContentState(container, navigation, models, profile), chrome, retries)
     }
-    val navbarScrollBehavior = remember(density) {
-        NavbarScrollBehavior(with(density) { NAVBAR_SCROLL_THRESHOLD_DP.dp.toPx() })
-    }
-    val navbarNestedScrollConnection = remember(navbarScrollBehavior) {
-        NavbarNestedScrollConnection(navbarScrollBehavior)
-    }
-    var navbarHeight by remember { mutableStateOf(0.dp) }
-    var isConversationOpen by remember { mutableStateOf(false) }
-    val models = remember(container) {
+}
+
+@Composable
+private fun rememberMainScaffoldModels(container: AppContainer): MainScaffoldModels {
+    return remember(container) {
         MainScaffoldModels(
-            container.createHomeViewModel(),
-            container.createMarketplaceViewModel(),
-            container.createSellerProfileViewModel(),
-            container.createMarketplaceUserReportViewModel(),
-            container.createListingReportViewModel(),
-            container.marketplaceUserBlockViewModelFactory(),
-            container.createListingsViewModel(),
-            container.createMessagesViewModel()
+            container.home.createHomeViewModel(container.profile.sessionRepository, container.listingChangedSignal),
+            container.marketplace.createMarketplaceViewModel(container.listingChangedSignal),
+            container.marketplace.createSellerProfileViewModel(),
+            container.marketplace.createMarketplaceUserReportViewModel(),
+            container.marketplace.createListingReportViewModel(),
+            container.marketplace.createMarketplaceUserBlockViewModel(container.listingChangedSignal),
+            container.listings.createListingsViewModel(
+                container.messages.recentListingBuyersProvider,
+                container.listingChangedSignal
+            ),
+            container.messages.createMessagesViewModel()
         )
     }
-    // Keep the profile read model alive for the authenticated app session so its summary is
-    // fetched alongside the other app models, before the user opens the Profile destination.
+}
+
+@Composable
+private fun rememberProfilePresentation(
+    profileViewModel: ProfileViewModel?,
+    container: AppContainer,
+    themeViewModel: ThemeViewModel?,
+    onSignOut: () -> Unit
+): ProfilePresentation {
+    // Keep the profile read model alive for the authenticated app session.
     val resolvedProfileViewModel = remember(profileViewModel, container) {
-        resolveProvidedOrCreate(profileViewModel) { container.createProfileViewModel() }
+        resolveProvidedOrCreate(profileViewModel) {
+            container.profile.createProfileViewModel(
+                container.listings,
+                container.marketplace,
+                container.listingChangedSignal
+            )
+        }
     }
     DisposableEffect(resolvedProfileViewModel, profileViewModel) {
         onDispose {
             if (profileViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
         }
     }
-    val profilePresentation = ProfilePresentation(resolvedProfileViewModel, themeViewModel, onSignOut)
+    return ProfilePresentation(resolvedProfileViewModel, themeViewModel, onSignOut)
+}
 
-    LaunchedEffect(navigation.currentDestination) {
-        navbarScrollBehavior.onDestinationChanged()
-    }
-
-    BulletinTheme(darkTheme = darkTheme) {
-        Box(Modifier.fillMaxSize()) {
-            Scaffold(
-                containerColor = MaterialTheme.colorScheme.background,
-                contentColor = MaterialTheme.colorScheme.onBackground
-            ) { paddingValues ->
-                val contentModifier = Modifier
-                    .padding(paddingValues)
-                    .then(
-                        if (navigation.currentDestination.hidesOnScroll || !navigation.showsBottomNavigation) {
-                            Modifier
-                        } else {
-                            Modifier.padding(bottom = navbarHeight)
-                        }
-                    )
-                    .fillMaxSize()
-                CompositionLocalProvider(LocalNavbarHeight provides navbarHeight) {
-                    Box(
-                        modifier = if (navigation.currentDestination.hidesOnScroll) {
-                            contentModifier.nestedScroll(navbarNestedScrollConnection)
-                        } else {
-                            contentModifier
-                        }
-                    ) {
-                        MainAppContent(
-                            container,
-                            navigation,
-                            models,
-                            profilePresentation,
-                            onContentNoLongerScrollable = navbarScrollBehavior::reveal,
-                            onConversationVisibilityChanged = { isOpen ->
-                                isConversationOpen = isOpen
-                                if (isOpen) navbarScrollBehavior.hide() else navbarScrollBehavior.reveal()
-                            }
-                        )
-                    }
-                }
-            }
-            Navbar(
-                currentDestination = navigation.currentDestination,
-                isVisible = {
-                    navigation.showsBottomNavigation &&
-                        !isConversationOpen &&
-                        navbarScrollBehavior.isVisible
-                },
-                onDestinationSelected = { destination -> navigateTo(destination, navigation, models.listings) },
-                onFocused = navbarScrollBehavior::reveal,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .zIndex(100f)
-                    .onSizeChanged {
-                        navbarHeight = with(density) { it.height.toDp() } - navigationBarInset
-                    }
-            )
+@Composable
+private fun MainHomeEffects(
+    navigation: MutableMainNavigationState,
+    models: MainScaffoldModels,
+    saveRetries: HomeSaveRetryPresentation
+) {
+    val homeState by models.home.uiState.collectAsState()
+    HomeSaveRetryNavigation(navigation.currentDestination == AppDestination.HOME, homeState, saveRetries, models.home)
+    LaunchedEffect(navigation.currentDestination, homeState.interaction.pendingEffects) {
+        if (navigation.currentDestination != AppDestination.HOME) {
+            homeState.interaction.pendingEffects.filterIsInstance<
+                com.jdrms.bulletin.domain.home.presentation.HomeEffect.SaveConfirmed
+                >().forEach { models.home.onEffectConsumed(it.id) }
         }
+    }
+}
+
+@Composable
+private fun rememberMainAppChrome(): MainAppChrome {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
+    return remember(density, scope, haptics) {
+        val behavior = NavbarScrollBehavior(with(density) { NAVBAR_SCROLL_THRESHOLD_DP.dp.toPx() })
+        MainAppChrome(
+            behavior,
+            NavbarNestedScrollConnection(behavior),
+            ProfileTabAnchor(),
+            ProfileTabCelebration(),
+            scope,
+            haptics
+        )
     }
 }
 
 private const val NAVBAR_SCROLL_THRESHOLD_DP = 32
 
-private fun navigateTo(
+internal fun navigateTo(
     destination: AppDestination,
     navigation: MutableMainNavigationState,
     listings: ListingsViewModel
@@ -207,176 +173,5 @@ private fun navigateTo(
     }
     navigation.apply(navigation.snapshot().selectBottomNavigationDestination(destination))
 }
-
-@Composable
-private fun MainAppContent(
-    container: AppContainer,
-    navigation: MutableMainNavigationState,
-    models: MainScaffoldModels,
-    profilePresentation: ProfilePresentation,
-    onContentNoLongerScrollable: () -> Unit,
-    onConversationVisibilityChanged: (Boolean) -> Unit
-) {
-    when (navigation.currentDestination) {
-        AppDestination.HOME -> HomeScreen(models.home)
-        AppDestination.MARKETPLACE -> {
-            val conversationActions = ListingConversationActions(container, navigation, models.messages)
-            MarketplaceScreen(
-                viewModel = models.marketplace,
-                sellerProfileViewModel = models.sellerProfile,
-                userReportViewModel = models.marketplaceUserReport,
-                listingReportViewModel = models.listingReport,
-                userBlockViewModel = models.marketplaceUserBlock,
-                navigation = MarketplaceScreenNavigation(
-                    sellerProfileIdToOpen = navigation.pendingSellerProfileId,
-                    onSellerProfileRequestHandled = { navigation.pendingSellerProfileId = null },
-                    onReturnToInboxChat = { navigation.currentDestination = AppDestination.MESSAGES },
-                    onContentNoLongerScrollable = onContentNoLongerScrollable
-                ),
-                actions = MarketplaceScreenActions(
-                    onMessageSeller = conversationActions::messageSeller,
-                    hasExistingConversation = conversationActions::hasExistingConversation,
-                    onSeeChat = conversationActions::seeChat
-                )
-            )
-        }
-        AppDestination.LISTINGS -> ListingsScreen(models.listings)
-        AppDestination.MESSAGES -> MessagesScreen(
-            viewModel = models.messages,
-            onViewProfile = { sellerId ->
-                navigation.pendingSellerProfileId = sellerId
-                navigation.currentDestination = AppDestination.MARKETPLACE
-            },
-            onConversationVisibilityChanged = onConversationVisibilityChanged
-        )
-        AppDestination.PROFILE -> ProfileDestinationContent(
-            container,
-            navigation,
-            models.listings,
-            profilePresentation,
-            models.messages
-        )
-    }
-}
-
-@Composable
-private fun ProfileDestinationContent(
-    container: AppContainer,
-    navigation: MutableMainNavigationState,
-    listingsViewModel: ListingsViewModel,
-    profilePresentation: ProfilePresentation,
-    messagesViewModel: MessagesViewModel
-) {
-    if (navigation.profileDestination == ProfileDestination.MY_LISTINGS ||
-        navigation.profileDestination == ProfileDestination.EDIT_LISTING
-    ) {
-        MyListingsDestination(navigation, listingsViewModel)
-    } else {
-        StudentProfileDestination(container, navigation, listingsViewModel, profilePresentation, messagesViewModel)
-    }
-}
-
-@Composable
-private fun MyListingsDestination(navigation: MutableMainNavigationState, listingsViewModel: ListingsViewModel) {
-    MyListingsScreen(
-        viewModel = listingsViewModel,
-        onBack = {
-            listingsViewModel.clearMessages()
-            listingsViewModel.cancelEditing()
-            navigation.profileDestination = backFromProfile(navigation.profileDestination)
-        },
-        onEditListing = { navigation.profileDestination = ProfileDestination.EDIT_LISTING }
-    )
-}
-
-@Composable
-private fun StudentProfileDestination(
-    container: AppContainer,
-    navigation: MutableMainNavigationState,
-    listingsViewModel: ListingsViewModel,
-    profilePresentation: ProfilePresentation,
-    messagesViewModel: MessagesViewModel
-) {
-    val resolvedProfileViewModel = profilePresentation.viewModel
-    val profileFlows = remember(container, navigation.profileDestination) {
-        ProfileScreenFlows(
-            editing = container.createEditProfileViewModel(),
-            account = container.createAccountViewModel(),
-            messenger = container.userMessenger,
-            blockedUsers = container.blockedUsersViewModelFactory()
-        )
-    }
-    DisposableEffect(profileFlows) {
-        onDispose {
-            profileFlows.editing.viewModelScope.cancel()
-            profileFlows.account.viewModelScope.cancel()
-            profileFlows.blockedUsers.viewModelScope.cancel()
-        }
-    }
-    ProfileScreen(
-        viewModel = resolvedProfileViewModel,
-        flows = profileFlows,
-        destination = navigation.profileDestination,
-        callbacks = profileCallbacks(
-            container,
-            navigation,
-            listingsViewModel,
-            messagesViewModel,
-            profilePresentation.onSignOut
-        ),
-        themeViewModel = profilePresentation.themeViewModel
-    )
-}
-
-private fun profileCallbacks(
-    container: AppContainer,
-    navigation: MutableMainNavigationState,
-    listingsViewModel: ListingsViewModel,
-    messagesViewModel: MessagesViewModel,
-    onSignOut: () -> Unit
-): ProfileScreenCallbacks {
-    val conversationActions = ListingConversationActions(container, navigation, messagesViewModel)
-    return ProfileScreenCallbacks(
-        onNavigate = { destination ->
-            if (destination == ProfileDestination.EDIT_ACCOUNT) {
-                navigation.editReturnDestination = navigation.profileDestination
-            }
-            navigation.profileDestination = destination
-        },
-        onBack = {
-            navigation.profileDestination = backFromProfileDestination(
-                navigation.profileDestination,
-                navigation.editReturnDestination
-            )
-        },
-        onSignOut = onSignOut,
-        onMyListingsClick = {
-            listingsViewModel.clearMessages()
-            navigation.profileDestination = ProfileDestination.MY_LISTINGS
-        },
-        onMessageSeller = conversationActions::messageSeller,
-        onMessageSent = {
-            navigation.apply(navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))
-        },
-        onSeeChat = conversationActions::seeChat,
-        hasExistingConversation = conversationActions::hasExistingConversation,
-        onSubmitReview = profileReviewCallback(container)
-    )
-}
-
-private fun profileReviewCallback(
-    container: AppContainer
-): suspend (ProfileBookmarkedListing, String, Int, String) -> Result<Unit> =
-    { listing, reviewerId, score, comment ->
-        container.submitMarketplaceReview.submitForSoldListing(
-            listingId = listing.id,
-            buyerId = listing.buyerId,
-            sellerId = listing.sellerId,
-            isSold = listing.isSold,
-            reviewerId = reviewerId,
-            score = score,
-            comment = comment
-        )
-    }
 
 internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()

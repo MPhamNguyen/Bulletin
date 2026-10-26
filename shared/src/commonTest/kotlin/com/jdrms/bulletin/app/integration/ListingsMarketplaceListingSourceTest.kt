@@ -55,6 +55,19 @@ class ListingsMarketplaceListingSourceTest {
     }
 
     @Test
+    fun listingIdRequestReturnsOnlyTheRequestedAvailableListing() = runTest {
+        val repository = InMemoryListingsRepository(initialListings = emptyList())
+        repository.createListing(listing(id = "requested"))
+        repository.createListing(listing(id = "other"))
+
+        val snapshots = ListingsMarketplaceListingSource(repository)
+            .getAvailableListings(MarketplacePageRequest(listingId = "listing:requested", pageSize = 1))
+            .listings
+
+        assertEquals(listOf("listing:requested"), snapshots.map { it.id })
+    }
+
+    @Test
     fun compositeSourceMergesStablePagesAcrossItsSources() = runTest {
         val source = CompositeMarketplaceListingSource(
             StaticMarketplaceListingSource(listOf(snapshot(5), snapshot(3), snapshot(1))),
