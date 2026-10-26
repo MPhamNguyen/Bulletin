@@ -139,9 +139,11 @@ private fun MarketplaceSellerProfileFlow(
             if (state.sellerProfileState.profile != null) onNavigate(MarketplaceDestination.REPORT_USER)
         },
         onBlockUser = viewModels.block::submit,
-        blockState = SellerProfileBlockState(
-            errorMessage = state.blockState.errorMessage,
-            isBlocking = state.blockState.isBlocking
+        options = SellerProfileScreenOptions(
+            blockState = SellerProfileBlockState(
+                errorMessage = state.blockState.errorMessage,
+                isBlocking = state.blockState.isBlocking
+            )
         )
     )
     if (state.destination == MarketplaceDestination.SELLER_LISTING) {

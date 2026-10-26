@@ -190,7 +190,7 @@ private fun ProfileDestinationContent(
             onBack = callbacks.onBack
         )
         ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
-        ProfileDestination.PUBLIC_PROFILE -> PublicProfileView(states.profile.profile, callbacks.onBack)
+        ProfileDestination.PUBLIC_PROFILE -> Unit
         ProfileDestination.MY_LISTINGS, ProfileDestination.EDIT_LISTING -> Unit
     }
 }

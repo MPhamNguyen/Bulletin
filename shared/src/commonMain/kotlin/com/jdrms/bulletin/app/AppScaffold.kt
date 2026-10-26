@@ -253,6 +253,7 @@ private fun MainAppContent(
             container,
             navigation,
             models.listings,
+            models.sellerProfile,
             profilePresentation,
             models.messages
         )
@@ -264,6 +265,7 @@ private fun ProfileDestinationContent(
     container: AppContainer,
     navigation: MutableMainNavigationState,
     listingsViewModel: ListingsViewModel,
+    sellerProfileViewModel: SellerProfileViewModel,
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
 ) {
@@ -271,6 +273,12 @@ private fun ProfileDestinationContent(
         navigation.profileDestination == ProfileDestination.EDIT_LISTING
     ) {
         MyListingsDestination(navigation, listingsViewModel)
+    } else if (navigation.profileDestination == ProfileDestination.PUBLIC_PROFILE) {
+        PublicProfilePreviewDestination(
+            profilePresentation.viewModel,
+            sellerProfileViewModel,
+            onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
+        )
     } else {
         StudentProfileDestination(container, navigation, listingsViewModel, profilePresentation, messagesViewModel)
     }
