@@ -1,12 +1,12 @@
 package com.jdrms.bulletin.app
 
-import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.di.MessagesModule
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 
 internal class ListingConversationActions(
-    private val container: AppContainer,
+    private val messagesModule: MessagesModule,
     private val navigation: MutableMainNavigationState,
     private val messages: MessagesViewModel
 ) {
@@ -17,7 +17,7 @@ internal class ListingConversationActions(
         content: String
     ): Boolean {
         val result = sendListingMessage(
-            container,
+            messagesModule,
             navigation.snapshot(),
             ListingMessageRequest(listingId, sellerId, sellerName, content)
         )
@@ -27,10 +27,10 @@ internal class ListingConversationActions(
     }
 
     suspend fun hasExistingConversation(listingId: String, sellerId: String): Boolean =
-        hasListingConversation(container, listingId, sellerId)
+        hasListingConversation(messagesModule, listingId, sellerId)
 
     suspend fun seeChat(listingId: String, sellerId: String) {
-        openListingConversation(container, messages, listingId, sellerId)
+        openListingConversation(messagesModule, messages, listingId, sellerId)
         navigation.apply(navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))
     }
 }

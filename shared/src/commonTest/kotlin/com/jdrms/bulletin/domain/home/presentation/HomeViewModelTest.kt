@@ -179,6 +179,32 @@ class HomeViewModelTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun position_is_owned_by_state_and_resets_on_reload_and_account_change() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val page = HomeFeedPage(listOf(item("first"), item("second")), null)
+            val repository = PagedHomeRepository(List(3) { page })
+            val session = TestSessionRepository()
+            val viewModel = HomeViewModel(GetPersonalizedFeed(repository), UpdateUserPreferences(repository), session)
+            advanceUntilIdle()
+            assertEquals(0, viewModel.uiState.value.currentIndex)
+            viewModel.advanceCard(0)
+            viewModel.advanceCard(0)
+            assertEquals(1, viewModel.uiState.value.currentIndex)
+            viewModel.loadFeed()
+            assertEquals(0, viewModel.uiState.value.currentIndex)
+            advanceUntilIdle()
+            viewModel.advanceCard(0)
+            session.authenticated(StudentProfile(UserId("other"), StudentEmail("other@university.edu"), "Other"))
+            advanceUntilIdle()
+            assertEquals(0, viewModel.uiState.value.currentIndex)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private fun item(id: String) = HomeFeedItem(
         id = HomeItemId(id),
         title = "Listing $id",

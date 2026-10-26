@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryMarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,6 +44,7 @@ class MarketplaceViewModelTestPart2 {
         repository: InMemoryMarketplaceRepository,
         source: MarketplaceListingSource
     ) = MarketplaceViewModel(
+        layoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
         searchMarketplace = SearchMarketplace(repository, source),
         bookmarks = MarketplaceBookmarkDependencies(
             add = BookmarkMarketplaceListing(repository),
@@ -101,6 +103,7 @@ class MarketplaceViewModelTestPart2 {
                 }
             )
             val viewModel = MarketplaceViewModel(
+                layoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
                 searchMarketplace = SearchMarketplace(repository, source),
                 bookmarks = MarketplaceBookmarkDependencies(
                     add = BookmarkMarketplaceListing(repository),
@@ -187,6 +190,7 @@ class MarketplaceViewModelTestPart2 {
                 }
             }
             val viewModel = MarketplaceViewModel(
+                layoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
                 searchMarketplace = SearchMarketplace(repository, source),
                 bookmarks = MarketplaceBookmarkDependencies(
                     add = BookmarkMarketplaceListing(repository),
@@ -263,6 +267,7 @@ class MarketplaceViewModelTestPart2 {
                 }
             }
             val viewModel = MarketplaceViewModel(
+                layoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
                 searchMarketplace = SearchMarketplace(repository, source),
                 bookmarks = MarketplaceBookmarkDependencies(
                     add = BookmarkMarketplaceListing(repository),
@@ -306,6 +311,7 @@ class MarketplaceViewModelTestPart2 {
             val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
             val source = CancellableFirstRequestSource(uploadedListing())
             val viewModel = MarketplaceViewModel(
+                layoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
                 searchMarketplace = SearchMarketplace(repository, source),
                 bookmarks = MarketplaceBookmarkDependencies(
                     add = BookmarkMarketplaceListing(repository),

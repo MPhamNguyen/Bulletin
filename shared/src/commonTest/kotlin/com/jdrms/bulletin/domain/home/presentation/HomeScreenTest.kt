@@ -7,6 +7,12 @@ import kotlin.test.assertTrue
 
 class HomeScreenTest {
     @Test
+    fun exhausted_deck_remains_loading_during_append() {
+        assertTrue(HomeUiState(isLoading = false, isLoadingMore = true).isDeckLoading)
+        assertFalse(HomeUiState(isLoading = false, isLoadingMore = false).isDeckLoading)
+    }
+
+    @Test
     fun photo_index_stays_within_the_listing_photo_bounds() {
         assertEquals(0, stepHomePhotoIndex(currentIndex = 0, direction = -1, photoCount = 3))
         assertEquals(1, stepHomePhotoIndex(currentIndex = 0, direction = 1, photoCount = 3))

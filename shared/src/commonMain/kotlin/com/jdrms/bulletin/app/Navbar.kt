@@ -46,7 +46,8 @@ fun Navbar(
     isVisible: () -> Boolean,
     onDestinationSelected: (AppDestination) -> Unit,
     onFocused: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    profileIconModifier: Modifier = Modifier
 ) {
     val navbarIsVisible = isVisible() && !WindowInsets.isImeVisible
     val hiddenFraction = animateFloatAsState(
@@ -68,14 +69,15 @@ fun Navbar(
             .semantics { if (!navbarIsVisible) hideFromAccessibility() },
         contentAlignment = Alignment.Center
     ) {
-        NavbarContent(currentDestination, onDestinationSelected)
+        NavbarContent(currentDestination, onDestinationSelected, profileIconModifier)
     }
 }
 
 @Composable
 private fun NavbarContent(
     currentDestination: AppDestination,
-    onDestinationSelected: (AppDestination) -> Unit
+    onDestinationSelected: (AppDestination) -> Unit,
+    profileIconModifier: Modifier
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -98,6 +100,7 @@ private fun NavbarContent(
                 } else {
                     DestinationItem(
                         destination = destination,
+                        profileIconModifier = profileIconModifier,
                         selected = currentDestination == destination,
                         modifier = Modifier.weight(1f),
                         onClick = { onDestinationSelected(destination) }
@@ -112,6 +115,7 @@ private fun NavbarContent(
 private fun DestinationItem(
     destination: AppDestination,
     selected: Boolean,
+    profileIconModifier: Modifier,
     modifier: Modifier,
     onClick: () -> Unit
 ) {
@@ -132,13 +136,13 @@ private fun DestinationItem(
         color = itemColor.value
     ) {
         Box(contentAlignment = Alignment.Center) {
-            DestinationIcon(destination, selected)
+            DestinationIcon(destination, selected, profileIconModifier)
         }
     }
 }
 
 @Composable
-private fun DestinationIcon(destination: AppDestination, selected: Boolean) {
+private fun DestinationIcon(destination: AppDestination, selected: Boolean, profileIconModifier: Modifier) {
     val colorScheme = MaterialTheme.colorScheme
     // The taller house silhouette needs a smaller box to match the storefront's visible height.
     val iconSize = if (destination == AppDestination.HOME) NavigationIconSize - 2.dp else NavigationIconSize
@@ -156,10 +160,11 @@ private fun DestinationIcon(destination: AppDestination, selected: Boolean) {
         imageVector = if (selected) destination.selectedIcon else destination.icon,
         contentDescription = null,
         tint = contentColor.value,
-        modifier = Modifier.size(iconSize).graphicsLayer {
-            scaleX = iconScale.value
-            scaleY = iconScale.value
-        }
+        modifier = Modifier.size(iconSize)
+            .then(if (destination == AppDestination.PROFILE) profileIconModifier else Modifier).graphicsLayer {
+                scaleX = iconScale.value
+                scaleY = iconScale.value
+            }
     )
 }
 
