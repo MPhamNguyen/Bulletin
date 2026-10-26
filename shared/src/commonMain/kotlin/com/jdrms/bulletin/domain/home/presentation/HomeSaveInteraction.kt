@@ -79,7 +79,9 @@ internal class HomeSaveInteraction(
         attempts.clear()
         abandoned.forEach { (id, attempt) ->
             attempt.job?.cancel()
-            if (attempt.failed) removeExclusion(id, attempt)
+            // SAVE is recorded before bookmarking. If reset abandons this attempt,
+            // undo that exclusion so a refresh can offer the listing again.
+            removeExclusion(id, attempt)
         }
     }
 

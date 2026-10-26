@@ -101,7 +101,8 @@ class HomeSaveInteractionTest {
         f.vm.retrySave(HomeItemId("a"))
         f.vm.dismissSaveRetry(HomeItemId("a"))
         assertEquals(1, f.saves.size)
-        assertTrue(f.decisions.removals.isEmpty())
+        assertEquals(listOf("viewer" to HomeItemId("a")), f.decisions.removals)
+        assertEquals(emptySet(), f.decisions.getExcludedListingIds("viewer", SwipeVerdict.SAVE).getOrNull())
     }
 
     @Test
