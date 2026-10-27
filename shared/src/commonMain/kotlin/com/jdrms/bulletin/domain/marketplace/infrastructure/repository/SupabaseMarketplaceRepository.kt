@@ -183,9 +183,23 @@ class SupabaseMarketplaceRepository private constructor(
             onSuccess = { Result.Success(Unit) },
             onFailure = { error ->
                 error.rethrowIfCancellation()
-                Result.Error(error)
+                Result.Error(error.toMarketplaceReviewError())
             }
         )
+    }
+
+    private fun Throwable.toMarketplaceReviewError(): Throwable {
+        val message = message.orEmpty()
+        return when {
+            "unique_listing_review" in message || "reviews_one_per_listing_idx" in message ->
+                IllegalStateException("A review has already been submitted for this listing.", this)
+            "unique_reviewer_reviewee" in message -> IllegalStateException(
+                "The database still limits reviews to one per seller. Apply the latest Supabase migration " +
+                    "to allow reviews for separate listings.",
+                this
+            )
+            else -> this
+        }
     }
 
     companion object {

@@ -125,6 +125,5 @@ data class MarketplaceReview(
         require(reviewerId.isNotBlank()) { "Review reviewer ID cannot be blank." }
         require(revieweeId.isNotBlank()) { "Review reviewee ID cannot be blank." }
         require(score in 1..5) { "Review score must be between 1 and 5." }
-        require(comment.isNotBlank()) { "Review comment cannot be blank." }
     }
 }
