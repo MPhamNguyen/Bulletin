@@ -34,6 +34,7 @@ import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
+import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 data class MarketplaceDetailSheetState(
@@ -43,7 +44,10 @@ data class MarketplaceDetailSheetState(
     val bookmarkErrorMessage: String?,
     val isBookmarked: Boolean,
     val currentUserId: String?,
-    val hasReview: Boolean
+    val hasReview: Boolean,
+    val isReviewDialogOpen: Boolean = false,
+    val isSubmittingReview: Boolean = false,
+    val reviewErrorMessage: String? = null
 )
 
 data class MarketplaceDetailSheetActions(
@@ -56,6 +60,8 @@ data class MarketplaceDetailSheetActions(
     val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
         { _, _ -> false },
     val onLeaveReview: () -> Unit = {},
+    val onDismissReview: () -> Unit = {},
+    val onSubmitReview: (score: Int, comment: String) -> Unit = { _, _ -> },
     val onReportListing: () -> Unit = {},
     val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
 )
@@ -77,6 +83,8 @@ fun MarketplaceDetailBottomSheet(
     val onMessageSeller = actions.onMessageSeller
     val hasExistingConversation = actions.hasExistingConversation
     val onLeaveReview = actions.onLeaveReview
+    val onDismissReview = actions.onDismissReview
+    val onSubmitReview = actions.onSubmitReview
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -290,6 +298,14 @@ fun MarketplaceDetailBottomSheet(
                     )
                 }
             }
+        }
+        if (state.isReviewDialogOpen) {
+            ReviewSubmissionDialog(
+                isSubmitting = state.isSubmittingReview,
+                errorMessage = state.reviewErrorMessage,
+                onDismiss = onDismissReview,
+                onSubmit = onSubmitReview
+            )
         }
     }
 }
