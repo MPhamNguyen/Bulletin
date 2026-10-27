@@ -251,7 +251,7 @@ class SupabaseAuthRepository(
             ?: error("Authenticated user does not have an email address.")
         val metadataName = (authUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
             it.isNotBlank()
-        }
+        } ?: (authUser.userMetadata?.get("name") as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() }
         val metadataUniversity = (authUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
             it.isNotBlank()
         }

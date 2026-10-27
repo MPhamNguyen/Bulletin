@@ -32,14 +32,14 @@ import kotlin.test.assertTrue
 
 class SupabaseExternalSignInTest {
     @Test
-    fun startsAzureWithPkceEmailScopeAndAccountPicker() = runTest {
+    fun startsAzureWithPkceProfileScopesAndAccountPicker() = runTest {
         val client = client()
         try {
             val browser = object : ExternalAuthBrowser {
                 override suspend fun authorize(url: String): ExternalAuthCallback {
                     val parameters = Url(url).parameters
                     assertEquals("azure", parameters["provider"])
-                    assertEquals("email", parameters["scopes"])
+                    assertEquals("email profile", parameters["scopes"])
                     assertEquals("select_account", parameters["prompt"])
                     assertEquals("s256", parameters["code_challenge_method"]?.lowercase())
                     assertEquals(MicrosoftOAuthRedirect.URI, parameters["redirect_to"])

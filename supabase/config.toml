@@ -40,6 +40,8 @@ enabled = true
 uri = "pg-functions://postgres/public/enforce_edu_email_signup"
 
 [auth.external.azure]
+# Local development default. Enable with separate local/staging credentials.
+# This file is not a live-project snapshot: never config push it to reconcile OAuth.
 enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"

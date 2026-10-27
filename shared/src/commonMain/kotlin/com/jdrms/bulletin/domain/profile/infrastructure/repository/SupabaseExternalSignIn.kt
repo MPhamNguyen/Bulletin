@@ -59,7 +59,7 @@ internal class SupabaseExternalSignIn(
     private suspend fun prepareOAuthUrl(): String {
         supabase.auth.codeVerifierCache.deleteCodeVerifier()
         val url = supabase.auth.getOAuthUrl(Azure, MicrosoftOAuthRedirect.URI) {
-            scopes.add("email")
+            scopes.addAll(listOf("email", "profile"))
             queryParams["prompt"] = "select_account"
         }
         // 3.1.4 launches the verifier write in its own scope. Wait for durable storage before redirecting.
