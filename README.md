@@ -172,12 +172,12 @@ The layers remain packages within `shared`; they are not separate Gradle modules
 | User report repository | Supabase adapter | In-memory adapter | Not verified here |
 | User block repository | Supabase adapter | In-memory adapter | Not verified here |
 | Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
-| Auth and session repositories | Supabase Auth adapter; Microsoft action disabled by default | In-memory auth adapter | Azure eligibility policy deployed and verified through the Supabase CLI; Azure provider settings and live sign-in remain unverified |
+| Auth and session repositories | Supabase Auth adapter; Microsoft action enabled in debug, disabled in release by default | In-memory auth adapter | Azure eligibility policy deployed and verified through the Supabase CLI; Azure provider settings and live sign-in remain unverified |
 | Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
 
 Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. Review those migrations and configure the matching project before using backend features. The Microsoft eligibility policy was validated against the linked project; this does not validate other backend features or the live OAuth flow.
 
-Microsoft OAuth is disabled by default. The MVP policy accepts any verified Microsoft email, including personal/non-`.edu` accounts; password signup keeps its `.edu` requirement. Azure sign-in requests `email` and `profile`. Pending migrations let new profiles use `full_name` or `name` metadata and backfill missing profiles without overwriting existing rows. `MICROSOFT_SSO_ENABLED=true` exposes the Android action after Azure credentials, the exact `com.jdrms.bulletin.auth://oauth/callback` allow-list entry and the identity-policy migration are configured. Automatic linking is rejected server-side. See the [implementation record and staging setup](docs/microsoft-sso-state-and-analysis.md#implementation-record--2026-10-17).
+Microsoft OAuth is enabled in debug builds and disabled in release builds by default. The MVP policy accepts any verified Microsoft email, including personal/non-`.edu` accounts; password signup keeps its `.edu` requirement. Azure sign-in requests `email` and `profile`. Pending migrations let new profiles use `full_name` or `name` metadata and backfill missing profiles without overwriting existing rows. The build override `-PMICROSOFT_SSO_ENABLED=true` exposes the Android action after Azure credentials, the exact `com.jdrms.bulletin.auth://oauth/callback` allow-list entry and the identity-policy migration are configured. Automatic linking is rejected server-side. See the [implementation record and staging setup](docs/microsoft-sso-state-and-analysis.md#implementation-record--2026-10-17).
 
 The migrations include a schema snapshot exported from the live project. They have been exercised on a fresh local Supabase database. The live project's earlier migration files are missing from this checkout; reconcile history and compare schema before pushing to an existing project. Live Microsoft sign-in and device lifecycle behavior are not yet verified.
 
@@ -199,8 +199,15 @@ The Android build reads configuration from a root `.env` file, environment varia
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_API_KEY=your-anon-public-key
 SUPABASE_IS_CONNECTED=true
-MICROSOFT_SSO_ENABLED=false
 ```
+
+Microsoft rollout is configured separately from `.env`: committed build defaults enable it for debug and disable it for release. Override either build with `-PMICROSOFT_SSO_ENABLED=true|false` or the process environment variable `MICROSOFT_SSO_ENABLED`; the Gradle property takes precedence. Values must be exactly `true` or `false`, otherwise configuration fails. `.env` is never read for this flag. Only enable it against a prepared Supabase project. For example:
+
+```bash
+./gradlew :androidApp:assembleRelease -PMICROSOFT_SSO_ENABLED=true --no-daemon
+```
+
+This is a build-time gate: changing it requires rebuilding the app. The UI does not query provider availability; disabling Azure server-side stops new Microsoft sign-ins but leaves the button visible in enabled builds. A runtime availability check remains follow-up work.
 
 The app must use only the Supabase anon/public key. Never put a service-role key, credentials, or real user data in the repository. Ensure the Supabase project has the schema and policies in `supabase/migrations/` applied.
 

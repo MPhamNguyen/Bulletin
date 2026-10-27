@@ -53,6 +53,15 @@ fun readEnvProperty(key: String, defaultValue: String = ""): String {
         ?: defaultValue
 }
 
+// Feature rollout is independent of machine-local Supabase configuration.
+val microsoftSsoOverride = providers.gradleProperty("MICROSOFT_SSO_ENABLED")
+    .orElse(providers.environmentVariable("MICROSOFT_SSO_ENABLED"))
+    .map { value ->
+        requireNotNull(value.toBooleanStrictOrNull()) {
+            "MICROSOFT_SSO_ENABLED must be exactly true or false"
+        }
+    }
+
 android {
     namespace = "com.jdrms.bulletin"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -71,8 +80,6 @@ android {
         )
         val supabaseIsConnected = readEnvProperty("SUPABASE_IS_CONNECTED", "false").toBoolean()
 
-        val microsoftSsoEnabled = readEnvProperty("MICROSOFT_SSO_ENABLED", "false").toBoolean()
-        buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoEnabled.toString())
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_API_KEY", "\"$supabaseApiKey\"")
         buildConfigField("boolean", "SUPABASE_IS_CONNECTED", "$supabaseIsConnected")
@@ -83,7 +90,11 @@ android {
         }
     }
     buildTypes {
+        debug {
+            buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoOverride.getOrElse(true).toString())
+        }
         release {
+            buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoOverride.getOrElse(false).toString())
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
