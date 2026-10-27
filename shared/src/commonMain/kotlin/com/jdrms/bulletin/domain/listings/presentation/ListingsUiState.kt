@@ -4,6 +4,7 @@ import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
+import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
 enum class ListingsLoadState {
     INITIAL,
@@ -20,6 +21,7 @@ data class ListingsUiState(
     val newPriceCents: String = "",
     val newCategory: ListingCategory = ListingCategory.TEXTBOOKS,
     val newCondition: ListingCondition = ListingCondition.GOOD,
+    val newImages: List<ListingImageUpload> = emptyList(),
     val isSubmitting: Boolean = false,
     val successMessage: String? = null,
     val errorMessage: String? = null,
@@ -29,6 +31,7 @@ data class ListingsUiState(
     val editPriceCents: String = "",
     val editCategory: ListingCategory = ListingCategory.TEXTBOOKS,
     val editCondition: ListingCondition = ListingCondition.GOOD,
+    val editPhotos: List<ListingPhotoDraft> = emptyList(),
     val isUpdating: Boolean = false,
     val pendingDeletion: Listing? = null,
     val isDeleting: Boolean = false,

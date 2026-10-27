@@ -10,21 +10,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
-import com.jdrms.bulletin.app.di.createPasswordRecoveryViewModel
 import com.jdrms.bulletin.app.di.createRegistrationViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
+import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignUpScreen
 import kotlinx.coroutines.cancel
 
 @Composable
-internal fun AppRoot(container: AppContainer, theme: ThemeViewModel, darkTheme: Boolean) {
+internal fun AppRoot(
+    container: AppContainer,
+    theme: ThemeViewModel,
+    darkTheme: Boolean,
+    recovery: PasswordRecoveryViewModel
+) {
     var currentScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
-    val session by container.sessionRepository.state.collectAsState()
+    val session by container.profile.sessionRepository.state.collectAsState()
     val authState = session.toAuthSessionState()
-    val recovery = remember(container) { container.createPasswordRecoveryViewModel() }
-    LaunchedEffect(container) { container.sessionRepository.restore() }
+    LaunchedEffect(container) { container.profile.sessionRepository.restore() }
     LaunchedEffect(authState) { currentScreen = resolveRootScreen(currentScreen, authState) }
     if (authState == AuthSessionState.CHECKING) {
         Box(
@@ -48,7 +52,7 @@ internal fun AppRoot(container: AppContainer, theme: ThemeViewModel, darkTheme: 
 
 @Composable
 private fun RegistrationRoute(container: AppContainer, navigate: (AppRootScreen) -> Unit) {
-    val viewModel = remember(container) { container.createRegistrationViewModel() }
+    val viewModel = remember(container) { container.profile.createRegistrationViewModel() }
     DisposableEffect(viewModel) { onDispose { viewModel.viewModelScope.cancel() } }
     val signIn = {
         viewModel.clearError()

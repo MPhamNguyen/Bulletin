@@ -1,10 +1,13 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceUserBlocker
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -21,13 +24,19 @@ class MarketplaceUserBlockViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             var blockedUser: String? = null
+            var visibilityInvalidated = false
+            val signal = RefreshSignal()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                signal.events.collect { visibilityInvalidated = true }
+            }
             val viewModel = MarketplaceUserBlockViewModel(
                 BlockMarketplaceUser(
                     MarketplaceUserBlocker { userId ->
                         blockedUser = userId
                         Result.Success(Unit)
                     }
-                )
+                ),
+                signal
             )
             viewModel.begin("seller")
             viewModel.submit()
@@ -36,6 +45,7 @@ class MarketplaceUserBlockViewModelTest {
             assertEquals("seller", blockedUser)
             assertTrue(viewModel.uiState.value.blocked)
             assertFalse(viewModel.uiState.value.isBlocking)
+            assertTrue(visibilityInvalidated)
         } finally {
             Dispatchers.resetMain()
         }

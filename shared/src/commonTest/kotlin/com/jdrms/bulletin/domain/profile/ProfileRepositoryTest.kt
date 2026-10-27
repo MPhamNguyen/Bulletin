@@ -235,11 +235,11 @@ class ProfileRepositoryTest {
         )
 
         assertFailsWith<IllegalStateException> {
-            container.profileRepository
+            container.profile.profileRepository
         }
 
         assertFailsWith<IllegalStateException> {
-            container.authRepository
+            container.profile.authRepository
         }
     }
 

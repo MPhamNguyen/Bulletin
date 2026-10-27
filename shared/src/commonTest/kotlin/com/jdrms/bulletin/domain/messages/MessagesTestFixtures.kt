@@ -24,6 +24,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 internal val alice = MessageSender(SenderId("alice-id"), "Student")
 internal val bob = MessageSender(SenderId("bob-id"), "Student")
@@ -43,12 +45,14 @@ internal fun message(
 
 internal fun messagesRepository(
     conversations: List<Conversation> = listOf(conversation()),
-    messages: List<Message> = emptyList()
+    messages: List<Message> = emptyList(),
+    now: () -> Instant = { Clock.System.now() }
 ) = InMemoryMessagesRepository(
     initialConversations = conversations.map { MessagesMapper.toDto(it) },
     initialMessages = messages.groupBy { it.conversationId.value }.mapValues { (_, entries) ->
         entries.map { MessagesMapper.toDto(it) }
-    }
+    },
+    now = now
 )
 
 internal class MutableMessageSenderProvider(

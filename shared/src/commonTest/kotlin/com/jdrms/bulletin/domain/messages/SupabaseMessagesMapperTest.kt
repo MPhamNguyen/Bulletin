@@ -4,6 +4,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
+import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseInboxMembershipDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseInboxParticipantDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProfileDto
@@ -20,6 +21,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class SupabaseMessagesMapperTest {
     @Test
@@ -77,6 +79,26 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
+    fun inboxConversationExcludesMessageAtViewerCutoff() {
+        val cutoff = Instant.fromEpochMilliseconds(42)
+        val dto = SupabaseConversationInboxDto(
+            id = "conversation-a",
+            membership = listOf(SupabaseInboxMembershipDto("alice-id", cutoff.toString())),
+            participants = listOf(SupabaseInboxParticipantDto("alice-id")),
+            latestMessages = listOf(messageDto())
+        )
+
+        val atCutoff = SupabaseMessagesMapper.toInboxConversation(dto)
+        val afterCutoff = SupabaseMessagesMapper.toInboxConversation(
+            dto.copy(latestMessages = listOf(messageDto().copy(createdAt = "1970-01-01T00:00:00.043Z")))
+        )
+
+        assertEquals(cutoff, atCutoff.historyVisibleAfter)
+        assertNull(atCutoff.lastMessage)
+        assertEquals(MessageId("message-a"), afterCutoff.lastMessage?.id)
+    }
+
+    @Test
     fun decodesEmbeddedInboxRowsFromPostgrestShape() {
         val dto = Json.decodeFromString<SupabaseConversationInboxDto>(
             """
@@ -103,13 +125,14 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
-    fun insertMappingPreservesContentAndTimestampWithoutClientControlledSender() {
+    fun insertMappingLeavesTimestampAndSenderToDatabase() {
         val insert = SupabaseMessagesMapper.toInsertDto(message())
 
         assertEquals("message-a", insert.id)
         assertEquals("conversation-a", insert.conversationId)
         assertEquals("Hello", insert.content)
-        assertEquals("1970-01-01T00:00:00.042Z", insert.createdAt)
+        assertFalse(Json.encodeToString(insert).contains("created_at"))
+        assertFalse(Json.encodeToString(insert).contains("sender_id"))
     }
 
     @Test
@@ -136,14 +159,14 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
-    fun reportMappingUsesMessageTypeAndPlaceholderReasonWithoutDescription() {
-        val report = SupabaseMessagesMapper.toReportInsertDto(message().id, carol.id)
+    fun reportMappingUsesSelectedReasonAndDescription() {
+        val report = SupabaseMessagesMapper.toReportInsertDto(message().id, carol.id, "spam", "Additional details")
 
         assertEquals("message-a", report.messageId)
         assertEquals("carol-id", report.reporterId)
-        assertEquals("Inappropriate Content", report.reason)
+        assertEquals("spam", report.reason)
         assertEquals(SupabaseMessageReportType.MESSAGE, report.type)
-        assertNull(report.description)
+        assertEquals("Additional details", report.description)
     }
 
     private fun participantDto(

@@ -19,6 +19,7 @@ fun formatUsdAmount(amount: Double): String {
     require(amount >= 0.0) { "Currency amount cannot be negative." }
     require(amount.isFinite()) { "Currency amount must be finite." }
     require(amount <= MAX_CURRENCY_AMOUNT) { "Currency amount is too large." }
+    if (amount == 0.0) return "Free"
 
     val roundedCents = round(amount * 100.0 + CURRENCY_ROUNDING_EPSILON).toLong()
     val dollars = roundedCents / 100

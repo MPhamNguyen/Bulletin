@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.mapper
 
+import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -12,7 +14,7 @@ import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingWrit
 import kotlin.time.Instant
 
 object SupabaseListingMapper {
-    fun toDomain(dto: SupabaseListingDto): Listing? {
+    fun toDomain(dto: SupabaseListingDto, imageUrl: (String) -> String = { it }): Listing? {
         val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
         val title = dto.name?.takeIf(String::isNotBlank) ?: return null
         val price = dto.price ?: return null
@@ -30,7 +32,13 @@ object SupabaseListingMapper {
             condition = runCatching { ListingCondition.valueOf(dto.condition.orEmpty().uppercase()) }
                 .getOrDefault(ListingCondition.GOOD),
             status = dto.toListingStatus(),
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            images = dto.listingImages.sortedBy { it.position }.map { image ->
+                imageUrl(image.objectPath).withCropSettings(
+                    ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
+                )
+            },
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
         )
     }
 

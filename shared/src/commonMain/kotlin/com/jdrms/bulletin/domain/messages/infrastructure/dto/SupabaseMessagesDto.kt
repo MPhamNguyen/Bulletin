@@ -15,7 +15,8 @@ data class SupabaseConversationLookupDto(@SerialName("conversation_id") val conv
 
 @Serializable
 data class SupabaseConversationMembershipDto(
-    @SerialName("conversation_id") val conversationId: String
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("history_visible_after") val historyVisibleAfter: String? = null
 )
 
 @Serializable
@@ -29,19 +30,24 @@ data class SupabaseConversationInboxDto(
 )
 
 @Serializable
-data class SupabaseInboxMembershipDto(@SerialName("user_id") val userId: String)
+data class SupabaseInboxMembershipDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("history_visible_after") val historyVisibleAfter: String? = null
+)
 
 @Serializable
 data class SupabaseInboxParticipantDto(
     @SerialName("user_id") val userId: String,
-    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null
+    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null,
+    @SerialName("last_read_at") val lastReadAt: String? = null
 )
 
 @Serializable
 data class SupabaseConversationParticipantDto(
     @SerialName("conversation_id") val conversationId: String,
     @SerialName("user_id") val userId: String,
-    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null
+    @SerialName("profiles") val profile: SupabaseMessageProfileDto? = null,
+    @SerialName("last_read_at") val lastReadAt: String? = null
 )
 
 @Serializable
@@ -57,7 +63,9 @@ data class SupabaseMessageDto(
     @SerialName("body") val content: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("profiles") val senderProfile: SupabaseMessageProfileDto? = null,
-    @SerialName("reports") val reports: List<SupabaseMessageReportMarkerDto> = emptyList()
+    @SerialName("reports") val reports: List<SupabaseMessageReportMarkerDto> = emptyList(),
+    @SerialName("edited_at") val editedAt: String? = null,
+    @SerialName("deleted_at") val deletedAt: String? = null
 )
 
 @Serializable
@@ -70,8 +78,7 @@ data class SupabaseMessageReportMarkerDto(
 data class SupabaseMessageInsertDto(
     @SerialName("id") val id: String,
     @SerialName("conversation_id") val conversationId: String,
-    @SerialName("body") val content: String,
-    @SerialName("created_at") val createdAt: String
+    @SerialName("body") val content: String
 )
 
 @Serializable

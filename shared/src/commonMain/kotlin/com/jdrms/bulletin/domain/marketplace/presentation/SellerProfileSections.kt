@@ -7,15 +7,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
+import com.jdrms.bulletin.core.common.cropSettings
+import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
@@ -165,9 +171,10 @@ internal fun SellerListingCard(listing: MarketplaceItem, onListingClick: (String
     BulletinCard(modifier = Modifier.clickable { onListingClick(listing.id.value) }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            SellerListingThumbnail(listing)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(listing.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(
@@ -183,6 +190,50 @@ internal fun SellerListingCard(listing: MarketplaceItem, onListingClick: (String
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+@Composable
+private fun SellerListingThumbnail(listing: MarketplaceItem) {
+    val photoUrl = listing.photos.firstOrNull()
+    val modifier = Modifier.size(72.dp).clip(MaterialTheme.shapes.small)
+    if (photoUrl == null) {
+        SellerListingThumbnailPlaceholder(modifier)
+        return
+    }
+    SubcomposeAsyncImage(
+        model = photoUrl.imageRequestUrl(),
+        contentDescription = "${listing.title} thumbnail",
+        modifier = modifier,
+        contentScale = ContentScale.Crop,
+        loading = { SellerListingThumbnailPlaceholder(Modifier.fillMaxSize()) },
+        error = { SellerListingThumbnailPlaceholder(Modifier.fillMaxSize()) },
+        success = {
+            val crop = photoUrl.cropSettings()
+            SubcomposeAsyncImageContent(
+                Modifier.graphicsLayer {
+                    scaleX = crop.scale
+                    scaleY = crop.scale
+                    translationX = -crop.offsetX * size.width * crop.scale
+                    translationY = -crop.offsetY * size.height * crop.scale
+                }
+            )
+        }
+    )
+}
+
+@Composable
+private fun SellerListingThumbnailPlaceholder(modifier: Modifier) {
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Image,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(28.dp)
+        )
     }
 }
 

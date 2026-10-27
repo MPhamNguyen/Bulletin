@@ -15,7 +15,9 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Instant
 
 data class MessageInbox(val viewerId: SenderId, val conversations: List<Conversation>)
 
@@ -38,11 +40,53 @@ class GetConversationMessages(
     private val repository: MessagesRepository,
     private val currentSenderProvider: CurrentMessageSenderProvider
 ) {
-    suspend operator fun invoke(conversationId: ConversationId, before: MessageCursor? = null): Result<MessagePage> {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        before: MessageCursor? = null,
+        through: MessageCursor? = null
+    ): Result<MessagePage> {
         return when (val sender = currentSenderProvider.getCurrentSender()) {
-            is Result.Success -> repository.getMessagePage(sender.data.id, conversationId, before)
+            is Result.Success -> loadPages(sender.data.id, conversationId, before, through)
             is Result.Error -> sender
         }
+    }
+
+    private suspend fun loadPages(
+        viewerId: SenderId,
+        conversationId: ConversationId,
+        before: MessageCursor?,
+        through: MessageCursor?
+    ): Result<MessagePage> {
+        var cursor = before
+        val messages = mutableListOf<Message>()
+        do {
+            val page = when (val result = repository.getMessagePage(viewerId, conversationId, cursor)) {
+                is Result.Error -> return result
+                is Result.Success -> result.data
+            }
+            messages.addAll(0, page.messages)
+            val next = page.olderCursor
+            val reachedOldest = through?.let { target -> next?.isAtOrBefore(target) } ?: true
+            if (next == null || next == cursor || reachedOldest) {
+                return Result.Success(MessagePage(messages, next))
+            }
+            cursor = next
+        } while (true)
+    }
+    private fun MessageCursor.isAtOrBefore(other: MessageCursor): Boolean =
+        createdAt < other.createdAt || (createdAt == other.createdAt && id.value <= other.id.value)
+}
+
+class MarkConversationRead(
+    private val repository: MessagesRepository,
+    private val currentSenderProvider: CurrentMessageSenderProvider
+) {
+    suspend operator fun invoke(conversationId: ConversationId): Result<Instant> {
+        val sender = when (val result = currentSenderProvider.getCurrentSender()) {
+            is Result.Success -> result.data
+            is Result.Error -> return result
+        }
+        return repository.markConversationRead(sender.id, conversationId)
     }
 }
 
@@ -148,13 +192,18 @@ class ReportMessage(
     private val currentSenderProvider: CurrentMessageSenderProvider,
     private val policy: MessagesPolicy = MessagesPolicy()
 ) {
-    suspend operator fun invoke(conversationId: ConversationId, messageId: MessageId, reason: String): Result<Unit> {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        messageId: MessageId,
+        reason: ReportReason,
+        description: String
+    ): Result<Unit> {
         val sender = when (val result = currentSenderProvider.getCurrentSender()) {
             is Result.Success -> result.data
             is Result.Error -> return result
         }
-        val validation = policy.validateReportReason(reason)
+        val validation = policy.validateReport(reason, description)
         if (validation is Result.Error) return validation
-        return repository.reportMessage(sender.id, conversationId, messageId, reason)
+        return repository.reportMessage(sender.id, conversationId, messageId, reason.code, description.trim())
     }
 }

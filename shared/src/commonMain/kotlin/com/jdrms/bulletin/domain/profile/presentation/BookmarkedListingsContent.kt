@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,8 +32,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
@@ -89,8 +94,12 @@ internal fun BookmarkedListingsView(
                 }
             }
 
-            if (!isLoading && errorMessage == null && listings.isEmpty()) {
-                item { EmptyBookmarksCard() }
+            if (state.allListings.isNotEmpty()) {
+                item { BookmarkedListingFilters(state, actions) }
+            }
+
+            if (state.shouldShowEmptyState) {
+                item { EmptyBookmarksCard(hasBookmarks = state.allListings.isNotEmpty()) }
             }
 
             items(items = listings, key = ProfileBookmarkedListing::id) { listing ->
@@ -125,23 +134,6 @@ internal fun BookmarkedListingsView(
     }
 }
 
-internal data class BookmarkedListingsViewState(
-    val listings: List<ProfileBookmarkedListing>,
-    val isLoading: Boolean,
-    val isLoadingMore: Boolean,
-    val hasMore: Boolean,
-    val errorMessage: String?,
-    val removingListingId: String?
-)
-
-internal data class BookmarkedListingsActions(
-    val onListingClick: (String) -> Unit,
-    val onRemoveBookmark: (String) -> Unit,
-    val onRefresh: () -> Unit,
-    val onLoadMore: () -> Unit,
-    val onBack: () -> Unit
-)
-
 @Composable
 private fun BookmarkedListingCard(
     listing: ProfileBookmarkedListing,
@@ -151,6 +143,7 @@ private fun BookmarkedListingCard(
     onRemoveBookmark: () -> Unit
 ) {
     BulletinCard(modifier = Modifier.clickable(onClick = onClick)) {
+        BookmarkedListingPhoto(listing.photos.firstOrNull())
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -212,7 +205,35 @@ private fun BookmarkedListingCard(
 }
 
 @Composable
-private fun EmptyBookmarksCard() {
+private fun BookmarkedListingPhoto(photoUrl: String?) {
+    if (photoUrl == null) {
+        BookmarkedPhotoPlaceholder()
+    } else {
+        SubcomposeAsyncImage(
+            model = photoUrl,
+            contentDescription = "Listing photo",
+            modifier = Modifier.fillMaxWidth().height(140.dp).clip(MaterialTheme.shapes.medium),
+            contentScale = ContentScale.Crop,
+            error = { BookmarkedPhotoPlaceholder() },
+            success = { SubcomposeAsyncImageContent() }
+        )
+    }
+    Spacer(Modifier.height(12.dp))
+}
+
+@Composable
+private fun BookmarkedPhotoPlaceholder() {
+    Box(
+        modifier = Modifier.fillMaxWidth().height(140.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun EmptyBookmarksCard(hasBookmarks: Boolean) {
     BulletinCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -239,14 +260,18 @@ private fun EmptyBookmarksCard() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Bookmarked Listings",
+                text = if (hasBookmarks) "No matching listings" else "Bookmarked Listings",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Listings you bookmark will appear here.",
+                text = if (hasBookmarks) {
+                    "Try changing the category or condition filters."
+                } else {
+                    "Listings you bookmark will appear here."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -2,6 +2,8 @@ package com.jdrms.bulletin.domain.marketplace.application
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import kotlin.time.Instant
 
@@ -15,8 +17,14 @@ data class MarketplaceListingSnapshot(
     val priceCurrency: String,
     val category: MarketplaceCategory,
     val createdAtMillis: Long,
-    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN
-)
+    val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
+    val primaryPhotoUrl: String? = null,
+    val photoUrls: List<String> = listOfNotNull(primaryPhotoUrl),
+    val updatedAtMillis: Long = 0L
+) {
+    val photos: List<String>
+        get() = photoUrls
+}
 
 data class MarketplacePageCursor(
     val createdAt: Instant,
@@ -25,6 +33,7 @@ data class MarketplacePageCursor(
 
 data class MarketplacePageRequest(
     val query: String = "",
+    val listingId: String? = null,
     val sellerId: String? = null,
     val category: MarketplaceCategory? = null,
     val condition: MarketplaceCondition? = null,
@@ -37,6 +46,14 @@ data class MarketplacePageRequest(
             "Marketplace page size must be between 1 and $MAX_MARKETPLACE_PAGE_SIZE."
         }
     }
+}
+
+fun interface MarketplaceReportedListingProvider {
+    suspend fun getReportedListingIds(reporterId: MarketplaceReporterId): Set<MarketplaceItemId>
+}
+
+object EmptyMarketplaceReportedListingProvider : MarketplaceReportedListingProvider {
+    override suspend fun getReportedListingIds(reporterId: MarketplaceReporterId): Set<MarketplaceItemId> = emptySet()
 }
 
 data class MarketplaceListingPage(
@@ -69,7 +86,10 @@ class MarketplaceRepositoryListingSource(
                 priceCurrency = item.price.currency,
                 category = item.category,
                 createdAtMillis = item.createdAtMillis,
-                condition = item.condition
+                condition = item.condition,
+                primaryPhotoUrl = item.photos.firstOrNull(),
+                photoUrls = item.photos,
+                updatedAtMillis = item.updatedAtMillis
             )
         }.pageFor(request)
     }
@@ -78,6 +98,8 @@ class MarketplaceRepositoryListingSource(
 fun List<MarketplaceListingSnapshot>.pageFor(request: MarketplacePageRequest): MarketplaceListingPage {
     val keywords = request.query.trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
     val matchingListings = asSequence()
+        .filter { listing -> request.listingId == null || listing.id == request.listingId }
+        .filter { listing -> request.viewerId == null || listing.sellerId != request.viewerId }
         .filter { listing -> request.sellerId == null || listing.sellerId == request.sellerId }
         .filter { listing -> request.category == null || listing.category == request.category }
         .filter { listing -> request.condition == null || listing.condition == request.condition }

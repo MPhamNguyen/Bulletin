@@ -4,8 +4,11 @@ import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCursor
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingFilterOptions
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsPage
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
@@ -36,7 +39,11 @@ class MarketplaceProfileBookmarkedListingsProvider(
         }
         return ProfileBookmarkedListingsPage(
             listings = translatedListings,
-            nextCursor = page.nextCursor?.let { ProfileBookmarksPageCursor(it.offset) }
+            nextCursor = page.nextCursor?.let { ProfileBookmarksPageCursor(it.offset) },
+            filterOptions = ProfileBookmarkedListingFilterOptions(
+                categories = MarketplaceCategory.entries.map { it.name },
+                conditions = MarketplaceCondition.knownValues.map { it.name }
+            )
         )
     }
 

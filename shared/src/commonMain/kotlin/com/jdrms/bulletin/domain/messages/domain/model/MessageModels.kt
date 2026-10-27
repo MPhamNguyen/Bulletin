@@ -22,7 +22,11 @@ value class ListingReferenceId(val value: String) {
     init { require(value.isNotBlank()) { "Listing reference cannot be blank." } }
 }
 
-data class ConversationParticipant(val id: SenderId, val displayName: String)
+data class ConversationParticipant(
+    val id: SenderId,
+    val displayName: String,
+    val lastReadAt: Instant? = null
+)
 
 data class Message(
     val id: MessageId,
@@ -32,7 +36,11 @@ data class Message(
     val content: String,
     val timestampMillis: Long = 0L,
     val isReported: Boolean = false,
-    val preciseCreatedAt: Instant? = null
+    val preciseCreatedAt: Instant? = null,
+    val editedAt: Instant? = null,
+    val deletedAt: Instant? = null,
+    /** Null means a realtime row omitted report metadata; the server always enforces private report locks. */
+    val isEditLocked: Boolean? = false
 ) {
     val orderingTimestamp: Instant get() = preciseCreatedAt ?: Instant.fromEpochMilliseconds(timestampMillis)
     init {
@@ -40,7 +48,7 @@ data class Message(
         require(content.length <= 1000) { "Message cannot exceed 1000 characters." }
     }
 
-    fun report(): Message = copy(isReported = true)
+    fun report(): Message = copy(isReported = true, isEditLocked = true)
 }
 
 class Conversation(
@@ -48,7 +56,8 @@ class Conversation(
     participants: List<ConversationParticipant>,
     val lastMessage: Message? = null,
     val updatedAtMillis: Long = 0L,
-    val listingId: ListingReferenceId? = null
+    val listingId: ListingReferenceId? = null,
+    val historyVisibleAfter: Instant? = null
 ) {
     val participants: List<ConversationParticipant> = participants.toList()
     val participantNames: List<String> get() = participants.map { it.displayName }
@@ -61,6 +70,28 @@ class Conversation(
     }
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
+
+    fun recordReadAt(readerId: SenderId, readAt: Instant): Result<Conversation> {
+        if (!includes(readerId)) return Result.Error(ConversationAccessException())
+        val participant = participants.first { it.id == readerId }
+        if (participant.lastReadAt?.let { it >= readAt } == true) return Result.Success(this)
+        return Result.Success(
+            Conversation(
+                id = id,
+                participants = participants.map {
+                    if (it.id == readerId) it.copy(lastReadAt = readAt) else it
+                },
+                lastMessage = lastMessage,
+                updatedAtMillis = updatedAtMillis,
+                listingId = listingId,
+                historyVisibleAfter = historyVisibleAfter
+            )
+        )
+    }
+
+    fun canSee(message: Message): Boolean =
+        message.conversationId == id &&
+            (historyVisibleAfter == null || message.orderingTimestamp > historyVisibleAfter)
 
     fun authorizeHiding(viewerId: SenderId): Result<Unit> =
         if (includes(viewerId)) Result.Success(Unit) else Result.Error(ConversationAccessException())
@@ -83,6 +114,12 @@ class Conversation(
             return Result.Error(ConversationAccessException())
         }
         val current = lastMessage
+        val currentEdit = current?.editedAt
+        val incomingEdit = message.editedAt
+        val isStaleVersion = currentEdit != null && (incomingEdit == null || currentEdit > incomingEdit)
+        if (current?.id == message.id && isStaleVersion) {
+            return Result.Success(this)
+        }
         val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
             (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
         if (!isNewer) return Result.Success(this)
@@ -93,7 +130,8 @@ class Conversation(
                 participants = participants,
                 lastMessage = message,
                 updatedAtMillis = maxOf(updatedAtMillis, message.timestampMillis),
-                listingId = listingId
+                listingId = listingId,
+                historyVisibleAfter = historyVisibleAfter
             )
         )
     }

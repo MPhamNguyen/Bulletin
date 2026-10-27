@@ -1,9 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -11,178 +7,100 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
-import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
+
+data class MarketplaceScreenNavigation(
+    val sellerProfileIdToOpen: String? = null,
+    val onSellerProfileRequestHandled: () -> Unit = {},
+    val onReturnToInboxChat: () -> Unit = {},
+    val onContentNoLongerScrollable: () -> Unit = {}
+)
 
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
     userReportViewModel: MarketplaceUserReportViewModel,
+    listingReportViewModel: ListingReportViewModel,
     userBlockViewModel: MarketplaceUserBlockViewModel,
-    actions: MarketplaceScreenActions = MarketplaceScreenActions()
+    actions: MarketplaceScreenActions = MarketplaceScreenActions(),
+    navigation: MarketplaceScreenNavigation = MarketplaceScreenNavigation()
 ) {
     val state by viewModel.uiState.collectAsState()
     val sellerProfileState by sellerProfileViewModel.uiState.collectAsState()
     val reportState by userReportViewModel.uiState.collectAsState()
     val blockState by userBlockViewModel.uiState.collectAsState()
-    var destination by remember { mutableStateOf(MarketplaceDestination.CATALOG) }
+    var sellerNavigation by remember {
+        mutableStateOf(
+            MarketplaceSellerNavigationState(
+                destination = if (navigation.sellerProfileIdToOpen != null) {
+                    MarketplaceDestination.SELLER_PROFILE
+                } else {
+                    MarketplaceDestination.CATALOG
+                }
+            )
+        )
+    }
+    var sellerProfileOpenedFromInbox by remember { mutableStateOf(navigation.sellerProfileIdToOpen != null) }
 
-    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, destination)
-    val flowViewModels = MarketplaceSellerFlowViewModels(viewModel, userReportViewModel, userBlockViewModel)
-    if (!MarketplaceSellerProfileFlow(flowState, flowViewModels, actions) { destination = it }) {
+    LaunchedEffect(navigation.sellerProfileIdToOpen) {
+        navigation.sellerProfileIdToOpen?.let { sellerId ->
+            sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.SELLER_PROFILE)
+            sellerProfileOpenedFromInbox = true
+            sellerProfileViewModel.load(sellerId)
+            navigation.onSellerProfileRequestHandled()
+        }
+    }
+
+    val flowState = MarketplaceSellerFlowUiState(state, sellerProfileState, reportState, blockState, sellerNavigation)
+    val flowViewModels = MarketplaceSellerFlowViewModels(
+        viewModel,
+        sellerProfileViewModel,
+        userReportViewModel,
+        userBlockViewModel,
+        listingReportViewModel
+    )
+    val navigate = { destination: MarketplaceDestination ->
+        sellerNavigation = sellerNavigation.navigate(destination)
+    }
+    if (!MarketplaceSellerProfileFlow(
+            flowState,
+            flowViewModels,
+            actions,
+            onOpenListing = { listingId ->
+                val context = sellerProfileState.listings
+                    .firstOrNull { it.id.value == listingId }
+                    ?.toSellerListingContext()
+                viewModel.onListingClicked(listingId)
+                sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.SELLER_LISTING, context)
+            },
+            onNavigate = navigate,
+            onBackFromSellerProfile = {
+                if (sellerProfileOpenedFromInbox) {
+                    sellerProfileOpenedFromInbox = false
+                    navigation.onReturnToInboxChat()
+                } else {
+                    navigate(MarketplaceDestination.CATALOG)
+                }
+            }
+        )
+    ) {
         MarketplaceCatalogContent(
             state = state,
             viewModel = viewModel,
             sellerProfileViewModel = sellerProfileViewModel,
+            listingReportViewModel = listingReportViewModel,
             actions = actions,
-            onNavigate = { destination = it }
+            onContentNoLongerScrollable = navigation.onContentNoLongerScrollable,
+            onNavigate = { destination ->
+                val context = state.detail.listing
+                    ?.takeIf { destination == MarketplaceDestination.SELLER_PROFILE }
+                    ?.toSellerListingContext()
+                if (destination == MarketplaceDestination.SELLER_PROFILE) sellerProfileOpenedFromInbox = false
+                sellerNavigation = sellerNavigation.navigate(destination, context)
+            }
         )
-    }
-}
-
-@Composable
-private fun MarketplaceCatalogContent(
-    state: MarketplaceUiState,
-    viewModel: MarketplaceViewModel,
-    sellerProfileViewModel: SellerProfileViewModel,
-    actions: MarketplaceScreenActions,
-    onNavigate: (MarketplaceDestination) -> Unit
-) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                SectionHeader(
-                    title = "Campus Marketplace",
-                    subtitle = "Browse, search, & discover student items on campus"
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = state.filters.query,
-                    onValueChange = viewModel::onSearchQueryChanged,
-                    label = { Text("Search by title or category") },
-                    singleLine = true,
-                    colors = BulletinTextFieldDefaults.colors(),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                MarketplaceFilters(
-                    filters = state.filters,
-                    onCategorySelected = viewModel::onCategorySelected,
-                    onConditionSelected = viewModel::onConditionSelected
-                )
-            }
-            if (state.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-            if (state.items.isEmpty() && !state.isLoading && state.errorMessage == null) {
-                item {
-                    BulletinCard {
-                        Text(
-                            text = "No marketplace listings found for your search.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-            items(items = state.items, key = { item -> item.id.value }) { item ->
-                MarketplaceItemCard(
-                    item = item,
-                    isBookmarked = item.id in state.bookmarkedItemIds,
-                    onCardClick = { viewModel.onListingClicked(item.id.value) },
-                    onToggleBookmark = { viewModel.toggleBookmark(item.id) }
-                )
-            }
-            if (state.nextCursor != null) {
-                item(key = "marketplace-pagination-trigger") {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        if (state.isLoadingMore) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        } else {
-                            TextButton(onClick = viewModel::loadNextPage) { Text("Load more") }
-                        }
-                    }
-                }
-            }
-            state.errorMessage?.let { message ->
-                item {
-                    BulletinCard {
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        TextButton(onClick = viewModel::retryListings) { Text("Retry") }
-                    }
-                }
-            }
-            state.bookmarkErrorMessage?.let { message ->
-                item {
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-
-        if (state.detail.isOpen) {
-            MarketplaceDetailBottomSheet(
-                state = MarketplaceDetailSheetState(
-                    listing = state.detail.listing,
-                    isLoading = state.detail.isLoading,
-                    errorMessage = state.detail.errorMessage,
-                    bookmarkErrorMessage = state.bookmarkErrorMessage,
-                    isBookmarked = state.detail.listing?.let {
-                        it.id in state.bookmarkedItemIds
-                    } ?: false,
-                    currentUserId = state.currentUserId,
-                    hasReview = state.detail.hasReview
-                ),
-                actions = MarketplaceDetailSheetActions(
-                    onDismiss = viewModel::dismissListingDetail,
-                    onRetry = viewModel::retryLoadListingDetail,
-                    onToggleBookmark = {
-                        state.detail.listing?.let { viewModel.toggleBookmark(it.id) }
-                    },
-                    onLeaveReview = viewModel.reviewActions::openReviewDialog,
-                    onSellerClick = { sellerId ->
-                        sellerProfileViewModel.load(sellerId)
-                        onNavigate(MarketplaceDestination.SELLER_PROFILE)
-                    },
-                    onMessageSeller = actions.onMessageSeller,
-                    hasExistingConversation = actions.hasExistingConversation,
-                    onSeeChat = actions.onSeeChat
-                )
-            )
-            if (state.detail.isReviewDialogOpen) {
-                MarketplaceReviewDialog(
-                    isSubmitting = state.detail.isSubmittingReview,
-                    errorMessage = state.detail.reviewErrorMessage,
-                    onDismiss = viewModel.reviewActions::dismissReviewDialog,
-                    onSubmit = viewModel.reviewActions::submitReview
-                )
-            }
-        }
     }
 }
 
@@ -191,7 +109,9 @@ private fun MarketplaceSellerProfileFlow(
     state: MarketplaceSellerFlowUiState,
     viewModels: MarketplaceSellerFlowViewModels,
     actions: MarketplaceScreenActions,
-    onNavigate: (MarketplaceDestination) -> Unit
+    onOpenListing: (String) -> Unit,
+    onNavigate: (MarketplaceDestination) -> Unit,
+    onBackFromSellerProfile: () -> Unit
 ): Boolean {
     if (state.destination == MarketplaceDestination.REPORT_USER) {
         ReportMarketplaceUserScreen(
@@ -203,16 +123,17 @@ private fun MarketplaceSellerProfileFlow(
         )
         return true
     }
-    if (state.destination != MarketplaceDestination.SELLER_PROFILE) return false
+    if (!state.destination.showsSellerProfile) return false
 
     SellerProfileScreen(
         state = state.sellerProfileState,
         messageActions = state.messageActions(actions),
-        onListingClick = { listingId ->
-            onNavigate(MarketplaceDestination.CATALOG)
-            viewModels.marketplace.onListingClicked(listingId)
-        },
-        onBack = { onNavigate(MarketplaceDestination.CATALOG) },
+        listingActions = SellerProfileListingActions(
+            onListingClick = onOpenListing,
+            onCategorySelected = viewModels.sellerProfile::onCategorySelected,
+            onConditionSelected = viewModels.sellerProfile::onConditionSelected
+        ),
+        onBack = onBackFromSellerProfile,
         onReportUser = {
             state.sellerProfileState.profile?.sellerId?.let(viewModels.report::begin)
             if (state.sellerProfileState.profile != null) onNavigate(MarketplaceDestination.REPORT_USER)
@@ -223,6 +144,20 @@ private fun MarketplaceSellerProfileFlow(
             isBlocking = state.blockState.isBlocking
         )
     )
+    if (state.destination == MarketplaceDestination.SELLER_LISTING) {
+        MarketplaceDetailFlow(
+            state = state.marketplaceState,
+            viewModel = viewModels.marketplace,
+            sellerProfileViewModel = viewModels.sellerProfile,
+            listingReportViewModel = viewModels.listingReport,
+            actions = actions,
+            onNavigate = onNavigate,
+            onDetailDismiss = {
+                viewModels.marketplace.dismissListingDetail()
+                onNavigate(MarketplaceDestination.SELLER_PROFILE)
+            }
+        )
+    }
     LaunchedEffect(state.sellerProfileState.profile?.sellerId) {
         state.sellerProfileState.profile?.sellerId?.let(viewModels.block::begin)
             ?: viewModels.block.reset()
@@ -242,46 +177,58 @@ private data class MarketplaceSellerFlowUiState(
     val sellerProfileState: SellerProfileUiState,
     val reportState: MarketplaceUserReportUiState,
     val blockState: MarketplaceUserBlockUiState,
-    val destination: MarketplaceDestination
+    val navigation: MarketplaceSellerNavigationState
 ) {
+    val destination: MarketplaceDestination
+        get() = navigation.destination
+
     fun messageActions(actions: MarketplaceScreenActions): MessageSellerQuickActionActions? {
         val profile = sellerProfileState.profile ?: return null
-        val listing = marketplaceState.detail.listing ?: return null
-        val canMessage = canMessageMarketplaceSeller(
+        return sellerProfileMessageActions(
             marketplaceState.currentUserId,
-            profile.sellerId,
-            listing.sellerId
-        )
-        if (!canMessage) return null
-        return MessageSellerQuickActionActions(
-            conversationKey = "${listing.id.value}:${profile.sellerId}",
-            hasExistingConversation = { actions.hasExistingConversation(listing.id.value, profile.sellerId) },
-            onSend = { content ->
-                actions.onMessageSeller(listing.id.value, profile.sellerId, profile.name ?: listing.sellerName, content)
-            },
-            onSent = {},
-            onSeeChat = { actions.onSeeChat(listing.id.value, profile.sellerId) }
+            profile,
+            navigation.listingContext,
+            actions
         )
     }
 }
 
+internal fun sellerProfileMessageActions(
+    currentUserId: String?,
+    profile: MarketplaceSellerProfile,
+    listing: SellerListingContext?,
+    actions: MarketplaceScreenActions
+): MessageSellerQuickActionActions? {
+    listing ?: return null
+    if (!canMessageMarketplaceSeller(currentUserId, profile.sellerId, listing.sellerId)) return null
+    return MessageSellerQuickActionActions(
+        conversationKey = "${listing.listingId}:${profile.sellerId}",
+        hasExistingConversation = { actions.hasExistingConversation(listing.listingId, profile.sellerId) },
+        onSend = { content ->
+            actions.onMessageSeller(listing.listingId, profile.sellerId, profile.name ?: listing.sellerName, content)
+        },
+        onSent = {},
+        onSeeChat = { actions.onSeeChat(listing.listingId, profile.sellerId) }
+    )
+}
+
 private data class MarketplaceSellerFlowViewModels(
     val marketplace: MarketplaceViewModel,
+    val sellerProfile: SellerProfileViewModel,
     val report: MarketplaceUserReportViewModel,
-    val block: MarketplaceUserBlockViewModel
+    val block: MarketplaceUserBlockViewModel,
+    val listingReport: ListingReportViewModel
 )
 
-data class MarketplaceScreenActions(
-    val onMessageSeller: suspend (String, String, String, String) -> Boolean = { _, _, _, _ -> false },
-    val hasExistingConversation: suspend (String, String) -> Boolean = { _, _ -> false },
-    val onSeeChat: suspend (String, String) -> Unit = { _, _ -> }
-)
-
-private enum class MarketplaceDestination {
+internal enum class MarketplaceDestination {
     CATALOG,
     SELLER_PROFILE,
+    SELLER_LISTING,
     REPORT_USER
 }
+
+private val MarketplaceDestination.showsSellerProfile: Boolean
+    get() = this == MarketplaceDestination.SELLER_PROFILE || this == MarketplaceDestination.SELLER_LISTING
 
 internal fun canMessageMarketplaceSeller(
     currentUserId: String?,

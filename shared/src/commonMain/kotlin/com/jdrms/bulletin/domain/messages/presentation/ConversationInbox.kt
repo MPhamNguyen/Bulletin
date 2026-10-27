@@ -1,28 +1,52 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.DraggableState
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
+import com.jdrms.bulletin.core.designsystem.BulletinConversationDefaults
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -36,29 +60,29 @@ internal fun ConversationList(state: MessagesUiState, viewModel: MessagesViewMod
                 conversation = conversation,
                 viewerId = state.viewerId,
                 isSelected = conversation.id == state.selectedConversationId,
+                hasUnreadMessage = conversation.hasUnreadMessage(state.viewerId),
+                listingPreviewUrl = conversation.listingId?.value?.let(state.listingPreviews::get)?.imageUrl,
                 onClick = { viewModel.selectConversation(conversation.id) },
                 onRemove = { pendingRemoval = conversation.id }
             )
         }
     }
     pendingRemoval?.let { conversationId ->
-        AlertDialog(
-            onDismissRequest = { pendingRemoval = null },
-            title = { Text("Remove conversation?") },
-            text = { Text("This removes it from your inbox only. The other person keeps their conversation.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingRemoval = null
-                    viewModel.hideConversationFromInbox(conversationId)
-                }) {
-                    Text("Remove", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") }
+        RemoveConversationDialog(
+            onDismiss = { pendingRemoval = null },
+            onConfirm = {
+                pendingRemoval = null
+                viewModel.hideConversationFromInbox(conversationId)
             }
         )
     }
+}
+
+private fun Conversation.hasUnreadMessage(viewerId: SenderId?): Boolean {
+    val latestMessage = lastMessage ?: return false
+    if (viewerId == null || latestMessage.senderId == viewerId) return false
+    val viewerReadAt = participants.firstOrNull { it.id == viewerId }?.lastReadAt
+    return viewerReadAt == null || latestMessage.orderingTimestamp > viewerReadAt
 }
 
 @Composable
@@ -66,43 +90,192 @@ private fun ConversationCard(
     conversation: Conversation,
     viewerId: SenderId?,
     isSelected: Boolean,
+    hasUnreadMessage: Boolean,
+    listingPreviewUrl: String?,
     onClick: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val actionWidth = 80.dp
+    val actionWidthPx = with(LocalDensity.current) { actionWidth.toPx() }
+    var swipeOffset by remember(conversation.id) { mutableStateOf(0f) }
+    val dragState = rememberDraggableState { delta ->
+        swipeOffset = (swipeOffset + delta).coerceIn(-actionWidthPx, 0f)
+    }
     val selectedColor = if (isSelected) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
         MaterialTheme.colorScheme.onSurface
     }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        if (swipeOffset < 0f) ConversationDeleteAction(actionWidth, onRemove)
+        ConversationCardSurface(
+            conversation = conversation,
+            viewerId = viewerId,
+            isSelected = isSelected,
+            hasUnreadMessage = hasUnreadMessage,
+            listingPreviewUrl = listingPreviewUrl,
+            selectedColor = selectedColor,
+            modifier = conversationCardModifier(
+                swipeOffset = swipeOffset,
+                dragState = dragState,
+                onClose = { swipeOffset = 0f },
+                onClick = onClick,
+                onDragStopped = {
+                    swipeOffset = if (swipeOffset <= -actionWidthPx * 0.4f) -actionWidthPx else 0f
+                }
+            )
+        )
+    }
+}
+
+@Composable
+private fun ConversationCardSurface(
+    conversation: Conversation,
+    viewerId: SenderId?,
+    isSelected: Boolean,
+    hasUnreadMessage: Boolean,
+    listingPreviewUrl: String?,
+    selectedColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier
+) {
+    val cardShape = MaterialTheme.shapes.medium
+    val cardModifier = if (hasUnreadMessage && !isSelected) {
+        modifier.background(
+            brush = Brush.horizontalGradient(
+                colors = listOf(
+                    BulletinConversationDefaults.unreadGradientStart,
+                    BulletinConversationDefaults.unreadGradientEnd
+                )
+            ),
+            shape = cardShape
+        )
+    } else {
+        modifier
+    }
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = cardModifier,
+        shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
+            containerColor = when {
+                isSelected -> MaterialTheme.colorScheme.primaryContainer
+                hasUnreadMessage -> androidx.compose.ui.graphics.Color.Transparent
+                else -> MaterialTheme.colorScheme.surface
             },
             contentColor = selectedColor
         )
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(conversationTitle(conversation, viewerId), fontWeight = FontWeight.Bold, color = selectedColor)
-            Text(
-                conversationPreviewText(conversation),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+        ConversationCardContent(conversation, listingPreviewUrl, viewerId, isSelected, hasUnreadMessage, selectedColor)
+    }
+}
+
+private fun conversationCardModifier(
+    swipeOffset: Float,
+    dragState: DraggableState,
+    onClose: () -> Unit,
+    onClick: () -> Unit,
+    onDragStopped: () -> Unit
+): Modifier = Modifier.fillMaxWidth()
+    .heightIn(min = 96.dp)
+    .offset { IntOffset(swipeOffset.toInt(), 0) }
+    .draggable(
+        state = dragState,
+        orientation = Orientation.Horizontal,
+        onDragStopped = { onDragStopped() }
+    )
+    .clickable { if (swipeOffset < 0f) onClose() else onClick() }
+
+@Composable
+private fun BoxScope.ConversationDeleteAction(actionWidth: androidx.compose.ui.unit.Dp, onRemove: () -> Unit) {
+    Box(
+        modifier = Modifier.align(Alignment.CenterEnd)
+            .width(actionWidth)
+            .heightIn(min = 96.dp)
+            .background(MaterialTheme.colorScheme.errorContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        IconButton(onClick = onRemove) {
+            Icon(
+                Icons.Outlined.Delete,
+                contentDescription = "Remove conversation",
+                tint = MaterialTheme.colorScheme.error
             )
-            conversation.lastMessage?.let { message ->
-                Text(
-                    formatRelativeTime(message.timestampMillis, currentTimeMillis()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            TextButton(onClick = onRemove) {
-                Text("Remove", color = MaterialTheme.colorScheme.error)
-            }
         }
+    }
+}
+
+@Composable
+private fun ConversationCardContent(
+    conversation: Conversation,
+    listingPreviewUrl: String?,
+    viewerId: SenderId?,
+    isSelected: Boolean,
+    hasUnreadMessage: Boolean,
+    selectedColor: androidx.compose.ui.graphics.Color
+) {
+    val secondaryColor = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
+    val titleColor = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        ConversationAvatar(conversationTitle(conversation, viewerId))
+        ConversationSummary(conversation, viewerId, titleColor, secondaryColor, hasUnreadMessage, Modifier.weight(1f))
+        ConversationListingPreview(listingPreviewUrl)
+    }
+}
+
+@Composable
+private fun ConversationSummary(
+    conversation: Conversation,
+    viewerId: SenderId?,
+    titleColor: androidx.compose.ui.graphics.Color,
+    secondaryColor: androidx.compose.ui.graphics.Color,
+    hasUnreadMessage: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                conversationTitle(conversation, viewerId),
+                modifier = Modifier.weight(1f, fill = false),
+                fontWeight = if (hasUnreadMessage) FontWeight.Bold else FontWeight.Normal,
+                color = titleColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (hasUnreadMessage) UnreadMessageIndicator()
+        }
+        Text(
+            conversationPreviewText(conversation),
+            style = MaterialTheme.typography.bodySmall,
+            color = secondaryColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        val timestamp = conversation.lastMessage?.timestampMillis ?: conversation.updatedAtMillis
+        if (timestamp > 0L) {
+            Text(
+                formatRelativeTime(timestamp, currentTimeMillis()),
+                style = MaterialTheme.typography.labelSmall,
+                color = secondaryColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnreadMessageIndicator() {
+    Box(
+        modifier = Modifier.size(14.dp)
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape)
+            .semantics { contentDescription = "Unread message" },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier.size(7.dp)
+                .shadow(5.dp, CircleShape)
+                .background(MaterialTheme.colorScheme.primary, CircleShape)
+        )
     }
 }

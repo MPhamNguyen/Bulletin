@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -28,6 +29,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,17 +49,37 @@ class MessagesReportingViewModelTest {
 
     @Test
     fun reportUsesSelectedConversationAndRefreshesReportedMessage() = runTest {
-        val repository = messagesRepository(messages = listOf(message()))
+        val otherUsersMessage = message(sender = carol)
+        val repository = messagesRepository(messages = listOf(otherUsersMessage))
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.onMessageInputChanged("Unsent draft")
-        viewModel.report(message().id)
+        viewModel.report(otherUsersMessage.id)
+        viewModel.selectMessageReportReason(ReportReason.SPAM)
+        viewModel.updateMessageReportDescription("Unwanted contact")
+        viewModel.submitMessageReport()
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.currentMessages.single().isReported)
         assertEquals("Unsent draft", viewModel.uiState.value.messageInput)
-        assertEquals("Message reported.", viewModel.uiState.value.statusMessage)
+        assertNull(viewModel.uiState.value.statusMessage)
         assertFalse(viewModel.uiState.value.isReporting)
+        assertTrue(viewModel.uiState.value.messageReportForm?.isSubmitted == true)
         assertEquals(emptySet(), viewModel.uiState.value.revealedReportedMessageIds)
+    }
+
+    @Test
+    fun ownMessageCannotBeReported() = runTest {
+        val ownMessage = message(sender = alice)
+        val repository = messagesRepository(messages = listOf(ownMessage))
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.report(ownMessage.id)
+        advanceUntilIdle()
+
+        assertEquals(ownMessage, repository.getMessages(alice.id, conversationId).getOrThrow().single())
+        assertFalse(viewModel.uiState.value.isReporting)
+        assertEquals(null, viewModel.uiState.value.statusMessage)
     }
 
     @Test
@@ -106,6 +128,8 @@ class MessagesReportingViewModelTest {
         advanceUntilIdle()
         provider.result = Result.Error(MessageSenderLookupException(IllegalStateException("Private auth detail")))
         viewModel.report(message().id)
+        viewModel.selectMessageReportReason(ReportReason.SPAM)
+        viewModel.submitMessageReport()
         advanceUntilIdle()
         assertFalse(repository.getMessages(alice.id, conversationId).getOrThrow().single().isReported)
         assertEquals(emptyList(), viewModel.uiState.value.currentMessages)
@@ -117,13 +141,15 @@ class MessagesReportingViewModelTest {
 
     @Test
     fun reportingFailureExposesProgressAndKeepsMessagesVisible() = runTest {
-        val backing = messagesRepository(messages = listOf(message()))
+        val otherUsersMessage = message(sender = carol)
+        val backing = messagesRepository(messages = listOf(otherUsersMessage))
         val repository = object : MessagesRepository by backing {
             override suspend fun reportMessage(
                 userId: SenderId,
                 conversationId: ConversationId,
                 messageId: MessageId,
-                reason: String
+                reason: String,
+                description: String
             ): Result<Unit> {
                 delay(1000)
                 return Result.Error(IllegalStateException("Private transport detail"))
@@ -131,12 +157,14 @@ class MessagesReportingViewModelTest {
         }
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.report(message().id)
+        viewModel.report(otherUsersMessage.id)
+        viewModel.selectMessageReportReason(ReportReason.SPAM)
+        viewModel.submitMessageReport()
         runCurrent()
         assertTrue(viewModel.uiState.value.isReporting)
         advanceUntilIdle()
         assertFalse(viewModel.uiState.value.isReporting)
-        assertEquals(listOf(message()), viewModel.uiState.value.currentMessages)
+        assertEquals(listOf(otherUsersMessage), viewModel.uiState.value.currentMessages)
         assertNotNull(viewModel.uiState.value.errorMessage)
     }
 

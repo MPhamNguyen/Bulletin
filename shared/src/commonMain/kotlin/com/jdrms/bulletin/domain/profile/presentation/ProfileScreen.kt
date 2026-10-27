@@ -72,7 +72,6 @@ fun ProfileScreen(
     var isSubmittingReview by remember { mutableStateOf(false) }
     val reviewScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) { viewModel.refreshActiveListings() }
     LaunchedEffect(destination) {
         if (destination == ProfileDestination.BOOKMARKED_LISTINGS) {
             viewModel.loadBookmarkedListings()
@@ -133,13 +132,18 @@ private fun ProfileDestinationContent(
     onLeaveReview: (ProfileBookmarkedListing) -> Unit
 ) {
     when (destination) {
-        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks)
+        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks) {
+            states.viewModel.refreshProfile()
+        }
         ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
         ProfileDestination.SETTINGS -> ProfileSettingsDestination(states.profile, flows, callbacks, themeViewModel)
         ProfileDestination.BOOKMARKED_LISTINGS -> {
             BookmarkedListingsView(
                 state = BookmarkedListingsViewState(
-                    listings = states.profile.bookmarkedListings,
+                    listings = states.profile.filteredBookmarkedListings,
+                    allListings = states.profile.bookmarkedListings,
+                    filters = states.profile.bookmarkedListingFilters,
+                    filterOptions = states.profile.bookmarkedListingFilterOptions,
                     isLoading = states.profile.isLoadingBookmarkedListings,
                     isLoadingMore = states.profile.isLoadingMoreBookmarkedListings,
                     hasMore = states.profile.bookmarkedListingsNextCursor != null,
@@ -151,6 +155,8 @@ private fun ProfileDestinationContent(
                     onRemoveBookmark = states.viewModel::removeBookmarkedListing,
                     onRefresh = states.viewModel::loadBookmarkedListings,
                     onLoadMore = states.viewModel::loadMoreBookmarkedListings,
+                    onCategorySelected = states.viewModel::onBookmarkedCategorySelected,
+                    onConditionSelected = states.viewModel::onBookmarkedConditionSelected,
                     onBack = callbacks.onBack
                 )
             )
@@ -184,9 +190,6 @@ private fun ProfileDestinationContent(
             onBack = callbacks.onBack
         )
         ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
-        ProfileDestination.PRIVACY -> PrivacyView(callbacks.onBack)
-        ProfileDestination.HELP_AND_SUPPORT -> HelpAndSupportView(callbacks.onBack)
-        ProfileDestination.TERMS_AND_CONDITIONS -> TermsAndConditionsView(callbacks.onBack)
         ProfileDestination.PUBLIC_PROFILE -> PublicProfileView(states.profile.profile, callbacks.onBack)
         ProfileDestination.MY_LISTINGS, ProfileDestination.EDIT_LISTING -> Unit
     }
@@ -195,10 +198,12 @@ private fun ProfileDestinationContent(
 @Composable
 private fun ProfileLandingDestination(
     state: ProfileUiState,
-    callbacks: ProfileScreenCallbacks
+    callbacks: ProfileScreenCallbacks,
+    onRefresh: () -> Unit
 ) {
     MarketplaceProfileView(
         uiState = state,
+        onRefresh = onRefresh,
         onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
         onMyListingsClick = callbacks.onMyListingsClick,
         onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) }
@@ -241,10 +246,7 @@ private fun ProfileSettingsDestination(
             onEditAccount = { callbacks.onNavigate(ProfileDestination.EDIT_ACCOUNT) },
             onViewPublicProfile = { callbacks.onNavigate(ProfileDestination.PUBLIC_PROFILE) },
             onNotifications = { callbacks.onNavigate(ProfileDestination.NOTIFICATIONS) },
-            onPrivacy = { callbacks.onNavigate(ProfileDestination.PRIVACY) },
             onBlockedUsers = { callbacks.onNavigate(ProfileDestination.BLOCKED_USERS) },
-            onHelpSupport = { callbacks.onNavigate(ProfileDestination.HELP_AND_SUPPORT) },
-            onTermsConditions = { callbacks.onNavigate(ProfileDestination.TERMS_AND_CONDITIONS) },
             onSignOut = { flows.account.signOut(callbacks.onSignOut) },
             onConfirmDeleteProfile = { flows.account.deleteProfile(callbacks.onSignOut) }
         ),

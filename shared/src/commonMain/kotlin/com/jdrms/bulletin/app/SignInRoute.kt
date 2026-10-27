@@ -9,7 +9,7 @@ import kotlinx.coroutines.cancel
 
 @Composable
 internal fun SignInRoute(container: AppContainer, recovery: PasswordRecoveryViewModel, onCreateAccount: () -> Unit) {
-    val viewModel = remember(container) { container.createSignInViewModel() }
+    val viewModel = remember(container) { container.profile.createSignInViewModel() }
     LaunchedEffect(viewModel) {
         if (container.externalSignInPending) viewModel.signInWithMicrosoft()
     }

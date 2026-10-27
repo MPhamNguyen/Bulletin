@@ -9,13 +9,13 @@ internal const val MAX_CURRENCY_DIGITS = 9
 
 /**
  * Keeps only ASCII cents digits so a currency field can behave like a cash-register keypad.
- * Empty and all-zero input represent an unset price.
+ * Empty input represents an unset price; an explicit zero remains a valid price.
  */
 internal fun normalizeCurrencyDigits(input: String): String {
-    return input
-        .filter { it in '0'..'9' }
-        .trimStart('0')
-        .take(MAX_CURRENCY_DIGITS)
+    val digits = input.filter { it in '0'..'9' }
+    return digits.trimStart('0').take(MAX_CURRENCY_DIGITS).ifEmpty {
+        if (digits.isEmpty()) "" else "0"
+    }
 }
 
 /** Formats normalized cents digits as USD, or returns an empty string for an unset price. */
@@ -37,12 +37,12 @@ internal fun formatCurrencyDigits(digits: String): String {
 internal fun currencyDigitsToAmount(digits: String): Double =
     normalizeCurrencyDigits(digits).toLongOrNull()?.let { it / 100.0 } ?: 0.0
 
-/** Converts a valid, non-negative amount to cents digits; zero is represented as unset. */
+/** Converts a valid, non-negative amount to cents digits. */
 internal fun amountToCurrencyDigits(amount: Double): String {
     require(amount.isFinite() && amount >= 0.0) { "Currency amount must be finite and non-negative." }
     val cents = round(amount * 100).toLong()
     require(cents <= MAX_LISTING_PRICE_CENTS) { "Currency amount exceeds the listing price limit." }
-    return cents.takeIf { it > 0 }?.toString().orEmpty()
+    return cents.toString()
 }
 
 /**

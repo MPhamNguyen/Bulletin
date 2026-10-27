@@ -7,7 +7,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
@@ -21,7 +20,8 @@ object SupabaseMessagesMapper {
     fun toConversation(
         conversation: SupabaseConversationDto,
         participants: List<SupabaseConversationParticipantDto>,
-        lastMessage: SupabaseMessageDto?
+        lastMessage: SupabaseMessageDto?,
+        historyVisibleAfter: Instant? = null
     ): Conversation {
         val mappedLastMessage = lastMessage?.let(::toMessage)
         val updatedAtMillis = maxOf(
@@ -33,12 +33,16 @@ object SupabaseMessagesMapper {
             participants = participants.map(::toParticipant),
             listingId = conversation.listingId?.let(::ListingReferenceId),
             lastMessage = mappedLastMessage,
-            updatedAtMillis = updatedAtMillis
+            updatedAtMillis = updatedAtMillis,
+            historyVisibleAfter = historyVisibleAfter
         )
     }
 
     fun toInboxConversation(dto: SupabaseConversationInboxDto): Conversation {
-        val lastMessage = dto.latestMessages.firstOrNull()?.let(::toMessage)
+        val cutoff = dto.membership.singleOrNull()?.historyVisibleAfter?.let(Instant::parse)
+        val lastMessage = dto.latestMessages.firstOrNull()?.let(::toMessage)?.takeIf { message ->
+            cutoff == null || message.orderingTimestamp > cutoff
+        }
         val updatedAtMillis = maxOf(
             dto.updatedAt.toEpochMillisecondsOrZero(),
             lastMessage?.timestampMillis ?: 0L
@@ -48,19 +52,22 @@ object SupabaseMessagesMapper {
             participants = dto.participants.map { participant ->
                 ConversationParticipant(
                     id = SenderId(participant.userId),
-                    displayName = participant.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME
+                    displayName = participant.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
+                    lastReadAt = participant.lastReadAt?.let(Instant::parse)
                 )
             },
             listingId = dto.listingId?.let(::ListingReferenceId),
             lastMessage = lastMessage,
-            updatedAtMillis = updatedAtMillis
+            updatedAtMillis = updatedAtMillis,
+            historyVisibleAfter = cutoff
         )
     }
 
     fun toParticipant(dto: SupabaseConversationParticipantDto): ConversationParticipant {
         return ConversationParticipant(
             id = SenderId(dto.userId),
-            displayName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME
+            displayName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
+            lastReadAt = dto.lastReadAt?.let(Instant::parse)
         )
     }
 
@@ -74,6 +81,9 @@ object SupabaseMessagesMapper {
             content = dto.content,
             timestampMillis = createdAt.toEpochMilliseconds(),
             isReported = dto.reports.isNotEmpty(),
+            editedAt = dto.editedAt?.let(Instant::parse),
+            deletedAt = dto.deletedAt?.let(Instant::parse),
+            isEditLocked = dto.reports.any { it.status != "dismissed" },
             preciseCreatedAt = createdAt.takeUnless { it == Instant.fromEpochMilliseconds(it.toEpochMilliseconds()) }
         )
     }
@@ -82,22 +92,22 @@ object SupabaseMessagesMapper {
         return SupabaseMessageInsertDto(
             id = message.id.value,
             conversationId = message.conversationId.value,
-            content = message.content,
-            createdAt = message.orderingTimestamp.toString()
+            content = message.content
         )
     }
 
     fun toReportInsertDto(
         messageId: MessageId,
-        reporterId: SenderId
+        reporterId: SenderId,
+        reason: String,
+        description: String
     ): SupabaseMessageReportInsertDto {
-        // Message-report reason selection is not implemented; persist the agreed placeholder for now.
         return SupabaseMessageReportInsertDto(
             messageId = messageId.value,
             reporterId = reporterId.value,
-            reason = MessagesPolicy.DEFAULT_REPORT_REASON,
+            reason = reason,
             type = SupabaseMessageReportType.MESSAGE,
-            description = null
+            description = description.ifBlank { null }
         )
     }
 

@@ -2,7 +2,7 @@ package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.AppRootScreen
-import com.jdrms.bulletin.app.navigation.MainNavigationState
+import com.jdrms.bulletin.app.navigation.NavigationSnapshot
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.navigation.backFromProfileDestination
@@ -11,7 +11,9 @@ import com.jdrms.bulletin.app.navigation.systemProfileBack
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 class AppNavigationTest {
 
@@ -98,7 +100,7 @@ class AppNavigationTest {
 
     @Test
     fun selectingProfileFromMyListingsReturnsToMainProfile() {
-        val state = MainNavigationState(
+        val state = NavigationSnapshot(
             currentDestination = AppDestination.PROFILE,
             profileDestination = ProfileDestination.MY_LISTINGS
         )
@@ -111,7 +113,7 @@ class AppNavigationTest {
 
     @Test
     fun selectingMessagesFromMyListingsResetsProfileRoute() {
-        val state = MainNavigationState(
+        val state = NavigationSnapshot(
             currentDestination = AppDestination.PROFILE,
             profileDestination = ProfileDestination.MY_LISTINGS
         )
@@ -120,6 +122,29 @@ class AppNavigationTest {
 
         assertEquals(AppDestination.MESSAGES, result.currentDestination)
         assertEquals(ProfileDestination.PROFILE, result.profileDestination)
+    }
+
+    @Test
+    fun bottomNavigationOnlyAppearsOnTheMainProfileDestination() {
+        assertTrue(NavigationSnapshot(AppDestination.PROFILE, ProfileDestination.PROFILE).showsBottomNavigation)
+
+        ProfileDestination.entries
+            .filterNot { it == ProfileDestination.PROFILE }
+            .forEach { destination ->
+                assertFalse(
+                    NavigationSnapshot(AppDestination.PROFILE, destination).showsBottomNavigation,
+                    "Bottom navigation should be hidden on $destination"
+                )
+            }
+    }
+
+    @Test
+    fun bottomNavigationAppearsOnOtherMainDestinations() {
+        AppDestination.entries
+            .filterNot { it == AppDestination.PROFILE }
+            .forEach { destination ->
+                assertTrue(NavigationSnapshot(destination).showsBottomNavigation)
+            }
     }
 
     @Test

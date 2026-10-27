@@ -3,6 +3,8 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
@@ -26,7 +28,8 @@ class MarketplaceViewModel(
             com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
         ),
     private val listingChangedSignal: RefreshSignal? = null,
-    private val currentUserIdProvider: suspend () -> String? = { null }
+    private val currentUserIdProvider: suspend () -> String? = { null },
+    private val layoutPreferenceStore: MarketplaceLayoutPreferenceStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
@@ -44,9 +47,15 @@ class MarketplaceViewModel(
         bookmarks,
         currentUserIdProvider
     )
+    private val layoutPreferenceController = MarketplaceLayoutPreferenceController(
+        _uiState,
+        viewModelScope,
+        layoutPreferenceStore
+    )
     val reviewActions = MarketplaceReviewController(_uiState, submitMarketplaceReview, viewModelScope)
 
     init {
+        layoutPreferenceController.load()
         refreshListings()
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
@@ -55,6 +64,9 @@ class MarketplaceViewModel(
             }
         }
     }
+
+    fun onLayoutPreferenceChanged(preference: MarketplaceLayoutPreference) =
+        layoutPreferenceController.change(preference)
 
     fun refreshListings(userId: String? = null) {
         loadFirstPage(userId = userId, debounceMillis = 0L)
@@ -79,6 +91,11 @@ class MarketplaceViewModel(
 
     fun onConditionSelected(condition: MarketplaceCondition?) {
         _uiState.update { it.copy(filters = it.filters.copy(condition = condition)) }
+        loadFirstPage(userId = null, debounceMillis = 0L)
+    }
+
+    fun onFiltersApplied(filters: MarketplaceFilterState) {
+        _uiState.update { state -> state.copy(filters = filters.copy(query = state.filters.query)) }
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
@@ -200,14 +217,10 @@ class MarketplaceViewModel(
     }
 
     fun dismissListingDetail() {
-        _uiState.update {
-            it.copy(detail = MarketplaceDetailState())
-        }
+        _uiState.update { it.copy(detail = MarketplaceDetailState()) }
     }
 
-    fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) {
-        bookmarkController.toggle(itemId, userId)
-    }
+    fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) = bookmarkController.toggle(itemId, userId)
 
     private companion object {
         const val SEARCH_DEBOUNCE_MILLIS = 300L

@@ -12,6 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class ConversationTest {
     private val sender = SenderId("user-a")
@@ -115,6 +116,19 @@ class ConversationTest {
     }
 
     @Test
+    fun readReceiptAdvancesMonotonicallyAndRequiresMembership() {
+        val other = ConversationParticipant(SenderId("user-b"), "Other")
+        val conversation = Conversation(conversationId, listOf(participant, other))
+        val firstReadAt = Instant.fromEpochMilliseconds(50L)
+        val advanced = conversation.recordReadAt(sender, firstReadAt).getOrThrow()
+        val regressed = advanced.recordReadAt(sender, Instant.fromEpochMilliseconds(40L)).getOrThrow()
+
+        assertEquals(firstReadAt, regressed.participants.first { it.id == sender }.lastReadAt)
+        assertTrue(conversation.recordReadAt(SenderId("outsider"), firstReadAt).isError())
+        assertEquals(null, conversation.participants.first { it.id == sender }.lastReadAt)
+    }
+
+    @Test
     fun nonParticipantAndMismatchedConversationCannotRecordMessages() {
         val conversation = Conversation(conversationId, listOf(participant))
         assertTrue(conversation.recordMessage(message().copy(senderId = SenderId("other"))).isError())
@@ -130,7 +144,7 @@ class ConversationTest {
     @Test
     fun reportingPreservesMessageIdentityAndContent() {
         val message = message()
-        assertEquals(message.copy(isReported = true), message.report())
+        assertEquals(message.copy(isReported = true, isEditLocked = true), message.report())
         assertFalse(message.isReported)
     }
 

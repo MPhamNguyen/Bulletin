@@ -114,4 +114,33 @@ class ProfileViewModelTest {
         assertEquals(1, viewModel.uiState.value.bookmarkedListingsNextCursor?.offset)
         assertEquals(1, pageRequests)
     }
+
+    @Test
+    fun bookmarkedListingsFilterByCategoryAndCondition() = profileTest {
+        val fixture = ProfileFixture()
+        fixture.authenticate()
+        val listings = listOf(
+            ProfileBookmarkedListing("new-book", "Book", "Alex", "${'$'}15.00", "TEXTBOOKS", condition = "NEW"),
+            ProfileBookmarkedListing("used-book", "Book", "Sam", "${'$'}10.00", "TEXTBOOKS", condition = "GOOD"),
+            ProfileBookmarkedListing("new-chair", "Chair", "Jo", "${'$'}25.00", "FURNITURE", condition = "NEW")
+        )
+        val listingsProvider = ProfileActiveListingsProvider { 0 }
+        val viewModel = ProfileViewModel(
+            sessionRepository = fixture.session,
+            getProfileOverview = GetProfileOverview(fixture.profiles, listingsProvider),
+            getProfileActivity = GetProfileActivity(listingsProvider),
+            listingChangedSignal = RefreshSignal(),
+            bookmarks = ProfileBookmarksDependencies(
+                ProfileBookmarkedListingsProvider { _, _, _ -> ProfileBookmarkedListingsPage(listings, null) }
+            )
+        )
+        advanceUntilIdle()
+        viewModel.loadBookmarkedListings()
+        advanceUntilIdle()
+
+        viewModel.onBookmarkedCategorySelected("TEXTBOOKS")
+        viewModel.onBookmarkedConditionSelected("NEW")
+
+        assertEquals(listOf("new-book"), viewModel.uiState.value.filteredBookmarkedListings.map { it.id })
+    }
 }

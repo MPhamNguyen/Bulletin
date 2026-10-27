@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import kotlinx.coroutines.CancellationException
@@ -18,7 +19,8 @@ data class MarketplaceUserBlockUiState(
 )
 
 class MarketplaceUserBlockViewModel(
-    private val blockMarketplaceUser: BlockMarketplaceUser
+    private val blockMarketplaceUser: BlockMarketplaceUser,
+    private val listingChangedSignal: RefreshSignal? = null
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(MarketplaceUserBlockUiState())
     val uiState = mutableUiState.asStateFlow()
@@ -42,8 +44,9 @@ class MarketplaceUserBlockViewModel(
         viewModelScope.launch {
             try {
                 when (val result = blockMarketplaceUser(userId)) {
-                    is Result.Success -> updateIfCurrent(generation, userId) {
-                        it.copy(isBlocking = false, blocked = true)
+                    is Result.Success -> {
+                        listingChangedSignal?.emit()
+                        updateIfCurrent(generation, userId) { it.copy(isBlocking = false, blocked = true) }
                     }
                     is Result.Error -> updateIfCurrent(generation, userId) {
                         it.copy(

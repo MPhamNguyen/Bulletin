@@ -4,9 +4,10 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.model.UserReport
 import com.jdrms.bulletin.domain.profile.domain.model.UserReportAlreadySubmittedException
-import com.jdrms.bulletin.domain.profile.domain.model.UserReportReason
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.SupabaseUserReportType
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.UserReportInsertDto
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
@@ -44,7 +45,7 @@ class SupabaseUserReportRepositoryTest {
             UserReportInsertDto(
                 reporterId = "reporter-id",
                 reportedUserId = "target-id",
-                reason = "Scam or Fraud",
+                reason = "scam_or_fraud",
                 description = "Details",
                 type = SupabaseUserReportType.USER
             )
@@ -64,7 +65,7 @@ class SupabaseUserReportRepositoryTest {
             UserReportInsertDto(
                 reporterId = "reporter-id",
                 reportedUserId = "target-id",
-                reason = "Scam or Fraud",
+                reason = "scam_or_fraud",
                 description = "Details",
                 type = SupabaseUserReportType.USER
             ),
@@ -109,17 +110,17 @@ class SupabaseUserReportRepositoryTest {
     }
 
     @Test
-    fun preservesEveryUserReportReasonWhenWritingTheUserReportType() = runTest {
+    fun preservesEveryReportReasonWhenWritingTheUserReportType() = runTest {
         val table = FakeTable("reporter-id")
         val repository = SupabaseUserReportRepository(table)
 
-        UserReportReason.entries.forEach { reason ->
+        ReportReason.forType(ReportType.USER).forEach { reason ->
             val report = UserReport.create(UserId("reporter-id"), UserId("target-id"), reason, "Details")
                 .getOrThrow()
 
             repository.submit(report).getOrThrow()
 
-            assertEquals(reason.label, table.inserted?.reason)
+            assertEquals(reason.code, table.inserted?.reason)
             assertEquals(SupabaseUserReportType.USER, table.inserted?.type)
             assertEquals("reporter-id", table.inserted?.reporterId)
             assertEquals("target-id", table.inserted?.reportedUserId)
@@ -164,7 +165,7 @@ class SupabaseUserReportRepositoryTest {
     private fun report(description: String = "Details") = UserReport.create(
         UserId("reporter-id"),
         UserId("target-id"),
-        UserReportReason.SCAM_OR_FRAUD,
+        ReportReason.SCAM_OR_FRAUD,
         description
     ).getOrThrow()
 

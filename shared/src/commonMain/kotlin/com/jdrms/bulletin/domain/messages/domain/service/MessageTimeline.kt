@@ -9,13 +9,18 @@ object MessageTimeline {
             .sortedWith(compareBy<Message> { it.orderingTimestamp }.thenBy { it.id.value })
 
     private fun preferKnownSenderName(versions: List<Message>): Message {
-        val latest = versions.last()
+        val newestEdit = versions.mapNotNull { it.editedAt }.maxOrNull()
+        val latest = versions.last { it.editedAt == newestEdit }
         val knownName = versions.lastOrNull { it.senderName != DEFAULT_SENDER_NAME }?.senderName
-        return if (latest.senderName == DEFAULT_SENDER_NAME && knownName != null) {
+        val resolved = if (latest.senderName == DEFAULT_SENDER_NAME && knownName != null) {
             latest.copy(senderName = knownName)
         } else {
             latest
         }
+        return resolved.copy(
+            isReported = versions.any { it.isReported },
+            isEditLocked = versions.lastOrNull { it.isEditLocked != null }?.isEditLocked
+        )
     }
 
     private const val DEFAULT_SENDER_NAME = "Student"

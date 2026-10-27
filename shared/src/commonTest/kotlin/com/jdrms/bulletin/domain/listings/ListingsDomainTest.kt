@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
+import com.jdrms.bulletin.domain.listings.domain.model.ListingDetails
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
@@ -28,6 +29,7 @@ class ListingsDomainTest {
 
     @Test
     fun testValidPriceFormatting() {
+        assertEquals("Free", ListingPrice(0.0).formatted)
         assertEquals("$40.00", ListingPrice(40.0).formatted)
         assertEquals("$19.99", ListingPrice(19.99).formatted)
         assertEquals("$25.50", ListingPrice(25.5).formatted)
@@ -174,12 +176,14 @@ class ListingsDomainTest {
         val listing = testListing(SellerId("owner_1"))
         val updated = listing.updateDetails(
             editorSellerId = SellerId("owner_1"),
-            title = "Updated Keyboard Title",
-            description = "Updated mechanical switches description",
-            price = ListingPrice(45.0),
-            category = ListingCategory.ELECTRONICS,
-            condition = ListingCondition.GOOD,
-            images = listOf("https://example.com/keyboard.jpg")
+            details = ListingDetails(
+                title = "Updated Keyboard Title",
+                description = "Updated mechanical switches description",
+                price = ListingPrice(45.0),
+                category = ListingCategory.ELECTRONICS,
+                condition = ListingCondition.GOOD,
+                images = listOf("https://example.com/keyboard.jpg")
+            )
         )
 
         assertEquals("Updated Keyboard Title", updated.title)
@@ -194,7 +198,14 @@ class ListingsDomainTest {
         val exception = assertFailsWith<IllegalArgumentException> {
             listing.updateDetails(
                 editorSellerId = SellerId("stranger"),
-                title = "Hacked Title"
+                details = ListingDetails(
+                    title = "Hacked Title",
+                    description = listing.description,
+                    price = listing.price,
+                    category = listing.category,
+                    condition = listing.condition,
+                    images = listing.images
+                )
             )
         }
         assertEquals("Only the owner can edit this listing.", exception.message)

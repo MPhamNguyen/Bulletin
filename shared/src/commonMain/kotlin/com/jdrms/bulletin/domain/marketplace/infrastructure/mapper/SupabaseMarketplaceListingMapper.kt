@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.mapper
 
+import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
@@ -11,8 +13,11 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketpl
 import kotlin.time.Instant
 
 object SupabaseMarketplaceListingMapper {
-    fun toItem(dto: SupabaseMarketplaceListingDto): MarketplaceItem? {
-        val snapshot = toSnapshot(dto) ?: return null
+    fun toItem(
+        dto: SupabaseMarketplaceListingDto,
+        imageUrl: (String) -> String = { it }
+    ): MarketplaceItem? {
+        val snapshot = toSnapshot(dto, imageUrl) ?: return null
         return MarketplaceItem(
             id = MarketplaceItemId(snapshot.id),
             sellerId = snapshot.sellerId,
@@ -22,7 +27,9 @@ object SupabaseMarketplaceListingMapper {
             price = MarketplacePrice(snapshot.priceAmount, snapshot.priceCurrency),
             category = snapshot.category,
             condition = snapshot.condition,
-            createdAtMillis = snapshot.createdAtMillis
+            createdAtMillis = snapshot.createdAtMillis,
+            photos = snapshot.photos,
+            updatedAtMillis = snapshot.updatedAtMillis
         )
     }
 
@@ -35,7 +42,8 @@ object SupabaseMarketplaceListingMapper {
 
     fun toListing(
         dto: SupabaseMarketplaceListingDto,
-        reputationScore: Double?
+        reputationScore: Double?,
+        imageUrl: (String) -> String = { it }
     ): Listing? {
         val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
         val title = dto.name?.takeIf(String::isNotBlank) ?: return null
@@ -61,11 +69,19 @@ object SupabaseMarketplaceListingMapper {
             status = "AVAILABLE",
             isSold = dto.isSold,
             sellerReputationScore = reputationScore,
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            photos = dto.listingImages.sortedBy { it.position }.map { image ->
+                imageUrl(image.objectPath)
+                    .withCropSettings(ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY))
+            },
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
         )
     }
 
-    fun toSnapshot(dto: SupabaseMarketplaceListingDto): MarketplaceListingSnapshot? {
+    fun toSnapshot(
+        dto: SupabaseMarketplaceListingDto,
+        photoUrl: (String) -> String = { it }
+    ): MarketplaceListingSnapshot? {
         val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
         val title = dto.name?.takeIf(String::isNotBlank) ?: return null
         val price = dto.price ?: return null
@@ -85,7 +101,20 @@ object SupabaseMarketplaceListingMapper {
             priceCurrency = "USD",
             category = category,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
-            condition = condition
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
+            condition = condition,
+            primaryPhotoUrl = dto.listingImages.firstOrNull { it.position == 0 }
+                ?.let { image ->
+                    photoUrl(image.objectPath).withCropSettings(
+                        ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
+                    )
+                },
+            photoUrls = dto.listingImages.asSequence().filter { it.position >= 0 }.sortedBy { it.position }
+                .filter { it.objectPath.isNotBlank() }.map { image ->
+                    photoUrl(image.objectPath).withCropSettings(
+                        ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
+                    )
+                }.toList()
         )
     }
 

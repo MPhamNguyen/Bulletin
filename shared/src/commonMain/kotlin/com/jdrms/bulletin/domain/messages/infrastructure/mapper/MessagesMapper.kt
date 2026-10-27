@@ -20,7 +20,10 @@ object MessagesMapper {
             senderName = dto.senderName,
             content = dto.content,
             timestampMillis = dto.timestampMillis,
-            isReported = dto.isReported
+            isReported = dto.isReported,
+            editedAt = dto.editedAt,
+            deletedAt = dto.deletedAt,
+            isEditLocked = dto.isEditLocked
         )
     }
 
@@ -32,7 +35,10 @@ object MessagesMapper {
             senderName = domain.senderName,
             content = domain.content,
             timestampMillis = domain.timestampMillis,
-            isReported = domain.isReported
+            isReported = domain.isReported,
+            editedAt = domain.editedAt,
+            deletedAt = domain.deletedAt,
+            isEditLocked = domain.isEditLocked
         )
     }
 

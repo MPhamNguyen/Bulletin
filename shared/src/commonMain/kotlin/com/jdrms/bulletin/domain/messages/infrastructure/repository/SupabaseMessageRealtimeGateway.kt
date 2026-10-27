@@ -53,9 +53,17 @@ private class SupabaseMessageRealtimeChannel(
             ?.let(MessageStreamEvent::Received)
     }
 
+    private val updates = channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+        table = SupabaseMessagesRepository.MESSAGES_TABLE
+        filter("conversation_id", FilterOperator.EQ, conversationId.value)
+    }.mapNotNull { action ->
+        SupabaseRealtimeMessageMapper.toMessageOrNull(action.record, conversationId)
+            ?.let(MessageStreamEvent::Received)
+    }
+
     private val status = channel.status.drop(1).map { it.toMessageStreamEvent() }
 
-    override val events: Flow<MessageStreamEvent> = merge(inserts, status)
+    override val events: Flow<MessageStreamEvent> = merge(inserts, updates, status)
 
     override suspend fun subscribe() = channel.subscribe(blockUntilSubscribed = true)
 

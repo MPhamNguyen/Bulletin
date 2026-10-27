@@ -13,10 +13,21 @@ data class SupabaseListingDto(
     @SerialName("price") val price: Double? = null,
     @SerialName("description") val description: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("status") val status: String? = null,
     @SerialName("is_sold") val isSold: Boolean = false,
     @SerialName("seller_profile") val profile: SupabaseListingProfileDto? = null,
-    @SerialName("buyer_id") val buyerId: String? = null
+    @SerialName("buyer_id") val buyerId: String? = null,
+    @SerialName("listing_images") val listingImages: List<SupabaseListingImageDto> = emptyList()
+)
+
+@Serializable
+data class SupabaseListingImageDto(
+    @SerialName("object_path") val objectPath: String,
+    @SerialName("position") val position: Int,
+    @SerialName("crop_scale") val cropScale: Float = 1f,
+    @SerialName("crop_offset_x") val cropOffsetX: Float = 0f,
+    @SerialName("crop_offset_y") val cropOffsetY: Float = 0f
 )
 
 @Serializable

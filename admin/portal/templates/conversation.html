@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Reported conversation{% endblock %}
+{% block content %}
+<a href="{{ url_for('portal.review', report_id=report.id) }}">Return to report</a>
+<h1>Conversation history</h1>
+<p>Report {{ report.id }}<br>Conversation {{ reported_message.conversation_id }}</p>
+<p class="muted">Stored messages are shown from oldest to newest, 50 per page. Use Next messages to read the rest of the chat. Deleted messages cannot be recovered here.</p>
+<p><strong>Reported message:</strong></p>
+<blockquote class="content">{{ reported_message.body or 'Empty message' }}</blockquote>
+<p class="muted">{{ reported_message.created_at|utc_timestamp }}</p>
+<h2>Chat · page {{ page }}</h2>
+<ol class="chat-history" aria-label="Conversation messages">
+{% for message in messages %}
+  <li class="chat-message{% if message.id == reported_message.id %} reported-message{% endif %}">
+    {% if message.id == reported_message.id %}<p><strong>Reported message</strong></p>{% endif %}
+    <p><strong>{{ senders.get(message.sender_id, 'Unavailable profile') }}</strong><br><span class="muted">{{ message.sender_id or 'Deleted sender' }} · {{ message.created_at|utc_timestamp }}</span></p>
+    <p class="content">{{ message.body or 'Empty message' }}</p>
+  </li>
+{% else %}<li>No messages on this page.</li>{% endfor %}
+</ol>
+<nav aria-label="Conversation pages">
+  {% if page > 1 %}<a href="{{ url_for('conversation.review', report_id=report.id, page=page-1) }}">Previous messages</a>{% endif %}
+  {% if has_next %}<a href="{{ url_for('conversation.review', report_id=report.id, page=page+1) }}">Next messages</a>{% endif %}
+</nav>
+{% endblock %}

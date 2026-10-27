@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages.infrastructure.mapper
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageDto
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -13,8 +14,13 @@ import kotlin.test.assertTrue
 
 class SupabaseMessagesMapperTest {
     @Test
-    fun serializedReportContainsOnlyMessageReportFieldsAndExplicitNullDescription() {
-        val report = SupabaseMessagesMapper.toReportInsertDto(MessageId("message-id"), SenderId("reporter-id"))
+    fun serializedReportContainsSelectedReasonAndAdditionalDescription() {
+        val report = SupabaseMessagesMapper.toReportInsertDto(
+            MessageId("message-id"),
+            SenderId("reporter-id"),
+            ReportReason.SPAM.code,
+            "Repeated unwanted messages"
+        )
 
         val payload = Json.parseToJsonElement(Json.encodeToString(report))
 
@@ -24,8 +30,8 @@ class SupabaseMessagesMapperTest {
                     "message_id":"message-id",
                     "reporter_id":"reporter-id",
                     "type":"message",
-                    "reason":"Inappropriate Content",
-                    "description":null
+                    "reason":"spam",
+                    "description":"Repeated unwanted messages"
                 }"""
             ),
             payload
@@ -56,8 +62,8 @@ class SupabaseMessagesMapperTest {
     }
 
     @Test
-    fun resolvedAndDismissedReportsKeepTheMessageHidden() {
-        listOf("open", "in_review", "resolved", "dismissed").forEach { status ->
+    fun allReportStatusesKeepTheMessageHidden() {
+        listOf("open", "under_review", "action_taken", "dismissed", "duplicate", "future_status").forEach { status ->
             val dto = decodeMessage(""", "reports":[{"id":"report-id","status":"$status"}]""")
 
             assertTrue(SupabaseMessagesMapper.toMessage(dto).isReported)

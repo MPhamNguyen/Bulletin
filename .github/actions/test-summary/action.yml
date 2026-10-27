@@ -1,0 +1,116 @@
+# Reads Gradle JUnit XML reports using Python 3 on ubuntu-latest.
+name: Test summary
+description: Summarize JUnit XML results in the job summary and annotate failures.
+
+inputs:
+  title:
+    description: Heading for the summary section.
+    default: Test results
+
+outputs:
+  test_count:
+    description: Number of test cases found in the JUnit XML reports.
+    value: ${{ steps.summarize.outputs.test_count }}
+
+runs:
+  using: composite
+  steps:
+    - name: Summarize
+      id: summarize
+      shell: bash
+      env:
+        TITLE: ${{ inputs.title }}
+      run: |
+        python3 - <<'PY'
+        import glob
+        import os
+        import xml.etree.ElementTree as ET
+
+        title = os.environ.get("TITLE", "Test results")
+        summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+
+        def emit(lines):
+            if summary_path:
+                with open(summary_path, "a", encoding="utf-8") as fh:
+                    fh.write("\n".join(lines) + "\n")
+
+        def esc(text):
+            return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+        def markdown(text):
+            return (text.replace("&", "&amp;").replace("<", "&lt;")
+                    .replace(">", "&gt;").replace("|", "&#124;")
+                    .replace("`", "&#96;").replace("\r", " ").replace("\n", " "))
+
+        files = glob.glob("**/build/test-results/**/*.xml", recursive=True)
+        tests = skipped = 0
+        total_time = 0.0
+        classes = {}   # classname -> [count, seconds]
+        failures = []  # (classname, name, message)
+
+        for path in sorted(files):
+            try:
+                root = ET.parse(path).getroot()
+            except ET.ParseError:
+                print(f"::warning title=Test summary::{esc(f'Could not parse {path}')}")
+                continue
+            for case in root.iter("testcase"):
+                cls = case.get("classname", "?")
+                name = case.get("name", "?")
+                secs = float(case.get("time", 0) or 0)
+                entry = classes.setdefault(cls, [0, 0.0])
+                entry[0] += 1
+                entry[1] += secs
+                tests += 1
+                total_time += secs
+                bad = case.find("failure")
+                if bad is None:
+                    bad = case.find("error")
+                if bad is not None:
+                    msg = (bad.get("message") or (bad.text or "")).strip().splitlines()
+                    failures.append((cls, name, msg[0][:300] if msg else "no message"))
+                elif case.find("skipped") is not None:
+                    skipped += 1
+
+        if tests == 0:
+            emit([f"### ⚪ {markdown(title)}", "", "_No test results were produced._"])
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+            output.write(f"test_count={tests}\n")
+
+        if tests == 0:
+            raise SystemExit(0)
+
+        failed = len(failures)
+        passed = tests - failed - skipped
+        icon = "❌" if failed else "✅"
+        lines = [
+            f"### {icon} {markdown(title)}",
+            "",
+            "| Tests | ✅ Passed | ❌ Failed | ⏭️ Skipped | ⏱️ Time |",
+            "| ---: | ---: | ---: | ---: | ---: |",
+            f"| {tests} | {passed} | {failed} | {skipped} | {total_time:.1f}s |",
+            "",
+        ]
+
+        if failures:
+            lines += ["#### ❌ Failures", ""]
+            for cls, name, msg in failures[:25]:
+                label = markdown(f"{cls.rsplit('.', 1)[-1]}.{name}")
+                lines.append(f"- `{label}`: {markdown(msg)}")
+                print(f"::error title=Test failed::{esc(f'{cls}.{name}: {msg}')}")
+            if len(failures) > 25:
+                lines.append(f"- … and {len(failures) - 25} more")
+            lines.append("")
+
+        slowest = sorted(classes.items(), key=lambda kv: kv[1][1], reverse=True)[:5]
+        lines += [
+            "<details><summary>🐢 Slowest test classes</summary>",
+            "",
+            "| Class | Tests | Time |",
+            "| --- | ---: | ---: |",
+        ]
+        for cls, (count, secs) in slowest:
+            lines.append(f"| `{markdown(cls.rsplit('.', 1)[-1])}` | {count} | {secs:.1f}s |")
+        lines += ["", "</details>", ""]
+        emit(lines)
+        PY

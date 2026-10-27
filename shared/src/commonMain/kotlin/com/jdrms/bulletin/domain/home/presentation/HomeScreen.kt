@@ -1,226 +1,255 @@
 package com.jdrms.bulletin.domain.home.presentation
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import kotlin.math.abs
+import androidx.compose.ui.zIndex
 
-data class LoremCardItem(
-    val id: String,
-    val tag: String,
-    val title: String,
-    val subtitle: String,
-    val description: String,
-    val price: String
-)
-
-val defaultLoremItems = listOf(
-    LoremCardItem(
-        id = "1",
-        tag = "Campus Discovery • Featured", // TODO: Rename `tag` to `condition` when the listing schema is finalized.
-        title = "Lorem Ipsum Dolor Sit Amet",
-        // TODO: Replace subtitle into tags when we start to support tags.
-        subtitle = "Consectetur adipiscing elit • Sed do eiusmod",
-        description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor " +
-            "incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-        price = "$49.99"
-    ),
-    LoremCardItem(
-        id = "2",
-        tag = "Marketplace • Textbooks",
-        title = "Calculus: Early Transcendentals",
-        subtitle = "8th Edition • James Stewart",
-        description = "Barely used calculus textbook. Highlight-free with all companion access codes intact. " +
-            "Great condition for upcoming term coursework.",
-        price = "$35.00"
-    ),
-    LoremCardItem(
-        id = "3",
-        tag = "Housing • Sublease",
-        title = "Studio Apartment Near Campus",
-        subtitle = "Available Summer Term • Utilities Included",
-        description = "Bright and spacious studio within walking distance to the engineering quad and library. " +
-            "Fully furnished with high-speed internet.",
-        price = "$750 / mo"
-    ),
-    LoremCardItem(
-        id = "4",
-        tag = "Student Services • Tutoring",
-        title = "CS & Math Peer Tutoring",
-        subtitle = "Algorithms, Data Structures & Linear Algebra",
-        description = "Experienced upperclassman offering 1-on-1 tutoring sessions. Flexible schedule " +
-            "and tailored exam preparation guides.",
-        price = "$20 / hr"
-    )
-)
+private const val PREFETCH_REMAINING_ITEMS = 2
 
 @Composable
 fun HomeScreen(
-    @Suppress("UnusedParameter", "unused") viewModel: HomeViewModel,
+    viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
-    items: List<LoremCardItem> = defaultLoremItems
+    motionDurationScale: Float = rememberHomeMotionDurationScale(),
+    profileAnchorInWindow: Rect? = null,
+    onSaveCelebration: (Float) -> Unit = {},
+    photoPlaybackPaused: Boolean = false
 ) {
-    var currentIndex by remember { mutableStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
-    val density = LocalDensity.current
+    val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(state.currentIndex, state.feed.size, state.hasMore, state.nextCursor) {
+        if (state.prefetchEnabled && shouldPrefetchHomeFeedPage(state.currentIndex, state.feed.size, state.hasMore)) {
+            viewModel.loadNextPage()
+        }
+    }
+    val announcements = remember(viewModel) { HomeAnnouncements() }
+    CompositionLocalProvider(LocalHomeAnnouncements provides announcements) {
+        HomeScreenBody(
+            state,
+            viewModel,
+            motionDurationScale,
+            profileAnchorInWindow,
+            onSaveCelebration,
+            photoPlaybackPaused,
+            modifier
+        )
+    }
+}
 
-    val currentItem = items.getOrNull(currentIndex)
-    val nextItem = items.getOrNull(currentIndex + 1)
-
-    BoxWithConstraints(
-        modifier = modifier.fillMaxSize()
-    ) {
-        val screenWidthPx = constraints.maxWidth.toFloat()
-        val thresholdPx = with(density) { 100.dp.toPx() }
-
-        val offsetX = remember(currentIndex) { Animatable(0f) }
-
-        if (currentItem != null) {
-            // Keep the next card mounted underneath so it is revealed during the swipe.
-            if (nextItem != null) {
-                HomeFeedCard(
-                    item = nextItem,
-                    cardIndex = currentIndex + 1,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            val dragProgress = (abs(offsetX.value) / screenWidthPx).coerceIn(0f, 1f)
-            val rotationAngle = (offsetX.value / screenWidthPx * 15f).coerceIn(-20f, 20f)
-            val cardAlpha = (1f - dragProgress * 0.4f).coerceIn(0.6f, 1f)
-
-            HomeFeedCard(
-                item = currentItem,
-                cardIndex = currentIndex,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        translationX = offsetX.value
-                        rotationZ = rotationAngle
-                        alpha = cardAlpha
-                    }
-                    .pointerInput(currentIndex) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                coroutineScope.launch {
-                                    if (offsetX.value < -thresholdPx) {
-                                        // Advance only after the current card has fully left the viewport.
-                                        offsetX.animateTo(
-                                            targetValue = -screenWidthPx * 1.3f,
-                                            animationSpec = tween(durationMillis = 200)
-                                        )
-                                        currentIndex++
-                                    } else if (offsetX.value > thresholdPx) {
-                                        offsetX.animateTo(
-                                            targetValue = screenWidthPx * 1.3f,
-                                            animationSpec = tween(durationMillis = 200)
-                                        )
-                                        currentIndex++
-                                    } else {
-                                        offsetX.animateTo(
-                                            targetValue = 0f,
-                                            animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessMedium
-                                            )
-                                        )
-                                    }
-                                }
-                            },
-                            onDragCancel = {
-                                coroutineScope.launch {
-                                    offsetX.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring()
-                                    )
-                                }
-                            },
-                            onHorizontalDrag = { change, dragAmount ->
-                                change.consume()
-                                coroutineScope.launch {
-                                    offsetX.snapTo(offsetX.value + dragAmount)
-                                }
-                            }
-                        )
-                    }
-            )
-        } else {
-            // The feed intentionally stops here instead of looping back through the items.
-            EmptyFeedState(
-                onReset = { currentIndex = 0 },
-                modifier = Modifier.fillMaxSize()
+@Composable
+private fun HomeScreenBody(
+    state: HomeUiState,
+    viewModel: HomeViewModel,
+    motionDurationScale: Float,
+    profileAnchorInWindow: Rect?,
+    onSaveCelebration: (Float) -> Unit,
+    photoPlaybackPaused: Boolean,
+    modifier: Modifier
+) {
+    HomeConfirmedSaveCelebration(
+        state.interaction,
+        viewModel,
+        profileAnchorInWindow,
+        motionDurationScale,
+        onSaveCelebration
+    )
+    val error = state.errorMessage
+    HomeKeyboardViewport(
+        modifier.then(homeTrayDismissal(state.interaction.card, viewModel)),
+        photoPlaybackPaused
+    ) { paused ->
+        HomeAnnouncementRegion(LocalHomeAnnouncements.current, state.interaction)
+        HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow, paused)
+        HomeSaveRetrySnackbar(state, viewModel, Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(1f))
+        HomeAccountNotice(state.interaction.accountNotice, Modifier.align(Alignment.BottomCenter).padding(16.dp))
+        if (state.feed.getOrNull(state.currentIndex) != null && error != null) {
+            NextPageError(
+                message = error,
+                isRetrying = state.isLoadingMore,
+                onRetry = viewModel::loadNextPage,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
             )
         }
     }
 }
 
 @Composable
-private fun EmptyFeedState(
-    onReset: () -> Unit,
-    modifier: Modifier = Modifier
+private fun HomeAccountNotice(notice: HomeInteractionError?, modifier: Modifier) {
+    notice?.let {
+        Text(
+            homeInteractionErrorText(it),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun HomeDeckContent(
+    state: HomeUiState,
+    viewModel: HomeViewModel,
+    durationScale: Float,
+    anchor: Rect?,
+    photoPlaybackPaused: Boolean
 ) {
+    when {
+        state.feed.getOrNull(state.currentIndex) != null -> HomeCardStack(
+            state,
+            viewModel,
+            durationScale,
+            anchor,
+            photoPlaybackPaused
+        )
+        state.isDeckLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+        state.errorMessage != null -> FeedErrorState(
+            title = when {
+                state.errorRetryAction == HomeErrorRetryAction.REPLAY -> "Couldn't replay listings"
+                state.nextCursor == null -> "Couldn't load listings"
+                else -> "Couldn't load more listings"
+            },
+            message = state.errorMessage,
+            onRetry = when (state.errorRetryAction) {
+                HomeErrorRetryAction.REPLAY -> viewModel::replayLoadedCards
+                HomeErrorRetryAction.RELOAD_FEED ->
+                    if (state.nextCursor == null) viewModel::loadFeed else viewModel::loadNextPage
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+        else -> EmptyFeedState(
+            onReset = viewModel::replayLoadedCards,
+            onRefresh = viewModel::refresh,
+            onLoadMore = if (state.hasMore) viewModel::loadNextPage else null,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+private fun FeedErrorState(title: String, message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
+        modifier.background(MaterialTheme.colorScheme.background).padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "✨",
-                style = MaterialTheme.typography.displayMedium
+            FeedStateMessage(title, message, isError = true)
+            Button(onClick = onRetry, shape = MaterialTheme.shapes.medium) {
+                Text("Try again", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeedStateMessage(title: String, message: String, isError: Boolean = false) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onBackground,
+        textAlign = TextAlign.Center
+    )
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodyLarge,
+        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun NextPageError(
+    message: String,
+    isRetrying: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(message, style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onRetry, enabled = !isRetrying) {
+                if (isRetrying) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Retry")
+                }
+            }
+        }
+    }
+}
+
+internal fun shouldPrefetchHomeFeedPage(currentIndex: Int, feedSize: Int, hasMore: Boolean): Boolean {
+    return hasMore && feedSize > 0 && feedSize - 1 - currentIndex <= PREFETCH_REMAINING_ITEMS
+}
+
+@Composable
+private fun EmptyFeedState(
+    onReset: () -> Unit,
+    onRefresh: () -> Unit,
+    onLoadMore: (() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier.background(MaterialTheme.colorScheme.background).padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(text = "✨", style = MaterialTheme.typography.displayMedium)
+            FeedStateMessage(
+                title = if (onLoadMore == null) "You're All Caught Up" else "More Listings Available",
+                message = if (onLoadMore == null) {
+                    "You've swiped through all available listings. Check back later for new items."
+                } else {
+                    "Continue loading to check for more listings."
+                }
             )
-            Text(
-                text = "You're All Caught Up",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "You've swiped through all available listings. Check back later for new items.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = onReset,
-                shape = RoundedCornerShape(12.dp)
-            ) {
+            onLoadMore?.let { loadMore ->
+                Button(onClick = loadMore, shape = MaterialTheme.shapes.medium) {
+                    Text("Load More", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+            TextButton(onClick = onRefresh) { Text("Refresh") }
+            Button(onClick = onReset, shape = MaterialTheme.shapes.medium) {
                 Text(
                     text = "Start Over",
                     style = MaterialTheme.typography.labelLarge,

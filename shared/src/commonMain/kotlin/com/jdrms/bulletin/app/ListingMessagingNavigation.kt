@@ -1,8 +1,8 @@
 package com.jdrms.bulletin.app
 
-import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.di.MessagesModule
 import com.jdrms.bulletin.app.navigation.AppDestination
-import com.jdrms.bulletin.app.navigation.MainNavigationState
+import com.jdrms.bulletin.app.navigation.NavigationSnapshot
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
@@ -12,7 +12,7 @@ import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 internal data class ListingMessageSendResult(
     val sent: Boolean,
     val conversationId: ConversationId?,
-    val navigationState: MainNavigationState
+    val navigationState: NavigationSnapshot
 )
 
 internal data class ListingMessageRequest(
@@ -32,11 +32,11 @@ internal fun openSentListingConversation(
 }
 
 internal suspend fun sendListingMessage(
-    container: AppContainer,
-    navigationState: MainNavigationState,
+    messagesModule: MessagesModule,
+    navigationState: NavigationSnapshot,
     request: ListingMessageRequest
 ): ListingMessageSendResult {
-    val conversationId = container.messageSeller(
+    val conversationId = messagesModule.messageSeller(
         ListingReferenceId(request.listingId.removePrefix("listing:")),
         ConversationParticipant(SenderId(request.sellerId), request.sellerName),
         request.content
@@ -53,33 +53,33 @@ internal suspend fun sendListingMessage(
 }
 
 internal suspend fun hasListingConversation(
-    container: AppContainer,
+    messagesModule: MessagesModule,
     listingId: String,
     sellerId: String
 ): Boolean {
-    return container.hasListingConversation(
+    return messagesModule.hasListingConversation(
         ListingReferenceId(listingId.removePrefix("listing:")),
         SenderId(sellerId)
     ).getOrNull() == true
 }
 
 private suspend fun findListingConversation(
-    container: AppContainer,
+    messagesModule: MessagesModule,
     listingId: String,
     sellerId: String
 ): ConversationId? {
     val listingReference = ListingReferenceId(listingId.removePrefix("listing:"))
     val seller = SenderId(sellerId)
-    return container.getConversations().getOrNull()?.conversations?.firstOrNull { conversation ->
+    return messagesModule.getConversations().getOrNull()?.conversations?.firstOrNull { conversation ->
         conversation.listingId == listingReference && conversation.includes(seller)
     }?.id
 }
 
 internal suspend fun openListingConversation(
-    container: AppContainer,
+    messagesModule: MessagesModule,
     messagesViewModel: MessagesViewModel,
     listingId: String,
     sellerId: String
 ) {
-    findListingConversation(container, listingId, sellerId)?.let(messagesViewModel.openConversation)
+    findListingConversation(messagesModule, listingId, sellerId)?.let(messagesViewModel.openConversation)
 }

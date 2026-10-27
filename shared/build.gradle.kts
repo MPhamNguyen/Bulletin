@@ -67,6 +67,11 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.compose.uiTestJunit4)
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.androidx.espresso.core)
+        }
     }
 }
 
@@ -74,7 +79,34 @@ dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
 }
 
+// Class-file filtering also includes names such as ListingsViewModelTestPart1.
+// Hash the outer class name so nested tests stay on the same shard.
+class TestShardSpec(private val count: Int, private val index: Int) :
+    Spec<FileTreeElement>, java.io.Serializable {
+    override fun isSatisfiedBy(element: FileTreeElement): Boolean {
+        if (element.isDirectory) return true
+        val className = element.relativePath.pathString.removeSuffix(".class").substringBefore('$')
+        return Math.floorMod(className.hashCode(), count) == index
+    }
+}
+
 tasks.withType<Test>().configureEach {
+    // Robolectric forks are memory hungry; keep one JVM per shard.
+    maxParallelForks = 1
+    val countProperty = providers.gradleProperty("testShardCount").orNull
+    val indexProperty = providers.gradleProperty("testShardIndex").orNull
+    if (countProperty != null || indexProperty != null) {
+        val count = countProperty?.toIntOrNull()
+        val index = indexProperty?.toIntOrNull()
+        require(count != null && count > 0 && index != null && index in 0 until count) {
+            "Set both testShardCount (> 0) and testShardIndex (0 until count) to integers"
+        }
+        inputs.property("testShardCount", count)
+        inputs.property("testShardIndex", index)
+        include(TestShardSpec(count, index))
+        filter.isFailOnNoMatchingTests = false
+        failOnNoDiscoveredTests = false
+    }
     testLogging {
         events("passed", "skipped", "failed")
         showStandardStreams = false

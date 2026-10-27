@@ -32,12 +32,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceUserReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
 @Composable
 internal fun ReportMarketplaceUserScreen(
     state: MarketplaceUserReportUiState,
-    onReasonSelected: (MarketplaceUserReportReason) -> Unit,
+    onReasonSelected: (ReportReason) -> Unit,
     onDescriptionChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     onBack: () -> Unit
@@ -131,7 +132,7 @@ private fun ReportSubmittedContent(onBack: () -> Unit) {
 @Composable
 private fun ReportFormContent(
     state: MarketplaceUserReportUiState,
-    onReasonSelected: (MarketplaceUserReportReason) -> Unit,
+    onReasonSelected: (ReportReason) -> Unit,
     onDescriptionChanged: (String) -> Unit
 ) {
     Column(
@@ -139,7 +140,7 @@ private fun ReportFormContent(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text("Why are you reporting this user?", style = MaterialTheme.typography.titleMedium)
-        MarketplaceUserReportReason.entries.forEach { reason ->
+        ReportReason.forType(ReportType.USER).forEach { reason ->
             Row(
                 Modifier.fillMaxWidth().clickable { onReasonSelected(reason) }.padding(vertical = 1.dp),
                 verticalAlignment = Alignment.CenterVertically

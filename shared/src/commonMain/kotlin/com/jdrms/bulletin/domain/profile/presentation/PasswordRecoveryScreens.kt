@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -136,6 +137,7 @@ private fun RecoveryLayout(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState())
