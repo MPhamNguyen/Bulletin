@@ -125,8 +125,7 @@ private fun LazyGridScope.marketplaceCatalogHeader(
 ) {
     fullWidthItem {
         SectionHeader(
-            title = "Campus Marketplace",
-            subtitle = "Browse, search, & discover student items on campus"
+            title = "Marketplace"
         )
     }
     fullWidthItem {

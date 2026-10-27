@@ -32,18 +32,23 @@ import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
+internal data class MessageReportCallbacks(
+    val onReasonSelected: (ReportReason) -> Unit,
+    val onDescriptionChanged: (String) -> Unit,
+    val onSubmit: () -> Unit,
+    val onDismiss: () -> Unit
+)
+
 @Composable
 internal fun MessageReportScreen(
     form: MessageReportFormState,
     isSubmitting: Boolean,
-    onReasonSelected: (ReportReason) -> Unit,
-    onDescriptionChanged: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onDismiss: () -> Unit,
+    isInboxLoading: Boolean,
+    callbacks: MessageReportCallbacks,
     errorMessage: String?
 ) {
     Dialog(
-        onDismissRequest = { if (!isSubmitting) onDismiss() },
+        onDismissRequest = { if (!isSubmitting) callbacks.onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
@@ -58,11 +63,11 @@ internal fun MessageReportScreen(
             ) {
                 Text("Report message", style = MaterialTheme.typography.titleLarge)
                 if (form.isSubmitted) {
-                    MessageReportSubmitted(onDismiss)
+                    MessageReportSubmitted(callbacks.onDismiss)
                 } else {
                     errorMessage?.let { message -> MessageReportError(message) }
-                    MessageReportForm(form, onReasonSelected, onDescriptionChanged)
-                    MessageReportSubmitButton(isSubmitting, onSubmit)
+                    MessageReportForm(form, callbacks.onReasonSelected, callbacks.onDescriptionChanged)
+                    MessageReportSubmitButton(isSubmitting, isInboxLoading, callbacks.onSubmit)
                 }
             }
         }
@@ -143,17 +148,21 @@ private fun MessageReportReasonOption(
 }
 
 @Composable
-private fun MessageReportSubmitButton(isSubmitting: Boolean, onSubmit: () -> Unit) {
+private fun MessageReportSubmitButton(
+    isSubmitting: Boolean,
+    isInboxLoading: Boolean,
+    onSubmit: () -> Unit
+) {
     Button(
         onClick = onSubmit,
-        enabled = !isSubmitting,
+        enabled = !isSubmitting && !isInboxLoading,
         modifier = Modifier.fillMaxWidth(),
         colors = BulletinButtonDefaults.buttonColors()
     ) {
-        if (isSubmitting) {
+        if (isSubmitting || isInboxLoading) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                Text("Submitting report…")
+                Text(if (isSubmitting) "Submitting report…" else "Loading conversations…")
             }
         } else {
             Text("Submit report")

@@ -27,21 +27,18 @@ import kotlinx.coroutines.withTimeoutOrNull
 class SupabaseMarketplaceRepository private constructor(
     private val supabase: SupabaseClient,
     private val searchPolicy: MarketplaceSearchPolicy,
-    private val fallbackRepository: InMemoryMarketplaceRepository,
     internal val readCache: MarketplaceReadCache
 ) : MarketplaceRepository {
 
     constructor(supabase: SupabaseClient) : this(
         supabase,
         MarketplaceSearchPolicy(),
-        InMemoryMarketplaceRepository(),
         MarketplaceReadCache()
     )
 
     internal constructor(supabase: SupabaseClient, readCache: MarketplaceReadCache) : this(
         supabase,
         MarketplaceSearchPolicy(),
-        InMemoryMarketplaceRepository(),
         readCache
     )
 
@@ -52,7 +49,7 @@ class SupabaseMarketplaceRepository private constructor(
             runCatching {
                 readCache.catalog {
                     val dtos = supabase.from(LISTINGS_TABLE).select().decodeList<MarketplaceItemDto>()
-                    if (dtos.isEmpty()) fallbackRepository.getCatalog() else dtos.map(MarketplaceMapper::toDomain)
+                    dtos.map(MarketplaceMapper::toDomain)
                 }
             }.getOrElse { error ->
                 error.rethrowIfCancellation()

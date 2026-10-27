@@ -160,7 +160,12 @@ class SupabaseMessagesRepository internal constructor(
         }
     }
 
-    private suspend fun submitReport(messageId: MessageId, reporterId: SenderId, reason: String, description: String) {
+    private suspend fun submitReport(
+        messageId: MessageId,
+        reporterId: SenderId,
+        reason: String,
+        description: String
+    ) {
         try {
             messagesTable.insertReport(
                 SupabaseMessagesMapper.toReportInsertDto(messageId, reporterId, reason, description)

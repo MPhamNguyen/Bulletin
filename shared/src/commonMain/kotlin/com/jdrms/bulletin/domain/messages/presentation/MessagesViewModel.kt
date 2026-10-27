@@ -59,9 +59,14 @@ class MessagesViewModel(
         }
         threadState.value = presented.state
     }
-    private val actions =
-        MessagesActions(inbox, threadState, sendMessage, reportMessage, hideConversation, viewModelScope)
-    private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
+    private val actions = MessagesActions(
+        inbox,
+        threadState,
+        sendMessage,
+        reportMessage,
+        hideConversation,
+        viewModelScope
+    )
     private val messageReportActions = MessageReportActions(
         threadState,
         inbox,
@@ -69,6 +74,7 @@ class MessagesViewModel(
         ::selectConversation,
         showFailure
     )
+    private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
     private val olderHistory =
         MessagesOlderHistoryLoader(threadState, getConversationMessages, viewModelScope, showFailure)

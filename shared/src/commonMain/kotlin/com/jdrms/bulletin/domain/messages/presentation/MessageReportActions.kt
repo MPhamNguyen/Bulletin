@@ -56,6 +56,16 @@ internal class MessageReportActions(
         }
         inbox.synchronizeIdentity()
         applyInboxSelection(inbox.state.value)
+        if (inbox.state.value.isLoading) {
+            state.update { current ->
+                current.copy(
+                    messageReportForm = current.messageReportForm?.copy(
+                        errorMessage = "Please wait for conversations to finish loading, then try again."
+                    )
+                )
+            }
+            return
+        }
         actions.report(
             form.messageId,
             reason,

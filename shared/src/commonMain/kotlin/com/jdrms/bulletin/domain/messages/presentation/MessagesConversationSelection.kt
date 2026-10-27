@@ -18,6 +18,9 @@ internal class MessagesConversationSelection(
         state.update { current ->
             current.copy(
                 selectedConversationId = conversationId,
+                editState = MessageEditState.Composing,
+                editError = null,
+                messageInput = if (current.selectedConversationId == conversationId) current.unsentInput else "",
                 currentMessages = emptyList(),
                 messageReportForm = if (current.selectedConversationId == conversationId) {
                     current.messageReportForm

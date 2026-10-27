@@ -105,10 +105,13 @@ fun MessagesScreen(
         MessageReportScreen(
             form = form,
             isSubmitting = state.isReporting,
-            onReasonSelected = viewModel.selectMessageReportReason,
-            onDescriptionChanged = viewModel.updateMessageReportDescription,
-            onSubmit = viewModel.submitMessageReport,
-            onDismiss = viewModel.dismissMessageReport,
+            isInboxLoading = inboxState.isLoading,
+            callbacks = MessageReportCallbacks(
+                onReasonSelected = viewModel.selectMessageReportReason,
+                onDescriptionChanged = viewModel.updateMessageReportDescription,
+                onSubmit = viewModel.submitMessageReport,
+                onDismiss = viewModel.dismissMessageReport
+            ),
             errorMessage = form.errorMessage ?: state.errorMessage
         )
     }
