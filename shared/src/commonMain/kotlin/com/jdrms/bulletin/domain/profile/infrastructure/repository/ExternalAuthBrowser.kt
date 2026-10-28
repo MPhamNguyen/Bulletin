@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile.infrastructure.repository
 /** Platform boundary. Callback values remain inside infrastructure. */
 interface ExternalAuthBrowser {
     val isResuming: Boolean get() = false
+    fun clearRecovered() {}
     suspend fun authorize(url: String): ExternalAuthCallback
 }
 

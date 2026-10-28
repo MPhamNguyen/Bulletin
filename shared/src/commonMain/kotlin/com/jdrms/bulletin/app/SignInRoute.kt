@@ -1,19 +1,15 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.runtime.*
-import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.app.di.AppContainer
-import com.jdrms.bulletin.app.di.createSignInViewModel
 import com.jdrms.bulletin.domain.profile.presentation.*
-import kotlinx.coroutines.cancel
 
 @Composable
 internal fun SignInRoute(container: AppContainer, recovery: PasswordRecoveryViewModel, onCreateAccount: () -> Unit) {
-    val viewModel = remember(container) { container.profile.createSignInViewModel() }
+    val viewModel = container.signInViewModel
     LaunchedEffect(viewModel) {
         if (container.externalSignInPending) viewModel.signInWithMicrosoft()
     }
-    DisposableEffect(viewModel) { onDispose { viewModel.viewModelScope.cancel() } }
     val state by viewModel.uiState.collectAsState()
     val recoveryState by recovery.uiState.collectAsState()
     if (recoveryState.stage == PasswordRecoveryStage.NONE) {

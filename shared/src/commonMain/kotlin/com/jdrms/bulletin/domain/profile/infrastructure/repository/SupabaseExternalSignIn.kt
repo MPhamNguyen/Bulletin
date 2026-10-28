@@ -38,6 +38,7 @@ internal class SupabaseExternalSignIn(
                 ExternalSignInOutcome.Failed(mapFailure(failure.message))
             }
         } finally {
+            browser.clearRecovered()
             withContext(NonCancellable) { supabase.auth.codeVerifierCache.deleteCodeVerifier() }
             mutex.unlock()
         }

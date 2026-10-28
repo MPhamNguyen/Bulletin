@@ -96,6 +96,7 @@ class SupabaseAuthRepository(
     }
 
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
+        externalBrowser?.clearRecovered()
         return runCatching {
             supabase.auth.signInWith(Email) {
                 this.email = email.value
@@ -222,6 +223,7 @@ class SupabaseAuthRepository(
     }
 
     override suspend fun signOut(): Result<Unit> {
+        externalBrowser?.clearRecovered()
         return runCatching {
             try {
                 supabase.auth.signOut()

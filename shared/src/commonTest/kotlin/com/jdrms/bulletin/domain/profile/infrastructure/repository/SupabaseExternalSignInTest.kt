@@ -74,6 +74,42 @@ class SupabaseExternalSignInTest {
     }
 
     @Test
+    fun existingSessionConflictDiscardsRecoveredCallbackBeforeSignOut() = runTest {
+        val client = client()
+        try {
+            val initial = SupabaseExternalSignIn(client, browser(), { Result.Success(profile) }, {})
+            assertIs<ExternalSignInOutcome.SignedIn>(initial.signIn())
+            var pending = true
+            val recovered = object : ExternalAuthBrowser {
+                override val isResuming: Boolean get() = pending
+                override fun clearRecovered() { pending = false }
+                override suspend fun authorize(url: String): ExternalAuthCallback = error("Must not consume code")
+            }
+            val flow = SupabaseExternalSignIn(client, recovered, { error("No profile expected") }, {})
+            assertEquals(ExternalSignInOutcome.Failed(ExternalSignInFailure.AccountConflict), flow.signIn())
+            assertEquals(false, recovered.isResuming)
+            assertNull(client.auth.codeVerifierCache.loadCodeVerifier())
+        } finally { client.close() }
+    }
+
+    @Test
+    fun passwordLoginAndSignOutDiscardRecoveryEvenOnNetworkFailure() = runTest {
+        val client = client(failure = "Unable to connect to network")
+        var clears = 0
+        val recovered = object : ExternalAuthBrowser {
+            override fun clearRecovered() { clears++ }
+            override suspend fun authorize(url: String): ExternalAuthCallback = error("No browser expected")
+        }
+        try {
+            val repository = SupabaseAuthRepository(client, InMemoryProfileRepository(), recovered)
+            repository.login(StudentEmail("student@school.edu"), "password")
+            assertEquals(1, clears)
+            repository.signOut()
+            assertEquals(2, clears)
+        } finally { client.close() }
+    }
+
+    @Test
     fun missingOrUnverifiedClaimsAndEmailCollisionNeverEstablishSession() = runTest {
         val cases = listOf(
             user(verified = false) to ExternalSignInFailure.UnverifiedEmail,

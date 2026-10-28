@@ -36,6 +36,10 @@ class AppContainer(
         externalAuth.microsoftSignInEnabled
     )
     internal val profile = ProfileModule(infrastructure, externalAuth.browser)
+
+    // The application container owns the OAuth job across Activity/composition recreation.
+    internal val signInViewModel by lazy { profile.createSignInViewModel() }
+
     internal val listings: ListingsModule = ListingsModule(infrastructure, profile) { marketplace.invalidateReads() }
     internal val marketplace: MarketplaceModule = MarketplaceModule(
         infrastructure,

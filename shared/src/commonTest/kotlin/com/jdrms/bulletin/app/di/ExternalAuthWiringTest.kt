@@ -15,6 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class ExternalAuthWiringTest {
@@ -51,6 +52,13 @@ class ExternalAuthWiringTest {
         } finally {
             client.close()
         }
+    }
+
+    @Test
+    fun signInViewModelBelongsToContainerAcrossRouteRecreation() {
+        val container = AppContainer(isInspectionMode = true)
+        val original = container.signInViewModel
+        assertSame(original, container.signInViewModel)
     }
 
     @Test
