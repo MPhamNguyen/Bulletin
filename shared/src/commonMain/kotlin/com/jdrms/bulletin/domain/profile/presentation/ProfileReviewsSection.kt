@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.ReviewPaginationActions
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 
@@ -36,19 +36,17 @@ internal fun ProfileReviewsSection(reputation: StudentReputation) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Reviews", style = MaterialTheme.typography.titleMedium)
             visibleReviews.forEach { review -> ProfileReview(review) }
-            if (visibleReviews.size < reputation.reviews.size) {
-                TextButton(
-                    onClick = {
-                        visibleReviewCount = nextProfileReviewCount(
-                            visibleReviewCount,
-                            reputation.reviews.size
-                        )
-                    },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("See more reviews")
+            ReviewPaginationActions(
+                isExpanded = visibleReviewCount > INITIAL_PROFILE_REVIEW_COUNT,
+                hasMore = visibleReviews.size < reputation.reviews.size,
+                onSeeLess = { visibleReviewCount = INITIAL_PROFILE_REVIEW_COUNT },
+                onSeeMore = {
+                    visibleReviewCount = nextProfileReviewCount(
+                        visibleReviewCount,
+                        reputation.reviews.size
+                    )
                 }
-            }
+            )
         }
     }
 }

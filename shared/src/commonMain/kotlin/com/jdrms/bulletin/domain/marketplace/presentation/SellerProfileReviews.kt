@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.ReviewPaginationActions
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 
 @Composable
@@ -43,16 +43,14 @@ internal fun SellerProfileReviews(reviews: List<MarketplaceSellerReview>) {
                 )
             } else {
                 visibleReviews.forEach { review -> SellerReview(review) }
-                if (visibleReviews.size < reviews.size) {
-                    TextButton(
-                        onClick = {
-                            visibleReviewCount = nextVisibleReviewCount(visibleReviewCount, reviews.size)
-                        },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text("See more reviews")
+                ReviewPaginationActions(
+                    isExpanded = visibleReviewCount > INITIAL_REVIEW_COUNT,
+                    hasMore = visibleReviews.size < reviews.size,
+                    onSeeLess = { visibleReviewCount = INITIAL_REVIEW_COUNT },
+                    onSeeMore = {
+                        visibleReviewCount = nextVisibleReviewCount(visibleReviewCount, reviews.size)
                     }
-                }
+                )
             }
         }
     }
