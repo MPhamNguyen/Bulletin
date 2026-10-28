@@ -40,7 +40,9 @@ class ExternalSignInViewModelTest {
         runCurrent()
         assertEquals(1, calls)
         assertEquals(true, viewModel.uiState.value.isLoading)
+        viewModel.clearError()
         assertEquals(ExternalSignInStage.InProgress, viewModel.uiState.value.externalStage)
+        assertEquals(true, viewModel.uiState.value.isLoading)
         completion.complete(ExternalSignInOutcome.SignedIn(profile))
         advanceUntilIdle()
         assertEquals(profile, assertIs<SessionState.Authenticated>(session.state.value).profile)
@@ -62,7 +64,50 @@ class ExternalSignInViewModelTest {
             assertEquals(false, viewModel.uiState.value.isLoading)
             viewModel.clearError()
             assertNull(viewModel.uiState.value.errorMessage)
+            assertEquals(ExternalSignInStage.Idle, viewModel.uiState.value.externalStage)
         }
+    }
+
+    @Test
+    fun passwordSignInClearsPreviousExternalOutcomeBeforeTheAttempt() = profileTest {
+        val outcomes = listOf(
+            ExternalSignInOutcome.Cancelled,
+            ExternalSignInOutcome.Failed(ExternalSignInFailure.Network)
+        )
+        for (outcome in outcomes) {
+            val auth = object : AuthRepository by InMemoryAuthRepository() {
+                override suspend fun signInExternally() = outcome
+            }
+            val viewModel = SignInViewModel(SignInUser(auth), AuthSessionRepository(auth), SignInExternally(auth))
+            viewModel.signInWithMicrosoft()
+            advanceUntilIdle()
+
+            viewModel.signIn("invalid", "password")
+
+            assertEquals(true, viewModel.uiState.value.isLoading)
+            assertEquals(ExternalSignInStage.Idle, viewModel.uiState.value.externalStage)
+            assertNull(viewModel.uiState.value.errorMessage)
+            advanceUntilIdle()
+            assertEquals(ExternalSignInStage.Idle, viewModel.uiState.value.externalStage)
+            assertEquals("Invalid email address format.", viewModel.uiState.value.errorMessage)
+        }
+    }
+
+    @Test
+    fun clearingMessagesDismissesMicrosoftCancellation() = profileTest {
+        val auth = object : AuthRepository by InMemoryAuthRepository() {
+            override suspend fun signInExternally() = ExternalSignInOutcome.Cancelled
+        }
+        val viewModel = SignInViewModel(SignInUser(auth), AuthSessionRepository(auth), SignInExternally(auth))
+        viewModel.signInWithMicrosoft()
+        advanceUntilIdle()
+        assertEquals(ExternalSignInStage.Cancelled, viewModel.uiState.value.externalStage)
+
+        viewModel.clearError()
+
+        assertEquals(ExternalSignInStage.Idle, viewModel.uiState.value.externalStage)
+        assertNull(viewModel.uiState.value.errorMessage)
+        assertEquals(false, viewModel.uiState.value.isLoading)
     }
 
     companion object {

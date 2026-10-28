@@ -30,7 +30,7 @@ class SignInViewModel(
 
     fun signIn(email: String, password: String) {
         if (state.value.isLoading) return
-        state.update { it.copy(isLoading = true, errorMessage = null) }
+        state.update { it.copy(isLoading = true, errorMessage = null, externalStage = ExternalSignInStage.Idle) }
         viewModelScope.launch {
             when (val result = signInUser(email, password)) {
                 is Result.Success -> {
@@ -68,5 +68,14 @@ class SignInViewModel(
         }
     }
 
-    fun clearError() = state.update { it.copy(errorMessage = null) }
+    fun clearError() = state.update {
+        it.copy(
+            errorMessage = null,
+            externalStage = if (it.externalStage == ExternalSignInStage.InProgress) {
+                ExternalSignInStage.InProgress
+            } else {
+                ExternalSignInStage.Idle
+            }
+        )
+    }
 }
