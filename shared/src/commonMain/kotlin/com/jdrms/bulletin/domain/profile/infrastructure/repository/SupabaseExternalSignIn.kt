@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Azure
+import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -75,21 +76,41 @@ internal class SupabaseExternalSignIn(
 
     private suspend fun exchange(code: String): ExternalSignInOutcome {
         val session = supabase.auth.exchangeCodeForSession(code, saveSession = false)
+        val outcome = runCatching { acceptSession(session) }.getOrElse { failure ->
+            withContext(NonCancellable) {
+                runCatching { revokeRejectedSession(session.accessToken) }
+                    .exceptionOrNull()?.let(failure::addSuppressed)
+            }
+            throw failure
+        }
+        if (outcome !is ExternalSignInOutcome.SignedIn) {
+            withContext(NonCancellable) { revokeRejectedSession(session.accessToken) }
+        }
+        return outcome
+    }
+
+    private suspend fun acceptSession(session: UserSession): ExternalSignInOutcome {
         val user = supabase.auth.retrieveUser(session.accessToken)
         val rejection = MicrosoftIdentityPolicy.rejection(user)
         if (rejection != null) return ExternalSignInOutcome.Failed(rejection)
-        // Persist only Supabase credentials, after checking the server-owned identity.
+        // UX checks only: the identity trigger must enforce policy before Auth issues tokens.
         supabase.auth.importSession(session.copy(user = user, providerToken = null, providerRefreshToken = null))
-        return when (val profile = loadProfile()) {
-            is Result.Success -> profile.data?.let(ExternalSignInOutcome::SignedIn)
-                ?: rejectProfile()
-            is Result.Error -> rejectProfile()
+        val profile = loadProfile()
+        return if (profile is Result.Success && profile.data != null) {
+            ExternalSignInOutcome.SignedIn(profile.data)
+        } else {
+            ExternalSignInOutcome.Failed(ExternalSignInFailure.ProfileUnavailable)
         }
     }
 
-    private suspend fun rejectProfile(): ExternalSignInOutcome {
-        clearSession()
-        return ExternalSignInOutcome.Failed(ExternalSignInFailure.ProfileUnavailable)
+    private suspend fun revokeRejectedSession(accessToken: String) {
+        try {
+            // Despite the SDK namespace, this calls /logout with the user's JWT and anon key.
+            // It does not require a service-role key or import the rejected session into app state.
+            supabase.auth.admin.signOut(accessToken)
+        } finally {
+            clearSession()
+        }
     }
 
     private fun mapFailure(message: String?): ExternalSignInFailure {

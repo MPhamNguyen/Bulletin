@@ -7,7 +7,7 @@ import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 
-/** Translates server-owned identity data; user_metadata is never verification evidence. */
+/** UX guard only; server triggers enforce eligibility before token issuance. */
 internal object MicrosoftIdentityPolicy {
     fun rejection(user: UserInfo): ExternalSignInFailure? {
         val identities = user.identities.orEmpty()

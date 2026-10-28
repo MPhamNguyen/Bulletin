@@ -27,6 +27,7 @@ enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["com.jdrms.bulletin.auth://oauth/callback"]
 enable_signup = true
+# Disables only explicit linking; the identity trigger rejects automatic linking.
 enable_manual_linking = false
 
 [auth.email]
@@ -45,5 +46,7 @@ uri = "pg-functions://postgres/public/enforce_edu_email_signup"
 enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
+# Deliberately accepts any tenant; requires explicit xms_edov in the identity trigger.
+# This does not establish university affiliation. Use a tenant UUID authority for a single-campus policy.
 url = "https://login.microsoftonline.com/common"
 redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"

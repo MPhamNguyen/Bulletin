@@ -118,12 +118,14 @@ class SupabaseExternalSignInTest {
             user(confirmed = false) to ExternalSignInFailure.UnverifiedEmail
         )
         for ((response, reason) in cases) {
-            val client = client(response)
+            var logouts = 0
+            val client = client(response, onLogout = { logouts++ })
             try {
                 val flow = SupabaseExternalSignIn(client, browser(), { error("Profile must not be loaded") }, {
                     client.auth.clearSession()
                 })
                 assertEquals(ExternalSignInOutcome.Failed(reason), flow.signIn())
+                assertEquals(1, logouts)
                 assertNull(client.auth.currentSessionOrNull())
             } finally { client.close() }
         }
@@ -168,7 +170,8 @@ class SupabaseExternalSignInTest {
 
     @Test
     fun profileFailureClearsSessionAndCanBeRetried() = runTest {
-        val client = client()
+        var logouts = 0
+        val client = client(onLogout = { logouts++ })
         var fail = true
         val flow = SupabaseExternalSignIn(client, browser(), {
             if (fail) Result.Error(IllegalStateException("Profile unavailable")) else Result.Success(profile)
@@ -176,6 +179,7 @@ class SupabaseExternalSignInTest {
         try {
             assertEquals(ExternalSignInOutcome.Failed(ExternalSignInFailure.ProfileUnavailable), flow.signIn())
             assertNull(client.auth.currentSessionOrNull())
+            assertEquals(1, logouts)
             fail = false
             client.auth.codeVerifierCache.saveCodeVerifier("test-verifier")
             assertIs<ExternalSignInOutcome.SignedIn>(flow.signIn())
@@ -201,6 +205,49 @@ class SupabaseExternalSignInTest {
         } finally { client.close() }
     }
 
+    @Test
+    fun cancellationAfterExchangeRevokesIssuedSession() = runTest {
+        var logouts = 0
+        val client = client(onLogout = { logouts++ })
+        try {
+            val flow = SupabaseExternalSignIn(client, browser(), { throw CancellationException() }, {
+                client.auth.clearSession()
+            })
+            assertFailsWith<CancellationException> { flow.signIn() }
+            assertEquals(1, logouts)
+            assertNull(client.auth.currentSessionOrNull())
+        } finally { client.close() }
+    }
+
+    @Test
+    fun revocationFailureStillClearsLocalSessionAndReportsFailure() = runTest {
+        val client = client(onLogout = { error("Unable to connect to network") })
+        try {
+            val flow = SupabaseExternalSignIn(client, browser(), {
+                Result.Error(IllegalStateException("Profile unavailable"))
+            }, { client.auth.clearSession() })
+            assertEquals(ExternalSignInOutcome.Failed(ExternalSignInFailure.Network), flow.signIn())
+            assertNull(client.auth.currentSessionOrNull())
+        } finally { client.close() }
+    }
+
+    @Test
+    fun cancellationStillPropagatesWhenRevocationFails() = runTest {
+        var logouts = 0
+        val client = client(onLogout = {
+            logouts++
+            error("Network unavailable")
+        })
+        try {
+            val flow = SupabaseExternalSignIn(client, browser(), { throw CancellationException() }, {
+                client.auth.clearSession()
+            })
+            assertFailsWith<CancellationException> { flow.signIn() }
+            assertEquals(1, logouts)
+            assertNull(client.auth.currentSessionOrNull())
+        } finally { client.close() }
+    }
+
     private fun browser(callback: ExternalAuthCallback = ExternalAuthCallback.Code("one-time-code")) =
         object : ExternalAuthBrowser {
             // Cold callbacks must retain the original PKCE verifier rather than generate a second one.
@@ -211,7 +258,11 @@ class SupabaseExternalSignInTest {
             }
         }
 
-    private fun client(user: String = user(), failure: String? = null) =
+    private fun client(
+        user: String = user(),
+        failure: String? = null,
+        onLogout: () -> Unit = {}
+    ) =
         createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Auth) {
                 minimalSettings()
@@ -219,6 +270,12 @@ class SupabaseExternalSignInTest {
                 codeVerifierCache = MemoryCodeVerifierCache("test-verifier")
             }
             httpEngine = MockEngine { request ->
+                if (request.url.encodedPath.endsWith("/logout")) {
+                    assertEquals("Bearer test-access", request.headers["Authorization"])
+                    assertEquals("local", request.url.parameters["scope"])
+                    onLogout()
+                    return@MockEngine respond("", HttpStatusCode.NoContent)
+                }
                 if (failure == "Unable to connect to network") error(failure)
                 val body = if (request.url.encodedPath.endsWith("/token")) {
                     val json = Json.parseToJsonElement((request.body as TextContent).text).jsonObject

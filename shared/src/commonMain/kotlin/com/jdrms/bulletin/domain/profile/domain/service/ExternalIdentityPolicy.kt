@@ -11,7 +11,7 @@ data class ExternalIdentityEvidence(
     val hasOtherSignInMethod: Boolean
 )
 
-/** MVP accepts any verified external email; school membership is not inferred. */
+/** Client UX policy; server enforcement is required. School membership is not inferred. */
 object ExternalIdentityPolicy {
     fun rejection(evidence: ExternalIdentityEvidence): ExternalSignInFailure? = when {
         evidence.email.isNullOrBlank() -> ExternalSignInFailure.MissingEmail
