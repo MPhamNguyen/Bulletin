@@ -16,24 +16,33 @@ class GetProfileOverview(
     private val profileRepository: ProfileRepository,
     private val activeListingsProvider: ProfileActiveListingsProvider
 ) {
-    suspend operator fun invoke(
-        userId: UserId
-    ): Result<ProfileOverview?> = when (val result = profileRepository.getProfile(userId)) {
-        is Result.Success -> {
-            val profile = result.data
-            if (profile == null) {
-                Result.Success(null)
-            } else {
-                Result.Success(
-                    ProfileOverview(
-                        profile = profile,
-                        reputation = profileRepository.getReputation(userId),
-                        activeListingsCount = activeListingsProvider.getActiveListingsCount(userId)
-                    )
-                )
-            }
+    suspend operator fun invoke(userId: UserId): Result<ProfileOverview?> = load(userId, refresh = false)
+
+    suspend fun refresh(userId: UserId): Result<ProfileOverview?> = load(userId, refresh = true)
+
+    private suspend fun load(userId: UserId, refresh: Boolean): Result<ProfileOverview?> {
+        val result = if (refresh) {
+            profileRepository.refreshProfile(userId)
+        } else {
+            profileRepository.getProfile(userId)
         }
-        is Result.Error -> result
+        return when (result) {
+            is Result.Success -> {
+                val profile = result.data
+                if (profile == null) {
+                    Result.Success(null)
+                } else {
+                    Result.Success(
+                        ProfileOverview(
+                            profile = profile,
+                            reputation = profileRepository.getReputation(userId),
+                            activeListingsCount = activeListingsProvider.getActiveListingsCount(userId)
+                        )
+                    )
+                }
+            }
+            is Result.Error -> result
+        }
     }
 }
 

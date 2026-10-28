@@ -76,7 +76,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             state.update { it.copy(isRefreshing = true, profileRefreshComplete = false, errorMessage = null) }
             try {
-                if (refreshProfileDetails()) {
+                if (refreshProfileDetails(forceRefresh = true)) {
                     state.update { it.copy(profileRefreshComplete = true) }
                     delay(PROFILE_REFRESH_COMPLETE_MILLIS)
                 }
@@ -236,10 +236,15 @@ class ProfileViewModel(
     ) ?: ProfileBookmarkedListingsPage(emptyList(), null)
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun refreshProfileDetails(): Boolean {
+    private suspend fun refreshProfileDetails(forceRefresh: Boolean = false): Boolean {
         val profile = state.value.profile ?: return false
         return try {
-            when (val result = getProfileOverview(profile.id)) {
+            val result = if (forceRefresh) {
+                getProfileOverview.refresh(profile.id)
+            } else {
+                getProfileOverview(profile.id)
+            }
+            when (result) {
                 is Result.Success -> {
                     result.data?.let { overview ->
                         val soldCount = soldListingsProvider?.getSoldListingsCount(profile.id)

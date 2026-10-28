@@ -10,7 +10,12 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -23,6 +28,10 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 
 @Composable
 internal fun SellerProfileReviews(reviews: List<MarketplaceSellerReview>) {
+    var visibleReviewCount by rememberSaveable(reviews.joinToString { it.id }) {
+        mutableStateOf(INITIAL_REVIEW_COUNT)
+    }
+    val visibleReviews = reviews.take(visibleReviewCount)
     BulletinCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Reviews", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -33,10 +42,33 @@ internal fun SellerProfileReviews(reviews: List<MarketplaceSellerReview>) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                reviews.forEach { review -> SellerReview(review) }
+                visibleReviews.forEach { review -> SellerReview(review) }
+                if (visibleReviews.size < reviews.size) {
+                    TextButton(
+                        onClick = {
+                            visibleReviewCount = nextVisibleReviewCount(visibleReviewCount, reviews.size)
+                        },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("See more reviews")
+                    }
+                }
             }
         }
     }
+}
+
+private const val INITIAL_REVIEW_COUNT = 3
+private const val FIRST_REVIEW_INCREMENT = 7
+private const val SUBSEQUENT_REVIEW_INCREMENT = 10
+
+internal fun nextVisibleReviewCount(currentCount: Int, totalCount: Int): Int {
+    val increment = if (currentCount <= INITIAL_REVIEW_COUNT) {
+        FIRST_REVIEW_INCREMENT
+    } else {
+        SUBSEQUENT_REVIEW_INCREMENT
+    }
+    return (currentCount + increment).coerceAtMost(totalCount)
 }
 
 @Composable

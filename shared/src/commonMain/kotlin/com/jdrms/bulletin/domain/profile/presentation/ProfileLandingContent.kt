@@ -81,6 +81,10 @@ internal fun MarketplaceProfileView(
                     bio = profile?.bio
                 )
 
+                uiState.reputation?.let { reputation ->
+                    ProfileReviewsSection(reputation)
+                }
+
                 ProfileMarketplaceCard(
                     activeListings = activeListingsDisplay,
                     onMyListingsClick = onMyListingsClick,

@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.application.GetProfileActivity
 import com.jdrms.bulletin.domain.profile.application.GetProfileOverview
 import com.jdrms.bulletin.domain.profile.application.ProfileActiveListingsProvider
@@ -9,6 +10,9 @@ import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRem
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsPage
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarksPageCursor
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlin.test.Test
@@ -17,6 +21,32 @@ import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelTest {
+    @Test
+    fun pullToRefreshRequestsFreshProfileData() = profileTest {
+        val fixture = ProfileFixture()
+        fixture.authenticate()
+        var refreshReads = 0
+        val repository = object : ProfileRepository by fixture.profiles {
+            override suspend fun refreshProfile(userId: UserId): Result<StudentProfile?> {
+                refreshReads += 1
+                return fixture.profiles.getProfile(userId)
+            }
+        }
+        val listingsProvider = ProfileActiveListingsProvider { 0 }
+        val viewModel = ProfileViewModel(
+            fixture.session,
+            GetProfileOverview(repository, listingsProvider),
+            GetProfileActivity(listingsProvider),
+            RefreshSignal()
+        )
+        advanceUntilIdle()
+
+        viewModel.refreshProfile()
+        advanceUntilIdle()
+
+        assertEquals(1, refreshReads)
+    }
+
     @Test
     fun profileReadModelTracksSessionAndListingCount() = profileTest {
         val fixture = ProfileFixture()
