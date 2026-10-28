@@ -23,8 +23,8 @@ class BulletinApplication : Application() {
             marketplaceLayoutPreferenceStore = AndroidMarketplaceLayoutPreferenceStore(this),
             externalAuth = ExternalAuthConfiguration(
                 microsoftSignInEnabled = BuildConfig.MICROSOFT_SSO_ENABLED,
-                browser = externalAuthBrowser,
-                storage = authStorage
+                browser = if (BuildConfig.MICROSOFT_SSO_ENABLED) externalAuthBrowser else null,
+                storage = if (BuildConfig.MICROSOFT_SSO_ENABLED) authStorage else null
             )
         )
     }

@@ -22,13 +22,19 @@
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+        </activity>
+        <activity-alias
+                android:name=".MicrosoftAuthCallback"
+                android:targetActivity=".MainActivity"
+                android:enabled="${microsoftSsoEnabled}"
+                android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.jdrms.bulletin.auth" android:host="oauth" android:path="/callback" />
             </intent-filter>
-        </activity>
+        </activity-alias>
     </application>
 
 </manifest>

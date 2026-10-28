@@ -2,6 +2,7 @@ package com.jdrms.bulletin.core.network
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.AuthConfig
 import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -16,7 +17,10 @@ data class SupabaseConfig(
     val isConfigured: Boolean
         get() = isConnected && !url.isNullOrBlank() && !apiKey.isNullOrBlank()
 
-    fun createClient(authStorage: SupabaseAuthStorage? = null): SupabaseClient {
+    fun createClient(
+        authStorage: SupabaseAuthStorage? = null,
+        microsoftSignInEnabled: Boolean = false
+    ): SupabaseClient {
         val resolvedUrl = checkNotNull(url) { "Supabase URL cannot be null when creating client." }
         val resolvedKey = checkNotNull(apiKey) { "Supabase API key cannot be null when creating client." }
         return createSupabaseClient(
@@ -25,12 +29,7 @@ data class SupabaseConfig(
         ) {
             defaultLogLevel = io.github.jan.supabase.logging.LogLevel.NONE
             install(Auth) {
-                defaultRedirectUrl = "com.jdrms.bulletin.auth://oauth/callback"
-                flowType = FlowType.PKCE
-                if (authStorage != null) {
-                    sessionManager = authStorage
-                    codeVerifierCache = authStorage
-                }
+                configureBulletinAuth(authStorage, microsoftSignInEnabled)
             }
             install(Postgrest)
             install(Realtime)
@@ -46,5 +45,16 @@ data class SupabaseConfig(
                 isConnected = true
             )
         }
+    }
+}
+
+/** SSO has an explicit redirect; email links and session persistence retain SDK defaults. */
+internal fun AuthConfig.configureBulletinAuth(
+    authStorage: SupabaseAuthStorage?,
+    microsoftSignInEnabled: Boolean
+) {
+    if (microsoftSignInEnabled) {
+        flowType = FlowType.PKCE
+        if (authStorage != null) codeVerifierCache = authStorage
     }
 }

@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (leftForBrowser) bulletin.externalAuthBrowser.cancel()
+        if (leftForBrowser && BuildConfig.MICROSOFT_SSO_ENABLED) bulletin.externalAuthBrowser.cancel()
         leftForBrowser = false
     }
 

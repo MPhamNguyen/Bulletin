@@ -207,6 +207,8 @@ Microsoft rollout is configured separately from `.env`: committed build defaults
 ./gradlew :androidApp:assembleRelease -PMICROSOFT_SSO_ENABLED=true --no-daemon
 ```
 
+SSO builds enable PKCE without changing the default email redirect URL; only Microsoft OAuth explicitly uses the app callback. Disabled builds retain the SDK Auth defaults. Sessions continue to use the existing SDK session store, including across rollback. Encrypted storage is used only for SSO verifiers and pending browser state. Session migration and deletion of legacy data are deferred to a separate rollout with verification and rollback coverage.
+
 This is a build-time gate: changing it requires rebuilding the app. The UI does not query provider availability; disabling Azure server-side stops new Microsoft sign-ins but leaves the button visible in enabled builds. A runtime availability check remains follow-up work.
 
 The app must use only the Supabase anon/public key. Never put a service-role key, credentials, or real user data in the repository. Ensure the Supabase project has the schema and policies in `supabase/migrations/` applied.

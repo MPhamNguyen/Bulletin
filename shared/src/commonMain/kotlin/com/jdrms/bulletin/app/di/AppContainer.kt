@@ -32,7 +32,8 @@ class AppContainer(
         isInspectionMode,
         allowInMemoryFallback,
         providedSupabaseClient,
-        externalAuth.storage
+        externalAuth.storage,
+        externalAuth.microsoftSignInEnabled
     )
     internal val profile = ProfileModule(infrastructure, externalAuth.browser)
     internal val listings: ListingsModule = ListingsModule(infrastructure, profile) { marketplace.invalidateReads() }

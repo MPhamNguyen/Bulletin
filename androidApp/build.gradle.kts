@@ -91,9 +91,11 @@ android {
     }
     buildTypes {
         debug {
+            manifestPlaceholders["microsoftSsoEnabled"] = microsoftSsoOverride.getOrElse(true).toString()
             buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoOverride.getOrElse(true).toString())
         }
         release {
+            manifestPlaceholders["microsoftSsoEnabled"] = microsoftSsoOverride.getOrElse(false).toString()
             buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoOverride.getOrElse(false).toString())
             isMinifyEnabled = false
             proguardFiles(

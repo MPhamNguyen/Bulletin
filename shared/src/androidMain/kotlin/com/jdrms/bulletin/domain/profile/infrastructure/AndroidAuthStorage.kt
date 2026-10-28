@@ -6,10 +6,8 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.jdrms.bulletin.core.network.SupabaseAuthStorage
-import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -18,34 +16,10 @@ import javax.crypto.spec.GCMParameterSpec
 
 /** Private storage encrypted using a non-exportable Android Keystore key. */
 class AndroidAuthStorage(context: Context, projectUrl: String) : SupabaseAuthStorage {
-    private val legacy = LegacySupabaseSession(context, projectUrl)
     private val preferences = context.getSharedPreferences(
         "bulletin_secure_auth_${Uri.parse(projectUrl).host.orEmpty()}",
         Context.MODE_PRIVATE
     )
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
-
-    override suspend fun saveSession(session: UserSession) = withContext(Dispatchers.IO) {
-        write("session", json.encodeToString(session.copy(providerToken = null, providerRefreshToken = null)))
-    }
-
-    override suspend fun loadSession(): UserSession? = withContext(Dispatchers.IO) {
-        val saved = read("session")
-        val session = (saved ?: legacy.read())?.let {
-            runCatching { json.decodeFromString<UserSession>(it) }.getOrNull()
-        }
-        if (saved == null && session != null) saveSession(session)
-        legacy.clear()
-        session?.copy(providerToken = null, providerRefreshToken = null)
-    }
-
-    override suspend fun deleteSession() = withContext(Dispatchers.IO) {
-        remove("session")
-        legacy.clear()
-    }
     override suspend fun saveCodeVerifier(codeVerifier: String) = withContext(Dispatchers.IO) {
         write("verifier", codeVerifier)
     }

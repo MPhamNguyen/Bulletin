@@ -9,14 +9,15 @@ internal class InfrastructureModule(
     private val isInspectionMode: Boolean,
     private val allowInMemoryFallback: Boolean,
     private val providedSupabaseClient: SupabaseClient?,
-    private val authStorage: SupabaseAuthStorage? = null
+    private val authStorage: SupabaseAuthStorage? = null,
+    private val microsoftSignInEnabled: Boolean = false
 ) {
     val client: SupabaseClient? by lazy {
         if (providedSupabaseClient != null) {
             providedSupabaseClient
         } else if (!isInspectionMode && supabaseConfig.isConfigured) {
             runCatching {
-                supabaseConfig.createClient(authStorage)
+                supabaseConfig.createClient(authStorage, microsoftSignInEnabled)
             }.fold(
                 onSuccess = { it },
                 onFailure = { error ->
