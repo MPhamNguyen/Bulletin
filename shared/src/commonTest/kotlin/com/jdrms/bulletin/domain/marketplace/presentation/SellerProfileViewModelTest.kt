@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnaps
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerSalesProvider
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
@@ -89,6 +90,7 @@ class SellerProfileViewModelTest {
             assertEquals("Seller A", viewModel.uiState.value.profile?.name)
             assertEquals(listOf("available"), viewModel.uiState.value.listings.map { it.id.value })
             assertEquals(4, viewModel.uiState.value.soldListingsCount)
+            assertEquals("Great seller", viewModel.uiState.value.profile?.reviews?.single()?.comment)
         } finally {
             Dispatchers.resetMain()
         }
@@ -220,7 +222,15 @@ private fun filteringSellerProfileViewModel(): SellerProfileViewModel {
 private fun sellerProfile(sellerId: String) = MarketplaceSellerProfile(
     sellerId = sellerId,
     name = if (sellerId == "seller-a") "Seller A" else "Seller",
-    school = "Campus"
+    school = "Campus",
+    reviews = listOf(
+        MarketplaceSellerReview(
+            id = "review-1",
+            reviewerName = "Student Buyer",
+            rating = 5,
+            comment = "Great seller"
+        )
+    )
 )
 
 private fun listing(

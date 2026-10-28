@@ -52,3 +52,25 @@ fun BulletinCard(
         }
     }
 }
+
+@Composable
+fun ReviewPaginationActions(
+    isExpanded: Boolean,
+    hasMore: Boolean,
+    onSeeLess: () -> Unit,
+    onSeeMore: () -> Unit
+) {
+    if (!isExpanded && !hasMore) return
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        if (isExpanded) {
+            TextButton(onClick = onSeeLess) {
+                Text("See less reviews")
+            }
+        }
+        if (hasMore) {
+            TextButton(onClick = onSeeMore) {
+                Text("See more reviews")
+            }
+        }
+    }
+}

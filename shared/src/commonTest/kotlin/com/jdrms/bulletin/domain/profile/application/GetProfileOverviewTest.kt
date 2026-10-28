@@ -42,4 +42,31 @@ class GetProfileOverviewTest {
         assertEquals(error, assertIs<Result.Error>(query(UserId("student"))).exception)
         assertEquals(0, activityCalls)
     }
+
+    @Test
+    fun refreshRequestsAnUncachedProfileRead() = runTest {
+        val backingRepository = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val profile = StudentProfile(UserId("student"), StudentEmail("student@school.edu"), "Student Name")
+        backingRepository.updateProfile(profile)
+        var regularReads = 0
+        var refreshReads = 0
+        val repository = object : ProfileRepository by backingRepository {
+            override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+                regularReads += 1
+                return backingRepository.getProfile(userId)
+            }
+
+            override suspend fun refreshProfile(userId: UserId): Result<StudentProfile?> {
+                refreshReads += 1
+                return backingRepository.getProfile(userId)
+            }
+        }
+        val query = GetProfileOverview(repository, ProfileActiveListingsProvider { 0 })
+
+        query(profile.id)
+        query.refresh(profile.id)
+
+        assertEquals(1, regularReads)
+        assertEquals(1, refreshReads)
+    }
 }

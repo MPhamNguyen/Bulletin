@@ -22,6 +22,7 @@ import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
+import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
@@ -61,6 +62,7 @@ internal fun MainAppContent(
             container,
             navigation,
             models.listings,
+            models.sellerProfile,
             content.profile,
             models.messages
         )
@@ -100,6 +102,7 @@ private fun ProfileDestinationContent(
     container: AppContainer,
     navigation: MutableMainNavigationState,
     listingsViewModel: ListingsViewModel,
+    sellerProfileViewModel: SellerProfileViewModel,
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
 ) {
@@ -107,6 +110,12 @@ private fun ProfileDestinationContent(
         navigation.profileDestination == ProfileDestination.EDIT_LISTING
     ) {
         MyListingsDestination(navigation, listingsViewModel)
+    } else if (navigation.profileDestination == ProfileDestination.PUBLIC_PROFILE) {
+        PublicProfilePreviewDestination(
+            profilePresentation.viewModel,
+            sellerProfileViewModel,
+            onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
+        )
     } else {
         StudentProfileDestination(container, navigation, listingsViewModel, profilePresentation, messagesViewModel)
     }

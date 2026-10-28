@@ -35,7 +35,7 @@ fun SellerProfileScreen(
     onBack: () -> Unit,
     onReportUser: () -> Unit,
     onBlockUser: () -> Unit,
-    blockState: SellerProfileBlockState = SellerProfileBlockState()
+    options: SellerProfileScreenOptions = SellerProfileScreenOptions()
 ) {
     var showBlockConfirmation by remember { mutableStateOf(false) }
     Column(
@@ -46,7 +46,8 @@ fun SellerProfileScreen(
         SellerProfileTopBar(
             onBack = onBack,
             onReportUser = onReportUser,
-            onBlockUser = { showBlockConfirmation = true }
+            onBlockUser = { showBlockConfirmation = true },
+            showUserActions = options.showUserActions
         )
         when {
             state.isLoading -> SellerProfileLoading()
@@ -61,6 +62,7 @@ fun SellerProfileScreen(
                 messageActions?.let { actions -> item { MessageSellerQuickAction(actions) } }
                 item { SellerProfileAbout(state.profile) }
                 item { SellerProfileVerification(state.profile) }
+                item { SellerProfileReviews(state.profile.reviews) }
                 item {
                     Text(
                         text = "Marketplace listings",
@@ -101,13 +103,18 @@ fun SellerProfileScreen(
     }
     if (showBlockConfirmation) {
         BlockUserConfirmationDialog(
-            isBlocking = blockState.isBlocking,
+            isBlocking = options.blockState.isBlocking,
             onConfirm = onBlockUser,
-            onDismiss = { if (!blockState.isBlocking) showBlockConfirmation = false }
+            onDismiss = { if (!options.blockState.isBlocking) showBlockConfirmation = false }
         )
     }
-    BlockUserErrorMessage(blockState.errorMessage)
+    BlockUserErrorMessage(options.blockState.errorMessage)
 }
+
+data class SellerProfileScreenOptions(
+    val blockState: SellerProfileBlockState = SellerProfileBlockState(),
+    val showUserActions: Boolean = true
+)
 
 data class SellerProfileListingActions(
     val onListingClick: (String) -> Unit,

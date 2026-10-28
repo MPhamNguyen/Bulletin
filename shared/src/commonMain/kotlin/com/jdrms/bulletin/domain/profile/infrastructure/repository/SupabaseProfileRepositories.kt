@@ -47,6 +47,12 @@ class SupabaseProfileRepository private constructor(
         )
     }
 
+    override suspend fun refreshProfile(userId: UserId): Result<StudentProfile?> {
+        val resolvedId = resolveUserId(userId) ?: return getProfile(userId)
+        readCache.invalidate(UserId(resolvedId))
+        return getProfile(UserId(resolvedId))
+    }
+
     override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
         val result = runCatching {
             val resolvedId = resolveUserId(profile.id) ?: profile.id.value

@@ -30,7 +30,8 @@ import androidx.compose.ui.unit.dp
 internal fun SellerProfileTopBar(
     onBack: () -> Unit,
     onReportUser: () -> Unit,
-    onBlockUser: () -> Unit
+    onBlockUser: () -> Unit,
+    showUserActions: Boolean = true
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Row(
@@ -47,31 +48,33 @@ internal fun SellerProfileTopBar(
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
-            }
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false },
-                modifier = Modifier.widthIn(min = 136.dp)
-            ) {
-                DropdownMenuItem(
-                    text = {
-                        Text("Report user", color = MaterialTheme.colorScheme.error)
-                    },
-                    onClick = {
-                        menuExpanded = false
-                        onReportUser()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Block user", color = MaterialTheme.colorScheme.error) },
-                    onClick = {
-                        menuExpanded = false
-                        onBlockUser()
-                    }
-                )
+        if (showUserActions) {
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    modifier = Modifier.widthIn(min = 136.dp)
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("Report user", color = MaterialTheme.colorScheme.error)
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onReportUser()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Block user", color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            menuExpanded = false
+                            onBlockUser()
+                        }
+                    )
+                }
             }
         }
     }
