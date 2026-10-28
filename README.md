@@ -7,6 +7,7 @@
 
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Language](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
+![Backend](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Course](https://img.shields.io/badge/CECS-491A%2FB-FFC72C?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-In%20Development-2563EB?style=for-the-badge)
 
@@ -16,9 +17,9 @@
 
 ## 📖 About Bulletin
 
-**Bulletin** is a Kotlin Multiplatform campus marketplace designed to make peer-to-peer transactions between university students safer, simpler, and more convenient. Android is the current application platform; shared business logic and Compose UI live in `shared`.
+**Bulletin** is a Kotlin Multiplatform campus marketplace that makes peer-to-peer transactions between university students safer, simpler, and more convenient. Android is the current application platform; shared business logic and Compose UI live in the `shared` module.
 
-Students can discover campus listings, buy or sell items, communicate with other students, build reputation through reviews, and manage their profiles. The app supports university-email verification and privacy-conscious campus discovery.
+Students can discover listings, buy or sell items, message other students, build reputation through reviews, and manage their profiles. Accounts are tied to university email addresses, and the repository also includes a small web **admin portal** for moderating reports.
 
 > **Project:** Bulletin
 > **Course:** CECS 491A/B
@@ -30,164 +31,113 @@ Students can discover campus listings, buy or sell items, communicate with other
 
 | Feature | Description |
 | --- | --- |
-| 🎓 **Student Verification** | University-email registration and email confirmation through Supabase Auth. |
-| 🛍️ **Campus Marketplace** | Browse listings and create, view, edit, or mark listings as sold. |
-| 🔎 **Search & Filters** | Search listings and refine results with marketplace filters and sorting. |
-| 🔖 **Saved Listings** | Bookmark listings for quick access later. |
-| 💬 **Messaging** | Start conversations, view inbox and thread history, report messages, and see when a message has been read. |
-| ⭐ **Ratings & Reviews** | Submit and view reviews associated with completed/sold listings. |
-| 👤 **Student Profiles** | View and edit student profile information and profile photos. |
-| 🚩 **Reporting & Blocking** | Report users or messages and block users. |
-| 📍 **Campus Discovery** | Support campus-relevant discovery without exposing precise locations to other users. |
-| 🏠 **Home Feed** | Discover listings through `MarketplaceHomeRepository`, backed by the Supabase marketplace source when configured. |
+| 🎓 **Student Verification** | Sign up with a `.edu` email and confirm it before logging in (Supabase Auth). Password recovery is supported. |
+| 🏠 **Home Discovery** | Swipe-style feed of listings. Swipe right to save, left to pass, or up to message the seller; buttons and accessibility actions do the same. |
+| 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details. |
+| ➕ **Listings** | Create, edit, and manage your own listings, upload images, and mark items as sold. |
+| 🔖 **Saved Listings** | Bookmark listings and revisit them from your profile. |
+| 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. |
+| ⭐ **Ratings & Reviews** | Leave and view reviews tied to sold listings. |
+| 👤 **Profiles** | View and edit student profiles, including profile photos. |
+| 🚩 **Reporting & Blocking** | Report users, listings, or messages, and block or unblock users. |
+| 🌗 **Theme** | Light/dark theme preference. |
+| 🛡️ **Admin Portal** | Web tool for reviewing reports and suspending or restoring accounts (see [Admin Portal](#%EF%B8%8F-admin-portal)). |
 
-> Feature availability depends on backend configuration. Recommendation personalization and production readiness are not claimed by the repository status below.
+> Feature availability depends on backend configuration. This README does not claim production readiness.
 
 ---
 
-## 📱 User Experience
+## 📱 App Flow
 
-The main product flow connects account setup with marketplace, messaging, and profile features:
+The app has three root screens: **Sign in**, **Create profile**, and the **Main** app. Main has five bottom-navigation tabs:
 
 ```text
-University Email Registration
-             ↓
-      Email Confirmation
-             ↓
-        Account / Login
-             ↓
-            Home
-       ┌─────┼──────┐
-       ↓     ↓      ↓
-    Browse  Search  Profile
-       ↓             ↓
- Listing Details  User Search
-       ↓             ↓
-Save / Message ←→ Student Profile
-       ↓
- Reviews & Ratings
+Sign Up / Sign In  →  Create Profile  →  Main
+                                          │
+        ┌──────────┬───────────┬──────────┼──────────┐
+        ↓          ↓           ↓          ↓          ↓
+      Home       Market       Post       Inbox     Profile
+   (swipe feed)  (browse,   (create    (conversations, (settings, edit account,
+                  search,    listings)   messages)       saved, my listings,
+                  seller                                 blocked users, ...)
+                  profiles)
 ```
 
 ---
 
-## 🧩 Functional Scope
+## 🏗️ Tech Stack
 
-### Account & Identity
-
-- Register and sign in with a university email
-- Confirm email ownership before login
-- Request password recovery
-- Edit a profile and view other student profiles
-- Maintain a session through the authentication boundary
-
-### Marketplace
-
-- Create, browse, search, filter, and sort listings
-- View listing and seller details
-- Edit or mark a listing as sold
-- Save and remove saved listings
-- Submit reviews associated with sold listings
-
-### Community & Communication
-
-- Start conversations and view inbox/thread history
-- Send messages
-- Report messages or users
-- Block and unblock users
-- View profile and review information
-
-### Home & Recommendations
-
-Home uses `MarketplaceHomeRepository` with the Supabase marketplace listing source when configured; Home preferences remain in memory. Personalized ranking and popular/recent fallback behavior remain product direction, not a verified live backend feature.
-
----
-
-## 🏗️ Technical Direction
-
-| Layer | Current implementation |
+| Layer | Implementation |
 | --- | --- |
-| **Mobile app** | Android with Kotlin and Jetpack Compose |
-| **Shared code** | Kotlin Multiplatform and Compose Multiplatform in `shared` |
-| **Backend** | Supabase client adapters for configured backend-backed contexts |
-| **Authentication** | Supabase Auth adapter for password sign-in and feature-flagged Microsoft OAuth |
-| **Persistence** | Supabase PostgREST and Storage adapters; in-memory repositories for tests and local/inspection use |
-| **Dependency injection** | Manual composition in `AppContainer`, with shared backend selection and feature modules |
-| **Build system** | Gradle wrapper and version catalog in `gradle/libs.versions.toml` |
+| **Language / UI** | Kotlin 2.4, Jetpack Compose via Compose Multiplatform |
+| **Shared code** | Kotlin Multiplatform library in `shared` (`commonMain`, `androidMain`) |
+| **Android app** | Thin host in `androidApp` (min SDK 24, target/compile SDK 36) |
+| **Backend** | Supabase (Auth, PostgREST, Realtime, Storage) via `supabase-kt` |
+| **Images** | Coil 3 with the Ktor network engine |
+| **Dependency injection** | Manual composition in `AppContainer` |
+| **Static analysis** | Detekt with formatting rules |
+| **Build** | Gradle wrapper with the version catalog in `gradle/libs.versions.toml` |
+| **Admin portal** | Python 3.13 + Flask, deployed on Vercel |
 
 ---
 
-## 🏛️ Repository Architecture
-
-Bulletin follows a **DDD-inspired, feature-first clean architecture**:
+## 🏛️ Repository Layout
 
 ```text
-shared/src/commonMain/kotlin/com/jdrms/bulletin/
-├── app/                  # Application composition, navigation, and manual DI (AppContainer)
-├── core/                 # Shared technical concerns, design system, networking, database
-└── domain/               # Business contexts and their layers
-    ├── home/             # Home feed and preferences
-    ├── marketplace/      # Marketplace catalog, search, bookmarks, reviews
-    ├── listings/         # Create and manage student listings
-    ├── messages/         # Conversations, inbox, and reporting
-    └── profile/          # Student profiles, authentication, reputation
+Bulletin/
+├── androidApp/            # Android application (Activity, Application, manifest, build flags)
+├── shared/                # KMP module: all business logic and Compose UI
+├── admin/                 # Flask admin portal (Python)
+├── supabase/              # Local Supabase config, email templates, seed data and script
+├── config/detekt/         # Detekt rules
+├── .github/workflows/     # CI (ci.yml, detekt.yml, admin.yml, stale-branch cleanup)
+├── AGENTS.md              # Contribution rules for AI agents and humans
+└── CODEOWNERS
 ```
 
-Business contexts use four layers:
+### Architecture
 
-- `domain/`: Domain types, policies, and repository contracts.
-- `application/`: Use cases and workflow orchestration.
-- `infrastructure/`: Supabase and in-memory adapters, DTOs, and mapping.
-- `presentation/`: Compose screens, ViewModels, and UI state.
+Bulletin follows a **DDD-inspired, feature-first clean architecture** inside `shared/src/commonMain/kotlin/com/jdrms/bulletin/`:
 
-`AppContainer` composes `HomeModule`, `ListingsModule`, `MarketplaceModule`, `MessagesModule`, and `ProfileModule`, and holds application-wide messaging, refresh signaling, and theme preferences. `InfrastructureModule` owns lazy client creation and the shared fallback policy. Feature modules own lazy repositories and use cases; repositories are internal or private, and ViewModel factories depend on feature modules instead of the whole container. Cross-context wiring stays in feature composition and its ViewModel factories, including the profile activity adapters. Marketplace owns its read cache; the composition root explicitly connects successful Supabase listing mutations to marketplace cache invalidation. Home swipe decisions are intentionally process-local for both backend configurations and survive ViewModel recreation only within the same container.
+```text
+├── app/              # Composition root (AppContainer, feature modules in di/), app shell and navigation,
+│                     # theme preference, and cross-context integration adapters (integration/)
+├── core/             # Shared technical concerns: design system, Supabase config/auth storage, common utilities
+└── domain/           # Bounded contexts
+    ├── home/         # Swipe-based discovery feed, swipe decisions, preferences
+    ├── marketplace/  # Catalog, search, bookmarks, listing and seller-profile reviews, listing/user reporting
+    ├── listings/     # Creating, editing, and managing a student's own listings
+    ├── messages/     # Conversations, inbox, message sending/editing, message reporting
+    ├── profile/      # Auth and sessions, profiles and photos, reviews on profiles, blocking, user reports
+    └── reporting/    # Shared report vocabulary only (ReportType, ReportStatus, ReportReason)
+```
 
-Home's Pass / Message / Save buttons call the same guarded commands as swipes,
-card accessibility actions, and arrow keys. `CardState.availableActions` in the
-Home domain derives availability from the interaction phase, session, and
-configured capabilities. Presentation maps those results to Material icons,
-resource labels, and disabled hints. The row stays outside the departing card,
-reserves its measured height above listing details, and fades out as the tray
-opens. Fully faded controls release touch input to the tray, and keyboard focus
-returns to the initiating control once it re-enables. Save feedback still waits
-for persistence confirmation; a departure alone does not mean a save succeeded.
-Android activities use `adjustResize` so platform window panning does not move
-the tray above the screen while Compose applies its keyboard insets.
-`HomeDomainBoundaryTest` runs with the normal Android host tests and rejects
-imports outside Kotlin, shared common primitives, and Home's own domain package.
-The layers remain packages within `shared`; they are not separate Gradle modules.
+The five main contexts (`home`, `marketplace`, `listings`, `messages`, `profile`) each use four layers, all as packages within `shared` (not separate Gradle modules). `reporting` is the exception: it only contains `domain/model` types shared by the others.
 
-### Backend Status
+| Layer | Owns |
+| --- | --- |
+| `domain/` | Domain types, invariants, policies, repository contracts |
+| `application/` | Use cases and orchestration |
+| `infrastructure/` | Supabase and in-memory adapters, DTOs, mappers |
+| `presentation/` | Compose screens, ViewModels, UI state |
 
-`AppContainer` uses Supabase adapters when a configured client is available. In the normal Android runtime, backend-backed contexts fail to initialize if Supabase is not configured; in-memory fallback is disabled by default. Tests and inspection flows can use in-memory implementations, and local fallback can be explicitly enabled. Home reads through `MarketplaceHomeRepository`; Home preferences remain in memory. These bindings describe code paths, not verification against a deployed Supabase project.
+Contexts do not import each other's entities, repositories, or DTOs. Cross-context wiring lives in `app/integration` and in the feature modules under `app/di`. See [`AGENTS.md`](AGENTS.md) for the full rules, including file and function size limits enforced by Detekt.
 
-| Repository or port | Configured binding | In-memory use | Live project verification |
-| --- | --- | --- | --- |
-| Home feed | Supabase marketplace listing source when configured | Marketplace listing source with in-memory fallback | Not verified here; home preferences remain in-memory |
-| Marketplace repository and listing source, including sold-listing review submission | Supabase adapters | In-memory/composite adapters | Not verified here |
-| Listing images | Supabase Storage adapter | Guarded in-memory adapter for tests, inspection, or explicit fallback | Not verified here |
-| Listing reports | Supabase adapter | Guarded in-memory adapter for tests, inspection, or explicit fallback | Not verified here |
-| Listings repository, including buyer attribution when marking sold | Supabase adapter | In-memory adapter | Not verified here |
-| Messages repository, thread observer, and inbox observer | Supabase adapters | In-memory repository/observers | Inbox broadcast tested locally; not verified against the live project |
-| Profile repository | Supabase adapter | In-memory adapter | Not verified here |
-| User report repository | Supabase adapter | In-memory adapter | Not verified here |
-| User block repository | Supabase adapter | In-memory adapter | Not verified here |
-| Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
-| Auth and session repositories | Supabase Auth adapter; Microsoft action enabled in debug, disabled in release by default | In-memory auth adapter | Identity-boundary migration applied locally and to the linked project; SQL assertions verified locally; Azure settings and live sign-in remain unverified |
-| Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
+### Backend Binding
 
-Review the target Supabase schema, RLS, and storage policies before using backend features. Microsoft identity-boundary SQL is stored in Supabase migration history under version `20261027000000` (`microsoft_identity_boundary`), including the applied statements; it is intentionally excluded from this repository. It requires the existing Bulletin schema and is not a fresh-database baseline. Migration `20261027000000` was applied locally and to the linked project on 2026-10-27; its installed trigger and migration record were verified. The 28 SQL regression assertions passed locally. Older remote migration files remain absent from this checkout; the focused upgrade was applied and recorded atomically without rewriting that history.
+Dependency injection is manual. `AppContainer` composes `HomeModule`, `ListingsModule`, `MarketplaceModule`, `MessagesModule`, and `ProfileModule`; `InfrastructureModule` owns the lazily created Supabase client.
 
-Microsoft OAuth is enabled in debug builds and disabled in release builds by default. The MVP policy accepts any verified Microsoft email, including personal/non-`.edu` accounts; password signup keeps its `.edu` requirement. Azure sign-in requests `email` and `profile`. The backend must provision new profiles from `full_name` or `name` metadata and backfill missing profiles without overwriting existing rows. The build override `-PMICROSOFT_SSO_ENABLED=true` exposes the Android action after Azure credentials, the exact `com.jdrms.bulletin.auth://oauth/callback` allow-list entry and the identity-policy migration are configured. The backend must reject automatic account linking.
+| Context | Runtime binding |
+| --- | --- |
+| Marketplace, listings, listing images (Storage), listing reports | Supabase adapters |
+| Messages (including realtime thread and inbox observers) | Supabase adapters |
+| Profile, auth/session, profile photos, user reports, user blocks | Supabase adapters |
+| Home | Supabase adapters and local memory. The feed reads through `MarketplaceHomeRepository` (marketplace listing source), swipe-right saves via the marketplace bookmark adapter, and swipe-up messages via the messages adapter. Swipe decisions (which cards were saved or passed) and Home preferences are kept in memory per app process. |
+| Theme and marketplace layout preferences | Android local preference stores |
 
-The Kotlin identity policies are UX guards. Security is enforced by a `BEFORE INSERT OR UPDATE` trigger on `auth.identities`, within Auth's callback transaction before token issuance. It rejects mixed sign-in methods (including automatic linking), a second Microsoft subject, missing/mismatched email, soft-deleted accounts, and missing or false provider-derived `custom_claims.xms_edov`. Rejected signup rolls back its user and profile rows. `enable_manual_linking = false` disables explicit linking only; it does not stop Supabase's automatic email linking.
+If Supabase is not configured, the normal Android runtime **fails to initialize** backend-backed contexts: in-memory fallback is disabled by default. In-memory implementations exist for tests, previews, and explicitly enabled local use.
 
-The `/common` authority intentionally admits personal accounts and any Entra tenant under the MVP policy; it does not establish campus affiliation. Identity belongs to the provider subject and Supabase user ID, never the mutable email claim. A campus-only rollout needs an explicit tenant policy and a tenant-specific authority. In [GoTrue v2.197.0's Azure parser](https://github.com/supabase/auth/blob/v2.197.0/internal/api/provider/oidc.go), a present email without `xms_edov` becomes verified; explicit `true`, `"true"`, or `"1"` also becomes verified, while false/other values do not. Consequently `email_verified` alone is insufficient. The trigger requires explicit positive `xms_edov` in Auth-owned identity data, not editable user metadata. See [Supabase's Azure guidance](https://supabase.com/docs/guides/auth/social-login/auth-azure#guarding-against-unverified-email-domains) and [automatic linking documentation](https://supabase.com/docs/guides/auth/auth-identity-linking).
-
-Before enabling Azure, configure the `email` and `xms_edov` ID-token claims in Entra, reconcile and apply the migration, and configure the Before User Created hook to `public.enforce_edu_email_signup`. Verify the deployed Auth version preserves `xms_edov` in identity custom claims and exercise both positive and negative OAuth callbacks; the local test runtime uses GoTrue v2.197.0. Keep Azure disabled until these checks pass. The migration does not change hosted Auth provider settings. Existing Microsoft identities without explicit verification evidence will fail subsequent OAuth callbacks; audit prior identities and revoke prior sessions through a privileged operational path before rollout.
-
-After code exchange, client rejection, profile failure, or cancellation attempts `/logout?scope=local` with the issued user JWT to revoke that session's refresh tokens, then clears local state. It does not need a service-role key. Network failure can prevent revocation; issued access JWTs remain valid until expiry. Sign-out does not delete `auth.users`: invalid identities must be rejected transactionally by the server; a legitimate account with a temporary profile failure remains available for retry. Previously orphaned users require an audited admin cleanup, never automatic client-side deletion.
-
-Reconcile migration history and compare schema before changing an existing project. Live Microsoft sign-in and device lifecycle behavior are not yet verified.
+> These bindings describe what the code does, not that every flow has been verified against a deployed Supabase project.
 
 ---
 
@@ -196,12 +146,12 @@ Reconcile migration history and compare schema before changing an existing proje
 ### Requirements
 
 - JDK 21
-- Android SDK configured for your environment
+- Android SDK (compile SDK 36) configured for your environment, e.g. via Android Studio
 - Git
 
-### Configure Supabase
+### 1. Configure Supabase
 
-The Android build reads configuration from a root `.env` file, environment variables, or Gradle properties. Copy `.env.example` to `.env` and set your Supabase project values:
+The Android build reads settings from a root `.env` file, then environment variables, then Gradle properties. Copy `.env.example` to `.env` and fill in your project values:
 
 ```dotenv
 SUPABASE_URL=https://your-project.supabase.co
@@ -209,105 +159,171 @@ SUPABASE_API_KEY=your-anon-public-key
 SUPABASE_IS_CONNECTED=true
 ```
 
-Microsoft rollout is configured separately from `.env`: committed build defaults enable it for debug and disable it for release. Override either build with `-PMICROSOFT_SSO_ENABLED=true|false` or the process environment variable `MICROSOFT_SSO_ENABLED`; the Gradle property takes precedence. Values must be exactly `true` or `false`, otherwise configuration fails. `.env` is never read for this flag. Only enable it against a prepared Supabase project. For example:
+- Use **only** the anon/public key in the app. Never commit a service-role key, credentials, or real user data. `.env` is git-ignored.
+- `SUPABASE_IS_CONNECTED` defaults to `false`, which leaves backend-backed features unavailable.
+- This checkout has no `supabase/migrations/` folder and **cannot provision a fresh Bulletin database by itself**. Point the app at an already provisioned Supabase project. See [Database (Supabase)](#%EF%B8%8F-database-supabase) below.
 
-```bash
-./gradlew :androidApp:assembleRelease -PMICROSOFT_SSO_ENABLED=true --no-daemon
-```
+### 2. Build and run
 
-SSO builds enable PKCE without changing the default email redirect URL; only Microsoft OAuth explicitly uses the app callback. Disabled builds retain the SDK Auth defaults. Sessions continue to use the existing SDK session store, including across rollback. Encrypted storage is used only for SSO verifiers and pending browser state. Session migration and deletion of legacy data are deferred to a separate rollout with verification and rollback coverage.
-
-This is a build-time gate: changing it requires rebuilding the app. The UI does not query provider availability; disabling Azure server-side stops new Microsoft sign-ins but leaves the button visible in enabled builds. A runtime availability check remains follow-up work.
-
-The app must use only the Supabase anon/public key. Never put a service-role key, credentials, or real user data in the repository. Ensure the Supabase project has the schema and policies in `supabase/migrations/` applied.
-
-### Build and Checks
+Open the project in Android Studio and run the **Bulletin** configuration, or build from the command line:
 
 ```bash
 ./gradlew :androidApp:assembleDebug --no-daemon
-./gradlew :shared:testAndroidHostTest --no-daemon
-./gradlew :shared:detekt :androidApp:detekt --no-daemon
 ```
 
-CI compares branch pushes with their merge-base with `main`; main pushes, merge
-queue runs, scheduled runs, and manual runs use the full path. Documentation-only
-branches skip checks, and admin-only branches run the Python suite without Gradle.
-Affected domain branches run their domain tests, app/core tests, and static checks.
-Full runs split shared host tests across class-name hash shards, with the shard
-matrix generated from `TEST_SHARD_COUNT` and a required gate that checks every
-shard reported at least one test. This prevents an empty or missing shard from
-passing silently. The shards run while
-`check -x :shared:testAndroidHostTest` retains lint, detekt, and Android app tests.
-To run a shard locally:
+### Microsoft sign-in (optional)
+
+Microsoft sign-in is a build-time feature flag, **on in debug builds and off in release builds** by default. Override it with `-PMICROSOFT_SSO_ENABLED=true|false` or the `MICROSOFT_SSO_ENABLED` environment variable (the value must be exactly `true` or `false`; `.env` is not read for this flag). Only enable it against a Supabase project that has been prepared for it: Azure provider credentials, the `com.jdrms.bulletin.auth://oauth/callback` redirect allow-list entry, and the matching server-side identity policy. Password sign-up always requires a `.edu` address.
+
+### Local Supabase and seed data (optional)
+
+`supabase/config.toml` configures a local Supabase stack for the Supabase CLI (email confirmations on, and a before-user-created hook pointing at `public.enforce_edu_email_signup`). `supabase/templates/` holds the confirmation and recovery email templates.
+
+`supabase/seed-users.js` loads the CSVs in `supabase/seedData/` (profiles, listings, reviews) into a project. It reads `SUPABASE_URL` and `SUPABASE_API_KEY` from `.env`, and each seed profile's `id` must be the UUID of an Auth user you created manually.
+
+---
+
+## 🗄️ Database (Supabase)
+
+### Provisioning
+
+The schema, functions, RLS policies, storage buckets and Auth settings live in the hosted Supabase project, not in this repository. The linked project's migration history holds six migrations (including `bulletin_baseline` and `microsoft_identity_boundary`), but the migration files are not checked in. `supabase/config.toml` is local development configuration only and does not describe the hosted project. Before connecting a different project, its schema, functions, RLS, storage buckets and policies, and Auth settings must be reconciled with the hosted one.
+
+Restoring a reproducible schema (recover history with `supabase migration fetch --linked`, compare against the live schema, replay on a disposable local stack, then version future changes in `supabase/migrations/`) is still open work; see the roadmap.
+
+### Overview
+
+The inspected project (PostgreSQL 17) has ten public tables, all with RLS enabled:
+
+| Table | Purpose |
+| --- | --- |
+| `profiles` | Student profile; ID references `auth.users`, created by an Auth trigger |
+| `listings` | Seller inventory, with sold state and optional buyer |
+| `listing_images` | Image metadata and crop settings (up to five per listing) |
+| `listing_bookmarks` | Saved listings |
+| `conversations`, `conversation_participants` | Message threads, membership, read and hidden state |
+| `messages` | Thread messages (1 to 1000 characters; edits go through an RPC) |
+| `reviews` | Ratings (1 to 5) between students, optionally tied to a listing |
+| `reports` | Moderation queue for user, listing, and message reports (`open`, `in_review`, `resolved`, `dismissed`) |
+| `user_blocks` | Directed block relationships |
+
+**Authorization approach:** permissive policies scope access to the signed-in owner or conversation members, and a restrictive account check applies to every table, Storage, and Realtime. Conversation creation, hide/restore, mark-read, and message editing run through security-definer RPCs rather than direct table writes. Auth triggers enforce the `.edu` signup rule and the Microsoft identity policy.
+
+**Storage:** two public buckets, `listing_imgs` and `pfp`, accept JPEG, PNG, and WebP up to 5 MiB, with ownership checks on uploads. Public image URLs are retrievable by anyone who has the link, regardless of sign-in or blocking.
+
+**Realtime:** `messages` and `conversation_participants` are published, and a private per-user inbox channel sends conversation-changed signals (conversation ID only, never message text).
+
+> This is an inspection of the deployed definitions, not a production-readiness claim. Known follow-ups include tightening review-insert and conversation-creation authorization, narrowing broad table grants and profile column exposure, fixing mutable function search paths, and enabling leaked-password protection. The Microsoft sign-in path and live actor-based access tests have not been verified.
+
+---
+
+## ✅ Checks and CI
+
+```bash
+./gradlew :shared:testAndroidHostTest --no-daemon          # unit tests
+./gradlew :shared:detekt :androidApp:detekt --no-daemon    # static analysis
+./gradlew :androidApp:assembleDebug --no-daemon            # debug build
+./gradlew check --no-daemon                                # everything
+```
+
+Normal tests do not need live credentials or network access; live Supabase tests are opt-in.
+
+To run one slice of the host tests the way CI shards them (set both properties or neither):
 
 ```bash
 ./gradlew :shared:testAndroidHostTest -PtestShardCount=4 -PtestShardIndex=0 --no-daemon
 ```
 
-Set both shard properties or neither. The required gate remains `Build and Test`. The separate Admin
-Portal workflow also continues to run its existing check.
+GitHub Actions (`.github/workflows/`):
 
-Live Supabase tests are opt-in and require explicit configuration. Regular tests should not require live credentials or network access.
+| Workflow | Purpose |
+| --- | --- |
+| `ci.yml` | Decides scope from the diff against `main`, then runs size checks, static analysis, domain/shared tests (sharded on full runs), admin tests, and the Android build. Full runs happen on `main`, the merge queue, the weekly schedule, and manual dispatch. The required gate is **Build and Test**. |
+| `detekt.yml` | Detekt scan |
+| `admin.yml` | Admin portal unit tests |
+| `remove-stale-branches.yml` | Branch cleanup |
+
+---
+
+## 🛡️ Admin Portal
+
+`admin/` is a small Flask app for moderators, deployed on Vercel with **Root Directory set to `admin`**. It talks to Supabase from the server only.
+
+**What it does**
+
+- Sign in with a Supabase account whose `profiles.is_admin` is true
+- Review reports (filter by status and type) and change a report's status: `open`, `in_review`, `resolved`, `dismissed`
+- View the reported conversation, listing, and user context for a report
+- Delete a reported listing
+- Suspend or restore an account, with a duration
+- Browse a user directory and view individual users
+
+**Configuration** (see `admin/.env.example`; set these as environment variables, nothing is loaded from a file automatically):
+
+| Variable | Notes |
+| --- | --- |
+| `SUPABASE_URL` | Project URL |
+| `SUPABASE_ANON_KEY` | Anon key, used for admin sign-in |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only.** Never put it in HTML, browser code, or the Android app |
+| `ADMIN_SECRET_KEY` | At least 32 random characters (`python -c "import secrets; print(secrets.token_hex(32))"`) |
+| `ADMIN_LOCAL_HTTP` | `true` only for local HTTP development; otherwise cookies are secure-only |
+
+**Run locally**
+
+```bash
+cd admin
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+# export the variables above in your shell, then:
+python -m flask --app app run
+```
+
+**Test**
+
+```bash
+cd admin
+python -B -m unittest discover -s tests -v
+```
 
 ---
 
 ## 🔐 Security & Privacy
 
-- Client-server traffic uses HTTPS through the backend client.
-- Client applications use the Supabase anon/public key, never a service-role key.
+- Client-server traffic uses HTTPS through the Supabase client.
+- The Android app uses only the Supabase anon/public key; the service-role key lives only in the admin portal's server environment.
 - Database access must be protected by Row Level Security and storage policies.
-- Message contents and precise locations must not be exposed to unauthorized users.
-- Avoid logging credentials, session tokens, message contents, or precise locations.
-- Account deletion, moderation, and privacy requirements must be validated against the configured backend and applicable policies.
+- Message contents and precise locations must not be exposed to unauthorized users. The inspected schema has no precise-location column.
+- Listing and profile images are in public buckets, so anyone with an image URL can fetch it.
+- Credentials, session tokens, message contents, and precise locations must never be logged.
+- The admin portal uses signed, HTTP-only, same-site cookies with CSRF protection.
 
 These are implementation requirements and project goals; this README does not claim a production security audit.
 
 ---
 
-## ⚡ Performance Goals
-
-The following are project targets, not measured guarantees:
-
-| Operation | Target |
-| --- | ---: |
-| App launch | `< 2 seconds` |
-| Listing, search, profile, and feed results | `≤ 2 seconds` |
-| Rating and report submissions | `≤ 3 seconds` |
-| Account creation and authentication | `≤ 5 seconds` |
-| Listing and profile updates | `≤ 5 seconds` |
-| API responses | `< 200 ms` |
-
----
-
 ## 🗺️ Development Roadmap
 
-- [ ] Validate authentication, email confirmation, and account lifecycle against the configured Supabase project
-- [ ] Verify database RLS and storage policies for supported actors and operations
-- [ ] Complete and validate marketplace listing workflows
-- [ ] Complete and validate search, filters, sorting, and saved listings
-- [ ] Validate user search and profile management
-- [ ] Validate messaging, inbox updates, reporting, and blocking
-- [ ] Validate sold-listing review workflows
-- [ ] Develop and validate personalized home recommendations
+**Where we are:** the core student marketplace is implemented in code: sign-up and sign-in with `.edu` verification, marketplace browse and search, listings, saved items, messaging, reviews, reporting and blocking, swipe-based Home discovery, and an admin moderation portal. Everything is backed by Supabase adapters and covered by CI. Checked items are implemented in the codebase; they have not been audited against the live project. What remains is mostly hardening, user search, and the recommendation work.
+
+- [x] Validate authentication, email confirmation, and account lifecycle against the configured Supabase project *(implemented in code)*
+- [ ] Verify database RLS and storage policies for supported actors and operations *(policies inspected, RLS enabled on all ten tables; known gaps still to close)*
+- [x] Complete and validate marketplace listing workflows *(implemented in code)*
+- [x] Complete and validate search, filters, sorting, and saved listings *(implemented in code; search loading and consistency fixes are in the backlog)*
+- [ ] Validate user search and profile management *(profile management implemented; there is no user search in the app yet)*
+- [x] Validate messaging, inbox updates, reporting, and blocking *(implemented in code)*
+- [x] Validate sold-listing review workflows *(implemented in code)*
+- [ ] Develop and validate personalized home recommendations *(Home feed uses a basic ranking policy; the recommendation epics are in the backlog)*
 - [ ] Measure performance against project targets
 - [ ] Prepare user guide, privacy policy, and terms of service
 - [ ] Explore future iOS support
 
+**Also planned:** recover and check in the Supabase migration history, verify Microsoft sign-in end to end, persist Home swipe decisions and preferences, and add admin analytics and a warning system.
+
 ---
 
-## 🧪 Testing Priorities
+## 🤝 Contributing
 
-Test successful workflows and meaningful failure cases, including:
-
-- Invalid, unconfirmed, or already-registered email addresses
-- Invalid credentials and password recovery failures
-- Missing listing or profile fields and invalid prices
-- Missing or deleted listings and profiles
-- Network interruptions and backend errors
-- Unauthorized access to messages, reports, profile data, or photos
-- Blocked-user interactions and duplicate bookmarks
-- Failed report and review submissions
-- Recommendation behavior when personalization data is unavailable
+Read [`AGENTS.md`](AGENTS.md) before making changes. In short: keep changes small and focused, respect context and layer boundaries, add tests for changed behavior, keep this README's backend binding table in sync with `AppContainer`, and run the checks above before opening a PR.
 
 ---
 
