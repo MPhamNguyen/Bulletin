@@ -45,7 +45,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           REF: ${{ github.ref }}
           AFTER: ${{ github.sha }}
-          # Set true to test all five domains on any domain change.
+          # Set true to test all six domains on any domain change.
           ALL_DOMAINS_ON_ANY_CHANGE: "false"
         run: |
           set -euo pipefail
@@ -53,7 +53,7 @@ jobs:
             echo "::error title=CI configuration::TEST_SHARD_COUNT must be a positive integer"
             exit 1
           }
-          ALL_DOMAINS="home marketplace listings messages profile"
+          ALL_DOMAINS="home marketplace listings messages profile reporting"
           mode=full
           reason="no diff range for $EVENT on ${REF#refs/heads/}, so running everything (safe default)"
           range=()
@@ -81,7 +81,7 @@ jobs:
                 shared/src/*/kotlin/com/jdrms/bulletin/domain/*/*)
                   d="${path#*/domain/}"; d="${d%%/*}"
                   case "$d" in
-                    home|marketplace|listings|messages|profile)
+                    home|marketplace|listings|messages|profile|reporting)
                       changed="$changed $d"; domain_changed=true ;;
                     *)
                       force_full=true
