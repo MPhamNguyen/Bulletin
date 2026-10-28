@@ -24,7 +24,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
@@ -35,7 +34,7 @@ import kotlin.test.assertTrue
 
 class SupabaseMessageReportsTableTest {
     @Test
-    fun insertsMessageReportIntoReportsWithNullDescriptionAndPlaceholderReason() = runTest {
+    fun insertsMessageReportIntoReportsWithSelectedReasonAndDescription() = runTest {
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine { request ->
@@ -46,15 +45,21 @@ class SupabaseMessageReportsTableTest {
                 assertEquals("message", body.getValue("type").jsonPrimitive.content)
                 assertEquals("message-a", body.getValue("message_id").jsonPrimitive.content)
                 assertEquals("alice-id", body.getValue("reporter_id").jsonPrimitive.content)
-                assertEquals("inappropriate_content", body.getValue("reason").jsonPrimitive.content)
-                assertEquals(JsonNull, body.getValue("description"))
+                assertEquals("spam", body.getValue("reason").jsonPrimitive.content)
+                assertEquals("Unwanted contact", body.getValue("description").jsonPrimitive.content)
                 assertFalse("listing_id" in body)
                 assertFalse("status" in body)
                 respond("", HttpStatusCode.Created)
             }
         }
         try {
-            val result = repository(client).reportMessage(alice.id, conversationId, message().id, "Spam")
+            val result = repository(client).reportMessage(
+                alice.id,
+                conversationId,
+                message().id,
+                "spam",
+                "Unwanted contact"
+            )
             result.getOrThrow()
         } finally {
             client.close()

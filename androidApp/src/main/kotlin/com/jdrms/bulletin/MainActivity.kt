@@ -1,5 +1,6 @@
 package com.jdrms.bulletin
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,35 +8,38 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.jdrms.bulletin.app.App
-import com.jdrms.bulletin.app.di.AppContainer
-import com.jdrms.bulletin.app.theme.AndroidThemePreferenceStore
-import com.jdrms.bulletin.core.network.SupabaseConfig
-import com.jdrms.bulletin.domain.marketplace.infrastructure.AndroidMarketplaceLayoutPreferenceStore
 
 class MainActivity : ComponentActivity() {
+    private val bulletin get() = application as BulletinApplication
+    private var leftForBrowser = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        handleCallback(intent)
+        setContent { App(appContainer = bulletin.container) }
+    }
 
-        val supabaseConfig = if (BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_API_KEY.isNotBlank()) {
-            SupabaseConfig(
-                url = BuildConfig.SUPABASE_URL,
-                apiKey = BuildConfig.SUPABASE_API_KEY,
-                isConnected = BuildConfig.SUPABASE_IS_CONNECTED
-            )
-        } else {
-            SupabaseConfig()
-        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleCallback(intent)
+    }
 
-        val appContainer = AppContainer(
-            supabaseConfig = supabaseConfig,
-            themePreferenceStore = AndroidThemePreferenceStore(applicationContext),
-            marketplaceLayoutPreferenceStore = AndroidMarketplaceLayoutPreferenceStore(applicationContext)
-        )
+    override fun onPause() {
+        super.onPause()
+        leftForBrowser = true
+    }
 
-        setContent {
-            App(appContainer = appContainer)
-        }
+    override fun onResume() {
+        super.onResume()
+        if (leftForBrowser && BuildConfig.MICROSOFT_SSO_ENABLED) bulletin.externalAuthBrowser.cancel()
+        leftForBrowser = false
+    }
+
+    private fun handleCallback(intent: Intent) {
+        if (BuildConfig.MICROSOFT_SSO_ENABLED) bulletin.externalAuthBrowser.deliver(intent.data)
+        intent.data = null
     }
 }
 

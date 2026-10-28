@@ -101,6 +101,20 @@ fun MessagesScreen(
             }
         }
     }
+    state.messageReportForm?.let { form ->
+        MessageReportScreen(
+            form = form,
+            isSubmitting = state.isReporting,
+            isInboxLoading = inboxState.isLoading,
+            callbacks = MessageReportCallbacks(
+                onReasonSelected = viewModel.selectMessageReportReason,
+                onDescriptionChanged = viewModel.updateMessageReportDescription,
+                onSubmit = viewModel.submitMessageReport,
+                onDismiss = viewModel.dismissMessageReport
+            ),
+            errorMessage = form.errorMessage ?: state.errorMessage
+        )
+    }
 }
 
 internal fun conversationTitle(conversation: Conversation, viewerId: SenderId?): String {

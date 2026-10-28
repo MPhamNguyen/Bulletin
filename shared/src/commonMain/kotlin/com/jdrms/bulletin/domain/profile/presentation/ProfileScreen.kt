@@ -20,7 +20,6 @@ import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.common.UserMessenger
-import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 import kotlinx.coroutines.launch
 
@@ -56,6 +55,15 @@ private data class ProfileDestinationStates(
     val viewModel: ProfileViewModel
 )
 
+private data class BookmarkedListingReviewFlow(
+    val selectedListing: ProfileBookmarkedListing?,
+    val isSubmitting: Boolean,
+    val errorMessage: String?,
+    val onOpen: (ProfileBookmarkedListing) -> Unit,
+    val onDismiss: () -> Unit,
+    val onSubmit: (Int, String) -> Unit
+)
+
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
@@ -84,6 +92,38 @@ fun ProfileScreen(
         flows.messenger.messages.collect { snackbarHostState.showSnackbar(it) }
     }
 
+    val submitReview: (Int, String) -> Unit = { score, comment ->
+        reviewListing?.let { listing ->
+            profileState.profile?.id?.value?.let { reviewerId ->
+                reviewScope.launch {
+                    isSubmittingReview = true
+                    reviewError = null
+                    when (val result = callbacks.onSubmitReview(listing, reviewerId, score, comment)) {
+                        is Result.Success -> {
+                            isSubmittingReview = false
+                            reviewListing = null
+                        }
+                        is Result.Error -> {
+                            isSubmittingReview = false
+                            reviewError = result.exception.message
+                        }
+                    }
+                }
+            }
+        }
+    }
+    val reviewFlow = BookmarkedListingReviewFlow(
+        selectedListing = reviewListing,
+        isSubmitting = isSubmittingReview,
+        errorMessage = reviewError,
+        onOpen = {
+            reviewError = null
+            reviewListing = it
+        },
+        onDismiss = { if (!isSubmittingReview) reviewListing = null },
+        onSubmit = submitReview
+    )
+
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         ProfileDestinationContent(
             destination,
@@ -91,33 +131,8 @@ fun ProfileScreen(
             flows,
             callbacks,
             themeViewModel,
-            onLeaveReview = { reviewListing = it }
+            reviewFlow
         )
-        reviewListing?.let { listing ->
-            ReviewSubmissionDialog(
-                isSubmitting = isSubmittingReview,
-                errorMessage = reviewError,
-                onDismiss = { if (!isSubmittingReview) reviewListing = null },
-                onSubmit = { score, comment ->
-                    profileState.profile?.id?.value?.let { reviewerId ->
-                        reviewScope.launch {
-                            isSubmittingReview = true
-                            reviewError = null
-                            when (val result = callbacks.onSubmitReview(listing, reviewerId, score, comment)) {
-                                is Result.Success -> {
-                                    isSubmittingReview = false
-                                    reviewListing = null
-                                }
-                                is Result.Error -> {
-                                    isSubmittingReview = false
-                                    reviewError = result.exception.message
-                                }
-                            }
-                        }
-                    }
-                }
-            )
-        }
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
     }
 }
@@ -129,7 +144,7 @@ private fun ProfileDestinationContent(
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
     themeViewModel: ThemeViewModel?,
-    onLeaveReview: (ProfileBookmarkedListing) -> Unit
+    reviewFlow: BookmarkedListingReviewFlow
 ) {
     when (destination) {
         ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks) {
@@ -169,8 +184,15 @@ private fun ProfileDestinationContent(
                         onDismiss = states.viewModel::dismissBookmarkedListing,
                         onRemoveBookmark = { states.viewModel.removeBookmarkedListing(listing.id) },
                         canMessageSeller = states.profile.profile?.id?.value != listing.sellerId,
-                        canLeaveReview = listing.isSold && listing.buyerId == states.profile.profile?.id?.value,
-                        onLeaveReview = { onLeaveReview(listing) },
+                        review = BookmarkedListingReviewActions(
+                            isAvailable = listing.isSold && listing.buyerId == states.profile.profile?.id?.value,
+                            onOpen = { reviewFlow.onOpen(listing) },
+                            isOpen = reviewFlow.selectedListing?.id == listing.id,
+                            isSubmitting = reviewFlow.isSubmitting,
+                            errorMessage = reviewFlow.errorMessage,
+                            onDismiss = reviewFlow.onDismiss,
+                            onSubmit = reviewFlow.onSubmit
+                        ),
                         onMessageSeller = { content ->
                             callbacks.onMessageSeller(listing.id, listing.sellerId, listing.sellerName, content)
                         },

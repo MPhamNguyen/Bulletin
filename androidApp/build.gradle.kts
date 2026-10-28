@@ -12,6 +12,8 @@ kotlin {
 }
 dependencies {
     implementation(project(":shared"))
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
 
     implementation(libs.androidx.activity.compose)
 
@@ -51,6 +53,15 @@ fun readEnvProperty(key: String, defaultValue: String = ""): String {
         ?: defaultValue
 }
 
+// Feature rollout is independent of machine-local Supabase configuration.
+val microsoftSsoOverride = providers.gradleProperty("MICROSOFT_SSO_ENABLED")
+    .orElse(providers.environmentVariable("MICROSOFT_SSO_ENABLED"))
+    .map { value ->
+        requireNotNull(value.toBooleanStrictOrNull()) {
+            "MICROSOFT_SSO_ENABLED must be exactly true or false"
+        }
+    }
+
 android {
     namespace = "com.jdrms.bulletin"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -79,7 +90,13 @@ android {
         }
     }
     buildTypes {
+        debug {
+            manifestPlaceholders["microsoftSsoEnabled"] = microsoftSsoOverride.getOrElse(true).toString()
+            buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoOverride.getOrElse(true).toString())
+        }
         release {
+            manifestPlaceholders["microsoftSsoEnabled"] = microsoftSsoOverride.getOrElse(false).toString()
+            buildConfigField("boolean", "MICROSOFT_SSO_ENABLED", microsoftSsoOverride.getOrElse(false).toString())
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

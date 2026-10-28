@@ -42,7 +42,18 @@ import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
+import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
+
+internal data class BookmarkedListingReviewActions(
+    val isAvailable: Boolean = false,
+    val onOpen: () -> Unit = {},
+    val isOpen: Boolean = false,
+    val isSubmitting: Boolean = false,
+    val errorMessage: String? = null,
+    val onDismiss: () -> Unit = {},
+    val onSubmit: (score: Int, comment: String) -> Unit = { _, _ -> }
+)
 
 internal data class BookmarkedListingDetailActions(
     val onDismiss: () -> Unit,
@@ -51,8 +62,7 @@ internal data class BookmarkedListingDetailActions(
     val onMessageSeller: suspend (String) -> Boolean,
     val hasExistingConversation: suspend () -> Boolean,
     val onMessageSent: () -> Unit,
-    val canLeaveReview: Boolean = false,
-    val onLeaveReview: () -> Unit = {},
+    val review: BookmarkedListingReviewActions = BookmarkedListingReviewActions(),
     val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit
 )
 
@@ -118,9 +128,9 @@ internal fun BookmarkedListingDetailSheet(
                     )
                 )
             }
-            if (actions.canLeaveReview) {
+            if (actions.review.isAvailable) {
                 Button(
-                    onClick = actions.onLeaveReview,
+                    onClick = actions.review.onOpen,
                     modifier = Modifier.fillMaxWidth(),
                     colors = BulletinButtonDefaults.buttonColors()
                 ) {
@@ -131,6 +141,14 @@ internal fun BookmarkedListingDetailSheet(
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
             ListingDetailActions(isRemovingBookmark, actions.onRemoveBookmark, actions.onDismiss)
+        }
+        if (actions.review.isOpen) {
+            ReviewSubmissionDialog(
+                isSubmitting = actions.review.isSubmitting,
+                errorMessage = actions.review.errorMessage,
+                onDismiss = actions.review.onDismiss,
+                onSubmit = actions.review.onSubmit
+            )
         }
     }
 }

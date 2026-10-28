@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -27,7 +28,10 @@ internal class MessagesActions(
     fun send(showFailure: (Result.Error) -> Unit) {
         val snapshot = state.value
         val conversationId = snapshot.selectedConversationId ?: return
-        if (snapshot.isSending || inbox.state.value.isLoading || snapshot.isLoadingMessages) return
+        val busy = snapshot.isSending || inbox.state.value.isLoading || snapshot.isLoadingMessages
+        if (busy || snapshot.editState != MessageEditState.Composing) {
+            return
+        }
         if (snapshot.messageInput.isBlank()) return
         state.update { it.copy(isSending = true, errorMessage = null, statusMessage = null) }
         scope.launch {
@@ -53,7 +57,8 @@ internal class MessagesActions(
 
     fun report(
         messageId: MessageId,
-        reason: String,
+        reason: ReportReason,
+        description: String,
         onReported: (ConversationId) -> Unit,
         showFailure: (Result.Error) -> Unit
     ) {
@@ -66,7 +71,7 @@ internal class MessagesActions(
         if (isReportBlocked) return
         state.update { it.copy(isReporting = true, errorMessage = null, statusMessage = null) }
         scope.launch {
-            when (val result = reportMessage(conversationId, messageId, reason)) {
+            when (val result = reportMessage(conversationId, messageId, reason, description)) {
                 is Result.Error -> showFailure(result)
                 is Result.Success -> {
                     if (state.value.selectedConversationId == conversationId) {
@@ -80,6 +85,20 @@ internal class MessagesActions(
 
     private fun Message.canBeReportedBy(viewerId: SenderId, conversationId: ConversationId): Boolean =
         senderId != viewerId && this.conversationId == conversationId && !isReported
+
+    fun toggleVisibility(messageId: MessageId) {
+        state.update { current ->
+            if (current.currentMessages.none { it.id == messageId && it.isReported }) {
+                current
+            } else {
+                current.copy(
+                    revealedReportedMessageIds = current.revealedReportedMessageIds.let { ids ->
+                        if (messageId in ids) ids - messageId else ids + messageId
+                    }
+                )
+            }
+        }
+    }
 
     fun hideConversation(
         conversationId: ConversationId,

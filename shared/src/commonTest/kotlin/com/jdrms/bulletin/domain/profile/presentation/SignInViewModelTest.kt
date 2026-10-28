@@ -1,9 +1,12 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import com.jdrms.bulletin.domain.profile.application.SessionState
+import com.jdrms.bulletin.domain.profile.application.SignInExternally
 import com.jdrms.bulletin.domain.profile.application.SignInUser
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.ExternalSignInOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
+import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.AuthSessionRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -38,5 +41,20 @@ class SignInViewModelTest {
         vm.signIn(email.value, "password123")
         advanceUntilIdle()
         assertIs<SessionState.Authenticated>(session.state.value)
+    }
+
+    @Test
+    fun microsoftCancellationReturnsToIdleWithoutAnError() = profileTest {
+        val auth = object : AuthRepository by InMemoryAuthRepository() {
+            override suspend fun signInExternally() = ExternalSignInOutcome.Cancelled
+        }
+        val vm = SignInViewModel(SignInUser(auth), AuthSessionRepository(auth), SignInExternally(auth))
+
+        vm.signInWithMicrosoft()
+        advanceUntilIdle()
+
+        assertEquals(ExternalSignInStage.Cancelled, vm.uiState.value.externalStage)
+        assertNull(vm.uiState.value.errorMessage)
+        assertEquals(false, vm.uiState.value.isLoading)
     }
 }

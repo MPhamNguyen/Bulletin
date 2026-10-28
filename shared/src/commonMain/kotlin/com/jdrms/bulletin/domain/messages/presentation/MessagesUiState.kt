@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 
 data class MessagesUiState(
     val viewerId: SenderId? = null,
@@ -20,12 +21,23 @@ data class MessagesUiState(
     val isLoadingOlder: Boolean = false,
     val connectionState: MessageConnectionState = MessageConnectionState.CONNECTING,
     val messageInput: String = "",
+    val editState: MessageEditState = MessageEditState.Composing,
+    val editError: String? = null,
     val isLoading: Boolean = false,
     val isLoadingMessages: Boolean = false,
     val isSending: Boolean = false,
     val isReporting: Boolean = false,
+    val messageReportForm: MessageReportFormState? = null,
     val errorMessage: String? = null,
     val statusMessage: String? = null
+)
+
+data class MessageReportFormState(
+    val messageId: MessageId,
+    val selectedReason: ReportReason? = null,
+    val description: String = "",
+    val isSubmitted: Boolean = false,
+    val errorMessage: String? = null
 )
 
 internal fun MessagesUiState.clearMessageLoadingForMissingConversation(

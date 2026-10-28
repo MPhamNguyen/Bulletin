@@ -1,0 +1,52 @@
+project_id = "bulletin"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[local_smtp]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["com.jdrms.bulletin.auth://oauth/callback"]
+enable_signup = true
+# Disables only explicit linking; the identity trigger rejects automatic linking.
+enable_manual_linking = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+otp_length = 6
+otp_expiry = 600
+
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/enforce_edu_email_signup"
+
+[auth.external.azure]
+# Local development default. Enable with separate local/staging credentials.
+# This file is not a live-project snapshot: never config push it to reconcile OAuth.
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
+# Deliberately accepts any tenant; requires explicit xms_edov in the identity trigger.
+# This does not establish university affiliation. Use a tenant UUID authority for a single-campus policy.
+url = "https://login.microsoftonline.com/common"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"

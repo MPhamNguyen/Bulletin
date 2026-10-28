@@ -3,7 +3,12 @@ package com.jdrms.bulletin.domain.messages
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditException
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditFailure
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
 import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationMembershipDto
@@ -15,16 +20,18 @@ import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageInse
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageProfileDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportInsertDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseMessageReportMarkerDto
+import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseMessagesMapper
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesTable
 import kotlin.time.Instant
 
 internal class FakeSupabaseMessagesTable(
     conversations: List<Conversation>,
     messages: List<Message> = emptyList(),
-    var authenticatedUserId: String? = alice.id.value
+    var authenticatedUserId: String? = alice.id.value,
+    private val now: (() -> Instant)? = null
 ) : SupabaseMessagesTable {
     private var clockMillis = maxOf(messages.maxOfOrNull(Message::timestampMillis) ?: 0L, 41L)
-    private fun serverNow(): Instant = Instant.fromEpochMilliseconds(++clockMillis)
+    private fun serverNow(): Instant = now?.invoke() ?: Instant.fromEpochMilliseconds(++clockMillis)
     private val conversationRows = conversations.associate { conversation ->
         conversation.id.value to SupabaseConversationDto(
             id = conversation.id.value,
@@ -191,6 +198,25 @@ internal class FakeSupabaseMessagesTable(
         hiddenBy.remove(message.conversationId)
     }
 
+    override suspend fun editMessage(edit: MessageEdit): SupabaseMessageDto {
+        val userId = authenticatedUserId ?: throw MessageEditException(MessageEditFailure.UNAVAILABLE)
+        val membership = getMembership(edit.conversationId.value, userId)
+            ?: throw MessageEditException(MessageEditFailure.UNAVAILABLE)
+        val index = messageRows.indexOfFirst {
+            it.id == edit.messageId.value && it.conversationId == edit.conversationId.value
+        }
+        if (index < 0 || userId in hiddenBy[edit.conversationId.value].orEmpty()) {
+            throw MessageEditException(MessageEditFailure.UNAVAILABLE)
+        }
+        val stored = SupabaseMessagesMapper.toMessage(messageRows[index])
+        if (membership.historyVisibleAfter?.let { stored.orderingTimestamp <= Instant.parse(it) } == true) {
+            throw MessageEditException(MessageEditFailure.UNAVAILABLE)
+        }
+        val edited = MessageEditing.apply(stored, SenderId(userId), edit, serverNow()).getOrThrow()
+        messageRows[index] = messageRows[index].copy(content = edited.content, editedAt = edited.editedAt?.toString())
+        return messageRows[index]
+    }
+
     override suspend fun insertReport(report: SupabaseMessageReportInsertDto) {
         val index = messageRows.indexOfFirst { it.id == report.messageId }
         check(index >= 0)
@@ -206,15 +232,27 @@ internal class FakeSupabaseMessagesTable(
         messageRows[0] = messageRows[0].copy(createdAt = timestamp)
     }
 
-    fun closeReport(reporterId: String, messageId: String): Boolean =
-        activeReports.remove(reporterId to messageId)
+    fun closeReport(reporterId: String, messageId: String): Boolean {
+        val removed = activeReports.remove(reporterId to messageId)
+        if (removed && activeReports.none { it.second == messageId }) {
+            val index = messageRows.indexOfFirst { it.id == messageId }
+            if (index >= 0) {
+                messageRows[index] = messageRows[index].copy(
+                    reports = messageRows[index].reports.map { it.copy(status = "dismissed") }
+                )
+            }
+        }
+        return removed
+    }
 
     private fun toMessageDto(message: Message): SupabaseMessageDto = SupabaseMessageDto(
         id = message.id.value,
         conversationId = message.conversationId.value,
         senderId = message.senderId.value,
         content = message.content,
-        createdAt = Instant.fromEpochMilliseconds(message.timestampMillis).toString(),
+        createdAt = message.orderingTimestamp.toString(),
+        editedAt = message.editedAt?.toString(),
+        deletedAt = message.deletedAt?.toString(),
         senderProfile = SupabaseMessageProfileDto(message.senderName),
         reports = if (message.isReported) {
             listOf(SupabaseMessageReportMarkerDto("existing-report"))

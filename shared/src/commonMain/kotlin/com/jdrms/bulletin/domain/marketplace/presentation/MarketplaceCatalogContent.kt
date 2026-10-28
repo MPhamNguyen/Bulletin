@@ -125,8 +125,7 @@ private fun LazyGridScope.marketplaceCatalogHeader(
 ) {
     fullWidthItem {
         SectionHeader(
-            title = "Campus Marketplace",
-            subtitle = "Browse, search, & discover student items on campus"
+            title = "Marketplace"
         )
     }
     fullWidthItem {
@@ -241,14 +240,6 @@ internal fun MarketplaceDetailFlow(
         onDetailDismiss()
         viewModel.refreshListings()
     }
-    if (state.detail.isReviewDialogOpen) {
-        MarketplaceReviewDialog(
-            isSubmitting = state.detail.isSubmittingReview,
-            errorMessage = state.detail.reviewErrorMessage,
-            onDismiss = viewModel.reviewActions::dismissReviewDialog,
-            onSubmit = viewModel.reviewActions::submitReview
-        )
-    }
 }
 
 @Composable
@@ -269,13 +260,18 @@ private fun MarketplaceDetailOverlay(
             bookmarkErrorMessage = state.bookmarkErrorMessage,
             isBookmarked = state.detail.listing?.let { it.id in state.bookmarkedItemIds } ?: false,
             currentUserId = state.currentUserId,
-            hasReview = state.detail.hasReview
+            hasReview = state.detail.hasReview,
+            isReviewDialogOpen = state.detail.isReviewDialogOpen,
+            isSubmittingReview = state.detail.isSubmittingReview,
+            reviewErrorMessage = state.detail.reviewErrorMessage
         ),
         actions = MarketplaceDetailSheetActions(
             onDismiss = onDetailDismiss,
             onRetry = viewModel::retryLoadListingDetail,
             onToggleBookmark = { state.detail.listing?.let { viewModel.toggleBookmark(it.id) } },
             onLeaveReview = viewModel.reviewActions::openReviewDialog,
+            onDismissReview = viewModel.reviewActions::dismissReviewDialog,
+            onSubmitReview = viewModel.reviewActions::submitReview,
             onReportListing = { beginMarketplaceListingReport(listingReportViewModel, state.detail.listing) },
             onSellerClick = { sellerId ->
                 sellerProfileViewModel.load(sellerId)

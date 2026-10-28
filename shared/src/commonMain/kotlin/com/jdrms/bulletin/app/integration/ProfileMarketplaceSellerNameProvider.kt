@@ -29,7 +29,7 @@ class ProfileMarketplaceSellerNameProvider(
                             comment = review.comment
                         )
                     },
-                    isVerified = it.isVerified || it.email.isUniversityEmail
+                    isVerified = it.isVerified
                 )
             }
             is com.jdrms.bulletin.core.common.Result.Error -> null

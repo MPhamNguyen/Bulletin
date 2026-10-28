@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.messages.application.MessagesMeasurement
 import com.jdrms.bulletin.domain.messages.application.NoOpMessagesInstrumentation
 import com.jdrms.bulletin.domain.messages.application.measuredMessagesOperation
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationLookupDto
@@ -21,6 +22,8 @@ import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Instant
@@ -39,10 +42,15 @@ internal interface SupabaseConversationReadTable {
     suspend fun markConversationRead(conversationId: String): Instant?
 }
 
+internal interface SupabaseMessageEditingTable {
+    suspend fun editMessage(edit: MessageEdit): SupabaseMessageDto
+}
+
 internal interface SupabaseMessagesTable :
     SupabaseConversationCreationTable,
     SupabaseConversationVisibilityTable,
-    SupabaseConversationReadTable {
+    SupabaseConversationReadTable,
+    SupabaseMessageEditingTable {
     suspend fun getAuthenticatedUserId(): String?
     suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto>
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
@@ -210,6 +218,17 @@ internal class PostgrestSupabaseMessagesTable(
         supabase.from(SupabaseMessagesRepository.MESSAGES_TABLE).insert(message)
     }
 
+    override suspend fun editMessage(edit: MessageEdit): SupabaseMessageDto =
+        supabase.postgrest.rpc(
+            "edit_message",
+            parameters = buildJsonObject {
+                put("p_conversation_id", edit.conversationId.value)
+                put("p_message_id", edit.messageId.value)
+                put("p_body", edit.content)
+                put("p_expected_edited_at", edit.expectedEditedAt?.let { JsonPrimitive(it.toString()) } ?: JsonNull)
+            }
+        ).decodeSingle()
+
     override suspend fun insertReport(report: SupabaseMessageReportInsertDto) {
         supabase.from(SupabaseMessagesRepository.REPORTS_TABLE).insert(report)
     }
@@ -220,10 +239,11 @@ internal class PostgrestSupabaseMessagesTable(
         val INBOX_COLUMNS = Columns.raw(
             "id,updated_at,listing_id,membership:conversation_participants!inner(user_id,history_visible_after)," +
                 "participants:conversation_participants(user_id,profiles(full_name),last_read_at)," +
-                "messages(id,conversation_id,sender_id,body,created_at,profiles(full_name),reports(id,status))"
+                "messages(id,conversation_id,sender_id,body,created_at,edited_at,deleted_at," +
+                "profiles(full_name),reports(id,status))"
         )
         val MESSAGE_COLUMNS = Columns.raw(
-            "id,conversation_id,sender_id,body,created_at,profiles(full_name),reports(id,status)"
+            "id,conversation_id,sender_id,body,created_at,edited_at,deleted_at,profiles(full_name),reports(id,status)"
         )
     }
 }

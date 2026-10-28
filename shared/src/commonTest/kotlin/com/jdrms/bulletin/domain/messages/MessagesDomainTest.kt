@@ -12,6 +12,7 @@ import com.jdrms.bulletin.domain.messages.infrastructure.dto.ConversationPartici
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.MessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.MessagesMapper
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
+import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,8 +46,8 @@ class MessagesDomainTest {
     }
 
     @Test
-    fun testBlankReportReasonFails() {
-        val result = policy.validateReportReason("")
+    fun listingOnlyReportReasonIsRejectedForMessages() {
+        val result = policy.validateReport(ReportReason.PROHIBITED_OR_ILLEGAL_ITEM, "")
         assertTrue(result.isError())
     }
 
@@ -86,7 +87,7 @@ class MessagesDomainTest {
         val messages = repo.getMessages(senderId, convId).getOrThrow()
         assertTrue(messages.any { it.id == MessageId("msg_new_1") })
 
-        val reportResult = repo.reportMessage(senderId, convId, MessageId("msg_new_1"), "Spam")
+        val reportResult = repo.reportMessage(senderId, convId, MessageId("msg_new_1"), "spam", "")
         assertTrue(reportResult.isSuccess())
 
         val updatedMessages = repo.getMessages(senderId, convId).getOrThrow()

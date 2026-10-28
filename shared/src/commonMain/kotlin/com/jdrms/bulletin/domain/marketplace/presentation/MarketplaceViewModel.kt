@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
-import com.jdrms.bulletin.domain.marketplace.application.InMemoryMarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
@@ -30,8 +29,7 @@ class MarketplaceViewModel(
         ),
     private val listingChangedSignal: RefreshSignal? = null,
     private val currentUserIdProvider: suspend () -> String? = { null },
-    private val layoutPreferenceStore: MarketplaceLayoutPreferenceStore =
-        InMemoryMarketplaceLayoutPreferenceStore()
+    private val layoutPreferenceStore: MarketplaceLayoutPreferenceStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())

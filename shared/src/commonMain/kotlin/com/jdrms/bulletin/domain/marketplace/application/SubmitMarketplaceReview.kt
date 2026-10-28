@@ -24,7 +24,6 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
             else -> null
         }
         val error = validationError ?: when {
-            comment.isBlank() -> "Please add a comment to your review."
             score !in 1..5 -> "Choose a rating from 1 to 5 stars."
             repository.hasReviewForListing(canonicalListingId, reviewerId) ->
                 "A review has already been submitted for this listing."
@@ -59,7 +58,6 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
         val eligibilityError = when {
             !listing.isSold -> "Reviews are available after a listing is sold."
             listing.buyerId != reviewerId -> "Only the buyer can review this seller."
-            comment.isBlank() -> "Please add a comment to your review."
             score !in 1..5 -> "Choose a rating from 1 to 5 stars."
             else -> null
         }

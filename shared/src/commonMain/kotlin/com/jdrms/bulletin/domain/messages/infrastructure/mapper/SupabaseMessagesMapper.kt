@@ -7,7 +7,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.service.MessagesPolicy
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
@@ -82,6 +81,9 @@ object SupabaseMessagesMapper {
             content = dto.content,
             timestampMillis = createdAt.toEpochMilliseconds(),
             isReported = dto.reports.isNotEmpty(),
+            editedAt = dto.editedAt?.let(Instant::parse),
+            deletedAt = dto.deletedAt?.let(Instant::parse),
+            isEditLocked = dto.reports.any { it.status != "dismissed" },
             preciseCreatedAt = createdAt.takeUnless { it == Instant.fromEpochMilliseconds(it.toEpochMilliseconds()) }
         )
     }
@@ -96,15 +98,16 @@ object SupabaseMessagesMapper {
 
     fun toReportInsertDto(
         messageId: MessageId,
-        reporterId: SenderId
+        reporterId: SenderId,
+        reason: String,
+        description: String
     ): SupabaseMessageReportInsertDto {
-        // Message-report reason selection is not implemented; persist the agreed placeholder for now.
         return SupabaseMessageReportInsertDto(
             messageId = messageId.value,
             reporterId = reporterId.value,
-            reason = MessagesPolicy.DEFAULT_REPORT_REASON_CODE,
+            reason = reason,
             type = SupabaseMessageReportType.MESSAGE,
-            description = null
+            description = description.ifBlank { null }
         )
     }
 

@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.MESSAGE_PAGE_SIZE
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -37,10 +38,14 @@ interface MessagesRepository {
     ): Result<MessagePage>
     suspend fun markConversationRead(userId: SenderId, conversationId: ConversationId): Result<Instant>
     suspend fun sendMessage(message: Message): Result<Message>
+
+    /** Preserve creation/order/read state; reject stale versions and edits outside the original 15-minute window. */
+    suspend fun editMessage(userId: SenderId, edit: MessageEdit): Result<Message>
     suspend fun reportMessage(
         userId: SenderId,
         conversationId: ConversationId,
         messageId: MessageId,
-        reason: String
+        reason: String,
+        description: String = ""
     ): Result<Unit>
 }

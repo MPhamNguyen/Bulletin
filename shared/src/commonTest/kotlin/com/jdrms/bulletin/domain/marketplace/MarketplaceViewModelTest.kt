@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBo
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryMarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
@@ -45,6 +46,7 @@ class MarketplaceViewModelTest {
         getListingBookmarks = GetMarketplaceListingBookmarks(repository)
         viewMarketplaceListing = ViewMarketplaceListing(repository)
         viewModel = MarketplaceViewModel(
+            layoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
             searchMarketplace = searchMarketplace,
             bookmarks = MarketplaceBookmarkDependencies(
                 add = bookmarkListing,

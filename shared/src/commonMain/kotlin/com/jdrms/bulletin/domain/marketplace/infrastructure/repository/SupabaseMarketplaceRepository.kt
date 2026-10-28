@@ -27,21 +27,18 @@ import kotlinx.coroutines.withTimeoutOrNull
 class SupabaseMarketplaceRepository private constructor(
     private val supabase: SupabaseClient,
     private val searchPolicy: MarketplaceSearchPolicy,
-    private val fallbackRepository: InMemoryMarketplaceRepository,
     internal val readCache: MarketplaceReadCache
 ) : MarketplaceRepository {
 
     constructor(supabase: SupabaseClient) : this(
         supabase,
         MarketplaceSearchPolicy(),
-        InMemoryMarketplaceRepository(),
         MarketplaceReadCache()
     )
 
     internal constructor(supabase: SupabaseClient, readCache: MarketplaceReadCache) : this(
         supabase,
         MarketplaceSearchPolicy(),
-        InMemoryMarketplaceRepository(),
         readCache
     )
 
@@ -52,7 +49,7 @@ class SupabaseMarketplaceRepository private constructor(
             runCatching {
                 readCache.catalog {
                     val dtos = supabase.from(LISTINGS_TABLE).select().decodeList<MarketplaceItemDto>()
-                    if (dtos.isEmpty()) fallbackRepository.getCatalog() else dtos.map(MarketplaceMapper::toDomain)
+                    dtos.map(MarketplaceMapper::toDomain)
                 }
             }.getOrElse { error ->
                 error.rethrowIfCancellation()
@@ -186,9 +183,23 @@ class SupabaseMarketplaceRepository private constructor(
             onSuccess = { Result.Success(Unit) },
             onFailure = { error ->
                 error.rethrowIfCancellation()
-                Result.Error(error)
+                Result.Error(error.toMarketplaceReviewError())
             }
         )
+    }
+
+    private fun Throwable.toMarketplaceReviewError(): Throwable {
+        val message = message.orEmpty()
+        return when {
+            "unique_listing_review" in message || "reviews_one_per_listing_idx" in message ->
+                IllegalStateException("A review has already been submitted for this listing.", this)
+            "unique_reviewer_reviewee" in message -> IllegalStateException(
+                "The database still limits reviews to one per seller. Apply the latest Supabase migration " +
+                    "to allow reviews for separate listings.",
+                this
+            )
+            else -> this
+        }
     }
 
     companion object {
