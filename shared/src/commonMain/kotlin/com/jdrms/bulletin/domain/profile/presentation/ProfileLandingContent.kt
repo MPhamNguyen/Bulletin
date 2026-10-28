@@ -63,7 +63,7 @@ internal fun MarketplaceProfileView(
                     fullName = fullName,
                     major = major,
                     university = university,
-                    isVerified = profile?.isVerified == true || profile?.email?.isUniversityEmail == true,
+                    isVerified = profile?.isVerified == true,
                     avatarUrl = profile?.avatarUrl
                 )
 

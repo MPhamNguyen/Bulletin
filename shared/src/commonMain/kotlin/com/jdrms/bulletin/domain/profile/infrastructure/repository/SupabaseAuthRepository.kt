@@ -21,8 +21,18 @@ import kotlinx.serialization.json.put
 class SupabaseAuthRepository(
     private val supabase: SupabaseClient,
     private val profileRepository: ProfileRepository,
+    private val externalBrowser: ExternalAuthBrowser? = null,
     private val onSessionEnded: suspend () -> Unit = {}
 ) : AuthRepository {
+
+    private val externalSignIn = externalBrowser?.let {
+        SupabaseExternalSignIn(supabase, it, ::getCurrentUser) {
+            supabase.auth.clearSession()
+            onSessionEnded()
+        }
+    }
+
+    override suspend fun signInExternally() = externalSignIn?.signIn() ?: super.signInExternally()
 
     private var passwordResetRequested = false
     private var passwordResetCodeVerified = false
@@ -32,6 +42,7 @@ class SupabaseAuthRepository(
             supabase.auth.awaitInitialization()
             val currentUser = supabase.auth.currentUserOrNull()
                 ?.takeIf { it.emailConfirmedAt != null } ?: return@runCatching null
+            enforceExternalIdentity(currentUser)
             val userId = UserId(currentUser.id)
 
             when (val profileResult = profileRepository.getProfile(userId)) {
@@ -49,12 +60,8 @@ class SupabaseAuthRepository(
             supabase.auth.awaitInitialization()
             val currentUser = supabase.auth.currentUserOrNull()
                 ?.takeIf { it.emailConfirmedAt != null } ?: return@runCatching null
-            val userId = UserId(currentUser.id)
-
-            val profile = when (val profileResult = profileRepository.getProfile(userId)) {
-                is Result.Success -> profileResult.data ?: createProfileFromAuthUser(currentUser)
-                is Result.Error -> throw profileResult.exception
-            }
+            enforceExternalIdentity(currentUser)
+            val profile = readOrCreateProfile(currentUser)
             if (profile.isDeleted) null else profile
         }.fold(
             onSuccess = { Result.Success(it) },
@@ -89,6 +96,7 @@ class SupabaseAuthRepository(
     }
 
     override suspend fun login(email: StudentEmail, password: String): Result<StudentProfile> {
+        externalBrowser?.clearRecovered()
         return runCatching {
             supabase.auth.signInWith(Email) {
                 this.email = email.value
@@ -101,27 +109,9 @@ class SupabaseAuthRepository(
                 rejectSession("Please verify your email address before logging in.")
             }
 
-            val userId = UserId(currentUser.id)
-
-            val profileResult = profileRepository.getProfile(userId)
-            val profile = when (profileResult) {
-                is Result.Success -> {
-                    if (profileResult.data != null) {
-                        if (profileResult.data.isDeleted) {
-                            rejectSession("Account not found. Please check your email or create an account.")
-                        }
-                        profileResult.data
-                    } else {
-                        createProfileFromAuthUser(currentUser, email)
-                    }
-                }
-                is Result.Error -> {
-                    // Propagate repository errors instead of silently overwriting existing profile data
-                    throw profileResult.exception
-                }
+            readOrCreateProfile(currentUser, email).also { profile ->
+                if (profile.isDeleted) rejectSession("Account not found. Please check your email or create an account.")
             }
-
-            profile
         }.fold(
             onSuccess = { Result.Success(it) },
             onFailure = { Result.Error(Exception(mapAuthErrorMessage(it), it)) }
@@ -213,6 +203,14 @@ class SupabaseAuthRepository(
         return Result.Error(Exception(mapAuthErrorMessage(throwable), throwable))
     }
 
+    private suspend fun enforceExternalIdentity(user: io.github.jan.supabase.auth.user.UserInfo) {
+        if (user.appMetadata?.get("provider") == JsonPrimitive("azure")) {
+            if (MicrosoftIdentityPolicy.rejection(user) != null) {
+                rejectSession("Microsoft account verification failed. Please sign in again.")
+            }
+        }
+    }
+
     private suspend fun rejectSession(message: String): Nothing {
         try {
             supabase.auth.signOut()
@@ -225,6 +223,7 @@ class SupabaseAuthRepository(
     }
 
     override suspend fun signOut(): Result<Unit> {
+        externalBrowser?.clearRecovered()
         return runCatching {
             try {
                 supabase.auth.signOut()
@@ -238,6 +237,14 @@ class SupabaseAuthRepository(
         )
     }
 
+    private suspend fun readOrCreateProfile(
+        user: io.github.jan.supabase.auth.user.UserInfo,
+        fallbackEmail: StudentEmail? = null
+    ): StudentProfile = when (val result = profileRepository.getProfile(UserId(user.id))) {
+        is Result.Success -> result.data ?: createProfileFromAuthUser(user, fallbackEmail)
+        is Result.Error -> throw result.exception
+    }
+
     private suspend fun createProfileFromAuthUser(
         authUser: io.github.jan.supabase.auth.user.UserInfo,
         fallbackEmail: StudentEmail? = null
@@ -246,7 +253,7 @@ class SupabaseAuthRepository(
             ?: error("Authenticated user does not have an email address.")
         val metadataName = (authUser.userMetadata?.get("full_name") as? JsonPrimitive)?.content?.takeIf {
             it.isNotBlank()
-        }
+        } ?: (authUser.userMetadata?.get("name") as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() }
         val metadataUniversity = (authUser.userMetadata?.get("university") as? JsonPrimitive)?.content?.takeIf {
             it.isNotBlank()
         }
@@ -254,7 +261,11 @@ class SupabaseAuthRepository(
             id = UserId(authUser.id),
             email = email,
             fullName = metadataName ?: "Student",
-            university = metadataUniversity.orEmpty(),
+            university = if (authUser.appMetadata?.get("provider") == JsonPrimitive("azure")) {
+                ""
+            } else {
+                metadataUniversity.orEmpty()
+            },
             isVerified = authUser.emailConfirmedAt != null
         )
         when (val saveResult = profileRepository.updateProfile(profile)) {

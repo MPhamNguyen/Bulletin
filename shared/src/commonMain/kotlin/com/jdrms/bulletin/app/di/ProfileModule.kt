@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.SignInExternally
 import com.jdrms.bulletin.domain.profile.application.SignInUser
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.application.SoftDeleteProfile
@@ -27,6 +28,7 @@ import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserBlockRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.AuthSessionRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.ExternalAuthBrowser
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -39,7 +41,10 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfi
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserBlockRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserReportRepository
 
-internal class ProfileModule(private val infrastructure: InfrastructureModule) {
+internal class ProfileModule(
+    private val infrastructure: InfrastructureModule,
+    private val externalAuthBrowser: ExternalAuthBrowser? = null
+) {
     private val profileReadCache by lazy { ProfileReadCache() }
     internal val profileRepository: ProfileRepository by lazy {
         infrastructure.backend(
@@ -68,7 +73,11 @@ internal class ProfileModule(private val infrastructure: InfrastructureModule) {
     internal val authRepository: AuthRepository by lazy {
         infrastructure.backend(
             supabase = { client ->
-                SupabaseAuthRepository(client, profileRepository) { profileReadCache.clearCurrentSession() }
+                SupabaseAuthRepository(
+                    client,
+                    profileRepository,
+                    externalAuthBrowser
+                ) { profileReadCache.clearCurrentSession() }
             },
             inMemory = { InMemoryAuthRepository(profileRepository) }
         )
@@ -81,6 +90,7 @@ internal class ProfileModule(private val infrastructure: InfrastructureModule) {
     val marketplaceUserBlocker by lazy { ProfileMarketplaceUserBlocker(blockUser) }
     internal val unblockUser by lazy { UnblockUser(authRepository, userBlockRepository) }
     internal val getBlockedUsers by lazy { GetBlockedUsers(authRepository, userBlockRepository, profileRepository) }
+    val signInExternally by lazy { SignInExternally(authRepository) }
     val signInUser by lazy { SignInUser(authRepository) }
     val registerStudent by lazy { RegisterStudent(authRepository) }
     val restoreAuthenticatedProfile by lazy { RestoreAuthenticatedProfile(authRepository) }

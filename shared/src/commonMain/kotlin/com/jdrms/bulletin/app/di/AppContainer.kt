@@ -5,9 +5,11 @@ import com.jdrms.bulletin.app.theme.ThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.FlowUserMessenger
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.core.network.SupabaseAuthStorage
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryMarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.ExternalAuthBrowser
 import io.github.jan.supabase.SupabaseClient
 
 class AppContainer(
@@ -17,17 +19,27 @@ class AppContainer(
     private val themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
     marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore =
         InMemoryMarketplaceLayoutPreferenceStore(),
-    providedSupabaseClient: SupabaseClient? = null
+    providedSupabaseClient: SupabaseClient? = null,
+    private val externalAuth: ExternalAuthConfiguration = ExternalAuthConfiguration()
 ) {
+    val microsoftSignInEnabled: Boolean get() = externalAuth.microsoftSignInEnabled
+    val externalSignInPending: Boolean get() = externalAuth.browser?.isResuming == true
+
     internal val listingChangedSignal by lazy { RefreshSignal() }
     internal val userMessenger by lazy { FlowUserMessenger() }
     private val infrastructure = InfrastructureModule(
         supabaseConfig,
         isInspectionMode,
         allowInMemoryFallback,
-        providedSupabaseClient
+        providedSupabaseClient,
+        externalAuth.storage,
+        externalAuth.microsoftSignInEnabled
     )
-    internal val profile = ProfileModule(infrastructure)
+    internal val profile = ProfileModule(infrastructure, externalAuth.browser)
+
+    // The application container owns the OAuth job across Activity/composition recreation.
+    internal val signInViewModel by lazy { profile.createSignInViewModel() }
+
     internal val listings: ListingsModule = ListingsModule(infrastructure, profile) { marketplace.invalidateReads() }
     internal val marketplace: MarketplaceModule = MarketplaceModule(
         infrastructure,
@@ -40,3 +52,9 @@ class AppContainer(
 
     internal fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }
+
+data class ExternalAuthConfiguration(
+    val microsoftSignInEnabled: Boolean = false,
+    val browser: ExternalAuthBrowser? = null,
+    val storage: SupabaseAuthStorage? = null
+)

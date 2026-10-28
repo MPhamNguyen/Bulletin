@@ -248,27 +248,7 @@ internal fun BioField(value: String, onValueChange: (String) -> Unit) {
             colors = BulletinTextFieldDefaults.colors(),
             modifier = Modifier.fillMaxWidth()
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                "Shown on your listings and verified student profile.",
-                modifier = Modifier.weight(1f).padding(end = 12.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "${value.length} / $BIO_MAX_LENGTH",
-                style = MaterialTheme.typography.labelMedium,
-                color = if (value.length >= BIO_WARN_LENGTH) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
+        BioFieldFooter(value)
     }
 }
 
@@ -301,6 +281,31 @@ internal fun SignOutButton(
             "Sign Out",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+@Composable
+private fun BioFieldFooter(value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            "Shown on your listings and public profile.",
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            "${value.length} / $BIO_MAX_LENGTH",
+            style = MaterialTheme.typography.labelMedium,
+            color = if (value.length >= BIO_WARN_LENGTH) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
         )
     }
 }

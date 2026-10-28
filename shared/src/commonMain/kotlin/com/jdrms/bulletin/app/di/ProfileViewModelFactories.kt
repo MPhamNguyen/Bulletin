@@ -20,7 +20,7 @@ import com.jdrms.bulletin.domain.profile.presentation.SignInViewModel
 internal fun ProfileModule.createBlockedUsersViewModel(listingChangedSignal: RefreshSignal) =
     BlockedUsersViewModel(getBlockedUsers, unblockUser, listingChangedSignal)
 
-internal fun ProfileModule.createSignInViewModel() = SignInViewModel(signInUser, sessionRepository)
+internal fun ProfileModule.createSignInViewModel() = SignInViewModel(signInUser, sessionRepository, signInExternally)
 
 internal fun ProfileModule.createRegistrationViewModel() = RegistrationViewModel(
     registerStudent,

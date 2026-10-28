@@ -109,7 +109,7 @@ Home uses `MarketplaceHomeRepository` with the Supabase marketplace listing sour
 | **Mobile app** | Android with Kotlin and Jetpack Compose |
 | **Shared code** | Kotlin Multiplatform and Compose Multiplatform in `shared` |
 | **Backend** | Supabase client adapters for configured backend-backed contexts |
-| **Authentication** | Supabase Auth adapter, with university-email validation in shared business logic |
+| **Authentication** | Supabase Auth adapter for password sign-in and feature-flagged Microsoft OAuth |
 | **Persistence** | Supabase PostgREST and Storage adapters; in-memory repositories for tests and local/inspection use |
 | **Dependency injection** | Manual composition in `AppContainer`, with shared backend selection and feature modules |
 | **Build system** | Gradle wrapper and version catalog in `gradle/libs.versions.toml` |
@@ -172,10 +172,22 @@ The layers remain packages within `shared`; they are not separate Gradle modules
 | User report repository | Supabase adapter | In-memory adapter | Not verified here |
 | User block repository | Supabase adapter | In-memory adapter | Not verified here |
 | Profile photo repository | Supabase adapter | In-memory adapter | Not verified here |
-| Auth and session repositories | Supabase Auth adapter | In-memory auth adapter | Not verified here |
+| Auth and session repositories | Supabase Auth adapter; Microsoft action enabled in debug, disabled in release by default | In-memory auth adapter | Identity-boundary migration applied locally and to the linked project; SQL assertions verified locally; Azure settings and live sign-in remain unverified |
 | Android theme preference | Platform preference store | In-memory store for common/preview use | Not applicable |
 
-Supabase schema, RLS, and storage policies are versioned under `supabase/migrations/`. Review those migrations and configure the matching project before using backend features. No live project validation is claimed here.
+Review the target Supabase schema, RLS, and storage policies before using backend features. Microsoft identity-boundary SQL is stored in Supabase migration history under version `20261027000000` (`microsoft_identity_boundary`), including the applied statements; it is intentionally excluded from this repository. It requires the existing Bulletin schema and is not a fresh-database baseline. Migration `20261027000000` was applied locally and to the linked project on 2026-10-27; its installed trigger and migration record were verified. The 28 SQL regression assertions passed locally. Older remote migration files remain absent from this checkout; the focused upgrade was applied and recorded atomically without rewriting that history.
+
+Microsoft OAuth is enabled in debug builds and disabled in release builds by default. The MVP policy accepts any verified Microsoft email, including personal/non-`.edu` accounts; password signup keeps its `.edu` requirement. Azure sign-in requests `email` and `profile`. The backend must provision new profiles from `full_name` or `name` metadata and backfill missing profiles without overwriting existing rows. The build override `-PMICROSOFT_SSO_ENABLED=true` exposes the Android action after Azure credentials, the exact `com.jdrms.bulletin.auth://oauth/callback` allow-list entry and the identity-policy migration are configured. The backend must reject automatic account linking.
+
+The Kotlin identity policies are UX guards. Security is enforced by a `BEFORE INSERT OR UPDATE` trigger on `auth.identities`, within Auth's callback transaction before token issuance. It rejects mixed sign-in methods (including automatic linking), a second Microsoft subject, missing/mismatched email, soft-deleted accounts, and missing or false provider-derived `custom_claims.xms_edov`. Rejected signup rolls back its user and profile rows. `enable_manual_linking = false` disables explicit linking only; it does not stop Supabase's automatic email linking.
+
+The `/common` authority intentionally admits personal accounts and any Entra tenant under the MVP policy; it does not establish campus affiliation. Identity belongs to the provider subject and Supabase user ID, never the mutable email claim. A campus-only rollout needs an explicit tenant policy and a tenant-specific authority. In [GoTrue v2.197.0's Azure parser](https://github.com/supabase/auth/blob/v2.197.0/internal/api/provider/oidc.go), a present email without `xms_edov` becomes verified; explicit `true`, `"true"`, or `"1"` also becomes verified, while false/other values do not. Consequently `email_verified` alone is insufficient. The trigger requires explicit positive `xms_edov` in Auth-owned identity data, not editable user metadata. See [Supabase's Azure guidance](https://supabase.com/docs/guides/auth/social-login/auth-azure#guarding-against-unverified-email-domains) and [automatic linking documentation](https://supabase.com/docs/guides/auth/auth-identity-linking).
+
+Before enabling Azure, configure the `email` and `xms_edov` ID-token claims in Entra, reconcile and apply the migration, and configure the Before User Created hook to `public.enforce_edu_email_signup`. Verify the deployed Auth version preserves `xms_edov` in identity custom claims and exercise both positive and negative OAuth callbacks; the local test runtime uses GoTrue v2.197.0. Keep Azure disabled until these checks pass. The migration does not change hosted Auth provider settings. Existing Microsoft identities without explicit verification evidence will fail subsequent OAuth callbacks; audit prior identities and revoke prior sessions through a privileged operational path before rollout.
+
+After code exchange, client rejection, profile failure, or cancellation attempts `/logout?scope=local` with the issued user JWT to revoke that session's refresh tokens, then clears local state. It does not need a service-role key. Network failure can prevent revocation; issued access JWTs remain valid until expiry. Sign-out does not delete `auth.users`: invalid identities must be rejected transactionally by the server; a legitimate account with a temporary profile failure remains available for retry. Previously orphaned users require an audited admin cleanup, never automatic client-side deletion.
+
+Reconcile migration history and compare schema before changing an existing project. Live Microsoft sign-in and device lifecycle behavior are not yet verified.
 
 ---
 
@@ -196,6 +208,16 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_API_KEY=your-anon-public-key
 SUPABASE_IS_CONNECTED=true
 ```
+
+Microsoft rollout is configured separately from `.env`: committed build defaults enable it for debug and disable it for release. Override either build with `-PMICROSOFT_SSO_ENABLED=true|false` or the process environment variable `MICROSOFT_SSO_ENABLED`; the Gradle property takes precedence. Values must be exactly `true` or `false`, otherwise configuration fails. `.env` is never read for this flag. Only enable it against a prepared Supabase project. For example:
+
+```bash
+./gradlew :androidApp:assembleRelease -PMICROSOFT_SSO_ENABLED=true --no-daemon
+```
+
+SSO builds enable PKCE without changing the default email redirect URL; only Microsoft OAuth explicitly uses the app callback. Disabled builds retain the SDK Auth defaults. Sessions continue to use the existing SDK session store, including across rollback. Encrypted storage is used only for SSO verifiers and pending browser state. Session migration and deletion of legacy data are deferred to a separate rollout with verification and rollback coverage.
+
+This is a build-time gate: changing it requires rebuilding the app. The UI does not query provider availability; disabling Azure server-side stops new Microsoft sign-ins but leaves the button visible in enabled builds. A runtime availability check remains follow-up work.
 
 The app must use only the Supabase anon/public key. Never put a service-role key, credentials, or real user data in the repository. Ensure the Supabase project has the schema and policies in `supabase/migrations/` applied.
 
