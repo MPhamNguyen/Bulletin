@@ -23,13 +23,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// ---------------------------------------------------------------------------
+/** Shared spacing scale, screen gutter, and minimum control height. */
+object BulletinSpacing {
+    val xs = 4.dp
+    val s = 8.dp
+    val m = 12.dp
+    val l = 16.dp
+    val xl = 24.dp
+    val gutter = l
+    val control = 48.dp
+}
+
 // Core brand palette (as given):
 //   F5F5F5 — off-white, app background / light surfaces
 //   3E5C76 — mid navy-blue, primary actions (buttons, active states)
 //   0D1321 — near-black navy, primary text / dark-mode background
 //   748CAB — muted slate-blue, secondary accents, borders, containers
-// ---------------------------------------------------------------------------
 private val PaletteOffWhite = Color(0xFFF5F5F5)
 private val PaletteMidBlue = Color(0xFF3E5C76)
 private val PaletteInk = Color(0xFF0D1321)

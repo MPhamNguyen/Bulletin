@@ -34,6 +34,7 @@ import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.ItemDetailRow
 import com.jdrms.bulletin.core.designsystem.ItemDetailsSection
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
@@ -61,11 +62,11 @@ internal fun BookmarkedListingDetailSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             BookmarkedListingPhotos(listing.photos)
             ListingTitleAndPrice(listing)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
                 ListingBadge(listing.category, isPrimary = false)
                 ListingBadge(listing.condition.replace("_", " "), isPrimary = true)
             }
@@ -141,7 +142,7 @@ private fun ListingTitleAndPrice(listing: ProfileBookmarkedListing) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(BulletinSpacing.m))
         Text(
             text = listing.price,
             style = MaterialTheme.typography.headlineSmall,
@@ -157,7 +158,7 @@ private fun ListingDetailActions(
     onRemoveBookmark: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
         OutlinedButton(
             onClick = onRemoveBookmark,
             enabled = !isRemovingBookmark,
@@ -205,7 +206,7 @@ private fun ListingBadge(text: String, isPrimary: Boolean) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = BulletinSpacing.xs)
         )
     }
 }

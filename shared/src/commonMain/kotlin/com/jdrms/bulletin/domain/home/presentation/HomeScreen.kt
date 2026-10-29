@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 
 private const val PREFETCH_REMAINING_ITEMS = 2
 
@@ -83,14 +84,21 @@ private fun HomeScreenBody(
     ) { paused ->
         HomeAnnouncementRegion(LocalHomeAnnouncements.current, state.interaction)
         HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow, paused)
-        HomeSaveRetrySnackbar(state, viewModel, Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(1f))
-        HomeAccountNotice(state.interaction.accountNotice, Modifier.align(Alignment.BottomCenter).padding(16.dp))
+        HomeSaveRetrySnackbar(
+            state,
+            viewModel,
+            Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.l).zIndex(1f)
+        )
+        HomeAccountNotice(
+            state.interaction.accountNotice,
+            Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.l)
+        )
         if (state.feed.getOrNull(state.currentIndex) != null && error != null) {
             NextPageError(
                 message = error,
                 isRetrying = state.isLoadingMore,
                 onRetry = viewModel::loadNextPage,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                modifier = Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.l)
             )
         }
     }
@@ -158,7 +166,7 @@ private fun FeedErrorState(title: String, message: String, onRetry: () -> Unit, 
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             FeedStateMessage(title, message, isError = true)
             Button(onClick = onRetry, shape = MaterialTheme.shapes.medium) {
@@ -199,7 +207,7 @@ private fun NextPageError(
             contentColor = MaterialTheme.colorScheme.onErrorContainer
         )
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s)) {
             Text(message, style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onRetry, enabled = !isRetrying) {
                 if (isRetrying) {
@@ -232,7 +240,7 @@ private fun EmptyFeedState(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             Text(text = "✨", style = MaterialTheme.typography.displayMedium)
             FeedStateMessage(

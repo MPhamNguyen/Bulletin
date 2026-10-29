@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.domain.model.HomeActionContext
 import com.jdrms.bulletin.domain.home.domain.model.availableActions
@@ -16,7 +17,7 @@ import com.jdrms.bulletin.domain.home.domain.model.availableActions
 @Composable
 private fun ActionRowPreview(guest: Boolean = false, dark: Boolean = false) {
     BulletinTheme(darkTheme = dark) {
-        Box(Modifier.width(366.dp).background(BulletinFeedCardDefaults.scrim).padding(12.dp)) {
+        Box(Modifier.width(366.dp).background(BulletinFeedCardDefaults.scrim).padding(BulletinSpacing.m)) {
             HomeCardActionRow(
                 CardState.Idle.availableActions(HomeActionContext(true, !guest, true, true))
                     .toButtonUi(),

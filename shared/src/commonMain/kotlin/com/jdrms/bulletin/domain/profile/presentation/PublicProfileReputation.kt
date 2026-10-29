@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
 @Composable
@@ -45,7 +46,7 @@ private fun ReputationScore(reputation: StudentReputation) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(BulletinSpacing.xs))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Icon(
                 Icons.Filled.Star,

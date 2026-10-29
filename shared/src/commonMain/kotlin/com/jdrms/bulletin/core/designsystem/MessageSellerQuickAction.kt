@@ -64,12 +64,12 @@ fun MessageSellerQuickAction(
 
     androidx.compose.foundation.layout.Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
     ) {
         Text("Message Seller", style = MaterialTheme.typography.titleMedium)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(

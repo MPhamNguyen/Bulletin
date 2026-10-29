@@ -36,6 +36,7 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import org.jetbrains.compose.resources.painterResource
@@ -59,7 +60,7 @@ internal fun SignUpFormContent(
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.s))
     Text(
         text = "Sign up to access your campus marketplace and connect with peers safely.",
         style = MaterialTheme.typography.bodyMedium,
@@ -73,11 +74,11 @@ internal fun SignUpFormContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.medium)
-                .padding(12.dp)
+                .padding(BulletinSpacing.m)
         ) {
             Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.l))
     }
 
     NameInputRow(
@@ -92,7 +93,7 @@ internal fun SignUpFormContent(
             if (uiState.errorMessage != null) onClearMessages()
         }
     )
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.l))
     EmailInputField(
         email = email,
         onEmailChange = {
@@ -100,7 +101,7 @@ internal fun SignUpFormContent(
             if (uiState.errorMessage != null) onClearMessages()
         }
     )
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.l))
     PasswordInputField(
         password = password,
         onPasswordChange = {
@@ -129,7 +130,7 @@ internal fun SignUpFormContent(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 160.dp, bottom = 24.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 160.dp, bottom = BulletinSpacing.xl),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -152,7 +153,7 @@ private fun NameInputRow(
     onLastNameChange: (String) -> Unit
 ) {
     val inputFieldColors = BulletinTextFieldDefaults.colors()
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
         NameInputField("First name", firstName, onFirstNameChange, inputFieldColors)
         NameInputField("Last name", lastName, onLastNameChange, inputFieldColors)
     }

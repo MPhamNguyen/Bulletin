@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import kotlin.math.min
@@ -56,7 +57,7 @@ internal fun HomeFeedInformation(item: HomeFeedItem, expanded: Boolean, onToggle
             .testTag("home-description-${item.id.value}")
             .homeDescriptionScroll(expanded, scroll, fling, scope)
             .verticalScroll(scroll, enabled = false)
-            .padding(horizontal = 18.dp, vertical = 16.dp)
+            .padding(horizontal = 18.dp, vertical = BulletinSpacing.l)
     ) {
         HomeFeedDetails(item)
         HomeFeedDescription(description = item.description, expanded = expanded, onToggle = onToggle)
@@ -76,7 +77,7 @@ private fun HomeFeedDetails(item: HomeFeedItem) {
             style = MaterialTheme.typography.titleLarge,
             color = BulletinFeedCardDefaults.content
         )
-        HomeFeedCategoryPill(item.category, modifier = Modifier.padding(top = 4.dp))
+        HomeFeedCategoryPill(item.category, modifier = Modifier.padding(top = BulletinSpacing.xs))
     }
 }
 
@@ -98,7 +99,12 @@ private fun HomeFeedCategoryPill(category: HomeFeedCategory, modifier: Modifier 
         border = BorderStroke(1.dp, BulletinFeedCardDefaults.content.copy(alpha = 0.28f))
     ) {
         Row(
-            modifier = Modifier.padding(start = 8.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
+            modifier = Modifier.padding(
+                start = BulletinSpacing.s,
+                end = 10.dp,
+                top = BulletinSpacing.xs,
+                bottom = BulletinSpacing.xs
+            ),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -118,7 +124,7 @@ private fun HomeFeedDescription(description: String, expanded: Boolean, onToggle
     val descriptionModifier = homeDescriptionModifier(descriptionOverflows, expanded, onToggle)
     Row(
         modifier = descriptionModifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
         verticalAlignment = Alignment.Top
     ) {
         Text(
@@ -146,7 +152,7 @@ private fun HomeFeedDescription(description: String, expanded: Boolean, onToggle
 private fun homeDescriptionModifier(descriptionOverflows: Boolean, expanded: Boolean, onToggle: () -> Unit): Modifier =
     Modifier
         .fillMaxWidth()
-        .padding(top = 4.dp)
+        .padding(top = BulletinSpacing.xs)
         .heightIn(min = 48.dp)
         .then(
             if (descriptionOverflows) {

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.UniversityCard
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
@@ -24,8 +25,8 @@ internal fun PublicProfileView(profile: StudentProfile? = null, onBack: () -> Un
         PublicProfileTopBar(onBack)
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 20.dp, vertical = BulletinSpacing.l),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (profile == null) {
@@ -46,7 +47,7 @@ internal fun PublicProfileView(profile: StudentProfile? = null, onBack: () -> Un
 @Composable
 private fun PublicProfileAbout(bio: String) {
     BulletinCard {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
             Text("About", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(
                 bio,
@@ -61,7 +62,7 @@ private fun PublicProfileAbout(bio: String) {
 private fun EmptyPublicProfile() {
     BulletinCard {
         Column(
-            Modifier.fillMaxWidth().padding(vertical = 32.dp, horizontal = 16.dp),
+            Modifier.fillMaxWidth().padding(vertical = 32.dp, horizontal = BulletinSpacing.l),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -76,13 +77,13 @@ private fun EmptyPublicProfile() {
                     modifier = Modifier.size(28.dp)
                 )
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(BulletinSpacing.l))
             Text(
                 "Public Profile Preview",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(BulletinSpacing.xs))
             Text(
                 "Preview of how your profile and listings appear to others will appear here.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -97,7 +98,7 @@ private fun PublicProfileTopBar(onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
@@ -110,7 +111,7 @@ private fun PublicProfileTopBar(onBackClick: () -> Unit) {
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(BulletinSpacing.s))
         Text(
             text = "Public Profile",
             style = MaterialTheme.typography.titleLarge,

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.conversationLocalDayKey
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatConversationDate
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 
@@ -122,7 +123,7 @@ private fun DateSeparator(timestampMillis: Long) {
         formatConversationDate(timestampMillis, currentTimeMillis()),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = BulletinSpacing.m),
         textAlign = TextAlign.Center
     )
 }

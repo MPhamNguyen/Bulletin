@@ -24,6 +24,7 @@ import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
@@ -33,12 +34,12 @@ internal fun SellerProfileHero(profile: MarketplaceSellerProfile) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             SellerAvatar(profile)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
             ) {
                 Text(
                     text = profile.name ?: "Student Seller",
@@ -97,8 +98,8 @@ private fun VerifiedBadge() {
         contentColor = BulletinExtras.colors.success
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(12.dp))
@@ -125,7 +126,7 @@ internal fun SellerProfileStats(profile: MarketplaceSellerProfile, soldListingsC
 private fun SellerStat(label: String, value: String, showStar: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(BulletinSpacing.xs))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (showStar) {
                 Icon(
@@ -148,7 +149,7 @@ private fun SellerStat(label: String, value: String, showStar: Boolean) {
 @Composable
 internal fun SellerProfileAbout(profile: MarketplaceSellerProfile) {
     BulletinCard {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
             Text("About the Seller", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(
                 text = profile.bio?.takeIf(String::isNotBlank) ?: "This seller hasn't added a bio yet.",
@@ -171,11 +172,11 @@ internal fun SellerListingCard(listing: MarketplaceItem, onListingClick: (String
     BulletinCard(modifier = Modifier.clickable { onListingClick(listing.id.value) }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SellerListingThumbnail(listing)
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
                 Text(listing.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(
                     text = listing.category.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },

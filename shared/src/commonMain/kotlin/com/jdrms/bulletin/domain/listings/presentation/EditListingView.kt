@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -60,8 +61,8 @@ fun EditListingView(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             BulletinCard {
                 Text(
@@ -70,7 +71,7 @@ fun EditListingView(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 OutlinedTextField(
                     value = uiState.editTitle,
@@ -82,7 +83,7 @@ fun EditListingView(
                     modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 CurrencyTextField(
                     digits = uiState.editPriceCents,
@@ -91,7 +92,7 @@ fun EditListingView(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 ListingCategorySelectionRow(
                     selectedCategory = uiState.editCategory,
@@ -102,17 +103,17 @@ fun EditListingView(
                     category = uiState.editCategory,
                     draft = uiState.editAttributes,
                     onInputChange = actions.onAttributeChange,
-                    modifier = Modifier.padding(top = 12.dp)
+                    modifier = Modifier.padding(top = BulletinSpacing.m)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 ListingConditionSelectionRow(
                     selectedCondition = uiState.editCondition,
                     onConditionSelected = actions.onConditionSelected
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 OutlinedTextField(
                     value = uiState.editDescription,
@@ -141,7 +142,7 @@ fun EditListingView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
             Button(
                 onClick = actions.onSave,
@@ -180,7 +181,7 @@ fun EditListingView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.l))
         }
     }
     uiState.pendingCategoryChange?.takeIf { it.form == ListingForm.EDIT }?.let { change ->

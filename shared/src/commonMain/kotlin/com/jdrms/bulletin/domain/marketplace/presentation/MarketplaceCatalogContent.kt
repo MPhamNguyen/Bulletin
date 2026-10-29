@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -92,10 +93,10 @@ internal fun MarketplaceCatalogContent(
         LazyVerticalGrid(
             columns = GridCells.Fixed(state.layoutPreference.columns),
             state = gridState,
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = BulletinSpacing.l),
             contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             marketplaceCatalogHeader(state, viewModel) { coordinates ->
                 searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())

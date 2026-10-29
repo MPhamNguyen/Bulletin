@@ -18,7 +18,7 @@ fun UniversityCard(name: String) {
         Row(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             Surface(
                 shape = CircleShape,

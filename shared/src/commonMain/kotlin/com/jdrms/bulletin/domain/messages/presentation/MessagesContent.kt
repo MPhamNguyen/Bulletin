@@ -4,15 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 
 @Composable
 internal fun MessagesInboxContent(
@@ -32,50 +30,40 @@ internal fun MessagesInboxContent(
     viewModel: MessagesViewModel,
     modifier: Modifier
 ) {
-    val refreshState = rememberPullToRefreshState()
-    PullToRefreshBox(
-        isRefreshing = inbox.isLoading,
-        onRefresh = viewModel::loadConversations,
-        state = refreshState,
-        modifier = modifier
+    Column(
+        modifier.fillMaxSize()
+            .padding(horizontal = BulletinSpacing.l)
+            .padding(top = CONVERSATION_TITLE_SPACING)
     ) {
-        Column(
-            Modifier.fillMaxSize()
-                .offset(y = (refreshState.distanceFraction.coerceIn(0f, 1f) * CONVERSATION_CONTENT_PULL_OFFSET).dp)
-                .padding(horizontal = 16.dp)
-                .padding(top = CONVERSATION_TITLE_SPACING)
+        if (state.connectionState == MessageConnectionState.DISCONNECTED ||
+            inbox.connectionState == InboxConnectionState.DISCONNECTED
         ) {
-            if (state.connectionState == MessageConnectionState.DISCONNECTED ||
-                inbox.connectionState == InboxConnectionState.DISCONNECTED
-            ) {
-                Text(
-                    "Live updates unavailable. Recent messages may be delayed.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+            Text(
+                "Live updates unavailable. Recent messages may be delayed.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(vertical = BulletinSpacing.s)
+            )
+        }
+        state.errorMessage?.let { error ->
+            BulletinCard {
+                Text(error, color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = viewModel::loadConversations) { Text("Retry") }
             }
-            state.errorMessage?.let { error ->
-                BulletinCard {
-                    Text(error, color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = viewModel::loadConversations) { Text("Retry") }
-                }
-            }
-            when {
-                state.isLoading && state.conversations.isEmpty() -> CenterMessage(
-                    "Loading conversations...",
-                    loading = true
-                )
-                state.conversations.isEmpty() -> CenterMessage(
-                    "No conversations yet. Message a seller to start a conversation."
-                )
-                else -> ConversationList(state, viewModel, Modifier.weight(1f).fillMaxWidth())
-            }
+        }
+        when {
+            state.isLoading && state.conversations.isEmpty() -> CenterMessage(
+                "Loading conversations...",
+                loading = true
+            )
+            state.conversations.isEmpty() -> CenterMessage(
+                "No conversations yet. Message a seller to start a conversation."
+            )
+            else -> ConversationList(state, viewModel, Modifier.weight(1f).fillMaxWidth())
         }
     }
 }
 
-private const val CONVERSATION_CONTENT_PULL_OFFSET = 64
 private val CONVERSATION_TITLE_SPACING = 8.dp
 
 @Composable
@@ -83,7 +71,11 @@ private fun CenterMessage(text: String, loading: Boolean = false, modifier: Modi
     Box(modifier, contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (loading) CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+            Text(
+                text,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(BulletinSpacing.l)
+            )
         }
     }
 }

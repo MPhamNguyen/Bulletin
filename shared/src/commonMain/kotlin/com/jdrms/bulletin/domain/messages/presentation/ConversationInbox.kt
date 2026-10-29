@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinConversationDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -54,7 +55,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 @Composable
 internal fun ConversationList(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
     var pendingRemoval by remember { mutableStateOf<ConversationId?>(null) }
-    LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
         items(state.conversations, key = { it.id.value }) { conversation ->
             ConversationCard(
                 conversation = conversation,
@@ -215,9 +216,9 @@ private fun ConversationCardContent(
     val secondaryColor = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
     val titleColor = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurface
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.l),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
         ConversationAvatar(conversationTitle(conversation, viewerId))
         ConversationSummary(conversation, viewerId, titleColor, secondaryColor, hasUnreadMessage, Modifier.weight(1f))

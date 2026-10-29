@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 
@@ -243,7 +244,7 @@ internal fun SignOutButton(
             modifier = Modifier.size(16.dp),
             tint = MaterialTheme.colorScheme.error
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(BulletinSpacing.s))
         Text(
             "Sign Out",
             style = MaterialTheme.typography.labelLarge,

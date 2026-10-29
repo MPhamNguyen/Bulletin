@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 @Composable
@@ -31,7 +32,7 @@ internal fun SignUpSuccessContent(
         modifier = Modifier
             .fillMaxWidth()
             .background(BulletinExtras.colors.successContainer, MaterialTheme.shapes.medium)
-            .padding(16.dp),
+            .padding(BulletinSpacing.l),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -48,14 +49,14 @@ internal fun SignUpSuccessContent(
         color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.s))
     Text(
         text = profile.email.value,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
     Text(
         text = profile.university,
         style = MaterialTheme.typography.bodyMedium,
@@ -71,7 +72,7 @@ internal fun SignUpSuccessContent(
     ) {
         Text("Continue to Bulletin", style = MaterialTheme.typography.titleMedium)
     }
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.m))
     OutlinedButton(
         onClick = onNavigateToSignIn,
         modifier = Modifier.fillMaxWidth().height(52.dp),

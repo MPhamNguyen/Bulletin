@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.cropSettings
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
 @Composable
@@ -42,8 +43,8 @@ internal fun ListingImageSelectionField(
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     Column(modifier = modifier.fillMaxWidth()) {
         if (label.isNotBlank()) FieldLabel(label)
-        Spacer(Modifier.height(8.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Spacer(Modifier.height(BulletinSpacing.s))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
             itemsIndexed(photos) { index, photo ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     val crop = when (photo) {
