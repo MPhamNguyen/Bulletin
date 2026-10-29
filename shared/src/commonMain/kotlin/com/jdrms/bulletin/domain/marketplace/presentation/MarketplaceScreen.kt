@@ -10,13 +10,6 @@ import androidx.compose.runtime.setValue
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 
-data class MarketplaceScreenNavigation(
-    val sellerProfileIdToOpen: String? = null,
-    val onSellerProfileRequestHandled: () -> Unit = {},
-    val onReturnToInboxChat: () -> Unit = {},
-    val onContentNoLongerScrollable: () -> Unit = {}
-)
-
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
@@ -50,6 +43,16 @@ fun MarketplaceScreen(
             sellerProfileOpenedFromInbox = true
             sellerProfileViewModel.load(sellerId)
             navigation.onSellerProfileRequestHandled()
+        }
+    }
+
+    LaunchedEffect(navigation.userReportIdToOpen) {
+        navigation.userReportIdToOpen?.let { userId ->
+            sellerProfileOpenedFromInbox = true
+            sellerProfileViewModel.load(userId)
+            userReportViewModel.begin(userId)
+            sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.REPORT_USER)
+            navigation.onUserReportRequestHandled()
         }
     }
 

@@ -13,6 +13,16 @@ import androidx.compose.ui.unit.dp
 /** Height occupied by the app navigation bar, including its system bar inset. */
 val LocalNavbarHeight = staticCompositionLocalOf<Dp> { 0.dp }
 
+object BulletinIconButtonDefaults {
+    @Composable
+    fun filledColors(): IconButtonColors = IconButtonDefaults.filledIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+    )
+}
+
 @Composable
 fun SectionHeader(title: String, subtitle: String? = null) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {

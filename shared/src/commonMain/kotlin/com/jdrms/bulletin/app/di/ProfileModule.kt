@@ -1,8 +1,10 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.integration.ProfileConversationUserBlocker
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceBlockedUserProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserBlocker
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceUserReporter
+import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.profile.application.BlockUser
 import com.jdrms.bulletin.domain.profile.application.GetBlockedUsers
 import com.jdrms.bulletin.domain.profile.application.PublishStudentReview
@@ -90,6 +92,9 @@ internal class ProfileModule(
     val marketplaceUserBlocker by lazy { ProfileMarketplaceUserBlocker(blockUser) }
     internal val unblockUser by lazy { UnblockUser(authRepository, userBlockRepository) }
     internal val getBlockedUsers by lazy { GetBlockedUsers(authRepository, userBlockRepository, profileRepository) }
+    fun conversationUserBlocker(signal: RefreshSignal) =
+        ProfileConversationUserBlocker(authRepository, userBlockRepository, blockUser, unblockUser, signal)
+
     val signInExternally by lazy { SignInExternally(authRepository) }
     val signInUser by lazy { SignInUser(authRepository) }
     val registerStudent by lazy { RegisterStudent(authRepository) }

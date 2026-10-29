@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,8 +26,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
 import kotlin.time.Clock
@@ -45,6 +50,7 @@ internal data class MessageItemCardActions(
     val onReport: () -> Unit,
     val onToggleVisibility: () -> Unit,
     val onEdit: () -> Unit = {},
+    val onViewSenderProfile: () -> Unit = {},
     val editingDisabled: Boolean = false
 )
 
@@ -55,11 +61,11 @@ internal fun MessageItemCard(
     actions: MessageItemCardActions
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (presentation.isMine) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom
     ) {
-        if (!presentation.isMine) MessageSenderAvatar(presentation)
+        if (!presentation.isMine) MessageSenderAvatar(presentation, actions.onViewSenderProfile)
         Column(horizontalAlignment = bubbleAlignment(presentation.isMine)) {
             MessageBubble(message, presentation, actions)
             if (presentation.showSeenReceipt) SeenReceipt()
@@ -68,8 +74,16 @@ internal fun MessageItemCard(
 }
 
 @Composable
-private fun MessageSenderAvatar(presentation: MessageItemCardPresentation) {
-    if (presentation.showAvatar) ConversationAvatar(presentation.conversationTitle) else Spacer(Modifier.width(40.dp))
+private fun MessageSenderAvatar(presentation: MessageItemCardPresentation, onViewProfile: () -> Unit) {
+    if (presentation.showAvatar) {
+        ConversationAvatar(
+            presentation.conversationTitle,
+            Modifier.clip(CircleShape)
+                .clickable(onClickLabel = "View profile", role = Role.Button, onClick = onViewProfile)
+        )
+    } else {
+        Spacer(Modifier.width(40.dp))
+    }
     Spacer(Modifier.width(8.dp))
 }
 
@@ -121,8 +135,8 @@ private fun MessageBubbleContent(
     isRevealed: Boolean,
     onToggleVisibility: () -> Unit
 ) {
-    Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
-        Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
+    Column(Modifier.padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s)) {
+        Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyLarge)
         if (message.editedAt != null) Text("Edited", style = MaterialTheme.typography.labelSmall)
         if (message.isReported) {
             Text("Reported for moderation", style = MaterialTheme.typography.labelSmall)
@@ -158,9 +172,9 @@ private fun MessageReportMenu(
 private fun SeenReceipt() {
     Text(
         "Seen",
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        modifier = Modifier.padding(top = BulletinSpacing.xs)
     )
 }
 
@@ -179,10 +193,10 @@ private fun messageBubbleContentColor(message: Message, isMine: Boolean) = when 
 }
 
 private fun messageBubbleShape(presentation: MessageItemCardPresentation) = RoundedCornerShape(
-    topStart = 18.dp,
-    topEnd = 18.dp,
-    bottomEnd = if (presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp,
-    bottomStart = if (!presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp
+    topStart = 20.dp,
+    topEnd = 20.dp,
+    bottomEnd = if (presentation.isMine && presentation.showTimestamp) 4.dp else 20.dp,
+    bottomStart = if (!presentation.isMine && presentation.showTimestamp) 4.dp else 20.dp
 )
 
 private fun reportableBubbleModifier(canReport: Boolean, onLongClick: () -> Unit): Modifier =
