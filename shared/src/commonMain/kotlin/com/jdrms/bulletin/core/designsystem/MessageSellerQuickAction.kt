@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,7 +72,7 @@ fun MessageSellerQuickAction(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BulletinTextField(
+            OutlinedTextField(
                 value = status.fieldText,
                 onValueChange = {
                     if (conversationExists == false) {
@@ -79,25 +80,24 @@ fun MessageSellerQuickAction(
                         errorMessage = null
                     }
                 },
-                modifier = Modifier.weight(1f),
-                options = {
-                    this.minLines = 1
-                    this.maxLines = 3
-                    this.placeholder = { Text(DEFAULT_SELLER_MESSAGE) }
-                    this.readOnly = !status.isEditable
-                    this.leadingIcon = if (status.isMessageSent) {
-                        { androidx.compose.material3.Icon(Icons.Filled.Check, contentDescription = "Message sent") }
+                modifier = Modifier.showKeyboardOnFocusOrTap(readOnly = !status.isEditable).weight(1f),
+                minLines = 1,
+                maxLines = 3,
+                placeholder = { Text(DEFAULT_SELLER_MESSAGE) },
+                readOnly = !status.isEditable,
+                leadingIcon = if (status.isMessageSent) {
+                    { androidx.compose.material3.Icon(Icons.Filled.Check, contentDescription = "Message sent") }
+                } else {
+                    null
+                },
+                textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                    color = if (!status.isEditable) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
-                        null
+                        MaterialTheme.colorScheme.onSurface
                     }
-                    this.textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
-                        color = if (!status.isEditable) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        }
-                    )
-                }
+                ),
+                colors = BulletinTextFieldDefaults.colors()
             )
             Button(
                 onClick = {

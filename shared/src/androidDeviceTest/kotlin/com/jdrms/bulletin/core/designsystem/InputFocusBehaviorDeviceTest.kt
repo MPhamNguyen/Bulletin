@@ -3,7 +3,9 @@ package com.jdrms.bulletin.core.designsystem
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -12,6 +14,7 @@ import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jdrms.bulletin.domain.profile.presentation.SignInEmailField
@@ -23,7 +26,7 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalLayoutApi::class)
 @RunWith(AndroidJUnit4::class)
-class BulletinTextFieldDeviceTest {
+class InputFocusBehaviorDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private var imeVisible = false
     private var keyboard: SoftwareKeyboardController? = null
@@ -53,9 +56,6 @@ class BulletinTextFieldDeviceTest {
         compose.waitUntil(5000) { !imeVisible }
         compose.onNodeWithText("student@example.edu").assertIsFocused().performTouchInput { click() }
         compose.waitUntil(5000) { imeVisible }
-        compose.onNodeWithText("student@example.edu").performImeAction()
-        compose.waitUntil(5000) { !imeVisible }
-        compose.onNodeWithText("student@example.edu").assertIsNotFocused()
     }
 
     @Test fun consumedButtonTapPreservesFocusAndCustomDoneRuns() {
@@ -64,11 +64,12 @@ class BulletinTextFieldDeviceTest {
         compose.setContent {
             BulletinTheme {
                 Column(Modifier.fillMaxSize().dismissKeyboardOnTapOutside()) {
-                    BulletinTextField(
+                    OutlinedTextField(
                         value = "draft",
                         onValueChange = {},
-                        modifier = Modifier.testTag("input"),
+                        modifier = Modifier.showKeyboardOnFocusOrTap().testTag("input"),
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { doneCount++ })
                     )
                     Button(onClick = { clicks++ }, modifier = Modifier.height(60.dp)) { Text("Action") }

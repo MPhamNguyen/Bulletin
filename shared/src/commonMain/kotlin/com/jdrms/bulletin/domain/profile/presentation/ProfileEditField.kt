@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,7 +14,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 
 @Composable
 internal fun FieldLabel(text: String) {
@@ -31,20 +33,20 @@ internal fun ProfileEditField(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         FieldLabel(label)
-        BulletinTextField(
+        OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            placeholder = { Text(placeholder) },
+            leadingIcon = { Icon(leadingIcon, contentDescription = null) },
+            trailingIcon = trailingAction,
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Words,
                 imeAction = ImeAction.Next
             ),
-            modifier = Modifier.fillMaxWidth(),
-            options = {
-                this.placeholder = { Text(placeholder) }
-                this.leadingIcon = { Icon(leadingIcon, contentDescription = null) }
-                this.trailingIcon = trailingAction
-            }
+            shape = MaterialTheme.shapes.medium,
+            colors = BulletinTextFieldDefaults.colors(),
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
         )
     }
 }

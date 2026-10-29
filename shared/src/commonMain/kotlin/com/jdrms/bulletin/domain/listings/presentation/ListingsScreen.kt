@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -13,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -46,14 +47,12 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                BulletinTextField(
+                OutlinedTextField(
                     value = state.newTitle,
                     onValueChange = { viewModel.onTitleChanged(it) },
+                    label = { Text("Item Title") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    options = {
-                        this.label = { Text("Item Title") }
-                    }
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -106,15 +105,13 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                BulletinTextField(
+                OutlinedTextField(
                     value = state.newDescription,
                     onValueChange = { viewModel.onDescriptionChanged(it) },
-                    modifier = Modifier.fillMaxWidth(),
-                    options = {
-                        this.label = { Text("Description & Campus Pick-Up Details") }
-                        this.minLines = 2
-                        this.maxLines = 4
-                    }
+                    label = { Text("Description & Campus Pick-Up Details") },
+                    minLines = 2,
+                    maxLines = 4,
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

@@ -21,6 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -36,7 +37,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import kotlinx.coroutines.launch
@@ -82,19 +83,17 @@ private fun MarketplaceSearchBar(
     onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        BulletinTextField(
+        OutlinedTextField(
             value = filters.query,
             onValueChange = onQueryChanged,
+            placeholder = { Text("Search textbooks, furniture, etc.") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
             singleLine = true,
-            modifier = Modifier
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.showKeyboardOnFocusOrTap()
                 .weight(1f)
                 .onGloballyPositioned(onSearchPositioned)
-                .semantics { contentDescription = "Search marketplace listings" },
-            options = {
-                this.placeholder = { Text("Search textbooks, furniture, etc.") }
-                this.leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) }
-                this.shape = RoundedCornerShape(16.dp)
-            }
+                .semantics { contentDescription = "Search marketplace listings" }
         )
         FilterButton(filters.activeFilterCount, isFilterSheetOpen, onToggleFilters)
     }

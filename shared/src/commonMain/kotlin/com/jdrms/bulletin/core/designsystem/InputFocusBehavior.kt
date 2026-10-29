@@ -31,7 +31,7 @@ fun Modifier.dismissKeyboardOnTapOutside(): Modifier {
 
 /** Observe taps without consuming the field's gestures; never raise IME for noneditable inputs. */
 @Composable
-internal fun Modifier.showKeyboardOnFocusOrTap(enabled: Boolean, readOnly: Boolean): Modifier {
+fun Modifier.showKeyboardOnFocusOrTap(enabled: Boolean = true, readOnly: Boolean = false): Modifier {
     val keyboard = LocalSoftwareKeyboardController.current
     var focused by remember { mutableStateOf(false) }
     val canType = enabled && !readOnly

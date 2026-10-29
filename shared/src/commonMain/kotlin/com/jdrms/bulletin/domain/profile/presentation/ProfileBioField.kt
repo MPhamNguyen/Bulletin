@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,25 +17,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 
 @Composable
 internal fun BioField(value: String, onValueChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         FieldLabel("Bio")
-        BulletinTextField(
+        OutlinedTextField(
             value = value,
             onValueChange = { onValueChange(it.take(BIO_MAX_LENGTH)) },
+            placeholder = { Text("Introduce yourself to buyers and sellers on campus…") },
+            minLines = 3,
+            maxLines = 3,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
                 imeAction = ImeAction.Default
             ),
-            modifier = Modifier.fillMaxWidth(),
-            options = {
-                this.placeholder = { Text("Introduce yourself to buyers and sellers on campus…") }
-                this.minLines = 3
-                this.maxLines = 3
-            }
+            shape = MaterialTheme.shapes.medium,
+            colors = BulletinTextFieldDefaults.colors(),
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
         )
         BioFieldFooter(value)
     }

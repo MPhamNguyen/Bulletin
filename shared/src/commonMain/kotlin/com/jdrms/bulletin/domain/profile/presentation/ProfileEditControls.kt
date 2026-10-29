@@ -19,6 +19,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +32,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 
 internal data class ComboOption(
     val label: String,
@@ -160,23 +162,23 @@ internal fun ProfileComboField(
             expanded = expanded,
             onExpandedChange = { expanded = it }
         ) {
-            BulletinTextField(
+            OutlinedTextField(
                 value = query,
                 onValueChange = {
                     query = it
                     expanded = true
                 },
+                placeholder = { Text(spec.placeholder) },
+                leadingIcon = { Icon(spec.leadingIcon, contentDescription = null) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                 singleLine = true,
-                modifier = Modifier
+                isError = spec.errorMessage != null,
+                supportingText = spec.errorMessage?.let { { Text(it) } },
+                shape = MaterialTheme.shapes.medium,
+                colors = BulletinTextFieldDefaults.colors(),
+                modifier = Modifier.showKeyboardOnFocusOrTap()
                     .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-                options = {
-                    this.placeholder = { Text(spec.placeholder) }
-                    this.leadingIcon = { Icon(spec.leadingIcon, contentDescription = null) }
-                    this.trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }
-                    this.isError = spec.errorMessage != null
-                    this.supportingText = spec.errorMessage?.let { { Text(it) } }
-                }
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -210,14 +212,14 @@ internal fun ProfileComboField(
         if (spec.isOther) {
             Spacer(Modifier.height(2.dp))
             FieldLabel(spec.otherLabel)
-            BulletinTextField(
+            OutlinedTextField(
                 value = spec.value,
                 onValueChange = onOtherValueChange,
+                placeholder = { Text(spec.otherPlaceholder) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                options = {
-                    this.placeholder = { Text(spec.otherPlaceholder) }
-                }
+                shape = MaterialTheme.shapes.medium,
+                colors = BulletinTextFieldDefaults.colors(),
+                modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
             )
         }
     }
