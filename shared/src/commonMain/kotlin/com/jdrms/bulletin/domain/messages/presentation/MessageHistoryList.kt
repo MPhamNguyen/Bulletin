@@ -17,10 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.conversationLocalDayKey
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatConversationDate
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 
@@ -39,7 +39,7 @@ internal fun MessageList(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs, Alignment.Bottom)
+            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.Bottom)
         ) {
             if (state.olderCursor != null) {
                 item(key = "older-messages") {
@@ -120,9 +120,9 @@ private fun isLastInGroup(state: MessagesUiState, index: Int): Boolean {
 private fun DateSeparator(timestampMillis: Long) {
     Text(
         formatConversationDate(timestampMillis, currentTimeMillis()),
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.fillMaxWidth().padding(vertical = BulletinSpacing.m),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         textAlign = TextAlign.Center
     )
 }
