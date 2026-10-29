@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 
 @Composable
 internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewModel) {
@@ -38,7 +39,7 @@ internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewMode
                 maxLines = 4,
                 isError = state.editError != null,
                 colors = BulletinTextFieldDefaults.colors(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.showKeyboardOnFocusOrTap(enabled = !isBusy).weight(1f)
             )
             Spacer(Modifier.width(8.dp))
             Button(

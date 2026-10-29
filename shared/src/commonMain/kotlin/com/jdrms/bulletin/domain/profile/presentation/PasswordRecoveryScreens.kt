@@ -36,6 +36,7 @@ import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -184,7 +185,7 @@ private fun RecoveryField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
         placeholder = { Text(placeholder) },
         singleLine = true,
         visualTransformation = if (isPassword && !isPasswordVisible) {

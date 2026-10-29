@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
 import org.jetbrains.compose.resources.stringResource
 
@@ -69,7 +71,11 @@ private fun RowScope.HomeComposerField(
             imeAction = ImeAction.Send
         ),
         keyboardActions = KeyboardActions(onSend = { if (active && valid) submit() }),
-        modifier = Modifier.weight(1f).heightIn(min = 48.dp).focusRequester(focus)
+        modifier = Modifier
+            .showKeyboardOnFocusOrTap(enabled = active)
+            .weight(1f)
+            .heightIn(min = 48.dp)
+            .focusRequester(focus)
             .homeFocusTarget(HOME_COMPOSER_FOCUS_TAG)
     )
 }

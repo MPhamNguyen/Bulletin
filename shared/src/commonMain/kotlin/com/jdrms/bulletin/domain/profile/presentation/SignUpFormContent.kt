@@ -37,6 +37,7 @@ import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -174,7 +175,7 @@ private fun RowScope.NameInputField(
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             colors = colors,
-            modifier = Modifier.fillMaxWidth().height(52.dp)
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth().height(52.dp)
         )
     }
 }
@@ -191,7 +192,7 @@ private fun EmailInputField(email: String, onEmailChange: (String) -> Unit) {
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth().height(52.dp)
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth().height(52.dp)
         )
     }
 }
@@ -220,7 +221,7 @@ private fun PasswordInputField(password: String, onPasswordChange: (String) -> U
             },
             shape = RoundedCornerShape(14.dp),
             colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth().height(52.dp)
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth().height(52.dp)
         )
     }
 }

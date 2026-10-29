@@ -80,7 +80,7 @@ fun MessageSellerQuickAction(
                         errorMessage = null
                     }
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.showKeyboardOnFocusOrTap(readOnly = !status.isEditable).weight(1f),
                 minLines = 1,
                 maxLines = 3,
                 placeholder = { Text(DEFAULT_SELLER_MESSAGE) },

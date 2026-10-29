@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import kotlinx.coroutines.delay
@@ -193,7 +194,7 @@ internal fun EmailVerificationContent(
                     errorBorderColor = colors.error,
                     cursorColor = colors.primary
                 ),
-                modifier = Modifier
+                modifier = Modifier.showKeyboardOnFocusOrTap(enabled = !uiState.isLoading)
                     .fillMaxWidth()
                     .padding(top = 16.dp)
                     .height(60.dp)
