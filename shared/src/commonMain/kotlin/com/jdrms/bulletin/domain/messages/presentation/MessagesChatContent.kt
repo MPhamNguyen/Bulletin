@@ -7,6 +7,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 
@@ -36,7 +37,7 @@ internal fun MessagesChatContent(
         conversation.listingId?.let { listingId ->
             ConversationListingCard(
                 state.listingPreviews[listingId.value],
-                modifier = Modifier.padding(horizontal = BulletinSpacing.gutter, vertical = BulletinSpacing.s)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
         }
         ChatStatusMessages(state, viewModel)
@@ -45,7 +46,7 @@ internal fun MessagesChatContent(
             viewModel,
             conversation,
             rememberMessageHistoryListState(viewModel, state),
-            Modifier.weight(1f).padding(horizontal = BulletinSpacing.gutter),
+            Modifier.weight(1f).padding(horizontal = 12.dp),
             navigation.onViewProfile
         )
         if (counterpart != null && isBlocked) {

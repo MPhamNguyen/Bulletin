@@ -30,7 +30,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
 import kotlin.time.Clock
@@ -61,7 +60,7 @@ internal fun MessageItemCard(
     actions: MessageItemCardActions
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
         horizontalArrangement = if (presentation.isMine) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom
     ) {
@@ -135,8 +134,8 @@ private fun MessageBubbleContent(
     isRevealed: Boolean,
     onToggleVisibility: () -> Unit
 ) {
-    Column(Modifier.padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s)) {
-        Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyLarge)
+    Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
         if (message.editedAt != null) Text("Edited", style = MaterialTheme.typography.labelSmall)
         if (message.isReported) {
             Text("Reported for moderation", style = MaterialTheme.typography.labelSmall)
@@ -172,9 +171,9 @@ private fun MessageReportMenu(
 private fun SeenReceipt() {
     Text(
         "Seen",
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = BulletinSpacing.xs)
+        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
     )
 }
 
@@ -193,10 +192,10 @@ private fun messageBubbleContentColor(message: Message, isMine: Boolean) = when 
 }
 
 private fun messageBubbleShape(presentation: MessageItemCardPresentation) = RoundedCornerShape(
-    topStart = 20.dp,
-    topEnd = 20.dp,
-    bottomEnd = if (presentation.isMine && presentation.showTimestamp) 4.dp else 20.dp,
-    bottomStart = if (!presentation.isMine && presentation.showTimestamp) 4.dp else 20.dp
+    topStart = 18.dp,
+    topEnd = 18.dp,
+    bottomEnd = if (presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp,
+    bottomStart = if (!presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp
 )
 
 private fun reportableBubbleModifier(canReport: Boolean, onLongClick: () -> Unit): Modifier =

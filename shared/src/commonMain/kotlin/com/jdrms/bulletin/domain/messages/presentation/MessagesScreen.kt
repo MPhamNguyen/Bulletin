@@ -51,6 +51,8 @@ fun MessagesScreen(
         onConversationVisibilityChanged(isChat)
     }
     Scaffold(
+        // MainDestinationBody already reserves space for the system bars.
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             if (!isChat) TopAppBar(windowInsets = WindowInsets(0.dp), title = { Text("Conversations") })
         },
