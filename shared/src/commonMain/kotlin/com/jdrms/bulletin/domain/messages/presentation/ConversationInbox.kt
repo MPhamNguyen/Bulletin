@@ -9,17 +9,14 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
@@ -27,7 +24,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,17 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.theme.BulletinConversationDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
@@ -213,7 +203,11 @@ private fun ConversationCardContent(
     hasUnreadMessage: Boolean,
     selectedColor: androidx.compose.ui.graphics.Color
 ) {
-    val secondaryColor = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
+    val secondaryColor = if (isSelected) {
+        selectedColor.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
     val titleColor = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurface
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.l),
@@ -221,62 +215,12 @@ private fun ConversationCardContent(
         horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
         ConversationAvatar(conversationTitle(conversation, viewerId))
-        ConversationSummary(conversation, viewerId, titleColor, secondaryColor, hasUnreadMessage, Modifier.weight(1f))
+        ConversationSummary(conversation, viewerId, titleColor, secondaryColor, Modifier.weight(1f))
+        if (hasUnreadMessage) {
+            Box(Modifier.padding(end = BulletinSpacing.s)) {
+                ConversationUnreadIndicator()
+            }
+        }
         ConversationListingPreview(listingPreviewUrl)
-    }
-}
-
-@Composable
-private fun ConversationSummary(
-    conversation: Conversation,
-    viewerId: SenderId?,
-    titleColor: androidx.compose.ui.graphics.Color,
-    secondaryColor: androidx.compose.ui.graphics.Color,
-    hasUnreadMessage: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                conversationTitle(conversation, viewerId),
-                modifier = Modifier.weight(1f, fill = false),
-                fontWeight = if (hasUnreadMessage) FontWeight.Bold else FontWeight.Normal,
-                color = titleColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (hasUnreadMessage) UnreadMessageIndicator()
-        }
-        Text(
-            conversationPreviewText(conversation),
-            style = MaterialTheme.typography.bodySmall,
-            color = secondaryColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        val timestamp = conversation.lastMessage?.timestampMillis ?: conversation.updatedAtMillis
-        if (timestamp > 0L) {
-            Text(
-                formatRelativeTime(timestamp, currentTimeMillis()),
-                style = MaterialTheme.typography.labelSmall,
-                color = secondaryColor
-            )
-        }
-    }
-}
-
-@Composable
-private fun UnreadMessageIndicator() {
-    Box(
-        modifier = Modifier.size(14.dp)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape)
-            .semantics { contentDescription = "Unread message" },
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier.size(7.dp)
-                .shadow(5.dp, CircleShape)
-                .background(MaterialTheme.colorScheme.primary, CircleShape)
-        )
     }
 }
