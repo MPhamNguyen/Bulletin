@@ -2,6 +2,9 @@ package com.jdrms.bulletin.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.viewModelScope
@@ -19,6 +22,7 @@ import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
@@ -29,6 +33,7 @@ import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
+import com.jdrms.bulletin.domain.profile.presentation.ReportedListingVisibilitySetting
 import kotlinx.coroutines.cancel
 
 @Composable
@@ -143,6 +148,14 @@ private fun StudentProfileDestination(
     messagesViewModel: MessagesViewModel
 ) {
     val resolvedProfileViewModel = profilePresentation.viewModel
+    val profileState by resolvedProfileViewModel.uiState.collectAsState()
+    val hideReportedListings by profilePresentation.reportedListingVisibilityViewModel
+        .shouldHideReportedListings.collectAsState()
+    LaunchedEffect(profileState.profile?.id) {
+        profilePresentation.reportedListingVisibilityViewModel.setAccount(
+            profileState.profile?.id?.value?.let(::MarketplaceReporterId)
+        )
+    }
     val profileFlows = remember(container, navigation.profileDestination) {
         ProfileScreenFlows(
             editing = container.profile.createEditProfileViewModel(container.userMessenger),
@@ -169,7 +182,15 @@ private fun StudentProfileDestination(
             messagesViewModel,
             profilePresentation.onSignOut
         ),
-        themeViewModel = profilePresentation.themeViewModel
+        themeViewModel = profilePresentation.themeViewModel,
+        reportedListingVisibilitySetting = ReportedListingVisibilitySetting(
+            hideReportedListings = hideReportedListings,
+            onChanged = { shouldHide ->
+                profilePresentation.reportedListingVisibilityViewModel.setHideReportedListings(shouldHide) {
+                    container.listingChangedSignal.emit()
+                }
+            }
+        )
     )
 }
 

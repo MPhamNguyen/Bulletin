@@ -6,6 +6,7 @@ import com.jdrms.bulletin.app.di.ExternalAuthConfiguration
 import com.jdrms.bulletin.app.theme.AndroidThemePreferenceStore
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.marketplace.infrastructure.AndroidMarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.infrastructure.AndroidReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.profile.infrastructure.AndroidAuthStorage
 import com.jdrms.bulletin.domain.profile.infrastructure.AndroidExternalAuthBrowser
 
@@ -21,6 +22,7 @@ class BulletinApplication : Application() {
             ),
             themePreferenceStore = AndroidThemePreferenceStore(this),
             marketplaceLayoutPreferenceStore = AndroidMarketplaceLayoutPreferenceStore(this),
+            reportedListingVisibilityPreferenceStore = AndroidReportedListingVisibilityPreferenceStore(this),
             externalAuth = ExternalAuthConfiguration(
                 microsoftSignInEnabled = BuildConfig.MICROSOFT_SSO_ENABLED,
                 browser = if (BuildConfig.MICROSOFT_SSO_ENABLED) externalAuthBrowser else null,

@@ -23,6 +23,7 @@ import com.jdrms.bulletin.app.di.createMarketplaceUserReportViewModel
 import com.jdrms.bulletin.app.di.createMarketplaceViewModel
 import com.jdrms.bulletin.app.di.createMessagesViewModel
 import com.jdrms.bulletin.app.di.createProfileViewModel
+import com.jdrms.bulletin.app.di.createReportedListingVisibilityPreferenceViewModel
 import com.jdrms.bulletin.app.di.createSellerProfileViewModel
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
@@ -37,6 +38,7 @@ import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
+import com.jdrms.bulletin.domain.marketplace.presentation.ReportedListingVisibilityPreferenceViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
@@ -45,6 +47,7 @@ import kotlinx.coroutines.cancel
 internal class ProfilePresentation(
     val viewModel: ProfileViewModel,
     val themeViewModel: ThemeViewModel?,
+    val reportedListingVisibilityViewModel: ReportedListingVisibilityPreferenceViewModel,
     val onSignOut: () -> Unit
 )
 
@@ -117,12 +120,23 @@ private fun rememberProfilePresentation(
             )
         }
     }
+    val reportedListingVisibilityViewModel = remember(container) {
+        container.marketplace.createReportedListingVisibilityPreferenceViewModel()
+    }
     DisposableEffect(resolvedProfileViewModel, profileViewModel) {
         onDispose {
             if (profileViewModel == null) resolvedProfileViewModel.viewModelScope.cancel()
         }
     }
-    return ProfilePresentation(resolvedProfileViewModel, themeViewModel, onSignOut)
+    DisposableEffect(reportedListingVisibilityViewModel) {
+        onDispose { reportedListingVisibilityViewModel.viewModelScope.cancel() }
+    }
+    return ProfilePresentation(
+        resolvedProfileViewModel,
+        themeViewModel,
+        reportedListingVisibilityViewModel,
+        onSignOut
+    )
 }
 
 @Composable

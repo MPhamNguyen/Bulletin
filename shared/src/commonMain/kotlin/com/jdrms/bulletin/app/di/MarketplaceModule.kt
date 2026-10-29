@@ -5,6 +5,7 @@ import com.jdrms.bulletin.app.integration.AuthMarketplaceReportIdentity
 import com.jdrms.bulletin.app.integration.CompositeMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceListingSource
 import com.jdrms.bulletin.app.integration.ListingsMarketplaceSellerSalesProvider
+import com.jdrms.bulletin.app.integration.PreferenceAwareReportedListingProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
@@ -16,11 +17,13 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryLi
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
+import com.jdrms.bulletin.domain.marketplace.application.ReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.MarketplaceReadCache
@@ -32,7 +35,9 @@ internal class MarketplaceModule(
     private val infrastructure: InfrastructureModule,
     private val profile: ProfileModule,
     private val listings: ListingsModule,
-    internal val marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore
+    internal val marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore,
+    internal val reportedListingVisibilityPreferenceStore: ReportedListingVisibilityPreferenceStore =
+        InMemoryReportedListingVisibilityPreferenceStore()
 ) {
     val getVisibleMarketplaceListings by lazy {
         GetVisibleMarketplaceListings(
@@ -80,8 +85,14 @@ internal class MarketplaceModule(
             inMemory = ::InMemoryListingReportRepository
         )
     }
-    private val marketplaceReportedListingProvider by lazy {
+    private val storedMarketplaceReportedListingProvider by lazy {
         GetMarketplaceReportedListings(reportIdentity, listingReportRepository)
+    }
+    private val marketplaceReportedListingProvider by lazy {
+        PreferenceAwareReportedListingProvider(
+            storedMarketplaceReportedListingProvider,
+            reportedListingVisibilityPreferenceStore
+        )
     }
     val reportMarketplaceListing by lazy {
         ReportMarketplaceListing(reportIdentity, listingReportRepository)

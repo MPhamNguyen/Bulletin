@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDep
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
+import com.jdrms.bulletin.domain.marketplace.presentation.ReportedListingVisibilityPreferenceViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 
 internal fun MarketplaceModule.createMarketplaceViewModel(listingChangedSignal: RefreshSignal) = MarketplaceViewModel(
@@ -32,3 +33,6 @@ internal fun MarketplaceModule.createSellerProfileViewModel() = SellerProfileVie
 
 internal fun MarketplaceModule.createListingReportViewModel() =
     ListingReportViewModel(reportMarketplaceListing)
+
+internal fun MarketplaceModule.createReportedListingVisibilityPreferenceViewModel() =
+    ReportedListingVisibilityPreferenceViewModel(reportedListingVisibilityPreferenceStore)
