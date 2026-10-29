@@ -21,7 +21,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -33,10 +32,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import kotlinx.coroutines.launch
@@ -45,8 +44,7 @@ import kotlinx.coroutines.launch
 internal fun MarketplaceSearchFilters(
     filters: MarketplaceFilterState,
     onQueryChanged: (String) -> Unit,
-    onFiltersApplied: (MarketplaceFilterState) -> Unit,
-    onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
+    onFiltersApplied: (MarketplaceFilterState) -> Unit
 ) {
     var isFilterSheetOpen by remember { mutableStateOf(false) }
     Column(
@@ -56,8 +54,7 @@ internal fun MarketplaceSearchFilters(
             filters = filters,
             onQueryChanged = onQueryChanged,
             isFilterSheetOpen = isFilterSheetOpen,
-            onToggleFilters = { isFilterSheetOpen = true },
-            onSearchPositioned = onSearchPositioned
+            onToggleFilters = { isFilterSheetOpen = true }
         )
         if (isFilterSheetOpen) {
             MarketplaceFilterSheet(
@@ -78,21 +75,21 @@ private fun MarketplaceSearchBar(
     filters: MarketplaceFilterState,
     onQueryChanged: (String) -> Unit,
     isFilterSheetOpen: Boolean,
-    onToggleFilters: () -> Unit,
-    onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
+    onToggleFilters: () -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
+        BulletinTextField(
             value = filters.query,
             onValueChange = onQueryChanged,
-            placeholder = { Text("Search textbooks, furniture, etc.") },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .weight(1f)
-                .onGloballyPositioned(onSearchPositioned)
-                .semantics { contentDescription = "Search marketplace listings" }
+                .semantics { contentDescription = "Search marketplace listings" },
+            configure = { field ->
+                field.placeholder = { Text("Search textbooks, furniture, etc.") }
+                field.leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) }
+                field.singleLine = true
+                field.shape = RoundedCornerShape(16.dp)
+            }
         )
         FilterButton(filters.activeFilterCount, isFilterSheetOpen, onToggleFilters)
     }

@@ -1,7 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,21 +19,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
@@ -52,9 +39,6 @@ internal fun MarketplaceCatalogContent(
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
     val gridState = rememberLazyGridState()
-    val focusManager = LocalFocusManager.current
-    var searchBounds by remember { mutableStateOf(Rect.Zero) }
-    var containerOrigin by remember { mutableStateOf(Offset.Zero) }
     LaunchedEffect(gridState.canScrollForward) {
         if (!gridState.canScrollForward) onContentNoLongerScrollable()
     }
@@ -78,17 +62,7 @@ internal fun MarketplaceCatalogContent(
             viewModel.loadNextPage()
         }
     }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .onGloballyPositioned { containerOrigin = it.positionInRoot() }
-            .pointerInput(focusManager, searchBounds, containerOrigin) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    if (!searchBounds.contains(down.position + containerOrigin)) focusManager.clearFocus()
-                }
-            }
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(state.layoutPreference.columns),
             state = gridState,
@@ -97,9 +71,7 @@ internal fun MarketplaceCatalogContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            marketplaceCatalogHeader(state, viewModel) { coordinates ->
-                searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
-            }
+            marketplaceCatalogHeader(state, viewModel)
             marketplaceLoadingItem(state.isLoading)
             marketplaceEmptyResultsItem(state)
             marketplaceListingItems(state, viewModel)
@@ -120,8 +92,7 @@ internal fun MarketplaceCatalogContent(
 
 private fun LazyGridScope.marketplaceCatalogHeader(
     state: MarketplaceUiState,
-    viewModel: MarketplaceViewModel,
-    onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
+    viewModel: MarketplaceViewModel
 ) {
     fullWidthItem {
         SectionHeader(
@@ -132,8 +103,7 @@ private fun LazyGridScope.marketplaceCatalogHeader(
         MarketplaceSearchFilters(
             filters = state.filters,
             onQueryChanged = viewModel::onSearchQueryChanged,
-            onFiltersApplied = viewModel::onFiltersApplied,
-            onSearchPositioned = onSearchPositioned
+            onFiltersApplied = viewModel::onFiltersApplied
         )
     }
     fullWidthItem {

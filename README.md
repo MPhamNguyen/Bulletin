@@ -123,6 +123,16 @@ The five main contexts (`home`, `marketplace`, `listings`, `messages`, `profile`
 
 Contexts do not import each other's entities, repositories, or DTOs. Cross-context wiring lives in `app/integration` and in the feature modules under `app/di`. See [`AGENTS.md`](AGENTS.md) for the full rules, including file and function size limits enforced by Detekt.
 
+### Shared text inputs
+
+Use `BulletinTextField` from `core/designsystem` for editable text. Each field owns its value;
+`configure` extends the shared input with labels, icons, validation, keyboard actions, or formatting.
+The defaults use `BulletinTextFieldDefaults.colors()` and `MaterialTheme.shapes.small`.
+`BulletinInputHost` surrounds the app content and each separate dialog or input-bearing bottom sheet.
+It clears focus and hides the keyboard when a pointer presses outside the focused field, without
+consuming the event. Buttons and scrolling continue to receive that same gesture. Keep this host
+when adding new input surfaces; customization belongs in the shared field rather than a raw Material input.
+
 ### Backend Binding
 
 Dependency injection is manual. `AppContainer` composes `HomeModule`, `ListingsModule`, `MarketplaceModule`, `MessagesModule`, and `ProfileModule`; `InfrastructureModule` owns the lazily created Supabase client.

@@ -19,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +34,7 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import org.jetbrains.compose.resources.painterResource
 
@@ -181,33 +181,35 @@ private fun RecoveryField(
 
     Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
     Spacer(Modifier.height(6.dp))
-    OutlinedTextField(
+    BulletinTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text(placeholder) },
-        singleLine = true,
-        visualTransformation = if (isPassword && !isPasswordVisible) {
-            PasswordVisualTransformation()
-        } else {
-            VisualTransformation.None
-        },
-        trailingIcon = if (isPassword) {
-            {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                    val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+        configure = { field ->
+            field.placeholder = { Text(placeholder) }
+            field.singleLine = true
+            field.visualTransformation = if (isPassword && !isPasswordVisible) {
+                PasswordVisualTransformation()
+            } else {
+                VisualTransformation.None
             }
-        } else {
-            null
-        },
-        shape = MaterialTheme.shapes.medium,
-        colors = BulletinTextFieldDefaults.colors()
+            field.trailingIcon = if (isPassword) {
+                {
+                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
+                        Icon(
+                            painter = painterResource(icon),
+                            contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                null
+            }
+            field.shape = MaterialTheme.shapes.medium
+            field.colors = BulletinTextFieldDefaults.colors()
+        }
     )
 }
 

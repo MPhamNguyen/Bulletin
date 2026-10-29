@@ -17,7 +17,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinInputHost
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
@@ -47,47 +48,49 @@ internal fun ReportMarketplaceUserScreen(
         onDismissRequest = { if (!state.isSubmitting) onBack() },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(0.92f).heightIn(max = 620.dp),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+        BulletinInputHost {
+            Surface(
+                modifier = Modifier.fillMaxWidth(0.92f).heightIn(max = 620.dp),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack, enabled = !state.isSubmitting) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back to seller profile")
+                Column(
+                    Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onBack, enabled = !state.isSubmitting) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back to seller profile")
+                        }
+                        Text("Report user", style = MaterialTheme.typography.titleLarge)
                     }
-                    Text("Report user", style = MaterialTheme.typography.titleLarge)
-                }
-                if (state.submitted) {
-                    ReportSubmittedContent(onBack)
-                } else {
-                    state.errorMessage?.let { ReportErrorContent(it) }
-                    ReportFormContent(
-                        state = state,
-                        onReasonSelected = onReasonSelected,
-                        onDescriptionChanged = onDescriptionChanged
-                    )
-                    Button(
-                        onClick = onSubmit,
-                        enabled = !state.isSubmitting,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (state.isSubmitting) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                Text("Submitting report…")
+                    if (state.submitted) {
+                        ReportSubmittedContent(onBack)
+                    } else {
+                        state.errorMessage?.let { ReportErrorContent(it) }
+                        ReportFormContent(
+                            state = state,
+                            onReasonSelected = onReasonSelected,
+                            onDescriptionChanged = onDescriptionChanged
+                        )
+                        Button(
+                            onClick = onSubmit,
+                            enabled = !state.isSubmitting,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (state.isSubmitting) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    Text("Submitting report…")
+                                }
+                            } else {
+                                Text("Submit report")
                             }
-                        } else {
-                            Text("Submit report")
                         }
                     }
                 }
@@ -149,15 +152,17 @@ private fun ReportFormContent(
                 Text(reason.label, style = MaterialTheme.typography.bodyMedium)
             }
         }
-        OutlinedTextField(
+        BulletinTextField(
             value = state.description,
             onValueChange = onDescriptionChanged,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Additional information (optional)") },
-            supportingText = { Text("${state.description.length}/1000") },
-            minLines = 3,
-            maxLines = 6,
-            colors = BulletinTextFieldDefaults.colors()
+            configure = { field ->
+                field.label = { Text("Additional information (optional)") }
+                field.supportingText = { Text("${state.description.length}/1000") }
+                field.minLines = 3
+                field.maxLines = 6
+                field.colors = BulletinTextFieldDefaults.colors()
+            }
         )
     }
 }

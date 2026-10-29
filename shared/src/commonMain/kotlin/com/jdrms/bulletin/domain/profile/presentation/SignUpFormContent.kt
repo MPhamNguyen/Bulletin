@@ -17,7 +17,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +35,7 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import org.jetbrains.compose.resources.painterResource
 
@@ -167,14 +167,16 @@ private fun RowScope.NameInputField(
     Column(modifier = Modifier.weight(1f)) {
         RequiredFieldLabel(label)
         Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
+        BulletinTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(label) },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = colors,
-            modifier = Modifier.fillMaxWidth().height(52.dp)
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            configure = { field ->
+                field.placeholder = { Text(label) }
+                field.singleLine = true
+                field.shape = RoundedCornerShape(14.dp)
+                field.colors = colors
+            }
         )
     }
 }
@@ -184,14 +186,16 @@ private fun EmailInputField(email: String, onEmailChange: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         RequiredFieldLabel("School email")
         Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
+        BulletinTextField(
             value = email,
             onValueChange = onEmailChange,
-            placeholder = { Text("you@student.school.edu") },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth().height(52.dp)
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            configure = { field ->
+                field.placeholder = { Text("you@student.school.edu") }
+                field.singleLine = true
+                field.shape = RoundedCornerShape(14.dp)
+                field.colors = BulletinTextFieldDefaults.colors()
+            }
         )
     }
 }
@@ -202,25 +206,31 @@ private fun PasswordInputField(password: String, onPasswordChange: (String) -> U
     Column(modifier = Modifier.fillMaxWidth()) {
         RequiredFieldLabel("Password")
         Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
+        BulletinTextField(
             value = password,
             onValueChange = onPasswordChange,
-            placeholder = { Text("Create a password") },
-            singleLine = true,
-            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                    val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            configure = { field ->
+                field.placeholder = { Text("Create a password") }
+                field.singleLine = true
+                field.visualTransformation = if (isPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
                 }
-            },
-            shape = RoundedCornerShape(14.dp),
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth().height(52.dp)
+                field.trailingIcon = {
+                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
+                        Icon(
+                            painter = painterResource(icon),
+                            contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                field.shape = RoundedCornerShape(14.dp)
+                field.colors = BulletinTextFieldDefaults.colors()
+            }
         )
     }
 }

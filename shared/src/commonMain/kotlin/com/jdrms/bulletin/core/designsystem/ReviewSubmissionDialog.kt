@@ -21,7 +21,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,31 +59,33 @@ fun ReviewSubmissionDialog(
             dismissOnClickOutside = !isSubmitting
         )
     ) {
-        AnimatedVisibility(
-            visibleState = visibility,
-            enter = slideInVertically(
-                initialOffsetY = { fullHeight -> fullHeight / 2 },
-                animationSpec = tween(durationMillis = 280)
-            ) + fadeIn(animationSpec = tween(durationMillis = 220))
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(0.92f),
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
-                shadowElevation = 20.dp
+        BulletinInputHost {
+            AnimatedVisibility(
+                visibleState = visibility,
+                enter = slideInVertically(
+                    initialOffsetY = { fullHeight -> fullHeight / 2 },
+                    animationSpec = tween(durationMillis = 280)
+                ) + fadeIn(animationSpec = tween(durationMillis = 220))
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(0.92f),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp,
+                    shadowElevation = 20.dp
                 ) {
-                    ReviewHeader()
-                    ReviewRatingPicker(score) { score = it }
-                    ReviewCommentField(comment) {
-                        comment = it.take(MAX_COMMENT_LENGTH)
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        ReviewHeader()
+                        ReviewRatingPicker(score) { score = it }
+                        ReviewCommentField(comment) {
+                            comment = it.take(MAX_COMMENT_LENGTH)
+                        }
+                        ReviewError(errorMessage)
+                        ReviewActions(score, comment, isSubmitting, onDismiss, onSubmit)
                     }
-                    ReviewError(errorMessage)
-                    ReviewActions(score, comment, isSubmitting, onDismiss, onSubmit)
                 }
             }
         }
@@ -149,15 +150,17 @@ private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
 @Composable
 private fun ReviewCommentField(comment: String, onCommentChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedTextField(
+        BulletinTextField(
             value = comment,
             onValueChange = onCommentChange,
-            label = { Text("Comment (optional)") },
-            placeholder = { Text("Add details if you’d like") },
-            colors = BulletinTextFieldDefaults.colors(),
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3,
-            maxLines = 5
+            configure = { field ->
+                field.label = { Text("Comment (optional)") }
+                field.placeholder = { Text("Add details if you’d like") }
+                field.colors = BulletinTextFieldDefaults.colors()
+                field.minLines = 3
+                field.maxLines = 5
+            }
         )
         Text(
             "${comment.length}/$MAX_COMMENT_LENGTH",

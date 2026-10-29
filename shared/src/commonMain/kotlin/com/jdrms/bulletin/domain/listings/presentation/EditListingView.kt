@@ -21,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +33,7 @@ import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -80,14 +80,16 @@ fun EditListingView(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
+                BulletinTextField(
                     value = uiState.editTitle,
                     onValueChange = actions.onTitleChange,
-                    label = { Text("Item Title") },
-                    singleLine = true,
-                    colors = BulletinTextFieldDefaults.colors(),
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    configure = { field ->
+                        field.label = { Text("Item Title") }
+                        field.singleLine = true
+                        field.colors = BulletinTextFieldDefaults.colors()
+                        field.shape = MaterialTheme.shapes.small
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -116,15 +118,17 @@ fun EditListingView(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
+                BulletinTextField(
                     value = uiState.editDescription,
                     onValueChange = actions.onDescriptionChange,
-                    label = { Text("Description & Campus Pick-Up Details") },
-                    minLines = 3,
-                    maxLines = 6,
-                    colors = BulletinTextFieldDefaults.colors(),
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    configure = { field ->
+                        field.label = { Text("Description & Campus Pick-Up Details") }
+                        field.minLines = 3
+                        field.maxLines = 6
+                        field.colors = BulletinTextFieldDefaults.colors()
+                        field.shape = MaterialTheme.shapes.small
+                    }
                 )
             }
 

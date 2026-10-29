@@ -9,6 +9,7 @@ import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.createPasswordRecoveryViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemePreference
+import com.jdrms.bulletin.core.designsystem.BulletinInputHost
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
@@ -41,7 +42,9 @@ fun App(appContainer: AppContainer? = null) {
         }
     }
     BulletinTheme(darkTheme = isDarkTheme) {
-        AppRoot(container, themeViewModel, isDarkTheme, recovery)
+        BulletinInputHost {
+            AppRoot(container, themeViewModel, isDarkTheme, recovery)
+        }
     }
 }
 
