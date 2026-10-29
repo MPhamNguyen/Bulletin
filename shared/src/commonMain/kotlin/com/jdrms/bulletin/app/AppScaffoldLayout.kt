@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.compose.ui.zIndex
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.LocalBulletinInputFocus
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.LocalHomeSaveRetryPresentation
@@ -58,15 +60,21 @@ internal fun MainAppLayout(content: MainAppContentState, chrome: MainAppChrome, 
     var navbarHeight by remember { mutableStateOf(0.dp) }
     var isConversationOpen by remember { mutableStateOf(false) }
     val keyboardVisible = WindowInsets.isImeVisible
+    val inputFocused = LocalBulletinInputFocus.current?.isFocused == true
+    var wasInputFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(inputFocused) {
+        if (wasInputFocused && !inputFocused) chrome.behavior.reveal()
+        wasInputFocused = inputFocused
+    }
+    val navbarVisible = navigation.showsBottomNavigation && chrome.behavior.isVisible &&
+        !isConversationOpen && !keyboardVisible && !inputFocused
     Box(Modifier.fillMaxSize()) {
         MainDestinationBody(
             content,
             chrome,
             retries,
             navbarHeight,
-            chrome.anchor.bounds(
-                navigation.showsBottomNavigation && chrome.behavior.isVisible && !isConversationOpen && !keyboardVisible
-            ),
+            chrome.anchor.bounds(navbarVisible),
             onConversationVisibilityChanged = { isOpen ->
                 isConversationOpen = isOpen
                 if (isOpen) chrome.behavior.hide() else chrome.behavior.reveal()
@@ -74,9 +82,7 @@ internal fun MainAppLayout(content: MainAppContentState, chrome: MainAppChrome, 
         )
         Navbar(
             currentDestination = navigation.currentDestination,
-            isVisible = {
-                navigation.showsBottomNavigation && !isConversationOpen && chrome.behavior.isVisible
-            },
+            isVisible = { navbarVisible },
             onDestinationSelected = { navigateTo(it, navigation, content.models.listings) },
             onFocused = chrome.behavior::reveal,
             profileIconModifier = chrome.anchor.modifier.then(

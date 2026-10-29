@@ -41,9 +41,11 @@ private val LocalInputHost = staticCompositionLocalOf<InputHostState?> { null }
 @Composable
 fun BulletinInputHost(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val state = remember { InputHostState() }
+    val inheritedFocus = LocalBulletinInputFocus.current
+    val inputFocus = inheritedFocus ?: remember { BulletinInputFocusState() }
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
-    CompositionLocalProvider(LocalInputHost provides state) {
+    CompositionLocalProvider(LocalInputHost provides state, LocalBulletinInputFocus provides inputFocus) {
         Box(
             modifier.onGloballyPositioned { state.coordinates = it }
                 .pointerInput(state, focus, keyboard) {
@@ -64,13 +66,20 @@ fun BulletinInputHost(modifier: Modifier = Modifier, content: @Composable () -> 
 internal fun Modifier.bulletinInputFocus(): Modifier {
     val host = LocalInputHost.current
     val input = remember { InputFocus() }
-    DisposableEffect(host, input) {
-        onDispose { if (host?.focused === input) host.focused = null }
+    val inputFocus = LocalBulletinInputFocus.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    DisposableEffect(host, input, inputFocus) {
+        onDispose {
+            if (host?.focused === input) host.focused = null
+            inputFocus?.update(input, false)
+        }
     }
     return onGloballyPositioned { input.coordinates = it }
         .onFocusChanged {
+            inputFocus?.update(input, it.isFocused)
             if (it.isFocused) {
                 host?.focused = input
+                keyboard?.show()
             } else if (host?.focused === input) {
                 host.focused = null
             }

@@ -40,6 +40,41 @@ class BulletinTextFieldDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private var clicks = 0
     private var imeVisible = false
+    private var inputFocused = false
+
+    @Test fun inputFocusTracksFieldSwitchingAndOutsideTap() {
+        show()
+        compose.runOnIdle { assertEquals(false, inputFocused) }
+        compose.onNodeWithTag("first").performClick()
+        compose.runOnIdle { assertEquals(true, inputFocused) }
+        compose.onNodeWithTag("second").performTouchInput { click() }
+        compose.runOnIdle { assertEquals(true, inputFocused) }
+        compose.onNodeWithTag("outside").performTouchInput { click() }
+        compose.runOnIdle { assertEquals(false, inputFocused) }
+    }
+
+    @Test fun disposedDialogReleasesAppInputFocus() {
+        var open by mutableStateOf(true)
+        compose.setContent {
+            BulletinTheme {
+                BulletinInputHost {
+                    val focused = LocalBulletinInputFocus.current?.isFocused == true
+                    SideEffect { inputFocused = focused }
+                    if (open) {
+                        Dialog(onDismissRequest = {}) {
+                            BulletinInputHost { Inputs() }
+                        }
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("first").performClick()
+        compose.runOnIdle {
+            assertEquals(true, inputFocused)
+            open = false
+        }
+        compose.runOnIdle { assertEquals(false, inputFocused) }
+    }
 
     @Test fun outsideTapClearsFocusAndPreservesText() {
         show()
@@ -135,7 +170,11 @@ class BulletinTextFieldDeviceTest {
     @Composable
     private fun Inputs() {
         val visible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-        SideEffect { imeVisible = visible }
+        val focused = LocalBulletinInputFocus.current?.isFocused == true
+        SideEffect {
+            imeVisible = visible
+            inputFocused = focused
+        }
         var text by remember { mutableStateOf("") }
         var selectedText by remember { mutableStateOf(TextFieldValue("", TextRange.Zero)) }
         Column {
