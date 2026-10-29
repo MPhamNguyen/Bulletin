@@ -28,7 +28,7 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryNavigation
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
@@ -95,7 +95,9 @@ private fun rememberMainScaffoldModels(container: AppContainer): MainScaffoldMod
                 container.messages.recentListingBuyersProvider,
                 container.listingChangedSignal
             ),
-            container.messages.createMessagesViewModel()
+            container.messages.createMessagesViewModel(
+                container.profile.conversationUserBlocker(container.listingChangedSignal)
+            )
         )
     }
 }

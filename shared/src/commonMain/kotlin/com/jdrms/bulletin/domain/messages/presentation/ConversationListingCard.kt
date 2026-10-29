@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
 
 @Composable
@@ -29,9 +30,9 @@ internal fun ConversationListingCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(BulletinSpacing.m),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             ConversationListingPreview(preview?.imageUrl, imageSize = 72.dp)
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {

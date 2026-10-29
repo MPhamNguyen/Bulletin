@@ -29,7 +29,8 @@ data class MessagesUiState(
     val isReporting: Boolean = false,
     val messageReportForm: MessageReportFormState? = null,
     val errorMessage: String? = null,
-    val statusMessage: String? = null
+    val statusMessage: String? = null,
+    val block: ConversationBlockUiState = ConversationBlockUiState()
 )
 
 data class MessageReportFormState(

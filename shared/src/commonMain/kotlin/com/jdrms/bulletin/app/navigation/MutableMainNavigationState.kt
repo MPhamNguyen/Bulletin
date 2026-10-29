@@ -12,6 +12,8 @@ internal class MutableMainNavigationState {
     var pendingConversationId by mutableStateOf<ConversationId?>(null)
     var pendingSellerProfileId by mutableStateOf<String?>(null)
 
+    var pendingUserReportId by mutableStateOf<String?>(null)
+
     val showsBottomNavigation: Boolean
         get() = snapshot().showsBottomNavigation
 

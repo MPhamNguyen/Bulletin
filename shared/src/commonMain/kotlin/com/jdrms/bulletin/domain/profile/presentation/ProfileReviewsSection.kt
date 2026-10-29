@@ -19,8 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.ReviewPaginationActions
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 
@@ -33,7 +34,7 @@ internal fun ProfileReviewsSection(reputation: StudentReputation) {
     val visibleReviews = reputation.reviews.take(visibleReviewCount)
 
     BulletinCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
             Text("Reviews", style = MaterialTheme.typography.titleMedium)
             visibleReviews.forEach { review -> ProfileReview(review) }
             ReviewPaginationActions(
@@ -55,11 +56,11 @@ internal fun ProfileReviewsSection(reputation: StudentReputation) {
 private fun ProfileReview(review: StudentReview) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
         ) {
             Text(review.reviewerName, style = MaterialTheme.typography.labelLarge)
             Row {

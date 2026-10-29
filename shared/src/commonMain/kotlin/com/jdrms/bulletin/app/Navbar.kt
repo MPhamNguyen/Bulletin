@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.navigation.AppDestination
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 private val NavigationIconSize = 30.dp
 
@@ -64,7 +65,7 @@ fun Navbar(
                 alpha = 1f - hiddenFraction.value
             }
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s)
             .fillMaxWidth()
             .semantics { if (!navbarIsVisible) hideFromAccessibility() },
         contentAlignment = Alignment.Center

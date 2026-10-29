@@ -25,6 +25,7 @@ import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.common.imageRequestUrl
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
 @Composable
@@ -60,7 +61,7 @@ private fun SingleColumnListingCard(
     ) {
         Column {
             MarketplaceListingPhoto(item, SINGLE_PHOTO_HEIGHT, isBookmarked, onBookmarkClick)
-            Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = BulletinSpacing.m)) {
                 SingleListingTitleAndPrice(item)
                 Spacer(modifier = Modifier.height(2.dp))
                 ListingMetadata(item, MaterialTheme.typography.bodyMedium)
@@ -94,7 +95,7 @@ private fun TwoColumnListingCard(
 
 @Composable
 private fun TwoColumnListingDetails(item: MarketplaceItem) {
-    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = BulletinSpacing.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = item.title,
@@ -153,7 +154,7 @@ private fun MarketplaceListingPhoto(
             isBookmarked = isBookmarked,
             compact = height == DOUBLE_PHOTO_HEIGHT,
             onClick = onBookmarkClick,
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+            modifier = Modifier.align(Alignment.TopEnd).padding(BulletinSpacing.s)
         )
     }
 }
@@ -221,7 +222,7 @@ private fun SingleListingTitleAndPrice(item: MarketplaceItem) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(BulletinSpacing.s))
         Text(
             text = item.price.formatted,
             style = MaterialTheme.typography.titleMedium,

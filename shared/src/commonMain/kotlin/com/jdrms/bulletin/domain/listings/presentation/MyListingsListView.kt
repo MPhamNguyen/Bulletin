@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import org.jetbrains.compose.resources.painterResource
@@ -67,7 +68,7 @@ fun MyListingsListView(
             }
             uiState.myListings.isEmpty() -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    modifier = Modifier.fillMaxSize().padding(BulletinSpacing.xl),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -81,8 +82,8 @@ fun MyListingsListView(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s),
+                    verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                 ) {
                     items(uiState.myListings, key = { it.id.value }) { listing ->
                         MyListingItemCard(
@@ -94,7 +95,7 @@ fun MyListingsListView(
                         )
                     }
                     item {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(BulletinSpacing.l))
                     }
                 }
             }
@@ -111,7 +112,7 @@ private fun MyListingsTopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
@@ -121,7 +122,7 @@ private fun MyListingsTopBar(
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(BulletinSpacing.s))
         Column {
             Text(
                 text = "My Listings",
@@ -146,7 +147,7 @@ private fun MyListingsErrorBanner(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.xs),
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.errorContainer
     ) {
@@ -154,7 +155,7 @@ private fun MyListingsErrorBanner(
             text = error,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(BulletinSpacing.m)
         )
     }
 }
@@ -166,13 +167,13 @@ private fun MyListingsEmptyState(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(BulletinSpacing.xl),
         contentAlignment = Alignment.Center
     ) {
         BulletinCard {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth().padding(8.dp)
+                modifier = Modifier.fillMaxWidth().padding(BulletinSpacing.s)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Image,
@@ -180,7 +181,7 @@ private fun MyListingsEmptyState(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(48.dp)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
                 Text(
                     text = "No Listings Yet",
                     style = MaterialTheme.typography.titleMedium,
@@ -192,7 +193,7 @@ private fun MyListingsEmptyState(
                     text = "You have not posted any listings. Use the '+' tab to create your first item!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(horizontal = BulletinSpacing.s)
                 )
             }
         }

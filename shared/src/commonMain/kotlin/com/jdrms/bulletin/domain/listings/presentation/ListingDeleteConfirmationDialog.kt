@@ -13,7 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 
 @Composable
@@ -35,7 +35,7 @@ fun ListingDeleteConfirmationDialog(
                         "This action cannot be undone."
                 )
                 errorMessage?.let { error ->
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.m))
                     Text(
                         text = error,
                         color = MaterialTheme.colorScheme.onErrorContainer,
@@ -43,7 +43,7 @@ fun ListingDeleteConfirmationDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.small)
-                            .padding(12.dp)
+                            .padding(BulletinSpacing.m)
                     )
                 }
             }

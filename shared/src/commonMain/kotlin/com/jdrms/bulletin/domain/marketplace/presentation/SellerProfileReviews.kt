@@ -22,8 +22,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.ReviewPaginationActions
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 
 @Composable
@@ -33,7 +34,7 @@ internal fun SellerProfileReviews(reviews: List<MarketplaceSellerReview>) {
     }
     val visibleReviews = reviews.take(visibleReviewCount)
     BulletinCard {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
             Text("Reviews", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             if (reviews.isEmpty()) {
                 Text(
@@ -71,10 +72,10 @@ internal fun nextVisibleReviewCount(currentCount: Int, totalCount: Int): Int {
 
 @Composable
 private fun SellerReview(review: MarketplaceSellerReview) {
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
         ) {
             Text(review.reviewerName, style = MaterialTheme.typography.labelLarge)
             Row(Modifier.semantics { contentDescription = "${review.rating} out of 5 stars" }) {

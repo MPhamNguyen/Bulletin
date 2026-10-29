@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import kotlinx.coroutines.launch
@@ -127,7 +128,7 @@ private fun ActiveMarketplaceFilterChips(
     if (filters.activeFilterCount == 0) return
     Row(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
     ) {
         filters.category?.let { category ->
             FilterChip(
@@ -167,8 +168,8 @@ private fun MarketplaceFilterSheet(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(bottom = BulletinSpacing.xl),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             MarketplaceFilterCardHeader(onReset = { draft = draft.copy(category = null, condition = null) })
             FilterOptionGroup(
@@ -209,7 +210,7 @@ private fun MarketplaceFilterCardHeader(onReset: () -> Unit) {
 
 @Composable
 private fun ShowMarketplaceResultsButton(onClick: () -> Unit) {
-    Button(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+    Button(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(bottom = BulletinSpacing.xl)) {
         Text("Show results")
     }
 }
@@ -226,7 +227,7 @@ private fun <T> FilterOptionGroup(
         Text(title, style = MaterialTheme.typography.titleMedium)
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
         ) {
             options.forEach { option ->
                 FilterChip(

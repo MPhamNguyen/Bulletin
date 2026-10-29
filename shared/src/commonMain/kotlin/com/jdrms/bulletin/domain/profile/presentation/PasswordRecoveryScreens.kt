@@ -34,8 +34,9 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -110,7 +111,7 @@ fun ChangePasswordScreen(
                 isPassword = true,
                 onValueChange = { password = it }
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(BulletinSpacing.l))
             RecoveryField(
                 label = "Confirm password",
                 value = confirmation,
@@ -139,7 +140,7 @@ private fun RecoveryLayout(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = BulletinSpacing.xl)
             .verticalScroll(rememberScrollState())
             .padding(vertical = 32.dp)
             .widthIn(max = 480.dp),
@@ -150,20 +151,20 @@ private fun RecoveryLayout(
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(BulletinSpacing.s))
         Text(
             description,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(BulletinSpacing.xl))
         errorMessage?.let {
             Text(
                 it,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(BulletinSpacing.m))
         }
         content()
     }

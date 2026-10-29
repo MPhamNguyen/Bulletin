@@ -30,7 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 data class SignInScreenActions(
     val onEmailChange: ((String) -> Unit)? = null,
@@ -66,7 +67,7 @@ fun SignInScreen(
     )
     Box(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp),
+            .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = BulletinSpacing.xl),
         contentAlignment = Alignment.Center
     ) {
         SignInContent(
@@ -117,21 +118,21 @@ private fun SignInContent(
 @Composable
 private fun SignInHeader() {
     BulletinMark()
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(BulletinSpacing.xl))
     Text(
         "Welcome to Bulletin",
         style = MaterialTheme.typography.headlineLarge,
         color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center
     )
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(BulletinSpacing.s))
     Text(
         "Sign in to your campus marketplace",
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center
     )
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(BulletinSpacing.xl))
 }
 
 @Composable
@@ -141,7 +142,7 @@ private fun SignInError(message: String?) {
             Modifier.fillMaxWidth().background(
                 MaterialTheme.colorScheme.errorContainer,
                 MaterialTheme.shapes.medium
-            ).padding(12.dp)
+            ).padding(BulletinSpacing.m)
         ) {
             Text(
                 it,
@@ -149,7 +150,7 @@ private fun SignInError(message: String?) {
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(BulletinSpacing.l))
     }
 }
 
@@ -162,7 +163,7 @@ private fun PasswordSignInActions(isLoading: Boolean, onForgotPassword: () -> Un
             colors = BulletinButtonDefaults.textButtonColors()
         ) { Text("Forgot password?") }
     }
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(BulletinSpacing.m))
     Button(
         onClick = onSignIn,
         enabled = !isLoading,

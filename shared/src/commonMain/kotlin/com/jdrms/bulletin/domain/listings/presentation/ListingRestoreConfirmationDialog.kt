@@ -12,7 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 
 @Composable
@@ -31,7 +31,7 @@ fun ListingRestoreConfirmationDialog(
             Column {
                 Text("${listing.title} will be visible in marketplace results again.")
                 errorMessage?.let { error ->
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.m))
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer,
                         shape = MaterialTheme.shapes.small,
@@ -41,7 +41,7 @@ fun ListingRestoreConfirmationDialog(
                             text = error,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(BulletinSpacing.m)
                         )
                     }
                 }

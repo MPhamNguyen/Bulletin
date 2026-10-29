@@ -1,4 +1,4 @@
-package com.jdrms.bulletin.domain.profile.presentation
+package com.jdrms.bulletin.core.designsystem
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -29,14 +29,15 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 
 @Composable
-internal fun ProfilePullRefreshIndicator(
+internal fun BulletinPullRefreshIndicator(
     state: PullToRefreshState,
     isRefreshing: Boolean,
     isComplete: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    completionContentDescription: String = "Updated"
 ) {
     val progress = state.distanceFraction.coerceIn(0f, 1f)
     val primary = MaterialTheme.colorScheme.primary
@@ -93,7 +94,7 @@ internal fun ProfilePullRefreshIndicator(
                 when {
                     isComplete -> Icon(
                         imageVector = Icons.Outlined.Check,
-                        contentDescription = "Profile updated",
+                        contentDescription = completionContentDescription,
                         tint = success,
                         modifier = Modifier.size(20.dp)
                     )

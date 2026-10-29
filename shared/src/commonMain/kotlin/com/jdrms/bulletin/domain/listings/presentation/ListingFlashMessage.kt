@@ -17,7 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun ListingFlashMessage(
@@ -31,7 +32,7 @@ fun ListingFlashMessage(
                 color = BulletinExtras.colors.successContainer,
                 shape = MaterialTheme.shapes.large
             )
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

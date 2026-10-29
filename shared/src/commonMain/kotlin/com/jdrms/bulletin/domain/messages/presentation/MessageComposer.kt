@@ -14,15 +14,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 
 @Composable
 internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewModel) {
     val isEditing = state.editState != MessageEditState.Composing
-    val isBusy = state.isSending || state.editState is MessageEditState.Saving
-    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+    val isBusy = state.isSending || state.editState is MessageEditState.Saving || !state.canSendToCounterpart()
+    Column(Modifier.fillMaxWidth().padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s)) {
         if (isEditing) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Editing message", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
@@ -40,7 +40,7 @@ internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewMode
                 colors = BulletinTextFieldDefaults.colors(),
                 modifier = Modifier.weight(1f)
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(BulletinSpacing.s))
             Button(
                 onClick = viewModel::sendCurrentMessage,
                 enabled = !isBusy && !state.isLoadingMessages && state.messageInput.isNotBlank(),

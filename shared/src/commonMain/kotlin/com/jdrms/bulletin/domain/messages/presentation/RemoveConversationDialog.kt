@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun RemoveConversationDialog(
@@ -33,8 +34,8 @@ internal fun RemoveConversationDialog(
             shadowElevation = 8.dp
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(BulletinSpacing.xl),
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
             ) {
                 Text("Remove conversation?", style = MaterialTheme.typography.titleLarge)
                 Text(
@@ -44,7 +45,7 @@ internal fun RemoveConversationDialog(
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                 ) {
                     OutlinedButton(
                         modifier = Modifier.weight(1f),

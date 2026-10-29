@@ -12,11 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -40,7 +36,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 fun MessagesScreen(
     viewModel: MessagesViewModel,
     onViewProfile: (String) -> Unit = {},
-    onConversationVisibilityChanged: (Boolean) -> Unit = {}
+    onConversationVisibilityChanged: (Boolean) -> Unit = {},
+    onReportUser: (String) -> Unit = {}
 ) {
     DisposableEffect(viewModel) {
         viewModel.onDestinationActiveChanged(true)
@@ -54,18 +51,10 @@ fun MessagesScreen(
         onConversationVisibilityChanged(isChat)
     }
     Scaffold(
+        // MainDestinationBody already reserves space for the system bars.
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0.dp),
-                title = { if (!isChat) Text("Conversations") },
-                navigationIcon = {
-                    if (isChat) {
-                        IconButton(onClick = viewModel::returnToInbox) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to conversations")
-                        }
-                    }
-                }
-            )
+            if (!isChat) TopAppBar(windowInsets = WindowInsets(0.dp), title = { Text("Conversations") })
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -95,7 +84,7 @@ fun MessagesScreen(
                         viewModel,
                         conversation,
                         Modifier.fillMaxSize(),
-                        onViewProfile
+                        ConversationNavigation(onViewProfile, onReportUser)
                     )
                 }
             }

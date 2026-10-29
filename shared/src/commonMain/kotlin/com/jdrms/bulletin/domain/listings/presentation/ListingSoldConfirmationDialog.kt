@@ -15,7 +15,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 
@@ -47,7 +47,7 @@ fun ListingSoldConfirmationDialog(
         text = {
             Column {
                 Text("${state.listing.title} will be removed from marketplace results.")
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
                 Text("Who did you sell it to?", style = MaterialTheme.typography.titleSmall)
                 for (buyer in state.recentBuyers) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -68,7 +68,7 @@ fun ListingSoldConfirmationDialog(
                     Text("Sold on another platform")
                 }
                 state.errorMessage?.let { error ->
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.m))
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer,
                         shape = MaterialTheme.shapes.small,
@@ -78,7 +78,7 @@ fun ListingSoldConfirmationDialog(
                             text = error,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(BulletinSpacing.m)
                         )
                     }
                 }

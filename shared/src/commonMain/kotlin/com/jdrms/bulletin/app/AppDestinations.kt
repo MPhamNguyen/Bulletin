@@ -56,7 +56,11 @@ internal fun MainAppContent(
                 navigation.pendingSellerProfileId = sellerId
                 navigation.currentDestination = AppDestination.MARKETPLACE
             },
-            onConversationVisibilityChanged = onConversationVisibilityChanged
+            onConversationVisibilityChanged = onConversationVisibilityChanged,
+            onReportUser = { id ->
+                navigation.pendingUserReportId = id
+                navigation.currentDestination = AppDestination.MARKETPLACE
+            }
         )
         AppDestination.PROFILE -> ProfileDestinationContent(
             container,
@@ -85,6 +89,8 @@ private fun MarketplaceDestination(
         userBlockViewModel = models.marketplaceUserBlock,
         navigation = MarketplaceScreenNavigation(
             sellerProfileIdToOpen = navigation.pendingSellerProfileId,
+            userReportIdToOpen = navigation.pendingUserReportId,
+            onUserReportRequestHandled = { navigation.pendingUserReportId = null },
             onSellerProfileRequestHandled = { navigation.pendingSellerProfileId = null },
             onReturnToInboxChat = { navigation.currentDestination = AppDestination.MESSAGES },
             onContentNoLongerScrollable = onContentNoLongerScrollable

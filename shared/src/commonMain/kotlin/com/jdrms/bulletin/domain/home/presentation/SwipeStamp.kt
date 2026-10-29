@@ -16,7 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 internal enum class SwipeFeedback { SAVE, PASS }
 
@@ -27,7 +28,7 @@ internal fun SwipeStamp(verdict: SwipeFeedback, progress: () -> Float, modifier:
     Row(
         modifier.swipeStampPose(verdict, progress)
             .background(MaterialTheme.colorScheme.surface, shape)
-            .border(3.dp, color, shape).padding(horizontal = 14.dp, vertical = 8.dp),
+            .border(3.dp, color, shape).padding(horizontal = 14.dp, vertical = BulletinSpacing.s),
         horizontalArrangement = Arrangement.spacedBy(7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

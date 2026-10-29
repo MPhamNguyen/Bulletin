@@ -31,14 +31,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun MarketplaceProfileTopBar(onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -82,7 +83,7 @@ internal fun ProfileHero(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 8.dp),
+            .padding(top = BulletinSpacing.s, bottom = BulletinSpacing.s),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ProfileAvatarImage(
@@ -95,7 +96,7 @@ internal fun ProfileHero(
 
         Spacer(modifier = Modifier.height(10.dp))
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -168,8 +169,8 @@ private fun VerifiedBadge() {
         contentColor = BulletinExtras.colors.success
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(

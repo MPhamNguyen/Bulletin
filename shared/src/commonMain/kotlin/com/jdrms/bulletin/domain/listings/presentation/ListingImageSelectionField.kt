@@ -47,6 +47,7 @@ import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -77,7 +78,7 @@ internal fun ListingImageSelectionField(
         }
         if (photos.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
                 itemsIndexed(photos) { index, photo ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         val crop = when (photo) {
@@ -213,7 +214,7 @@ private fun ListingPhotoCropDialog(
         Column(
             modifier = Modifier.widthIn(max = 360.dp).clip(MaterialTheme.shapes.large)
                 .background(MaterialTheme.colorScheme.surface).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             Text("Adjust photo", style = MaterialTheme.typography.titleMedium)
             ListingPhotoImage(
@@ -242,7 +243,7 @@ private fun ListingPhotoCropDialog(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
                 TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
                 Button(onClick = { onSave(crop) }, modifier = Modifier.weight(1f)) { Text("Save crop") }
             }

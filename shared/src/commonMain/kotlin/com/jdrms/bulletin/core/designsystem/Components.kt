@@ -9,13 +9,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 /** Height occupied by the app navigation bar, including its system bar inset. */
 val LocalNavbarHeight = staticCompositionLocalOf<Dp> { 0.dp }
 
+object BulletinIconButtonDefaults {
+    @Composable
+    fun filledColors(): IconButtonColors = IconButtonDefaults.filledIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+    )
+}
+
 @Composable
 fun SectionHeader(title: String, subtitle: String? = null) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = BulletinSpacing.s)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
@@ -47,7 +58,7 @@ fun BulletinCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(BulletinSpacing.l)) {
             content()
         }
     }

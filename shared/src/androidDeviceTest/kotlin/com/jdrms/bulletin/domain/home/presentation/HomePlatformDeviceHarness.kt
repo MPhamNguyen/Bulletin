@@ -14,8 +14,8 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.home.application.*
 import kotlinx.coroutines.CoroutineScope
 

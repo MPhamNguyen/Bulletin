@@ -30,8 +30,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
@@ -80,7 +81,7 @@ internal fun ReportMarketplaceUserScreen(
                         if (state.isSubmitting) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
                                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -110,14 +111,17 @@ private fun ReportErrorContent(message: String) {
 
 @Composable
 private fun ReportSubmittedContent(onBack: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
         Surface(
             color = BulletinExtras.colors.successContainer,
             contentColor = BulletinExtras.colors.onSuccessContainer,
             shape = MaterialTheme.shapes.medium,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
         ) {
-            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                Modifier.fillMaxWidth().padding(BulletinSpacing.m),
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
+            ) {
                 Text("Report submitted", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Your report was submitted successfully. Thank you for helping keep the marketplace safe.",
