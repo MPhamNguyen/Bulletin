@@ -95,7 +95,9 @@ private fun rememberMainScaffoldModels(container: AppContainer): MainScaffoldMod
                 container.messages.recentListingBuyersProvider,
                 container.listingChangedSignal
             ),
-            container.messages.createMessagesViewModel()
+            container.messages.createMessagesViewModel(
+                container.profile.conversationUserBlocker(container.listingChangedSignal)
+            )
         )
     }
 }
