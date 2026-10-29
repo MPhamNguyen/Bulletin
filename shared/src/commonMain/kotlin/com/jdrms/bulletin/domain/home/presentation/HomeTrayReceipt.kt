@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
@@ -40,7 +41,7 @@ internal fun HomeTrayReceipt(sent: Boolean, durationScale: Float) {
     val motion = rememberHomeReceiptMotion(sent, durationScale)
     Row(
         Modifier.fillMaxWidth().height(48.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s, Alignment.End),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(Modifier.graphicsLayer { alpha = motion.second.value }, verticalAlignment = Alignment.CenterVertically) {
@@ -58,7 +59,10 @@ internal fun HomeTrayReceipt(sent: Boolean, durationScale: Float) {
                 scaleX = 0.6f + 0.4f * motion.first.value
                 scaleY = scaleX
                 transformOrigin = TransformOrigin(1f, 1f)
-            }.background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.medium).padding(12.dp)
+            }.background(
+                MaterialTheme.colorScheme.primaryContainer,
+                MaterialTheme.shapes.medium
+            ).padding(BulletinSpacing.m)
         )
     }
 }

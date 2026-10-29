@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
@@ -89,7 +90,7 @@ internal fun EmailVerificationContent(
             .navigationBarsPadding()
             .imePadding()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = BulletinSpacing.xl)
     ) {
         Box(
             modifier = Modifier
@@ -116,7 +117,7 @@ internal fun EmailVerificationContent(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 48.dp),
+                .padding(top = BulletinSpacing.control),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -134,7 +135,7 @@ internal fun EmailVerificationContent(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.01).em,
                 color = colors.onBackground,
-                modifier = Modifier.padding(top = 24.dp)
+                modifier = Modifier.padding(top = BulletinSpacing.xl)
             )
             Text(
                 text = "We sent a 6-digit code to",
@@ -155,7 +156,7 @@ internal fun EmailVerificationContent(
                 text = "Can’t find it? Check your spam folder.",
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(top = 12.dp)
+                modifier = Modifier.padding(top = BulletinSpacing.m)
             )
 
             val codeTextStyle = TextStyle(
@@ -195,14 +196,14 @@ internal fun EmailVerificationContent(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .padding(top = BulletinSpacing.l)
                     .height(60.dp)
             )
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = BulletinSpacing.s)
                     .height(20.dp)
             ) {
                 val message = uiState.errorMessage ?: uiState.informationMessage
@@ -221,7 +222,7 @@ internal fun EmailVerificationContent(
                 colors = BulletinButtonDefaults.buttonColors(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp)
+                    .padding(top = BulletinSpacing.m)
                     .height(52.dp)
             ) {
                 if (uiState.isLoading) {
@@ -233,7 +234,7 @@ internal fun EmailVerificationContent(
             Column(
                 modifier = Modifier.padding(top = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
             ) {
                 TextButton(
                     onClick = {

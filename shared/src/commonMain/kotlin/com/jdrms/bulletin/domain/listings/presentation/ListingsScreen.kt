@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -25,8 +26,8 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
     val pickListingImages = rememberListingImagePicker(viewModel::addNewImages, viewModel::imageSelectionFailed)
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxSize().padding(BulletinSpacing.l),
+        verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
         item {
             SectionHeader(
@@ -43,7 +44,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
                 OutlinedTextField(
                     value = state.newTitle,
@@ -53,7 +54,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
                 Text(
                     text = "Category",
@@ -70,7 +71,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
                 Text(
                     text = "Condition",
@@ -93,7 +94,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
                 CurrencyTextField(
                     digits = state.newPriceCents,
@@ -101,7 +102,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
                 OutlinedTextField(
                     value = state.newDescription,
@@ -112,7 +113,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
                 ListingImageSelectionField(
                     photos = state.newImages.map { ListingPhotoDraft.Pending(it) },
                     onPick = pickListingImages,
@@ -120,7 +121,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     onCropChange = viewModel::updateNewImageCrop
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 if (state.errorMessage != null) {
                     Text(
@@ -128,7 +129,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.s))
                 }
 
                 if (state.successMessage != null) {
@@ -137,7 +138,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.s))
                 }
 
                 Button(
@@ -220,21 +221,21 @@ private fun MyListingCard(
 ) {
     BulletinCard {
         ListingThumbnail(listing)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.s))
         ActiveListingTitleAndPrice(listing)
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
         Text(
             text = "Category: ${listing.category.name} • Condition: ${listing.condition.name.replace("_", " ")}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.s))
         Text(
             text = listing.description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.m))
         ActiveListingActions(onDelete, onMarkSold)
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 
 @Composable
 internal fun NotificationsView(
@@ -42,15 +43,15 @@ internal fun NotificationsView(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 20.dp, vertical = BulletinSpacing.l),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BulletinCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 32.dp, horizontal = 16.dp),
+                        .padding(vertical = 32.dp, horizontal = BulletinSpacing.l),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -70,14 +71,14 @@ internal fun NotificationsView(
                             modifier = Modifier.size(28.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.l))
                     Text(
                         text = "Notifications",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
                     Text(
                         text = "Notification preferences and alert settings will appear here.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -94,7 +95,7 @@ private fun NotificationsTopBar(onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
@@ -107,7 +108,7 @@ private fun NotificationsTopBar(onBackClick: () -> Unit) {
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(BulletinSpacing.s))
         Text(
             text = "Notifications",
             style = MaterialTheme.typography.titleLarge,

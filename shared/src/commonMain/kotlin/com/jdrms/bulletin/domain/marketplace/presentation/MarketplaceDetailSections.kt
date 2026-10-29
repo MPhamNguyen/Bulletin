@@ -41,6 +41,7 @@ import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import kotlinx.coroutines.launch
 
 @Composable
@@ -219,14 +220,19 @@ internal fun SellerInfoCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 12.dp),
+                .padding(
+                    start = BulletinSpacing.l,
+                    top = BulletinSpacing.l,
+                    bottom = BulletinSpacing.l,
+                    end = BulletinSpacing.m
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
             ) {
                 if (seller.avatarUrl != null) {
                     AsyncImage(

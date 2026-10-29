@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 
 @Composable
 internal fun ProfileAboutCard(
@@ -53,8 +54,8 @@ internal fun ProfileAboutCard(
             )
         }
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
         ) {
             if (major.isNotBlank()) {
                 ProfileInformationChip(Icons.Outlined.School, major)
@@ -63,7 +64,7 @@ internal fun ProfileAboutCard(
                 ProfileInformationChip(Icons.Outlined.LocationOn, university)
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.m))
         Text(
             text = bio?.ifBlank { null }
                 ?: "Senior student buying & selling tech, textbooks, and campus essentials.",
@@ -81,7 +82,7 @@ private fun ProfileInformationChip(icon: ImageVector, text: String) {
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            modifier = Modifier.padding(horizontal = BulletinSpacing.m, vertical = 7.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -155,7 +156,7 @@ private fun ActivityStat(
     iconTint: Color = MaterialTheme.colorScheme.primary
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 4.dp, vertical = 16.dp),
+        modifier = modifier.padding(horizontal = BulletinSpacing.xs, vertical = BulletinSpacing.l),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
@@ -185,7 +186,7 @@ private fun ActivityDivider() {
     Surface(
         modifier = Modifier
             .fillMaxHeight()
-            .padding(vertical = 12.dp)
+            .padding(vertical = BulletinSpacing.m)
             .width(1.dp),
         color = MaterialTheme.colorScheme.outlineVariant
     ) {}

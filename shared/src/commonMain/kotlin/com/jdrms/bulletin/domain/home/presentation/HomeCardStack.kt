@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.CardAction
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
@@ -201,12 +202,16 @@ private fun androidx.compose.foundation.layout.BoxScope.HomeStackCardContents(
             presentation.actions,
             { presentation.tray.progress.value },
             presentation.durationScale,
-            Modifier.align(Alignment.BottomCenter).padding(8.dp),
+            Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.s),
             composerFocus
         )
     }
     if (front) {
-        HomeSwipeFeedback(presentation.motion::saveProgress, presentation.motion::passProgress, Modifier.padding(8.dp))
+        HomeSwipeFeedback(
+            presentation.motion::saveProgress,
+            presentation.motion::passProgress,
+            Modifier.padding(BulletinSpacing.s)
+        )
     } else {
         HomeNextCardShade(presentation.motion)
     }

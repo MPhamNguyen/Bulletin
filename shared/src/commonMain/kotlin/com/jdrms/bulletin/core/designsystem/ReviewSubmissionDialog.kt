@@ -75,8 +75,8 @@ fun ReviewSubmissionDialog(
                 shadowElevation = 20.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.padding(BulletinSpacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
                 ) {
                     ReviewHeader()
                     ReviewRatingPicker(score) { score = it }
@@ -103,7 +103,7 @@ private fun ReviewHeader() {
                 imageVector = Icons.Filled.Star,
                 contentDescription = null,
                 tint = BulletinExtras.colors.star,
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(BulletinSpacing.m)
             )
         }
         Spacer(Modifier.size(14.dp))
@@ -123,10 +123,10 @@ private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
-            .padding(vertical = 12.dp),
+            .padding(vertical = BulletinSpacing.m),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
             for (value in 1..5) {
                 IconButton(onClick = { onScoreChange(value) }) {
                     Icon(
@@ -148,7 +148,7 @@ private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
 
 @Composable
 private fun ReviewCommentField(comment: String, onCommentChange: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
         OutlinedTextField(
             value = comment,
             onValueChange = onCommentChange,

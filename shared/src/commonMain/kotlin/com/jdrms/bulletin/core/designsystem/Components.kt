@@ -25,7 +25,7 @@ object BulletinIconButtonDefaults {
 
 @Composable
 fun SectionHeader(title: String, subtitle: String? = null) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = BulletinSpacing.s)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
@@ -57,7 +57,7 @@ fun BulletinCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(BulletinSpacing.l)) {
             content()
         }
     }

@@ -28,6 +28,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
@@ -94,7 +95,10 @@ private fun MessageReportSubmitted(onDismiss: () -> Unit) {
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
     ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(
+            Modifier.fillMaxWidth().padding(BulletinSpacing.m),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
+        ) {
             Text("Report submitted", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Your report was submitted successfully. Thank you for helping keep messaging safe.",
@@ -160,7 +164,10 @@ private fun MessageReportSubmitButton(
         colors = BulletinButtonDefaults.buttonColors()
     ) {
         if (isSubmitting || isInboxLoading) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
+            ) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 Text(if (isSubmitting) "Submitting report…" else "Loading conversations…")
             }

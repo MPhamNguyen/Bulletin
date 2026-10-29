@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 
 @Composable
 internal fun ProfileMarketplaceCard(
@@ -41,7 +42,7 @@ internal fun ProfileMarketplaceCard(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.size(8.dp))
+        Spacer(modifier = Modifier.size(BulletinSpacing.s))
         MarketplaceActionRow(
             icon = Icons.Outlined.GridView,
             title = "My listings",
@@ -72,7 +73,7 @@ private fun MarketplaceActionRow(
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Row(
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+            modifier = Modifier.padding(vertical = BulletinSpacing.m, horizontal = BulletinSpacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
@@ -104,7 +105,10 @@ private fun MarketplaceActionRow(
                 ) {
                     Text(
                         text = badge,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).widthIn(min = 12.dp),
+                        modifier = Modifier.padding(
+                            horizontal = BulletinSpacing.s,
+                            vertical = 2.dp
+                        ).widthIn(min = 12.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center

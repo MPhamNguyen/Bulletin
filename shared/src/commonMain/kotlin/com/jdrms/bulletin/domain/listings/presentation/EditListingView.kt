@@ -34,6 +34,7 @@ import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -68,8 +69,8 @@ fun EditListingView(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             BulletinCard {
                 Text(
@@ -78,7 +79,7 @@ fun EditListingView(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 OutlinedTextField(
                     value = uiState.editTitle,
@@ -90,7 +91,7 @@ fun EditListingView(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 CurrencyTextField(
                     digits = uiState.editPriceCents,
@@ -100,21 +101,21 @@ fun EditListingView(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 ListingCategorySelectionRow(
                     selectedCategory = uiState.editCategory,
                     onCategorySelected = actions.onCategorySelected
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 ListingConditionSelectionRow(
                     selectedCondition = uiState.editCondition,
                     onConditionSelected = actions.onConditionSelected
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 OutlinedTextField(
                     value = uiState.editDescription,
@@ -143,7 +144,7 @@ fun EditListingView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
             Button(
                 onClick = actions.onSave,
@@ -182,7 +183,7 @@ fun EditListingView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.l))
         }
     }
 }
@@ -195,7 +196,7 @@ private fun EditListingTopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -207,7 +208,7 @@ private fun EditListingTopBar(
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(BulletinSpacing.s))
             Text(
                 text = "Edit Listing",
                 style = MaterialTheme.typography.titleLarge,
@@ -234,7 +235,7 @@ private fun ListingCategorySelectionRow(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(ListingCategory.entries.toTypedArray()) { category ->
                 FilterChip(
@@ -259,7 +260,7 @@ private fun ListingConditionSelectionRow(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(ListingCondition.entries.toTypedArray()) { condition ->
                 FilterChip(

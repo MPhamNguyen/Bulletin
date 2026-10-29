@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 
 private const val PROFILE_SOFT_DELETE_CONSEQUENCE = "Your profile is marked for soft-delete"
 
@@ -86,7 +87,7 @@ internal fun DeleteProfileConfirmationDialog(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 24.dp),
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = BulletinSpacing.xl),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
@@ -106,7 +107,7 @@ internal fun DeleteProfileConfirmationDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
                 Text(
                     text = "Delete your profile?",
@@ -125,7 +126,7 @@ internal fun DeleteProfileConfirmationDialog(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(BulletinSpacing.l))
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -196,9 +197,9 @@ private fun ConsequenceRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
         Icon(
             imageVector = icon,
@@ -258,7 +259,7 @@ private fun HoldHintMessage(hintText: String?) {
         modifier = Modifier
             .fillMaxWidth()
             .height(26.dp)
-            .padding(top = 8.dp),
+            .padding(top = BulletinSpacing.s),
         contentAlignment = Alignment.Center
     ) {
         if (hintText != null) {

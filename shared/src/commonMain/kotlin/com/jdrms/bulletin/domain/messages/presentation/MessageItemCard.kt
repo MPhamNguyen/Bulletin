@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
 import kotlin.time.Clock
@@ -83,7 +84,7 @@ private fun MessageSenderAvatar(presentation: MessageItemCardPresentation, onVie
     } else {
         Spacer(Modifier.width(40.dp))
     }
-    Spacer(Modifier.width(8.dp))
+    Spacer(Modifier.width(BulletinSpacing.s))
 }
 
 private fun bubbleAlignment(isMine: Boolean): Alignment.Horizontal =
@@ -134,7 +135,7 @@ private fun MessageBubbleContent(
     isRevealed: Boolean,
     onToggleVisibility: () -> Unit
 ) {
-    Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+    Column(Modifier.padding(horizontal = 10.dp, vertical = BulletinSpacing.s)) {
         Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
         if (message.editedAt != null) Text("Edited", style = MaterialTheme.typography.labelSmall)
         if (message.isReported) {

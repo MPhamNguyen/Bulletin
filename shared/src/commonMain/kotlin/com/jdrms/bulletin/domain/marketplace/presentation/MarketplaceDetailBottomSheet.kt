@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
@@ -100,7 +101,7 @@ fun MarketplaceDetailBottomSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             when {
                 isLoading -> {
@@ -112,7 +113,7 @@ fun MarketplaceDetailBottomSheet(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                         ) {
                             CircularProgressIndicator(
                                 color = MaterialTheme.colorScheme.primary,
@@ -131,12 +132,12 @@ fun MarketplaceDetailBottomSheet(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp),
+                            .padding(vertical = BulletinSpacing.xl),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Warning,
@@ -149,7 +150,7 @@ fun MarketplaceDetailBottomSheet(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(BulletinSpacing.xs))
                             Button(
                                 onClick = onRetry,
                                 colors = BulletinButtonDefaults.buttonColors()
@@ -177,7 +178,7 @@ fun MarketplaceDetailBottomSheet(
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(BulletinSpacing.m))
                         Text(
                             text = listing.price.formatted,
                             style = MaterialTheme.typography.headlineSmall,
@@ -188,7 +189,7 @@ fun MarketplaceDetailBottomSheet(
 
                     // Metadata Badges (Category & Condition)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
@@ -199,7 +200,7 @@ fun MarketplaceDetailBottomSheet(
                             Text(
                                 text = listing.category.name,
                                 style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = BulletinSpacing.xs)
                             )
                         }
                         Surface(
@@ -211,7 +212,7 @@ fun MarketplaceDetailBottomSheet(
                             Text(
                                 text = conditionText,
                                 style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = BulletinSpacing.xs)
                             )
                         }
                     }
@@ -258,7 +259,7 @@ fun MarketplaceDetailBottomSheet(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
 
                     if (listing.isSold && listing.buyerId == state.currentUserId && !state.hasReview) {
                         Button(

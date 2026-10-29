@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 
 internal const val BIO_MAX_LENGTH = 160
@@ -99,7 +100,7 @@ internal fun EditProfileView(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .imePadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .padding(horizontal = 20.dp, vertical = BulletinSpacing.s),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             EditProfileBody(
@@ -154,7 +155,7 @@ private fun EditProfileBody(
         )
     }
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(BulletinSpacing.l))
     ProfileEditCard(
         title = "Campus & Academics",
         trailingContent = if (uiState.profile?.isVerified == true) {
@@ -209,10 +210,10 @@ private fun EditProfileBody(
     }
 
     uiState.errorMessage?.let {
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(BulletinSpacing.m))
         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
     }
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(BulletinSpacing.l))
     Button(
         onClick = actions.onUpdate,
         enabled = uiState.isProfileModified && !uiState.isLoading,
@@ -222,11 +223,11 @@ private fun EditProfileBody(
     ) {
         Text("Save Changes", style = MaterialTheme.typography.labelLarge)
     }
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(BulletinSpacing.l))
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(BulletinSpacing.l))
     SignOutButton(onClick = actions.onSignOut)
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(BulletinSpacing.xl))
 }
 
 @Composable
@@ -250,7 +251,7 @@ private fun ProfileEditCard(
             )
             trailingContent?.invoke()
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(BulletinSpacing.s))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Spacer(Modifier.height(14.dp))
         content()
@@ -266,7 +267,7 @@ private fun VerifiedLabel() {
             modifier = Modifier.size(13.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(BulletinSpacing.xs))
         Text(
             "Verified .edu",
             style = MaterialTheme.typography.labelMedium,
