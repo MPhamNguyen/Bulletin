@@ -46,22 +46,24 @@ fun HomeFeedCard(
     cardIndex: Int = 0,
     isActive: Boolean = true,
     mediaModifier: Modifier = Modifier,
-    informationBottomPadding: Dp = 0.dp
+    informationBottomPadding: Dp = 0.dp,
+    trayProgress: () -> Float = { 0f }
 ) {
     var descriptionExpanded by rememberSaveable(item.id.value, cardIndex) { mutableStateOf(false) }
-    HomePhotoMedia(
-        item,
-        cardIndex,
-        isActive,
-        modifier.fillMaxSize().padding(8.dp)
-            .clip(MaterialTheme.shapes.large).then(mediaModifier)
+    // Keep the frame fixed while the artwork lifts to reveal the tray surface.
+    val shape = MaterialTheme.shapes.large
+    Box(
+        modifier.fillMaxSize().padding(8.dp).homeTrayShadow(shape, trayProgress).clip(shape)
+            .background(homeTraySurface)
     ) {
-        HomeFeedInformation(
-            item = item,
-            expanded = descriptionExpanded,
-            onToggle = { descriptionExpanded = !descriptionExpanded },
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = informationBottomPadding)
-        )
+        HomePhotoMedia(item, cardIndex, isActive, Modifier.fillMaxSize().then(mediaModifier)) {
+            HomeFeedInformation(
+                item = item,
+                expanded = descriptionExpanded,
+                onToggle = { descriptionExpanded = !descriptionExpanded },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = informationBottomPadding)
+            )
+        }
     }
 }
 

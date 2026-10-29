@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -191,9 +190,12 @@ private fun androidx.compose.foundation.layout.BoxScope.HomeStackCardContents(
         isActive = active,
         modifier = Modifier.fillMaxSize(),
         informationBottomPadding = presentation.actionHeight,
-        mediaModifier = Modifier.graphicsLayer {
-            if (front) translationY = -presentation.tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
-        }
+        mediaModifier = if (front) {
+            Modifier.homeTrayLift(homeTraySurface) { presentation.tray.progress.value }
+        } else {
+            Modifier
+        },
+        trayProgress = { if (front) presentation.tray.progress.value else 0f }
     )
     if (front && presentation.tray.visible) {
         HomeTrayPeek(
