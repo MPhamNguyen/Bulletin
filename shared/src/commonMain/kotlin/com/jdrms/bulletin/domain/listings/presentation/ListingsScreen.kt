@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -45,12 +46,14 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
+                BulletinTextField(
                     value = state.newTitle,
                     onValueChange = { viewModel.onTitleChanged(it) },
-                    label = { Text("Item Title") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    options = {
+                        this.label = { Text("Item Title") }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -103,13 +106,15 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
+                BulletinTextField(
                     value = state.newDescription,
                     onValueChange = { viewModel.onDescriptionChanged(it) },
-                    label = { Text("Description & Campus Pick-Up Details") },
-                    minLines = 2,
-                    maxLines = 4,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    options = {
+                        this.label = { Text("Description & Campus Pick-Up Details") }
+                        this.minLines = 2
+                        this.maxLines = 4
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

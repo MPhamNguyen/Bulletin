@@ -21,7 +21,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -75,7 +74,7 @@ fun ReviewSubmissionDialog(
                 shadowElevation = 20.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.dismissKeyboardOnTapOutside().padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ReviewHeader()
@@ -149,15 +148,16 @@ private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
 @Composable
 private fun ReviewCommentField(comment: String, onCommentChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedTextField(
+        BulletinTextField(
             value = comment,
             onValueChange = onCommentChange,
-            label = { Text("Comment (optional)") },
-            placeholder = { Text("Add details if you’d like") },
-            colors = BulletinTextFieldDefaults.colors(),
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3,
-            maxLines = 5
+            options = {
+                this.label = { Text("Comment (optional)") }
+                this.placeholder = { Text("Add details if you’d like") }
+                this.minLines = 3
+                this.maxLines = 5
+            }
         )
         Text(
             "${comment.length}/$MAX_COMMENT_LENGTH",

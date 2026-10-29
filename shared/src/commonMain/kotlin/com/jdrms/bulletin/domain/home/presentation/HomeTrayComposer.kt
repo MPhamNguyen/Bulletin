@@ -16,7 +16,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
 import org.jetbrains.compose.resources.stringResource
 
@@ -49,28 +49,32 @@ private fun RowScope.HomeComposerField(
     onDraftChanged: (String) -> Unit
 ) {
     val valid = SellerMessage.create(state.tray.draft) is Result.Success
-    OutlinedTextField(
+    BulletinTextField(
         value = state.tray.draft,
         onValueChange = onDraftChanged,
-        enabled = active,
         singleLine = true,
-        label = { Text(stringResource(Res.string.home_message_label)) },
-        placeholder = { Text(stringResource(Res.string.home_message_placeholder)) },
-        supportingText = {
-            Text(
-                stringResource(Res.string.home_message_length, state.tray.draft.trim().length, SellerMessage.MAX_LENGTH)
-            )
-        },
-        isError = state.tray.error != null,
-        colors = BulletinTextFieldDefaults.colors(),
-        shape = MaterialTheme.shapes.medium,
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Sentences,
             imeAction = ImeAction.Send
         ),
         keyboardActions = KeyboardActions(onSend = { if (active && valid) submit() }),
         modifier = Modifier.weight(1f).heightIn(min = 48.dp).focusRequester(focus)
-            .homeFocusTarget(HOME_COMPOSER_FOCUS_TAG)
+            .homeFocusTarget(HOME_COMPOSER_FOCUS_TAG),
+        options = {
+            this.enabled = active
+            this.label = { Text(stringResource(Res.string.home_message_label)) }
+            this.placeholder = { Text(stringResource(Res.string.home_message_placeholder)) }
+            this.supportingText = {
+                Text(
+                    stringResource(
+                        Res.string.home_message_length,
+                        state.tray.draft.trim().length,
+                        SellerMessage.MAX_LENGTH
+                    )
+                )
+            }
+            this.isError = state.tray.error != null
+        }
     )
 }
 

@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,7 +27,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
@@ -58,7 +58,7 @@ internal fun MessageReportScreen(
             tonalElevation = 6.dp
         ) {
             Column(
-                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                Modifier.dismissKeyboardOnTapOutside().fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text("Report message", style = MaterialTheme.typography.titleLarge)
@@ -119,15 +119,16 @@ private fun MessageReportForm(
         ReportReason.forType(ReportType.MESSAGE).forEach { reason ->
             MessageReportReasonOption(reason, form.selectedReason, onReasonSelected)
         }
-        OutlinedTextField(
+        BulletinTextField(
             value = form.description,
             onValueChange = onDescriptionChanged,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Additional information (optional)") },
-            supportingText = { Text("${form.description.length}/1000") },
-            minLines = 3,
-            maxLines = 6,
-            colors = BulletinTextFieldDefaults.colors()
+            options = {
+                this.label = { Text("Additional information (optional)") }
+                this.supportingText = { Text("${form.description.length}/1000") }
+                this.minLines = 3
+                this.maxLines = 6
+            }
         )
     }
 }

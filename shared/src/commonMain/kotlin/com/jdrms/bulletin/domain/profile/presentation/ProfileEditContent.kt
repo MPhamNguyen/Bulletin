@@ -1,8 +1,5 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,22 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,14 +33,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 
 internal const val BIO_MAX_LENGTH = 160
 internal const val BIO_WARN_LENGTH = 150
@@ -271,107 +259,6 @@ private fun VerifiedLabel() {
             "Verified .edu",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
-private fun EditProfilePhoto(
-    avatarUrl: String?,
-    fullName: String,
-    isUploading: Boolean,
-    onChangePhoto: () -> Unit
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier.size(104.dp).clickable(
-                enabled = !isUploading,
-                role = Role.Button,
-                onClickLabel = "Change profile photo",
-                onClick = onChangePhoto
-            ),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), MaterialTheme.shapes.extraLarge)
-            ) {
-                ProfileAvatarImage(avatarUrl = avatarUrl, fullName = fullName, size = 96.dp)
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(32.dp)
-                    .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge)
-                    .border(2.dp, MaterialTheme.colorScheme.background, MaterialTheme.shapes.extraLarge),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isUploading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        Icons.Outlined.AddAPhoto,
-                        contentDescription = "Upload photo",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onChangePhoto, enabled = !isUploading) {
-                Text(
-                    if (isUploading) "Uploading…" else "Upload New",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TextButton(onClick = {}, enabled = false) {
-                Text(
-                    "Remove",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-internal fun FieldLabel(text: String) {
-    Text(text, style = MaterialTheme.typography.labelMedium)
-}
-
-@Composable
-private fun ProfileEditField(
-    label: String,
-    value: String,
-    leadingIcon: ImageVector,
-    placeholder: String = "",
-    trailingAction: (@Composable () -> Unit)? = null,
-    onValueChange: (String) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        FieldLabel(label)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(placeholder) },
-            leadingIcon = { Icon(leadingIcon, contentDescription = null) },
-            trailingIcon = trailingAction,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                imeAction = ImeAction.Next
-            ),
-            shape = MaterialTheme.shapes.medium,
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth()
         )
     }
 }

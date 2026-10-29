@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -16,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 
 @Composable
 internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewModel) {
@@ -30,15 +29,16 @@ internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewMode
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
+            BulletinTextField(
                 value = state.messageInput,
                 onValueChange = viewModel::onMessageInputChanged,
-                placeholder = { Text(if (isEditing) "Edit your message..." else "Type a message...") },
-                enabled = !isBusy,
-                maxLines = 4,
-                isError = state.editError != null,
-                colors = BulletinTextFieldDefaults.colors(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                options = {
+                    this.placeholder = { Text(if (isEditing) "Edit your message..." else "Type a message...") }
+                    this.enabled = !isBusy
+                    this.maxLines = 4
+                    this.isError = state.editError != null
+                }
             )
             Spacer(Modifier.width(8.dp))
             Button(

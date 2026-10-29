@@ -26,7 +26,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
@@ -166,37 +166,39 @@ internal fun EmailVerificationContent(
                 textAlign = TextAlign.Center,
                 color = colors.onBackground
             )
-            OutlinedTextField(
+            BulletinTextField(
                 value = code,
                 onValueChange = { input -> code = input.filter(Char::isDigit).take(CODE_LENGTH) },
-                placeholder = {
-                    Text(
-                        "······",
-                        style = codeTextStyle.copy(color = colors.onSurfaceVariant.copy(alpha = 0.6f)),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                textStyle = codeTextStyle,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
-                enabled = !uiState.isLoading,
-                isError = uiState.errorMessage != null,
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = colors.surfaceVariant,
-                    unfocusedContainerColor = colors.surfaceVariant,
-                    disabledContainerColor = colors.surfaceVariant,
-                    errorContainerColor = colors.surfaceVariant,
-                    focusedBorderColor = colors.primary,
-                    unfocusedBorderColor = Color.Transparent,
-                    disabledBorderColor = Color.Transparent,
-                    errorBorderColor = colors.error,
-                    cursorColor = colors.primary
-                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp)
-                    .height(60.dp)
+                    .height(60.dp),
+                options = {
+                    this.placeholder = {
+                        Text(
+                            "······",
+                            style = codeTextStyle.copy(color = colors.onSurfaceVariant.copy(alpha = 0.6f)),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    this.textStyle = codeTextStyle
+                    this.enabled = !uiState.isLoading
+                    this.isError = uiState.errorMessage != null
+                    this.shape = RoundedCornerShape(14.dp)
+                    this.colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = colors.surfaceVariant,
+                        unfocusedContainerColor = colors.surfaceVariant,
+                        disabledContainerColor = colors.surfaceVariant,
+                        errorContainerColor = colors.surfaceVariant,
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        disabledBorderColor = Color.Transparent,
+                        errorBorderColor = colors.error,
+                        cursorColor = colors.primary
+                    )
+                }
             )
 
             Column(

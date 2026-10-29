@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,24 +25,24 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_graduation_cap
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 internal fun SignInEmailField(email: String, onEmailChange: (String) -> Unit, onClearMessages: () -> Unit) {
     SignInFieldLabel(text = "Email")
     Spacer(modifier = Modifier.height(6.dp))
-    OutlinedTextField(
+    BulletinTextField(
         value = email,
         onValueChange = {
             onEmailChange(it)
             onClearMessages()
         },
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("you@university.edu") },
         singleLine = true,
-        shape = MaterialTheme.shapes.medium,
-        colors = BulletinTextFieldDefaults.colors()
+        options = {
+            this.placeholder = { Text("you@university.edu") }
+        }
     )
 
     Spacer(modifier = Modifier.height(18.dp))
@@ -54,25 +53,25 @@ internal fun SignInPasswordField(password: String, onPasswordChange: (String) ->
     var isPasswordVisible by remember { mutableStateOf(false) }
     SignInFieldLabel(text = "Password")
     Spacer(modifier = Modifier.height(6.dp))
-    OutlinedTextField(
+    BulletinTextField(
         value = password,
         onValueChange = {
             onPasswordChange(it)
             onClearMessages()
         },
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Enter your password") },
         singleLine = true,
-        visualTransformation = if (isPasswordVisible) {
-            VisualTransformation.None
-        } else {
-            PasswordVisualTransformation()
-        },
-        trailingIcon = {
-            PasswordVisibilityButton(isPasswordVisible) { isPasswordVisible = !isPasswordVisible }
-        },
-        shape = MaterialTheme.shapes.medium,
-        colors = BulletinTextFieldDefaults.colors()
+        options = {
+            this.placeholder = { Text("Enter your password") }
+            this.visualTransformation = if (isPasswordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            }
+            this.trailingIcon = {
+                PasswordVisibilityButton(isPasswordVisible) { isPasswordVisible = !isPasswordVisible }
+            }
+        }
     )
 }
 
