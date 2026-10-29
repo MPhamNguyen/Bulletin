@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.domain.messages.domain.model.Message
@@ -61,6 +62,15 @@ internal fun MessageItemCard(
     ) {
         if (!presentation.isMine) MessageSenderAvatar(presentation)
         Column(horizontalAlignment = bubbleAlignment(presentation.isMine)) {
+            if (message.editedAt != null) {
+                Text(
+                    "Edited",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 6.dp)
+                )
+            }
             MessageBubble(message, presentation, actions)
             if (presentation.showSeenReceipt) SeenReceipt()
         }
@@ -123,7 +133,6 @@ private fun MessageBubbleContent(
 ) {
     Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
         Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
-        if (message.editedAt != null) Text("Edited", style = MaterialTheme.typography.labelSmall)
         if (message.isReported) {
             Text("Reported for moderation", style = MaterialTheme.typography.labelSmall)
             TextButton(
