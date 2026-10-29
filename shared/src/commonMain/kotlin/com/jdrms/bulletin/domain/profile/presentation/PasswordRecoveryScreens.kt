@@ -34,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import org.jetbrains.compose.resources.painterResource
 
 @Composable

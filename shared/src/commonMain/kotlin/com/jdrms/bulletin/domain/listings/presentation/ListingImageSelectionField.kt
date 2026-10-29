@@ -47,7 +47,7 @@ import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

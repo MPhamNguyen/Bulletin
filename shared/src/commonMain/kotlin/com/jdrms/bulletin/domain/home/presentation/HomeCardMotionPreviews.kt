@@ -14,9 +14,9 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 
 @Composable
 private fun MotionPreview(dark: Boolean, dragDp: Float) {

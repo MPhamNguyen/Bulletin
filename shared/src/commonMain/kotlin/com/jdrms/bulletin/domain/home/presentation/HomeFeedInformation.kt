@@ -40,8 +40,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedCategory
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import kotlin.math.min

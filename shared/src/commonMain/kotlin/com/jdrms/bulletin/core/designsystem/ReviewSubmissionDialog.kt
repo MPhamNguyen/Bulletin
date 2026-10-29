@@ -36,6 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 
 private const val MAX_COMMENT_LENGTH = 500
 

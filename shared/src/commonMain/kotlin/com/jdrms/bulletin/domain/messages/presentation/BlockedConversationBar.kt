@@ -5,8 +5,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun BlockedConversationBar(

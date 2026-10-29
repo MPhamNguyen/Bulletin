@@ -40,8 +40,8 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import kotlinx.coroutines.launch
 
 @Composable

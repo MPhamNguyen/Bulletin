@@ -30,9 +30,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 

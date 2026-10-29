@@ -14,9 +14,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 
 @Composable
 internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewModel) {

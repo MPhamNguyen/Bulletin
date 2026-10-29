@@ -27,7 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.CardAction
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId

@@ -16,7 +16,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
 import org.jetbrains.compose.resources.stringResource
 

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.conversationLocalDayKey
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatConversationDate
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 

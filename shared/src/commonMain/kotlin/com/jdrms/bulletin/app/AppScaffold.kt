@@ -28,7 +28,7 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryNavigation
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel

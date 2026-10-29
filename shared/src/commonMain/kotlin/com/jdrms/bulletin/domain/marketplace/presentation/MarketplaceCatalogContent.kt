@@ -37,9 +37,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable

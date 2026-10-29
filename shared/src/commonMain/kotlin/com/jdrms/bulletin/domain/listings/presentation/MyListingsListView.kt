@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import org.jetbrains.compose.resources.painterResource

@@ -11,7 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 
 @Composable
 internal fun HomeSwipeFeedback(save: () -> Float, pass: () -> Float, modifier: Modifier = Modifier) {
