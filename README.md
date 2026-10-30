@@ -33,8 +33,8 @@ Students can discover listings, buy or sell items, message other students, build
 | --- | --- |
 | 🎓 **Student Verification** | Sign up with a `.edu` email and confirm it before logging in (Supabase Auth). Password recovery is supported. |
 | 🏠 **Home Discovery** | Swipe-style feed of listings. Swipe right to save, left to pass, or up to message the seller; buttons and accessibility actions do the same. |
-| 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details. |
-| ➕ **Listings** | Create, edit, and manage your own listings, upload images, and mark items as sold. |
+| 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details, including item details. Electronics can be filtered by device type, brand, and RAM or storage ranges. |
+| ➕ **Listings** | Create, edit, and manage your own listings, upload images, mark items as sold, and add optional category-specific item details (brand, ISBN, RAM, monthly rent, and so on). |
 | 🔖 **Saved Listings** | Bookmark listings and revisit them from your profile. |
 | 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. |
 | ⭐ **Ratings & Reviews** | Leave and view reviews tied to sold listings. |
@@ -189,7 +189,24 @@ Microsoft sign-in is a build-time feature flag, **on in debug builds and off in 
 
 The schema, functions, RLS policies, storage buckets and Auth settings live in the hosted Supabase project, not in this repository. The linked project's migration history holds six migrations (including `bulletin_baseline` and `microsoft_identity_boundary`), but the migration files are not checked in. `supabase/config.toml` is local development configuration only and does not describe the hosted project. Before connecting a different project, its schema, functions, RLS, storage buckets and policies, and Auth settings must be reconciled with the hosted one.
 
+The checked-in migration, `supabase/migrations/20261029000000_listing_attributes.sql`, adds optional item details. On 2026-10-30, `supabase migration list --linked` confirmed six remote migrations and that this migration is not deployed. The relevant hosted listing columns, constraints, policies, account-policy function and Auth triggers were inspected read-only and reproduced in a disposable PostgreSQL 15 database; the migration and `supabase/tests/listing_attributes.test.sql` pass there. This does not replay the complete hosted schema or test hosted actors. Recover and reconcile the full migration history before deployment, and deploy this migration before releasing a client that writes `attributes`. Run the SQL tests only on a disposable database; they create fixture Auth users and roll back the transaction.
+
 Restoring a reproducible schema (recover history with `supabase migration fetch --linked`, compare against the live schema, replay on a disposable local stack, then version future changes in `supabase/migrations/`) is still open work; see the roadmap.
+
+### Listing attributes
+
+After applying the migration, `listings.attributes` is a non-null JSONB object (default `{}`) holding optional item facts under stable keys, with typed values: `{"brand":"Framework","device_type":"laptop","ram_gb":16,"storage_gb":512}`. The catalog is part of the contract:
+
+| Category | Keys |
+| --- | --- |
+| Electronics | `brand`, `device_type`, `ram_gb`, `storage_gb` (capacities only for laptop, desktop, tablet, phone; storage also for console) |
+| Textbooks | `isbn` (text, checksum-validated), `course_code` (canonical `CECS 328`), `edition` |
+| Furniture | `furniture_type`, `material`, `width_cm` |
+| Clothing | `clothing_type`, `size` (validated text), `brand` |
+| Housing | `monthly_rent_usd` (exact decimal, separate from listing price), `available_date` (ISO date), `housing_type` |
+| Other | none |
+
+The Kotlin catalog (`ListingAttributeCatalog`) and the `private.validate_listing_attributes` trigger enforce the same shapes and bounds; the trigger rejects newly introduced unknown keys and preserves unchanged stored entries. Changing device type rechecks dependent capacities. Unrelated edits preserve values this client cannot interpret. Attributes hold item facts only: never contact details, precise locations, or credentials. Marketplace filters use generated columns (`attr_device_type`, `attr_brand_key`, `attr_ram_gb`, `attr_storage_gb`) backed by partial indexes for Electronics. Attribute text does not feed free-text search, which still matches listing names. To roll back a client release, leave the column and its data in place and disable the new UI or filters.
 
 ### Overview
 
@@ -198,7 +215,7 @@ The inspected project (PostgreSQL 17) has ten public tables, all with RLS enable
 | Table | Purpose |
 | --- | --- |
 | `profiles` | Student profile; ID references `auth.users`, created by an Auth trigger |
-| `listings` | Seller inventory, with sold state and optional buyer |
+| `listings` | Seller inventory, with sold state and optional buyer; the pending attributes migration adds optional typed item facts |
 | `listing_images` | Image metadata and crop settings (up to five per listing) |
 | `listing_bookmarks` | Saved listings |
 | `conversations`, `conversation_participants` | Message threads, membership, read and hidden state |

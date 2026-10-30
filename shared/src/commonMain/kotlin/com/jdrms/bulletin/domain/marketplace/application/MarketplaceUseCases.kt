@@ -101,7 +101,8 @@ internal fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
         condition = condition,
         createdAtMillis = createdAtMillis,
         photos = photos,
-        updatedAtMillis = updatedAtMillis
+        updatedAtMillis = updatedAtMillis,
+        attributes = attributes
     )
 }
 
