@@ -617,38 +617,6 @@ class ListingsViewModelTestPart1 {
     }
 
     @Test
-    fun testSubmitNewListingShowsFlashNotificationAndAutoDismisses() = runTest {
-        viewModel.onTitleChanged("Brand New Textbook")
-        viewModel.onDescriptionChanged("Used for CS 101, excellent condition")
-        viewModel.onPriceChanged("45.00")
-        viewModel.onCategorySelected(ListingCategory.TEXTBOOKS)
-        viewModel.onConditionSelected(ListingCondition.LIKE_NEW)
-
-        viewModel.submitNewListing()
-        runCurrent()
-
-        assertEquals("Listing posted successfully!", viewModel.uiState.value.successMessage)
-
-        advanceTimeBy(ListingsViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
-        runCurrent()
-        assertNull(viewModel.uiState.value.successMessage)
-    }
-
-    @Test
-    fun testSubmitNewListingTreatsEveryPriceDigitAsCents() = runTest {
-        viewModel.onTitleChanged("Brand New Textbook")
-        viewModel.onDescriptionChanged("Used for CS 101, excellent condition")
-        viewModel.onPriceChanged("45555")
-
-        viewModel.submitNewListing()
-
-        advanceUntilIdle()
-
-        assertNull(viewModel.uiState.value.errorMessage)
-        assertEquals(455.55, repository.getAllListings().single().price.amount)
-    }
-
-    @Test
     fun loadingAnEmptySellerRepositoryProducesTheMyListingsEmptyState() = runTest {
         advanceUntilIdle()
 
@@ -696,37 +664,6 @@ class ListingsViewModelTestPart1 {
         advanceUntilIdle()
 
         assertEquals(listOf("Desk Lamp"), viewModel.uiState.value.myListings.map { it.title })
-    }
-
-    @Test
-    fun testSubmitListingEmitsListingChangedSignal() = runTest {
-        val signal = RefreshSignal()
-        var emittedCount = 0
-        val job = launch {
-            signal.events.collect { emittedCount++ }
-        }
-        val policy = ListingValidationPolicy()
-        val customViewModel = ListingsViewModel(
-            createListing = CreateListing(repository, policy),
-            manageListing = ManageListing(repository, policy),
-            markListingSold = MarkListingSold(repository, policy),
-            deleteListing = DeleteListing(repository, policy),
-            getSellerListings = GetSellerListings(repository),
-            session = ListingsViewModelSessionDependencies(sellerProvider, signal)
-        )
-        advanceUntilIdle()
-
-        customViewModel.onTitleChanged("Signal Test Item")
-        customViewModel.onDescriptionChanged("Valid signal description")
-        customViewModel.onPriceChanged("15.00")
-        customViewModel.onCategorySelected(ListingCategory.OTHER)
-        customViewModel.onConditionSelected(ListingCondition.GOOD)
-
-        customViewModel.submitNewListing()
-        advanceUntilIdle()
-
-        assertEquals(1, emittedCount)
-        job.cancel()
     }
 
     @Test

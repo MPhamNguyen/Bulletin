@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingActionCallbacks
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraft
@@ -37,6 +38,7 @@ class ListingAttributeSubmissionTest {
                 newTitle = listing.title,
                 newDescription = listing.description,
                 newPriceCents = "100",
+                newImages = listOf(ListingImageUpload(byteArrayOf(1), "image/jpeg")),
                 newCategory = listing.category,
                 newAttributes = ListingAttributeDraft(inputs = mapOf("brand" to "Framework", "device_type" to "laptop"))
             )

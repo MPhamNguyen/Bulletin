@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -13,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
@@ -22,8 +24,10 @@ internal fun CurrencyTextField(
     digits: String,
     onDigitsChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    required: Boolean = false,
     colors: TextFieldColors = BulletinTextFieldDefaults.colors(),
-    shape: Shape = MaterialTheme.shapes.small
+    shape: Shape = MaterialTheme.shapes.small,
+    textStyle: TextStyle = LocalTextStyle.current
 ) {
     val text = formatCurrencyDigits(digits)
     var fieldValue by remember(text) {
@@ -37,11 +41,14 @@ internal fun CurrencyTextField(
             val nextText = formatCurrencyDigits(nextDigits)
             fieldValue = TextFieldValue(text = nextText, selection = TextRange(nextText.length))
         },
-        label = { Text("Price (USD)") },
+        label = {
+            if (required) ListingRequiredLabel("Price (USD)") else Text("Price (USD)")
+        },
         placeholder = { Text("$0.00") },
         supportingText = { Text("Enter cents from right to left (e.g. 1250 = $12.50)") },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        textStyle = textStyle,
         colors = colors,
         shape = shape,
         modifier = modifier

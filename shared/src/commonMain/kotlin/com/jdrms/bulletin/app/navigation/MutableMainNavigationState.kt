@@ -12,10 +12,24 @@ internal class MutableMainNavigationState {
     var pendingConversationId by mutableStateOf<ConversationId?>(null)
     var pendingSellerProfileId by mutableStateOf<String?>(null)
 
+    /** Where the seller was before opening the full-screen create listing flow, so closing it can return there. */
+    var createListingReturn by mutableStateOf<NavigationSnapshot?>(null)
+
     val showsBottomNavigation: Boolean
         get() = snapshot().showsBottomNavigation
 
     fun snapshot() = NavigationSnapshot(currentDestination, profileDestination)
+
+    fun openCreateListing() {
+        if (currentDestination != AppDestination.LISTINGS) createListingReturn = snapshot()
+        apply(snapshot().selectBottomNavigationDestination(AppDestination.LISTINGS))
+    }
+
+    fun closeCreateListing() {
+        val target = createListingReturn ?: NavigationSnapshot()
+        createListingReturn = null
+        apply(target)
+    }
 
     fun apply(snapshot: NavigationSnapshot) {
         currentDestination = snapshot.currentDestination

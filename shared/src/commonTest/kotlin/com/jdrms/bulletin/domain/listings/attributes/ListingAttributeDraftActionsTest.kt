@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.listings.attributes
 
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributes
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
+import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDisplay
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraft
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraftActions
@@ -23,7 +24,8 @@ class ListingAttributeDraftActionsTest {
             newCategory = ListingCategory.ELECTRONICS,
             newTitle = "Laptop",
             newDescription = "Nice",
-            newPriceCents = "10000"
+            newPriceCents = "10000",
+            newImages = listOf(ListingImageUpload(byteArrayOf(1), "image/jpeg"))
         )
     )
     private val actions = ListingAttributeDraftActions(state)

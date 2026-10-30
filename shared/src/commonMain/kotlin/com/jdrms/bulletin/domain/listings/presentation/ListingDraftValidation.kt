@@ -1,6 +1,9 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
+import com.jdrms.bulletin.domain.listings.domain.service.ListingPhotoPolicy
+
+internal const val MIN_LISTING_TITLE_LENGTH = 3
 
 internal const val ATTRIBUTE_ERRORS_MESSAGE = "Fix the highlighted item details."
 
@@ -19,8 +22,9 @@ internal fun validateNewListingDraft(
     val description = state.newDescription.trim()
     val baseError = when {
         state.newPriceCents.isEmpty() -> "Please enter a price"
-        title.length < 3 -> "Title must be at least 3 characters"
+        title.length < MIN_LISTING_TITLE_LENGTH -> "Title must be at least $MIN_LISTING_TITLE_LENGTH characters"
         description.isBlank() -> "Description cannot be empty"
+        !ListingPhotoPolicy.hasRequiredPhoto(state.newImages.size) -> ListingPhotoPolicy.REQUIRED_PHOTO_MESSAGE
         else -> null
     }
     val parsed = attributes.attributes

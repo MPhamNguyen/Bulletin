@@ -34,7 +34,7 @@ Students can discover listings, buy or sell items, message other students, build
 | 🎓 **Student Verification** | Sign up with a `.edu` email and confirm it before logging in (Supabase Auth). Password recovery is supported. |
 | 🏠 **Home Discovery** | Swipe-style feed of listings. Swipe right to save, left to pass, or up to message the seller; buttons and accessibility actions do the same. |
 | 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details, including item details. Electronics can be filtered by device type, brand, and RAM or storage ranges. |
-| ➕ **Listings** | Create, edit, and manage your own listings, upload images, mark items as sold, and add optional category-specific item details (brand, ISBN, RAM, monthly rent, and so on). |
+| ➕ **Listings** | Create new listings with at least one selected photo, edit and manage your own listings, upload images, mark items as sold, and add optional category-specific item details (brand, ISBN, RAM, monthly rent, and so on). |
 | 🔖 **Saved Listings** | Bookmark listings and revisit them from your profile. |
 | 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. |
 | ⭐ **Ratings & Reviews** | Leave and view reviews tied to sold listings. |
