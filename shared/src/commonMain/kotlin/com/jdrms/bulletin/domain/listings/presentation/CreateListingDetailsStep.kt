@@ -24,9 +24,9 @@ internal fun CreateListingDetailsStep(
     actions: CreateListingDetailsActions
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        StepIntro("Tell buyers more", "Quick details for ${state.newCategory.displayLabel().lowercase()}.")
+        SectionTitle(CreateListingStep.DETAILS.title)
         if (state.newCategory != ListingCategory.HOUSING) {
-            ListingRequiredLabel("Condition", style = MaterialTheme.typography.titleSmall)
+            FieldLabel("Condition")
             ConditionChips(state.newCondition, actions.onConditionSelected)
         }
         ListingAttributeFields(

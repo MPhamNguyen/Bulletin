@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.cropSettings
-import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
 @Composable
@@ -36,20 +35,14 @@ internal fun ListingImageSelectionField(
     onPick: () -> Unit,
     onRemove: (Int) -> Unit,
     onCropChange: (Int, ImageCropSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    label: String = "Photos",
+    hint: String = "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} photos, 5 MB each. The first is the cover."
 ) {
     var editingIndex by remember { mutableStateOf<Int?>(null) }
-    BulletinCard(modifier = modifier.fillMaxWidth()) {
-        Column {
-            Text("Listing photos", style = MaterialTheme.typography.titleSmall)
-            Text(
-                "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} images, 5 MB each. " +
-                    "Adjust each photo to fit the square.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(Modifier.height(10.dp))
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (label.isNotBlank()) FieldLabel(label)
+        Spacer(Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             itemsIndexed(photos) { index, photo ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -79,6 +72,12 @@ internal fun ListingImageSelectionField(
                 item { ListingPhotoAddTile(onClick = onPick) }
             }
         }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = hint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
     editingIndex?.let { index ->
         photos.getOrNull(index)?.let { photo ->

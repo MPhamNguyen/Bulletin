@@ -25,10 +25,7 @@ internal fun CreateListingPriceStep(
 ) {
     val isHousing = state.newCategory == ListingCategory.HOUSING
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        StepIntro(
-            title = if (isHousing) "Set the rent" else "Set your price",
-            subtitle = "Type it the way you'd say it, like 1250 for $12.50."
-        )
+        SectionTitle(if (isHousing) "Rent & description" else CreateListingStep.PRICE.title)
         CurrencyTextField(
             digits = state.newPriceCents,
             onDigitsChange = actions.onPriceChange,

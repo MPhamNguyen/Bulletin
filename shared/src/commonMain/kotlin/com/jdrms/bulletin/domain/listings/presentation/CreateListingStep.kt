@@ -2,9 +2,9 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import com.jdrms.bulletin.domain.listings.domain.service.ListingPhotoPolicy
 
-internal enum class CreateListingStep(val label: String) {
-    PHOTOS("Photos & basics"),
-    DETAILS("Details"),
+internal enum class CreateListingStep(val title: String) {
+    PHOTOS("Listing basics"),
+    DETAILS("Item details"),
     PRICE("Price & description");
 
     val isFirst: Boolean get() = ordinal == 0

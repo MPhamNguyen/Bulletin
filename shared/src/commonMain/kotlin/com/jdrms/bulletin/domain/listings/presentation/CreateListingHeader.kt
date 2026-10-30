@@ -45,27 +45,29 @@ internal fun CreateListingHeader(step: CreateListingStep, onClose: () -> Unit, m
                 )
             }
         }
-        Text(
-            text = "Step ${step.ordinal + 1} of ${CreateListingStep.entries.size} · ${step.label}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 12.dp)
-        )
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp, end = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.fillMaxWidth().padding(end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            CreateListingStep.entries.forEach { entry ->
-                val color = if (entry.ordinal <= step.ordinal) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.outlineVariant
+            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                CreateListingStep.entries.forEach { entry ->
+                    val color = if (entry.ordinal <= step.ordinal) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    }
+                    Row(
+                        modifier = Modifier.weight(1f).height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)).background(color)
+                    ) {}
                 }
-                Row(
-                    modifier = Modifier.weight(1f).height(4.dp)
-                        .clip(RoundedCornerShape(2.dp)).background(color)
-                ) {}
             }
+            Text(
+                text = "${step.ordinal + 1} of ${CreateListingStep.entries.size}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

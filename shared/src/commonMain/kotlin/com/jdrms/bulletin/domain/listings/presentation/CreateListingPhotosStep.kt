@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
+import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
 internal data class CreateListingPhotosActions(
     val onPickPhotos: () -> Unit,
@@ -37,7 +38,7 @@ internal fun CreateListingPhotosStep(
     actions: CreateListingPhotosActions
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        StepIntro("What are you selling?", "Add at least one photo. The first one becomes the cover.")
+        SectionTitle(CreateListingStep.PHOTOS.title)
         Text(
             text = "Fields marked * are required.",
             style = MaterialTheme.typography.bodySmall,
@@ -48,7 +49,10 @@ internal fun CreateListingPhotosStep(
             photos = state.newImages.map { ListingPhotoDraft.Pending(it) },
             onPick = actions.onPickPhotos,
             onRemove = actions.onRemovePhoto,
-            onCropChange = actions.onCropPhoto
+            onCropChange = actions.onCropPhoto,
+            label = "",
+            hint = "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} " +
+                "photos, 5 MB each. Adjust each photo to fit the square. The first is the cover."
         )
         OutlinedTextField(
             value = state.newTitle,
