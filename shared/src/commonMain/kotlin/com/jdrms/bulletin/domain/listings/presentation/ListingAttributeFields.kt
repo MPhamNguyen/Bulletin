@@ -74,9 +74,8 @@ private fun ListingTextAttributeField(
     val helper = error ?: helperTextFor(definition)
     OutlinedTextField(
         value = value,
-        onValueChange = { onInputChange(definition.key, it) },
+        onValueChange = { onInputChange(definition.key, definition.filterInput(it)) },
         label = { Text(ListingAttributeDisplay.fieldLabel(definition)) },
-        placeholder = { Text(placeholderFor(definition)) },
         supportingText = if (helper != null) {
             { Text(helper) }
         } else {
@@ -136,8 +135,6 @@ private fun keyboardTypeFor(definition: ListingAttributeDefinition): KeyboardTyp
     is ListingAttributeType.Decimal -> KeyboardType.Decimal
     else -> KeyboardType.Text
 }
-
-private fun placeholderFor(definition: ListingAttributeDefinition): String = ""
 
 private fun helperTextFor(definition: ListingAttributeDefinition): String? {
     val unit = (definition.type as? ListingAttributeType.Decimal)?.unit
