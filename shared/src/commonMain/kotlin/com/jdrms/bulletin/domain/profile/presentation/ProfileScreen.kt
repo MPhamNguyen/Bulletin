@@ -70,7 +70,8 @@ fun ProfileScreen(
     flows: ProfileScreenFlows,
     destination: ProfileDestination,
     callbacks: ProfileScreenCallbacks,
-    themeViewModel: ThemeViewModel? = null
+    themeViewModel: ThemeViewModel? = null,
+    reportedListingVisibilitySetting: ReportedListingVisibilitySetting? = null
 ) {
     val profileState by viewModel.uiState.collectAsState()
     val editState by flows.editing.uiState.collectAsState()
@@ -131,6 +132,7 @@ fun ProfileScreen(
             flows,
             callbacks,
             themeViewModel,
+            reportedListingVisibilitySetting,
             reviewFlow
         )
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
@@ -144,6 +146,7 @@ private fun ProfileDestinationContent(
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
     themeViewModel: ThemeViewModel?,
+    reportedListingVisibilitySetting: ReportedListingVisibilitySetting?,
     reviewFlow: BookmarkedListingReviewFlow
 ) {
     when (destination) {
@@ -151,7 +154,13 @@ private fun ProfileDestinationContent(
             states.viewModel.refreshProfile()
         }
         ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
-        ProfileDestination.SETTINGS -> ProfileSettingsDestination(states.profile, flows, callbacks, themeViewModel)
+        ProfileDestination.SETTINGS -> ProfileSettingsDestination(
+            states.profile,
+            flows,
+            callbacks,
+            themeViewModel,
+            reportedListingVisibilitySetting
+        )
         ProfileDestination.BOOKMARKED_LISTINGS -> {
             BookmarkedListingsView(
                 state = BookmarkedListingsViewState(
@@ -259,7 +268,8 @@ private fun ProfileSettingsDestination(
     state: ProfileUiState,
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
-    themeViewModel: ThemeViewModel?
+    themeViewModel: ThemeViewModel?,
+    reportedListingVisibilitySetting: ReportedListingVisibilitySetting?
 ) {
     SettingsView(
         uiState = state,
@@ -273,6 +283,7 @@ private fun ProfileSettingsDestination(
             onConfirmDeleteProfile = { flows.account.deleteProfile(callbacks.onSignOut) }
         ),
         themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
-        onThemePreferenceChanged = themeViewModel?.let { it::setThemePreference }
+        onThemePreferenceChanged = themeViewModel?.let { it::setThemePreference },
+        reportedListingVisibilitySetting = reportedListingVisibilitySetting
     )
 }
