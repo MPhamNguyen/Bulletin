@@ -52,6 +52,8 @@ internal fun ListingAttributeFields(
             val error = draft.errors[definition.key]
             when (definition.type) {
                 is ListingAttributeType.Choice -> ListingChoiceAttributeField(definition, value, error, onInputChange)
+                is ListingAttributeType.Date ->
+                    ListingDateAttributeField(category, definition, value, error, onInputChange)
                 else -> ListingTextAttributeField(category, definition, value, error, onInputChange)
             }
         }
@@ -135,10 +137,7 @@ private fun keyboardTypeFor(definition: ListingAttributeDefinition): KeyboardTyp
     else -> KeyboardType.Text
 }
 
-private fun placeholderFor(definition: ListingAttributeDefinition): String = when (definition.type) {
-    is ListingAttributeType.Date -> "YYYY-MM-DD"
-    else -> ""
-}
+private fun placeholderFor(definition: ListingAttributeDefinition): String = ""
 
 private fun helperTextFor(definition: ListingAttributeDefinition): String? {
     val unit = (definition.type as? ListingAttributeType.Decimal)?.unit

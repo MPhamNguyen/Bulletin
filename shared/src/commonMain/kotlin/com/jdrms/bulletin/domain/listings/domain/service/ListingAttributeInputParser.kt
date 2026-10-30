@@ -74,7 +74,14 @@ class ListingAttributeInputParser(
                 ?: Parsed.Failure("${definition.label} must be a number with at most ${type.scale} decimal places.")
             is ListingAttributeType.Date -> ListingAttributeDate.parse(raw)
                 ?.let { Parsed.Value(ListingAttributeValue.Date(it)) }
-                ?: Parsed.Failure("Use the date format YYYY-MM-DD.")
+                ?: Parsed.Failure(dateMessage(raw))
+        }
+
+    private fun dateMessage(raw: String): String =
+        if (ISO_SHAPE.matches(raw.trim())) {
+            "That date doesn't exist. Check the month and day."
+        } else {
+            "Use the date format YYYY-MM-DD."
         }
 
     private fun parseInteger(definition: ListingAttributeDefinition, raw: String): Parsed =
@@ -102,6 +109,7 @@ class ListingAttributeInputParser(
         /** Key under which attribute-set-wide problems (count, size) are reported. */
         const val GENERAL_ERROR_KEY = "_attributes"
         private val WHOLE_NUMBER = Regex("^\\d{1,9}$")
+        private val ISO_SHAPE = Regex("^\\d{4}-\\d{2}-\\d{2}$")
     }
 }
 
