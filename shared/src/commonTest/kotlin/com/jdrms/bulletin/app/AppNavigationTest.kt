@@ -141,10 +141,15 @@ class AppNavigationTest {
     @Test
     fun bottomNavigationAppearsOnOtherMainDestinations() {
         AppDestination.entries
-            .filterNot { it == AppDestination.PROFILE }
+            .filterNot { it == AppDestination.PROFILE || it == AppDestination.LISTINGS }
             .forEach { destination ->
                 assertTrue(NavigationSnapshot(destination).showsBottomNavigation)
             }
+    }
+
+    @Test
+    fun bottomNavigationIsHiddenOnCreateListing() {
+        assertFalse(NavigationSnapshot(AppDestination.LISTINGS).showsBottomNavigation)
     }
 
     @Test

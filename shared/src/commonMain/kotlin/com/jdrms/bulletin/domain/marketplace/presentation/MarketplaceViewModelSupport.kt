@@ -38,6 +38,7 @@ internal class MarketplaceFirstPageLoader(
                     query = filters.query,
                     category = filters.category,
                     condition = filters.condition,
+                    attributeFilters = filters.attributes,
                     viewerId = resolvedUserId
                 )
             )

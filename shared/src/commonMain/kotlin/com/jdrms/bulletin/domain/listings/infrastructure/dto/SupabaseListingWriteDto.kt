@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.listings.infrastructure.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 @Serializable
 data class SupabaseListingWriteDto(
@@ -13,5 +14,7 @@ data class SupabaseListingWriteDto(
     @SerialName("price") val price: Double,
     @SerialName("description") val description: String,
     @SerialName("is_sold") val isSold: Boolean,
-    @SerialName("buyer_id") val buyerId: String? = null
+    @SerialName("buyer_id") val buyerId: String? = null,
+    /** Deliberately has no default: it must always be encoded so clearing every attribute persists as `{}`. */
+    @SerialName("attributes") val attributes: JsonObject
 )

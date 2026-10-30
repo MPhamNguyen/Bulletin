@@ -1,9 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,13 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,38 +27,17 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.ItemDetailRow
+import com.jdrms.bulletin.core.designsystem.ItemDetailsSection
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
-
-internal data class BookmarkedListingReviewActions(
-    val isAvailable: Boolean = false,
-    val onOpen: () -> Unit = {},
-    val isOpen: Boolean = false,
-    val isSubmitting: Boolean = false,
-    val errorMessage: String? = null,
-    val onDismiss: () -> Unit = {},
-    val onSubmit: (score: Int, comment: String) -> Unit = { _, _ -> }
-)
-
-internal data class BookmarkedListingDetailActions(
-    val onDismiss: () -> Unit,
-    val onRemoveBookmark: () -> Unit,
-    val canMessageSeller: Boolean,
-    val onMessageSeller: suspend (String) -> Boolean,
-    val hasExistingConversation: suspend () -> Boolean,
-    val onMessageSent: () -> Unit,
-    val review: BookmarkedListingReviewActions = BookmarkedListingReviewActions(),
-    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,6 +88,7 @@ internal fun BookmarkedListingDetailSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            ItemDetailsSection(listing.attributes.map { ItemDetailRow(it.label, it.value) })
             if (actions.canMessageSeller) {
                 MessageSellerQuickAction(
                     actions = MessageSellerQuickActionActions(
@@ -232,70 +206,5 @@ private fun ListingBadge(text: String, isPrimary: Boolean) {
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
-    }
-}
-
-@Composable
-private fun BookmarkedListingSeller(sellerName: String, reputationScore: Double?) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Outlined.Person, "Seller Avatar", modifier = Modifier.size(24.dp))
-                }
-                Column {
-                    Text(sellerName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "Verified CSULB Student",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    Icons.Filled.Star,
-                    "Reputation Score",
-                    tint = BulletinExtras.colors.star,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    formatBookmarkedListingReputation(reputationScore),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-internal fun formatBookmarkedListingReputation(reputationScore: Double?): String {
-    return if (reputationScore != null) {
-        "${(reputationScore * 10).toInt() / 10.0} / 5.0"
-    } else {
-        "5.0 (New)"
     }
 }

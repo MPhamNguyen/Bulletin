@@ -7,12 +7,14 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCu
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceAttributeFormatter
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingFilterOptions
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingRemover
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsPage
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingsProvider
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarksPageCursor
+import com.jdrms.bulletin.domain.profile.application.ProfileListingAttribute
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 class MarketplaceProfileBookmarkedListingsProvider(
@@ -75,7 +77,9 @@ class MarketplaceProfileBookmarkedListingsProvider(
         sellerReputationScore = sellerReputationScore,
         buyerId = buyerId,
         isSold = isSold,
-        createdAtMillis = createdAtMillis
+        createdAtMillis = createdAtMillis,
+        attributes = MarketplaceAttributeFormatter.linesFor(category, attributes)
+            .map { ProfileListingAttribute(it.label, it.value) }
     )
 
     private fun com.jdrms.bulletin.domain.listings.domain.model.Listing.toProfileBookmark(
@@ -92,6 +96,10 @@ class MarketplaceProfileBookmarkedListingsProvider(
         photos = images,
         buyerId = buyerId,
         isSold = status == com.jdrms.bulletin.domain.listings.domain.model.ListingStatus.SOLD,
-        createdAtMillis = createdAtMillis
+        createdAtMillis = createdAtMillis,
+        attributes = MarketplaceAttributeFormatter.linesFor(
+            MarketplaceCategory.valueOf(category.name),
+            attributes.toMarketplaceAttributes()
+        ).map { ProfileListingAttribute(it.label, it.value) }
     )
 }
