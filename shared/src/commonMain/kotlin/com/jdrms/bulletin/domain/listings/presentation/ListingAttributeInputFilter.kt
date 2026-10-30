@@ -4,7 +4,6 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinitio
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
 import com.jdrms.bulletin.domain.listings.domain.model.ListingTextFormat
 
-private const val ISBN_X = 'X'
 private const val CLOTHING_SIZE_PUNCTUATION = " ./-"
 private const val COURSE_CODE_SEPARATORS = " -"
 
@@ -43,31 +42,10 @@ private fun filterDecimal(raw: String, maxWholeDigits: Int, scale: Int): String 
 }
 
 private fun filterText(format: ListingTextFormat, raw: String, maxLength: Int): String = when (format) {
-    ListingTextFormat.ISBN -> filterIsbn(raw, maxLength)
+    ListingTextFormat.ISBN -> formatIsbnInput(raw)
     ListingTextFormat.COURSE_CODE ->
         raw.filter { it.isAsciiLetter() || it.isAsciiDigit() || it in COURSE_CODE_SEPARATORS }.take(maxLength)
     ListingTextFormat.CLOTHING_SIZE -> raw.uppercase()
         .filter { it.isAsciiLetter() || it.isAsciiDigit() || it in CLOTHING_SIZE_PUNCTUATION }.take(maxLength)
     ListingTextFormat.BRAND -> raw.filterNot(Char::isISOControl).take(maxLength)
-}
-
-/** Digits, hyphens and spaces; `X` is kept only as the final ISBN-10 check digit. */
-private fun filterIsbn(raw: String, maxCompactLength: Int): String {
-    val allowed = raw.uppercase().filter { it.isAsciiDigit() || it == ISBN_X || it == '-' || it == ' ' }
-    val lastSignificant = allowed.indexOfLast { it != '-' && it != ' ' }
-    val out = StringBuilder()
-    var compact = 0
-    allowed.forEachIndexed { index, char ->
-        val isSeparator = char == '-' || char == ' '
-        val keep = when {
-            isSeparator -> true
-            char == ISBN_X -> index == lastSignificant && compact < maxCompactLength
-            else -> compact < maxCompactLength
-        }
-        if (keep) {
-            out.append(char)
-            if (!isSeparator) compact++
-        }
-    }
-    return out.toString()
 }

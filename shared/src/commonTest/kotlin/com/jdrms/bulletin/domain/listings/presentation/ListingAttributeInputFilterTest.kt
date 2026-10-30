@@ -43,8 +43,8 @@ class ListingAttributeInputFilterTest {
 
     @Test
     fun isbnAllowsDigitsSeparatorsAndATrailingCheckX() {
-        assertEquals("978-0-13-468599-1", isbn("978-0-13-468599-1"))
-        assertEquals("080442957X", isbn("080442957x"))
+        assertEquals("9780134685991", isbn("978-0-13-468599-1"))
+        assertEquals("080442957X", isbn("080-442-957-x"))
         assertEquals("08044295", isbn("0804X4295"))
         assertEquals("9780134685991", isbn("97801346859912345"))
         assertEquals("123", isbn("1a2b3"))

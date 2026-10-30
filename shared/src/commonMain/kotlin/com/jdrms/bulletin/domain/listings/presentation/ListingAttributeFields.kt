@@ -25,6 +25,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinitio
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeUnit
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
+import com.jdrms.bulletin.domain.listings.domain.model.ListingTextFormat
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
 
 /**
@@ -54,6 +55,11 @@ internal fun ListingAttributeFields(
                 is ListingAttributeType.Choice -> ListingChoiceAttributeField(definition, value, error, onInputChange)
                 is ListingAttributeType.Date ->
                     ListingDateAttributeField(category, definition, value, error, onInputChange)
+                is ListingAttributeType.Text -> if (definition.type.format == ListingTextFormat.ISBN) {
+                    ListingIsbnAttributeField(definition, value, error, onInputChange)
+                } else {
+                    ListingTextAttributeField(category, definition, value, error, onInputChange)
+                }
                 else -> ListingTextAttributeField(category, definition, value, error, onInputChange)
             }
         }
