@@ -35,10 +35,13 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
     LaunchedEffect(state.newAttributes.errors) {
         if (state.newAttributes.errors.isNotEmpty()) stepIndex = CreateListingStep.DETAILS.ordinal
     }
-    // The view model clears the title only after a successful post; start the next listing at step one.
+    // The view model clears the title only after a successful post; close the flow as the X button does.
     val wasSubmitting = remember { booleanArrayOf(false) }
     LaunchedEffect(state.isSubmitting) {
-        if (wasSubmitting[0] && !state.isSubmitting && state.newTitle.isEmpty()) stepIndex = 0
+        if (wasSubmitting[0] && !state.isSubmitting && state.newTitle.isEmpty()) {
+            stepIndex = 0
+            onClose()
+        }
         wasSubmitting[0] = state.isSubmitting
     }
 
