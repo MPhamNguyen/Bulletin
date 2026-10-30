@@ -34,4 +34,7 @@ internal actual fun rememberListingDatePicker(
 }
 
 private fun dayInMillis(year: Int, month: Int, day: Int): Long =
-    Calendar.getInstance().apply { clear(); set(year, month, day) }.timeInMillis
+    Calendar.getInstance().apply {
+        clear()
+        set(year, month, day)
+    }.timeInMillis

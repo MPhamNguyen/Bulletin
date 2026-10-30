@@ -33,9 +33,18 @@ private fun filterDecimal(raw: String, maxWholeDigits: Int, scale: Int): String 
     var fractionDigits = 0
     for (char in raw) {
         when {
-            char.isAsciiDigit() && !pointSeen && wholeDigits < maxWholeDigits -> { out.append(char); wholeDigits++ }
-            char.isAsciiDigit() && pointSeen && fractionDigits < scale -> { out.append(char); fractionDigits++ }
-            char == separator && !pointSeen && scale > 0 -> { out.append('.'); pointSeen = true }
+            char.isAsciiDigit() && !pointSeen && wholeDigits < maxWholeDigits -> {
+                out.append(char)
+                wholeDigits++
+            }
+            char.isAsciiDigit() && pointSeen && fractionDigits < scale -> {
+                out.append(char)
+                fractionDigits++
+            }
+            char == separator && !pointSeen && scale > 0 -> {
+                out.append('.')
+                pointSeen = true
+            }
         }
     }
     return out.toString()

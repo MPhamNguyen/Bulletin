@@ -45,7 +45,6 @@ internal fun CurrencyTextField(
             if (required) ListingRequiredLabel("Price (USD)") else Text("Price (USD)")
         },
         placeholder = { Text("$0.00") },
-        supportingText = { Text("Enter cents from right to left (e.g. 1250 = $12.50)") },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         textStyle = textStyle,

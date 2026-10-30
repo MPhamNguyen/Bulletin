@@ -60,6 +60,11 @@ internal fun ListingAttributeFields(
                 } else {
                     ListingTextAttributeField(category, definition, value, error, onInputChange)
                 }
+                is ListingAttributeType.Decimal -> if (definition.type.unit == ListingAttributeUnit.USD_PER_MONTH) {
+                    ListingRentAttributeField(definition, value, error, onInputChange)
+                } else {
+                    ListingTextAttributeField(category, definition, value, error, onInputChange)
+                }
                 else -> ListingTextAttributeField(category, definition, value, error, onInputChange)
             }
         }
