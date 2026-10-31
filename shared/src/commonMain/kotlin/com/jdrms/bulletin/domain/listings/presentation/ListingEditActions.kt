@@ -169,17 +169,18 @@ internal class ListingEditActions(
         if (draft.currentListing.images.isEmpty() && uploads.isEmpty()) return true
         val result = manageImages?.synchronize(listing.id, seller.id, retained, uploads)
             ?: Result.Error(IllegalStateException("Listing image updates are not configured."))
-        return when (result) {
-            is Result.Success -> {
-                manageListing.updateListing(listing.copy(images = result.data), seller.id)
-                true
-            }
+        val updateResult = when (result) {
+            is Result.Success -> manageListing.updateListing(listing.copy(images = result.data), seller.id)
+            is Result.Error -> result
+        }
+        return when (updateResult) {
+            is Result.Success -> true
             is Result.Error -> {
                 state.update {
                     it.copy(
                         isUpdating = false,
                         errorMessage = "Listing details were saved, but image changes failed: " +
-                            result.exception.message
+                            updateResult.exception.message
                     )
                 }
                 false
