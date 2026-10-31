@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
@@ -62,7 +63,7 @@ internal fun CreateListingPhotosStep(
             singleLine = true,
             colors = BulletinTextFieldDefaults.colors(),
             shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
         )
         ListingRequiredLabel("Category", style = MaterialTheme.typography.titleSmall)
         CategoryGrid(selected = state.newCategory, onSelected = actions.onCategorySelected)
@@ -73,7 +74,10 @@ internal fun CreateListingPhotosStep(
 private fun CategoryGrid(selected: ListingCategory, onSelected: (ListingCategory) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ListingCategory.entries.chunked(CATEGORY_COLUMNS).forEach { rowItems ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 rowItems.forEach { category ->
                     CategoryTile(category, category == selected, onSelected, Modifier.weight(1f))
                 }

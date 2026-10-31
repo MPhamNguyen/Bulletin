@@ -24,6 +24,7 @@ import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 
@@ -78,7 +79,7 @@ fun EditListingView(
                     singleLine = true,
                     colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -86,7 +87,6 @@ fun EditListingView(
                 CurrencyTextField(
                     digits = uiState.editPriceCents,
                     onDigitsChange = actions.onPriceChange,
-                    colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -122,7 +122,7 @@ fun EditListingView(
                     maxLines = 6,
                     colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
             }
 

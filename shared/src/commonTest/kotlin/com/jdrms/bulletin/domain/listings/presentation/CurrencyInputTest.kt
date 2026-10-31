@@ -2,6 +2,13 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import com.jdrms.bulletin.core.designsystem.MAX_CURRENCY_DIGITS
+import com.jdrms.bulletin.core.designsystem.amountToCurrencyDigits
+import com.jdrms.bulletin.core.designsystem.currencyDigitsToAmount
+import com.jdrms.bulletin.core.designsystem.formatCurrencyDigits
+import com.jdrms.bulletin.core.designsystem.normalizeCurrencyDigits
+import com.jdrms.bulletin.core.designsystem.normalizeCurrencyTextChange
+import com.jdrms.bulletin.core.designsystem.normalizeCurrencyTextInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

@@ -1,7 +1,10 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -10,6 +13,7 @@ import com.jdrms.bulletin.app.di.createPasswordRecoveryViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
@@ -41,7 +45,9 @@ fun App(appContainer: AppContainer? = null) {
         }
     }
     BulletinTheme(darkTheme = isDarkTheme) {
-        AppRoot(container, themeViewModel, isDarkTheme, recovery)
+        Box(Modifier.fillMaxSize().dismissKeyboardOnTapOutside()) {
+            AppRoot(container, themeViewModel, isDarkTheme, recovery)
+        }
     }
 }
 

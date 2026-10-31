@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import com.jdrms.bulletin.core.designsystem.formatCurrencyDigits
+import com.jdrms.bulletin.core.designsystem.normalizeCurrencyTextInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

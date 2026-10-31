@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 
@@ -79,7 +80,7 @@ private fun MarketplaceSearchBar(
             leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
+            modifier = Modifier.showKeyboardOnFocusOrTap()
                 .weight(1f)
                 .onGloballyPositioned(onSearchPositioned)
                 .semantics { contentDescription = "Search marketplace listings" }

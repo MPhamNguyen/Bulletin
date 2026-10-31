@@ -75,7 +75,7 @@ fun ReviewSubmissionDialog(
                 shadowElevation = 20.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.dismissKeyboardOnTapOutside().padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ReviewHeader()
@@ -155,7 +155,7 @@ private fun ReviewCommentField(comment: String, onCommentChange: (String) -> Uni
             label = { Text("Comment (optional)") },
             placeholder = { Text("Add details if you’d like") },
             colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
             minLines = 3,
             maxLines = 5
         )

@@ -25,13 +25,12 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
+import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +61,7 @@ fun MarketplaceDetailBottomSheet(
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         Column(
-            modifier = Modifier
+            modifier = Modifier.dismissKeyboardOnTapOutside()
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
@@ -152,28 +151,7 @@ fun MarketplaceDetailBottomSheet(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                     // Description Section
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "About this item",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = listing.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = formatMarketplaceListingTime(
-                                createdAtMillis = listing.createdAtMillis,
-                                updatedAtMillis = listing.updatedAtMillis,
-                                nowMillis = currentTimeMillis()
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    MarketplaceListingDescription(listing)
 
                     MarketplaceItemDetails(listing)
 

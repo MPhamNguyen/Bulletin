@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import com.jdrms.bulletin.core.designsystem.normalizeCurrencyDigits
 import com.jdrms.bulletin.domain.listings.domain.model.ListingDecimal
 
 internal fun rentAmountToDigits(amount: String): String =

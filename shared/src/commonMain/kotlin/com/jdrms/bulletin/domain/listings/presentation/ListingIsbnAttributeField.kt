@@ -16,6 +16,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
 
 private const val ISBN_FORMAT_HINT = "ISBN-10: 10 digits or 9 digits + X · ISBN-13: 978/979 + 10 digits"
@@ -48,6 +49,6 @@ internal fun ListingIsbnAttributeField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
         colors = BulletinTextFieldDefaults.colors(),
         shape = MaterialTheme.shapes.small,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
     )
 }

@@ -37,6 +37,7 @@ import com.jdrms.bulletin.core.designsystem.ItemDetailsSection
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
+import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +56,7 @@ internal fun BookmarkedListingDetailSheet(
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         Column(
-            modifier = Modifier
+            modifier = Modifier.dismissKeyboardOnTapOutside()
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)

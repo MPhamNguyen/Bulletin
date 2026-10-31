@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeUnit
@@ -97,7 +98,7 @@ private fun ListingTextAttributeField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardTypeFor(definition)),
         colors = BulletinTextFieldDefaults.colors(),
         shape = MaterialTheme.shapes.small,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
     )
     val suggestions = ListingAttributeSuggestions.suggestionsFor(category, definition.key, value)
     if (suggestions.isNotEmpty()) {

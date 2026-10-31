@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 
 internal data class CreateListingPriceActions(
@@ -43,7 +44,7 @@ internal fun CreateListingPriceStep(
             maxLines = 6,
             colors = BulletinTextFieldDefaults.colors(),
             shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
         )
         state.errorMessage?.let {
             Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
