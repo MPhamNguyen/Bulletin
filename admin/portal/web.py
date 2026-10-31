@@ -22,6 +22,9 @@ from .moderation import (
     admin_profile, identifier, report_by_id, reports_page, snapshot, update_status,
     target_context,
 )
+from .moderation_history import (
+    add_report_event, normalize_comment, record_action_event, report_events,
+)
 
 routes = Blueprint("portal", __name__)
 ACCESS_COOKIE = "bulletin_admin_access"
@@ -60,9 +63,11 @@ def create_app(config=None, backend=None):
 def register_routes(app):
     from .conversation_web import conversation_routes
     from .directory_web import directory_routes
+    from .moderation_history_web import moderation_history_routes
     from .users_web import user_routes
 
-    for blueprint in (routes, user_routes, directory_routes, conversation_routes):
+    for blueprint in (routes, user_routes, directory_routes, conversation_routes,
+                      moderation_history_routes):
         app.register_blueprint(blueprint)
 
 
@@ -237,6 +242,12 @@ def review(report_id):
     if report.get("reporter_id"):
         reporter = g.backend.one("profiles", identifier(report["reporter_id"]), PROFILE_COLUMNS)
     images, image_error, delete_version = listing_review_details(report, context["content"])
+    history_error = None
+    try:
+        events = report_events(g.backend, report["id"])
+    except PortalError:
+        events = []
+        history_error = "Moderation history could not be loaded. Reload to try again."
     account_version = version_serializer("report-account").dumps({
         "id": report["id"], "account": account_snapshot(context["account"]) if context["account"] else None,
     })
@@ -244,7 +255,8 @@ def review(report_id):
         "review.html", report=report, reporter=reporter,
         version=version_serializer().dumps(snapshot(report)), images=images,
         account_version=account_version,
-        image_error=image_error, delete_version=delete_version, **context,
+        image_error=image_error, delete_version=delete_version,
+        moderation_events=events, history_error=history_error, **context,
     )
 
 
@@ -282,11 +294,36 @@ def save_status(report_id):
     report_id = str(report_id)
     version = submitted_version(report_id)
     report = report_by_id(g.backend, report_id)
-    changed = update_status(g.backend, report, request.form.get("status"), version)
+    comment = normalize_comment(request.form.get("comment", ""), allow_empty=True)
+    status = request.form.get("status")
+    if status not in STATUSES:
+        raise PortalError("Choose a valid report status.")
+    if version != snapshot(report):
+        raise PortalError("Another reviewer changed this report. Reload before saving.", 409)
+    changed = status != report.get("status")
+    if changed:
+        add_report_event(
+            g.backend, report_id, g.admin["id"],
+            "status_change_attempted_to_" + status, comment or None,
+        )
+    elif comment:
+        add_report_event(g.backend, report_id, g.admin["id"], "note_added", comment)
+    changed = update_status(g.backend, report, status, version)
+    if changed:
+        record_action_event(
+            g.backend, report_id, g.admin["id"],
+            "status_changed_to_" + status,
+            "The report status change",
+        )
     if changed:
         current_app.logger.info("report_status actor=%s report=%s status=%s",
-                                g.admin["id"], report_id, request.form["status"])
-    flash("Report status saved." if changed else "The report already has this status.")
+                                g.admin["id"], report_id, status)
+    if changed:
+        flash("Report status saved.")
+    elif comment:
+        flash("Comment added. The report status was unchanged.")
+    else:
+        flash("The report already has this status.")
     return redirect(url_for("portal.review", report_id=report_id), code=303)
 
 
@@ -300,11 +337,20 @@ def account_action(report_id):
         raise PortalError("Another reviewer changed this report. Reload before acting.", 409)
     if request.form.get("confirm") != "yes":
         raise PortalError("Confirm the account action before applying it.")
+    comment = normalize_comment(request.form.get("comment", ""), allow_empty=True)
     action = request.form.get("action")
+    add_report_event(
+        g.backend, report_id, g.admin["id"], "account_" + action + "_attempted",
+        comment,
+    )
     target_id = act_on_account(
         g.backend, report, g.admin["id"], action,
         request.form.get("duration"), request.form.get("duration_unit"),
         account_version=account_version.get("account"),
+    )
+    record_action_event(
+        g.backend, report_id, g.admin["id"], "account_" + action,
+        "The account action",
     )
     current_app.logger.info("account_action actor=%s report=%s target=%s action=%s",
                             g.admin["id"], report_id, target_id, action)
