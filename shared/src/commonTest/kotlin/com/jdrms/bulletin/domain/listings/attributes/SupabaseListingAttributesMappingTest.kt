@@ -48,8 +48,22 @@ class SupabaseListingAttributesMappingTest {
     }
 
     @Test
-    fun malformedPayloadMakesTheRowUnreadableInsteadOfBecomingEmpty() {
-        assertNull(SupabaseListingMapper.toDomain(dto("[1,2]")))
-        assertNull(SupabaseListingMapper.toDomain(dto("\"oops\"")))
+    fun malformedOptionalPayloadKeepsTheListingVisibleWithEmptyAttributes() {
+        listOf("[1,2]", "\"oops\"", "42", "true", "null").forEach { payload ->
+            val listing = assertNotNull(SupabaseListingMapper.toDomain(dto(payload)))
+            assertEquals("Laptop", listing.title)
+            assertEquals("seller-1", listing.sellerId.value)
+            assertEquals(10.0, listing.price.amount)
+            assertEquals(ListingAttributes.EMPTY, listing.attributes)
+        }
+    }
+
+    @Test
+    fun malformedAttributesDoNotBypassRequiredFieldValidation() {
+        val malformed = dto("[1,2]")
+        assertNull(SupabaseListingMapper.toDomain(malformed.copy(name = null)))
+        assertNull(SupabaseListingMapper.toDomain(malformed.copy(userId = "")))
+        assertNull(SupabaseListingMapper.toDomain(malformed.copy(price = null)))
+        assertNull(SupabaseListingMapper.toDomain(malformed.copy(price = Double.NaN)))
     }
 }

@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.listings.infrastructure.mapper
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributes
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
@@ -16,7 +17,7 @@ import kotlin.time.Instant
 object SupabaseListingMapper {
     private val attributesCodec = ListingAttributesJsonCodec()
 
-    /** Returns null when required fields are missing or the stored attributes payload is malformed. */
+    /** Returns null for invalid required fields; malformed optional attributes are read as empty. */
     fun toDomain(dto: SupabaseListingDto, imageUrl: (String) -> String = { it }): Listing? {
         val sellerId = dto.userId
         val title = dto.name
@@ -26,7 +27,7 @@ object SupabaseListingMapper {
         val category = runCatching { ListingCategory.valueOf(dto.category.orEmpty().uppercase()) }
             .getOrDefault(ListingCategory.OTHER)
         val attributes = (attributesCodec.decode(dto.attributes, category) as? ListingAttributesDecoding.Decoded)
-            ?.attributes ?: return null
+            ?.attributes ?: ListingAttributes.EMPTY
 
         return Listing(
             id = ListingId(dto.id),
