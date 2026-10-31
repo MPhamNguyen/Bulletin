@@ -10,10 +10,52 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class SupabaseMarketplaceListingSourceTest {
+
+    @Test
+    fun refreshFetchesLiveListingsAndFallsBackToTheLatestCachedPageOnFailure() = runTest {
+        var failFetch = false
+        var latestRow = listingRow(id = "cached")
+        var fetchCount = 0
+        val cache = MarketplaceReadCache()
+        val source = SupabaseMarketplaceListingSource(
+            fetch = {
+                fetchCount++
+                if (failFetch) error("Network unavailable")
+                listOf(latestRow)
+            },
+            imageUrl = { it },
+            readCache = cache
+        )
+        val request = MarketplacePageRequest()
+
+        val cachedPage = source.getAvailableListings(request)
+        latestRow = listingRow(id = "latest")
+        val refreshedPage = source.refreshAvailableListings(request)
+        failFetch = true
+        val fallbackPage = source.refreshAvailableListings(request)
+
+        assertEquals("listing:cached", cachedPage.listings.single().id)
+        assertEquals("listing:latest", refreshedPage.listings.single().id)
+        assertEquals("listing:latest", fallbackPage.listings.single().id)
+        assertFalse(refreshedPage.isStaleFallback)
+        assertTrue(fallbackPage.isStaleFallback)
+        assertEquals(3, fetchCount)
+    }
+
+    @Test
+    fun refreshPropagatesFailureWhenThereIsNoCachedPage() = runTest {
+        val source = SupabaseMarketplaceListingSource { error("Network unavailable") }
+
+        assertFailsWith<IllegalStateException> {
+            source.refreshAvailableListings(MarketplacePageRequest())
+        }
+    }
 
     @Test
     fun translatesTheExistingSupabaseListingsSchema() = runTest {

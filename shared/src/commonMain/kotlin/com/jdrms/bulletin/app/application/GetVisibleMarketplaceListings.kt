@@ -19,7 +19,7 @@ class GetVisibleMarketplaceListings(
     private val blockedUserProvider: MarketplaceBlockedUserProvider? = null,
     private val reportedListingProvider: MarketplaceReportedListingProvider = EmptyMarketplaceReportedListingProvider
 ) {
-    suspend operator fun invoke(request: MarketplacePageRequest): MarketplaceListingPage {
+    suspend operator fun invoke(request: MarketplacePageRequest, refresh: Boolean = false): MarketplaceListingPage {
         val hiddenUserIds = request.viewerId?.let { blockedUserProvider?.getHiddenUserIds(it) }.orEmpty()
         val reportedListingIds = request.viewerId
             ?.takeIf(String::isNotBlank)
@@ -27,9 +27,12 @@ class GetVisibleMarketplaceListings(
             .orEmpty()
         val visible = mutableListOf<MarketplaceListingSnapshot>()
         var cursor = request.cursor
+        var usedStaleFallback = false
         var sourceCursor: MarketplacePageCursor?
         do {
-            val page = listingSource.getAvailableListings(request.forVisibilityScan(cursor))
+            val sourceRequest = request.forVisibilityScan(cursor)
+            val page = listingSource.loadAvailableListings(sourceRequest, refresh && cursor == request.cursor)
+            usedStaleFallback = usedStaleFallback || page.isStaleFallback
             val allowed = page.listings.filterNot { listing ->
                 (request.listingId != null && listing.id != request.listingId) ||
                     listing.sellerId == request.viewerId || listing.sellerId in hiddenUserIds ||
@@ -46,11 +49,11 @@ class GetVisibleMarketplaceListings(
                 } else {
                     sourceCursor
                 }
-                return MarketplaceListingPage(visible, nextCursor)
+                return MarketplaceListingPage(visible, nextCursor, usedStaleFallback)
             }
             cursor = sourceCursor
         } while (sourceCursor != null)
-        return MarketplaceListingPage(visible, null)
+        return MarketplaceListingPage(visible, null, usedStaleFallback)
     }
 
     // A targeted visibility check must page through the seller's listings. If the
@@ -61,4 +64,13 @@ class GetVisibleMarketplaceListings(
         listingId = null,
         pageSize = if (listingId != null) maxOf(pageSize, DEFAULT_MARKETPLACE_PAGE_SIZE) else pageSize
     )
+}
+
+private suspend fun MarketplaceListingSource.loadAvailableListings(
+    request: MarketplacePageRequest,
+    refresh: Boolean
+): MarketplaceListingPage = if (refresh) {
+    refreshAvailableListings(request)
+} else {
+    getAvailableListings(request)
 }

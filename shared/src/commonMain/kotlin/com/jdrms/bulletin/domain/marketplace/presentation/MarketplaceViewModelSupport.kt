@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+private const val STALE_REFRESH_NOTICE = "An Error Occured"
+
 data class MarketplaceBookmarkDependencies(
     val add: BookmarkMarketplaceListing,
     val remove: RemoveMarketplaceListingBookmark,
@@ -27,8 +29,9 @@ internal class MarketplaceFirstPageLoader(
     private val bookmarks: MarketplaceBookmarkDependencies,
     private val currentUserId: suspend () -> String?
 ) {
-    suspend fun load(userId: String?, debounceMillis: Long) {
-        prepareForLoad()
+    suspend fun load(userId: String?, debounceMillis: Long, refresh: Boolean = false) {
+        val previousPage = state.value
+        prepareForLoad(refresh)
         if (debounceMillis > 0L) delay(debounceMillis)
         val filters = state.value.filters
         runCatching {
@@ -39,21 +42,25 @@ internal class MarketplaceFirstPageLoader(
                     category = filters.category,
                     condition = filters.condition,
                     viewerId = resolvedUserId
-                )
+                ),
+                refresh = refresh
             )
             val bookmarkedIds = resolvedUserId?.let { bookmarks.get.getBookmarkedIds(it) }.orEmpty()
             FirstPageResult(page, bookmarkedIds)
         }.fold(
             onSuccess = { applySuccess(it, filters) },
-            onFailure = { applyFailure(it, filters) }
+            onFailure = { applyFailure(it, filters, previousPage.takeIf { refresh }) }
         )
     }
 
-    private fun prepareForLoad() {
+    private fun prepareForLoad(refresh: Boolean) {
         state.update {
             it.copy(
-                items = emptyList(),
-                isLoading = true,
+                items = if (refresh) it.items else emptyList(),
+                isLoading = !refresh || it.items.isEmpty(),
+                isRefreshing = refresh,
+                isRefreshError = false,
+                refreshNotice = null,
                 isLoadingMore = false,
                 nextCursor = null,
                 endReached = false,
@@ -69,19 +76,30 @@ internal class MarketplaceFirstPageLoader(
                 items = result.page.items,
                 bookmarkedItemIds = result.bookmarkedIds,
                 isLoading = false,
+                isRefreshing = false,
+                isRefreshError = false,
+                refreshNotice = if (result.page.isStaleFallback) STALE_REFRESH_NOTICE else null,
                 nextCursor = result.page.nextCursor,
                 endReached = result.page.nextCursor == null
             )
         }
     }
 
-    private fun applyFailure(error: Throwable, filters: MarketplaceFilterState) {
+    private fun applyFailure(
+        error: Throwable,
+        filters: MarketplaceFilterState,
+        previousPage: MarketplaceUiState?
+    ) {
         error.rethrowCancellation()
         state.update { current ->
             if (current.filters != filters) return@update current
             current.copy(
                 isLoading = false,
+                isRefreshing = false,
+                isRefreshError = previousPage != null,
                 isLoadingMore = false,
+                nextCursor = previousPage?.nextCursor,
+                endReached = previousPage?.endReached ?: current.endReached,
                 errorMessage = "Unable to load marketplace listings. Please try again."
             )
         }

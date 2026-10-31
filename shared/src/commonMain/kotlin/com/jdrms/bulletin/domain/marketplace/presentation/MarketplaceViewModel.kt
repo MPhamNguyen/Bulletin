@@ -69,13 +69,13 @@ class MarketplaceViewModel(
         layoutPreferenceController.change(preference)
 
     fun refreshListings(userId: String? = null) {
-        loadFirstPage(userId = userId, debounceMillis = 0L)
+        loadFirstPage(userId = userId, debounceMillis = 0L, refresh = true)
     }
 
-    private fun loadFirstPage(userId: String?, debounceMillis: Long) {
+    private fun loadFirstPage(userId: String?, debounceMillis: Long, refresh: Boolean = false) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            firstPageLoader.load(userId, debounceMillis)
+            firstPageLoader.load(userId, debounceMillis, refresh)
         }
     }
 
@@ -104,7 +104,7 @@ class MarketplaceViewModel(
         val cursor = currentState.nextCursor ?: return
         if (currentState.isLoading || currentState.isLoadingMore || currentState.endReached) return
 
-        _uiState.update { it.copy(isLoadingMore = true, errorMessage = null) }
+        _uiState.update { it.copy(isLoadingMore = true, isRefreshError = false, errorMessage = null) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             val filters = currentState.filters
@@ -157,7 +157,7 @@ class MarketplaceViewModel(
     }
 
     fun retryListings() {
-        if (_uiState.value.items.isEmpty()) {
+        if (_uiState.value.items.isEmpty() || _uiState.value.isRefreshError) {
             refreshListings()
         } else {
             loadNextPage()

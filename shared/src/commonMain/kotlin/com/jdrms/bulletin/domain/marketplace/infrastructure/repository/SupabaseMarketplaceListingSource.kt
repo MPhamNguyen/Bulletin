@@ -35,6 +35,11 @@ class SupabaseMarketplaceListingSource private constructor(
         return readCache.page(request) { loadPage(request) }
     }
 
+    override suspend fun refreshAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
+        val refreshResult = readCache.refreshPage(request) { loadPage(request) }
+        return refreshResult.value.copy(isStaleFallback = refreshResult.usedStaleValue)
+    }
+
     private suspend fun loadPage(request: MarketplacePageRequest): MarketplaceListingPage {
         val rows = listingTable.getListings(request)
         val mappedRows = rows.mapNotNull { row ->
@@ -59,6 +64,12 @@ class SupabaseMarketplaceListingSource private constructor(
         fetch: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>,
         imageUrl: (String) -> String
     ) : this(MarketplaceListingTable(fetch), MarketplaceReadCache(), imageUrl)
+
+    internal constructor(
+        fetch: suspend (MarketplacePageRequest) -> List<SupabaseMarketplaceListingDto>,
+        imageUrl: (String) -> String,
+        readCache: MarketplaceReadCache
+    ) : this(MarketplaceListingTable(fetch), readCache, imageUrl)
 }
 
 private fun interface MarketplaceListingTable {

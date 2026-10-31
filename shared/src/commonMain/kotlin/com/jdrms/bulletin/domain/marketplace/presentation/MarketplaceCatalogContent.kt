@@ -19,6 +19,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +54,7 @@ internal fun MarketplaceCatalogContent(
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
     val gridState = rememberLazyGridState()
+    val pullRefreshState = rememberPullToRefreshState()
     val focusManager = LocalFocusManager.current
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -89,22 +92,29 @@ internal fun MarketplaceCatalogContent(
                 }
             }
     ) {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(state.layoutPreference.columns),
-            state = gridState,
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { viewModel.refreshListings() },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            marketplaceCatalogHeader(state, viewModel) { coordinates ->
-                searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(state.layoutPreference.columns),
+                state = gridState,
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                marketplaceCatalogHeader(state, viewModel) { coordinates ->
+                    searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
+                }
+                marketplaceLoadingItem(state.isLoading)
+                marketplaceEmptyResultsItem(state)
+                marketplaceListingItems(state, viewModel)
+                marketplacePaginationItem(state)
+                marketplaceErrorItems(state, viewModel)
             }
-            marketplaceLoadingItem(state.isLoading)
-            marketplaceEmptyResultsItem(state)
-            marketplaceListingItems(state, viewModel)
-            marketplacePaginationItem(state)
-            marketplaceErrorItems(state, viewModel)
         }
         MarketplaceDetailFlow(
             state,
@@ -127,6 +137,15 @@ private fun LazyGridScope.marketplaceCatalogHeader(
         SectionHeader(
             title = "Marketplace"
         )
+    }
+    state.refreshNotice?.let { notice ->
+        fullWidthItem {
+            Text(
+                text = notice,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
     fullWidthItem {
         MarketplaceSearchFilters(

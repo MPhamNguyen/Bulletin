@@ -30,9 +30,13 @@ class SearchMarketplace(
         reportedListingProvider = reportedListingProvider
     )
 
-    suspend fun getPage(request: MarketplacePageRequest): MarketplaceItemPage {
-        val page = visibilityPolicy(request)
-        return MarketplaceItemPage(page.listings.map { it.toMarketplaceItem() }, page.nextCursor)
+    suspend fun getPage(request: MarketplacePageRequest, refresh: Boolean = false): MarketplaceItemPage {
+        val page = visibilityPolicy(request, refresh)
+        return MarketplaceItemPage(
+            page.listings.map { it.toMarketplaceItem() },
+            page.nextCursor,
+            page.isStaleFallback
+        )
     }
 
     suspend fun getCatalog(): List<MarketplaceItem> {
@@ -86,7 +90,8 @@ class SearchMarketplace(
 
 data class MarketplaceItemPage(
     val items: List<MarketplaceItem>,
-    val nextCursor: MarketplacePageCursor?
+    val nextCursor: MarketplacePageCursor?,
+    val isStaleFallback: Boolean = false
 )
 
 internal fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {

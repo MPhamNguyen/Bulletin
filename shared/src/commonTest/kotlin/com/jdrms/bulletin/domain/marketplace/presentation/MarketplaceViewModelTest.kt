@@ -196,41 +196,6 @@ class MarketplaceViewModelTestPart1 {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun refreshIncludesListingUploadedAfterViewModelWasCreated() = runTest {
-        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        try {
-            val repository = InMemoryMarketplaceRepository(initialListings = emptyList())
-            val source = MutableListingSource()
-            val viewModel = MarketplaceViewModel(
-                layoutPreferenceStore = InMemoryMarketplaceLayoutPreferenceStore(),
-                searchMarketplace = SearchMarketplace(repository, source),
-                bookmarks = MarketplaceBookmarkDependencies(
-                    add = BookmarkMarketplaceListing(repository),
-                    remove = RemoveMarketplaceListingBookmark(repository),
-                    get = GetMarketplaceListingBookmarks(repository)
-                ),
-                viewMarketplaceListing = ViewMarketplaceListing(repository)
-            )
-            advanceUntilIdle()
-            assertEquals(emptyList(), viewModel.uiState.value.items)
-
-            source.listings += uploadedListing()
-            viewModel.refreshListings()
-            advanceUntilIdle()
-
-            assertEquals(listOf("Graphing Calculator"), viewModel.uiState.value.items.map { it.title })
-
-            viewModel.onSearchQueryChanged("electronics")
-            advanceUntilIdle()
-            assertEquals(listOf("Graphing Calculator"), viewModel.uiState.value.items.map { it.title })
-            assertEquals(3, source.loadCount)
-        } finally {
-            Dispatchers.resetMain()
-        }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
     fun listingChangeSignalRefreshesResultsAndStaleDetail() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {

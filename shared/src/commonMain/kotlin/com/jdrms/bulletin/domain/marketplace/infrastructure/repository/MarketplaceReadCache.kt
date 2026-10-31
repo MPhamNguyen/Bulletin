@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.BoundedMemoryCache
+import com.jdrms.bulletin.core.common.CacheRefreshResult
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
@@ -22,6 +23,10 @@ internal class MarketplaceReadCache(
 
     suspend fun page(request: MarketplacePageRequest, loader: suspend () -> MarketplaceListingPage) =
         pages.getOrLoad(request, loader)!!
+
+    suspend fun refreshPage(request: MarketplacePageRequest, loader: suspend () -> MarketplaceListingPage):
+        CacheRefreshResult<MarketplaceListingPage> =
+        pages.refresh(request, loader)!!
 
     suspend fun catalog(loader: suspend () -> List<MarketplaceItem>) = catalog.getOrLoad(CATALOG_KEY, loader)!!
 

@@ -58,11 +58,15 @@ object EmptyMarketplaceReportedListingProvider : MarketplaceReportedListingProvi
 
 data class MarketplaceListingPage(
     val listings: List<MarketplaceListingSnapshot>,
-    val nextCursor: MarketplacePageCursor?
+    val nextCursor: MarketplacePageCursor?,
+    val isStaleFallback: Boolean = false
 )
 
 fun interface MarketplaceListingSource {
     suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage
+
+    suspend fun refreshAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage =
+        getAvailableListings(request)
 }
 
 internal object EmptyMarketplaceListingSource : MarketplaceListingSource {

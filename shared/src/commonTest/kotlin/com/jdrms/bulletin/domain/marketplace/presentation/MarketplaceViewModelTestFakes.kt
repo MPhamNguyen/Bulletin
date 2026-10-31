@@ -19,11 +19,15 @@ internal object FailingListingSource : MarketplaceListingSource {
 internal class MutableListingSource : MarketplaceListingSource {
     val listings = mutableListOf<MarketplaceListingSnapshot>()
     var loadCount = 0
+    var staleOnRefresh = false
 
     override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
         loadCount += 1
         return listings.pageFor(request)
     }
+
+    override suspend fun refreshAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage =
+        getAvailableListings(request).copy(isStaleFallback = staleOnRefresh)
 }
 
 internal class RetryableNextPageSource(

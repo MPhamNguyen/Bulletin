@@ -74,7 +74,12 @@ fun MainAppScaffold(
     val models = rememberMainScaffoldModels(container)
     val profile = rememberProfilePresentation(profileViewModel, container, themeViewModel, onSignOut)
     val retries = rememberSaveable(saver = HomeSaveRetryPresentation.saver) { HomeSaveRetryPresentation() }
-    LaunchedEffect(navigation.currentDestination) { chrome.behavior.onDestinationChanged() }
+    LaunchedEffect(navigation.currentDestination) {
+        chrome.behavior.onDestinationChanged()
+        if (navigation.currentDestination == AppDestination.MARKETPLACE) {
+            models.marketplace.refreshListings()
+        }
+    }
     MainHomeEffects(navigation, models, retries)
     BulletinTheme(darkTheme = darkTheme) {
         MainAppLayout(MainAppContentState(container, navigation, models, profile), chrome, retries)

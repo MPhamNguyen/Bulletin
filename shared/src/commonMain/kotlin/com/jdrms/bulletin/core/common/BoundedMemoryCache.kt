@@ -49,6 +49,20 @@ internal class BoundedMemoryCache<K : Any, V : Any>(
         return result.getOrThrow()
     }
 
+    suspend fun refresh(key: K, loader: suspend () -> V?): CacheRefreshResult<V>? {
+        val staleValue = mutex.withLock { entries[key]?.value }
+        val result = runCatching { loader() }
+        result.getOrNull()?.let { value ->
+            put(key, value)
+            return CacheRefreshResult(value, usedStaleValue = false)
+        }
+        result.exceptionOrNull()?.let { error ->
+            if (error is kotlinx.coroutines.CancellationException) throw error
+        }
+        if (staleValue != null) return CacheRefreshResult(staleValue, usedStaleValue = true)
+        return result.getOrThrow()?.let { CacheRefreshResult(it, usedStaleValue = false) }
+    }
+
     suspend fun put(key: K, value: V) = mutex.withLock { putLocked(key, value) }
 
     suspend fun invalidate(key: K) {
@@ -83,3 +97,5 @@ internal class BoundedMemoryCache<K : Any, V : Any>(
 
     private data class Entry<V>(val value: V, val expiresAtMillis: Long)
 }
+
+internal data class CacheRefreshResult<V>(val value: V, val usedStaleValue: Boolean)
