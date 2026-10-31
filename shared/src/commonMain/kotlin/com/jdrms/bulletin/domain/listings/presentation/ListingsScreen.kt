@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -14,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
@@ -50,7 +52,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     onValueChange = { viewModel.onTitleChanged(it) },
                     label = { Text("Item Title") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -109,7 +111,7 @@ fun ListingsScreen(viewModel: ListingsViewModel) {
                     label = { Text("Description & Campus Pick-Up Details") },
                     minLines = 2,
                     maxLines = 4,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

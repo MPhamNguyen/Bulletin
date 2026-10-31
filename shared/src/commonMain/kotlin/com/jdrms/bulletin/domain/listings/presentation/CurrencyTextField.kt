@@ -16,6 +16,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 
 @Composable
 internal fun CurrencyTextField(
@@ -44,6 +45,6 @@ internal fun CurrencyTextField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = colors,
         shape = shape,
-        modifier = modifier
+        modifier = modifier.showKeyboardOnFocusOrTap()
     )
 }
