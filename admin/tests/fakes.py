@@ -90,6 +90,9 @@ class FakeSupabase:
                 raise self.history_failure
             rows = [event for event in self.events if event["report_id"] == query.get("report_id", "").removeprefix("eq.")]
             return deepcopy(rows)
+        if table == "profiles":
+            profile_ids = query.get("id", "").removeprefix("in.(").removesuffix(")").split(",")
+            return deepcopy([self.profiles[user_id] for user_id in profile_ids if user_id in self.profiles])
         return deepcopy(self.page_rows if self.page_rows is not None else [self.report])
 
     def request(self, method, path, **kwargs):

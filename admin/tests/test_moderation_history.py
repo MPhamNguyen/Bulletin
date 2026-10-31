@@ -20,11 +20,15 @@ class ModerationHistoryTests(unittest.TestCase):
 
     def test_history_is_report_scoped_and_resolves_moderator_identity(self):
         add_report_event(self.backend, REPORT, ADMIN, "note_added", "Internal note")
+        add_report_event(self.backend, REPORT, ADMIN, "note_added", "Second note")
         events = report_events(self.backend, REPORT)
-        self.assertEqual(1, len(events))
+        self.assertEqual(2, len(events))
         self.assertEqual("Admin", events[0]["moderator"]["full_name"])
-        self.assertEqual("eq." + REPORT, self.backend.queries[-1][1]["report_id"])
-        self.assertEqual("created_at.desc,id.desc", self.backend.queries[-1][1]["order"])
+        self.assertEqual("eq." + REPORT, self.backend.queries[0][1]["report_id"])
+        self.assertEqual("created_at.desc,id.desc", self.backend.queries[0][1]["order"])
+        profile_queries = [query for table, query in self.backend.queries if table == "profiles"]
+        self.assertEqual(1, len(profile_queries))
+        self.assertEqual("in.(" + ADMIN + ")", profile_queries[0]["id"])
 
     def test_comments_are_trimmed_and_empty_or_overlong_comments_rejected(self):
         self.assertEqual("Why", normalize_comment(" Why "))

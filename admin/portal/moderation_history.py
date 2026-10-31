@@ -15,12 +15,18 @@ def report_events(backend, report_id):
     )
     if not isinstance(events, list) or any(not isinstance(event, dict) for event in events):
         raise PortalError("Moderation history could not be loaded. Please try again.", 502)
+    moderator_ids = {
+        identifier(event["moderator_id"])
+        for event in events if event.get("moderator_id")
+    }
+    moderators = backend.rows(
+        "profiles", select="id,full_name,email",
+        id="in.(" + ",".join(sorted(moderator_ids)) + ")",
+    ) if moderator_ids else []
+    moderators_by_id = {identifier(profile["id"]): profile for profile in moderators}
     for event in events:
         moderator_id = event.get("moderator_id")
-        event["moderator"] = (
-            backend.one("profiles", identifier(moderator_id), "id,full_name,email")
-            if moderator_id else None
-        )
+        event["moderator"] = moderators_by_id.get(identifier(moderator_id)) if moderator_id else None
     return events
 
 
