@@ -26,9 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +38,10 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
 @Composable
@@ -69,7 +69,7 @@ internal fun BookmarkedListingsView(
                 .weight(1f)
                 .fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             if (isLoading) {
                 item {
@@ -88,7 +88,10 @@ internal fun BookmarkedListingsView(
                             color = MaterialTheme.colorScheme.error
                         )
                         if (listings.isEmpty()) {
-                            TextButton(onClick = actions.onRefresh) { Text("Retry") }
+                            BulletinButton(
+                                onClick = actions.onRefresh,
+                                variant = BulletinButtonVariant.Text
+                            ) { Text("Retry") }
                         }
                     }
                 }
@@ -115,15 +118,14 @@ internal fun BookmarkedListingsView(
             if (hasMore || isLoadingMore) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        OutlinedButton(
+                        BulletinButton(
                             onClick = actions.onLoadMore,
                             enabled = !isLoadingMore,
-                            colors = BulletinButtonDefaults.outlinedButtonColors(),
-                            border = BulletinButtonDefaults.outlinedButtonBorder()
+                            variant = BulletinButtonVariant.Outlined
                         ) {
                             if (isLoadingMore) {
                                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(BulletinSpacing.s))
                             }
                             Text(if (isLoadingMore) "Loading..." else "Load More")
                         }
@@ -163,13 +165,13 @@ private fun BookmarkedListingCard(
                 color = MaterialTheme.colorScheme.primary
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
         Text(
             text = "Seller: ${listing.sellerName} • Category: ${listing.category}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.s))
         Text(
             text = listing.description,
             style = MaterialTheme.typography.bodyMedium,
@@ -180,13 +182,12 @@ private fun BookmarkedListingCard(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.m))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            OutlinedButton(
+            BulletinButton(
                 onClick = onRemoveBookmark,
                 enabled = bookmarkActionEnabled,
-                colors = BulletinButtonDefaults.outlinedButtonColors(),
-                border = BulletinButtonDefaults.outlinedButtonBorder()
+                variant = BulletinButtonVariant.Outlined
             ) {
                 if (isRemoving) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -218,7 +219,7 @@ private fun BookmarkedListingPhoto(photoUrl: String?) {
             success = { SubcomposeAsyncImageContent() }
         )
     }
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(BulletinSpacing.m))
 }
 
 @Composable
@@ -238,7 +239,7 @@ private fun EmptyBookmarksCard(hasBookmarks: Boolean) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp, horizontal = 16.dp),
+                .padding(vertical = 32.dp, horizontal = BulletinSpacing.l),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -258,14 +259,14 @@ private fun EmptyBookmarksCard(hasBookmarks: Boolean) {
                     modifier = Modifier.size(28.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.l))
             Text(
                 text = if (hasBookmarks) "No matching listings" else "Bookmarked Listings",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.xs))
             Text(
                 text = if (hasBookmarks) {
                     "Try changing the category or condition filters."
@@ -286,7 +287,7 @@ private fun BookmarkedListingsTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick, modifier = Modifier.size(40.dp)) {
@@ -296,11 +297,10 @@ private fun BookmarkedListingsTopBar(
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(BulletinSpacing.s))
         Text(
             text = "Bookmarked Listings",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.weight(1f)
         )

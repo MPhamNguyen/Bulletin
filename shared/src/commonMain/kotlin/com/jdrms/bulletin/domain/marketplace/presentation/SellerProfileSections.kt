@@ -23,7 +23,8 @@ import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
@@ -33,17 +34,16 @@ internal fun SellerProfileHero(profile: MarketplaceSellerProfile) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             SellerAvatar(profile)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
             ) {
                 Text(
                     text = profile.name ?: "Student Seller",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (profile.isVerified) VerifiedBadge()
@@ -82,7 +82,6 @@ private fun SellerAvatar(profile: MarketplaceSellerProfile) {
             Text(
                 text = profileInitials(profile.name ?: "Student"),
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
         }
@@ -93,12 +92,12 @@ private fun SellerAvatar(profile: MarketplaceSellerProfile) {
 private fun VerifiedBadge() {
     Surface(
         shape = CircleShape,
-        color = BulletinExtras.colors.successContainer,
-        contentColor = BulletinExtras.colors.success
+        color = MaterialTheme.bulletinColors.successContainer,
+        contentColor = MaterialTheme.bulletinColors.success
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(12.dp))
@@ -125,20 +124,19 @@ internal fun SellerProfileStats(profile: MarketplaceSellerProfile, soldListingsC
 private fun SellerStat(label: String, value: String, showStar: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(BulletinSpacing.xs))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (showStar) {
                 Icon(
                     Icons.Filled.Star,
                     contentDescription = "Reputation",
-                    tint = BulletinExtras.colors.star,
+                    tint = MaterialTheme.bulletinColors.star,
                     modifier = Modifier.size(20.dp)
                 )
             }
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -148,8 +146,8 @@ private fun SellerStat(label: String, value: String, showStar: Boolean) {
 @Composable
 internal fun SellerProfileAbout(profile: MarketplaceSellerProfile) {
     BulletinCard {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("About the Seller", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
+            Text("About the Seller", style = MaterialTheme.typography.titleMedium)
             Text(
                 text = profile.bio?.takeIf(String::isNotBlank) ?: "This seller hasn't added a bio yet.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -171,12 +169,12 @@ internal fun SellerListingCard(listing: MarketplaceItem, onListingClick: (String
     BulletinCard(modifier = Modifier.clickable { onListingClick(listing.id.value) }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SellerListingThumbnail(listing)
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(listing.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
+                Text(listing.title, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = listing.category.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.bodySmall,

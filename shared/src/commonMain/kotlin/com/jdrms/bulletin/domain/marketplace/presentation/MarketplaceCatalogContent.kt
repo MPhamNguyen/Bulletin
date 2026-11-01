@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,9 +35,12 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -92,10 +94,10 @@ internal fun MarketplaceCatalogContent(
         LazyVerticalGrid(
             columns = GridCells.Fixed(state.layoutPreference.columns),
             state = gridState,
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = BulletinSpacing.l),
             contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             marketplaceCatalogHeader(state, viewModel) { coordinates ->
                 searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
@@ -197,7 +199,10 @@ private fun LazyGridScope.marketplaceErrorItems(state: MarketplaceUiState, viewM
         fullWidthItem {
             BulletinCard {
                 Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = viewModel::retryListings) { Text("Retry") }
+                BulletinButton(
+                    onClick = viewModel::retryListings,
+                    variant = BulletinButtonVariant.Text
+                ) { Text("Retry") }
             }
         }
     }

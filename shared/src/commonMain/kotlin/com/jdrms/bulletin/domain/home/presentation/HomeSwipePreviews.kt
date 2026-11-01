@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 
 @Composable
 private fun FeedbackPreview(dark: Boolean, save: Float, pass: Float) {

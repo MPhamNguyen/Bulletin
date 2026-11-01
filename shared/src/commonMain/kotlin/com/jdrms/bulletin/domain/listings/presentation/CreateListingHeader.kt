@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -18,8 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 
 @Composable
 internal fun CreateListingHeader(step: CreateListingStep, onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -33,7 +32,6 @@ internal fun CreateListingHeader(step: CreateListingStep, onClose: () -> Unit, m
             Text(
                 text = "Post Listing",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
@@ -59,7 +57,7 @@ internal fun CreateListingHeader(step: CreateListingStep, onClose: () -> Unit, m
                     }
                     Row(
                         modifier = Modifier.weight(1f).height(4.dp)
-                            .clip(RoundedCornerShape(2.dp)).background(color)
+                            .clip(BulletinShapes.segment).background(color)
                     ) {}
                 }
             }

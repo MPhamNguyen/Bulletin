@@ -25,7 +25,9 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.*
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -73,7 +75,7 @@ internal fun HomeCardActionRow(
     Row(
         modifier.fillMaxWidth().height(IntrinsicSize.Min).graphicsLayer { alpha = homeActionRowAlpha(progress) }
             .then(if (hidden || homeActionRowAlpha(progress) == 0f) Modifier.clearAndSetSemantics { } else Modifier),
-        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.l, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         buttons.forEach { button ->
@@ -107,9 +109,13 @@ private fun HomeActionButton(button: ActionButtonUi, onClick: () -> Unit, modifi
     } else {
         BulletinFeedCardDefaults.actionGlassOutline
     }
+    // design-system-exempt: glass action over artwork needs a custom interaction source and zero padding
     Button(
         onClick = onClick,
-        modifier = Modifier.shadow(if (isMessage) 8.dp else 6.dp, shape).background(background, shape)
+        modifier = Modifier.shadow(
+            if (isMessage) BulletinElevation.overlay else BulletinElevation.floating,
+            shape
+        ).background(background, shape)
             .border(1.dp, outline, shape)
             .then(homeActionFrame(modifier, interaction, button.disabledHint, shape)),
         enabled = button.enabled,

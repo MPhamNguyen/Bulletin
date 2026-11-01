@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,8 +40,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.app.theme.ThemePreference
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 internal data class SettingsActions(
@@ -90,7 +92,7 @@ internal fun SettingsView(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .padding(horizontal = 20.dp, vertical = BulletinSpacing.s),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             // First and most prominent option at the top of the list: Edit Account
@@ -130,7 +132,7 @@ internal fun SettingsView(
                 onClick = actions.onBlockedUsers
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
             // Destructive actions at the bottom of the list
             SignOutButton(onClick = actions.onSignOut)
@@ -141,7 +143,7 @@ internal fun SettingsView(
                 }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(BulletinSpacing.l))
         }
     }
 }
@@ -151,7 +153,7 @@ private fun SettingsTopBar(onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+            .padding(horizontal = BulletinSpacing.s, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick) {
@@ -164,9 +166,8 @@ private fun SettingsTopBar(onBackClick: () -> Unit) {
         Text(
             text = "Settings",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(start = 4.dp)
+            modifier = Modifier.padding(start = BulletinSpacing.xs)
         )
     }
 }
@@ -196,7 +197,7 @@ private fun SettingsEditAccountCard(
                 size = 54.dp,
                 borderWidth = 1.5.dp
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(BulletinSpacing.l))
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -246,7 +247,7 @@ private fun SettingsSectionHeader(title: String) {
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+        modifier = Modifier.padding(start = BulletinSpacing.xs, top = BulletinSpacing.xs)
     )
 }
 
@@ -288,7 +289,6 @@ private fun SettingsActionCard(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -314,14 +314,12 @@ internal fun DeleteProfileButton(
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    OutlinedButton(
+    BulletinButton(
         onClick = onClick,
         modifier = modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        shape = MaterialTheme.shapes.large,
-        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
-        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
+            .fillMaxWidth(),
+        variant = BulletinButtonVariant.DestructiveOutlined,
+        size = BulletinButtonSize.Large
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -333,7 +331,7 @@ internal fun DeleteProfileButton(
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.error
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(BulletinSpacing.s))
             Text(
                 text = "Delete Profile",
                 style = MaterialTheme.typography.labelLarge,

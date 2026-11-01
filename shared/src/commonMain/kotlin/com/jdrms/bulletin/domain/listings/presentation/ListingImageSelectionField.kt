@@ -15,7 +15,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.cropSettings
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
 @Composable
@@ -61,7 +62,10 @@ internal fun ListingImageSelectionField(
                         modifier = Modifier.size(ListingPhotoTileSize).clip(MaterialTheme.shapes.small)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { editingIndex = index }) { Text("Adjust") }
+                        BulletinButton(
+                            onClick = { editingIndex = index },
+                            variant = BulletinButtonVariant.Text
+                        ) { Text("Adjust") }
                         IconButton(onClick = { onRemove(index) }) {
                             Icon(Icons.Outlined.DeleteOutline, contentDescription = "Remove photo")
                         }

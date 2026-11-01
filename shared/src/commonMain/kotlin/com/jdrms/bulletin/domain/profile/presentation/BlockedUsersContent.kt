@@ -21,16 +21,16 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.application.BlockedUser
 
 @Composable
@@ -47,7 +47,7 @@ internal fun BlockedUsersView(
         LazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             if (state.isLoading) {
                 item {
@@ -60,7 +60,7 @@ internal fun BlockedUsersView(
                 item {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(message, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = onRefresh) { Text("Retry") }
+                        BulletinButton(onClick = onRefresh, variant = BulletinButtonVariant.Text) { Text("Retry") }
                     }
                 }
             }
@@ -82,14 +82,14 @@ internal fun BlockedUsersView(
 @Composable
 private fun BlockedUsersTopBar(onBack: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to Settings")
         }
-        Spacer(Modifier.width(8.dp))
-        Text("Blocked Users", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.width(BulletinSpacing.s))
+        Text("Blocked Users", style = MaterialTheme.typography.titleLarge)
     }
 }
 
@@ -109,12 +109,11 @@ private fun BlockedUserCard(
                 size = 48.dp,
                 borderWidth = 1.dp
             )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(BulletinSpacing.m))
             Column(Modifier.weight(1f)) {
                 Text(
                     profile?.fullName?.ifBlank { null } ?: "Blocked user",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     "Their listings are hidden from you.",
@@ -122,11 +121,10 @@ private fun BlockedUserCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            OutlinedButton(
+            BulletinButton(
                 onClick = onUnblock,
                 enabled = actionEnabled,
-                colors = BulletinButtonDefaults.outlinedButtonColors(),
-                border = BulletinButtonDefaults.outlinedButtonBorder()
+                variant = BulletinButtonVariant.Outlined
             ) {
                 if (isRemoving) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -142,7 +140,7 @@ private fun BlockedUserCard(
 private fun EmptyBlockedUsersCard() {
     BulletinCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp, horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp, horizontal = BulletinSpacing.l),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(

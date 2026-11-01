@@ -6,17 +6,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun RemoveConversationDialog(
@@ -26,15 +26,15 @@ internal fun RemoveConversationDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 8.dp
+            shadowElevation = BulletinElevation.overlay
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(BulletinSpacing.xl),
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
             ) {
                 Text("Remove conversation?", style = MaterialTheme.typography.titleLarge)
                 Text(
@@ -44,21 +44,19 @@ internal fun RemoveConversationDialog(
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                 ) {
-                    OutlinedButton(
+                    BulletinButton(
                         modifier = Modifier.weight(1f),
-                        onClick = onDismiss
+                        onClick = onDismiss,
+                        variant = BulletinButtonVariant.Outlined
                     ) {
                         Text("Cancel")
                     }
-                    Button(
+                    BulletinButton(
                         modifier = Modifier.weight(1f),
                         onClick = onConfirm,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        )
+                        variant = BulletinButtonVariant.Destructive
                     ) {
                         Text("Remove")
                     }

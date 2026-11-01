@@ -11,6 +11,7 @@ internal class MutableMainNavigationState {
     var editReturnDestination by mutableStateOf(ProfileDestination.PROFILE)
     var pendingConversationId by mutableStateOf<ConversationId?>(null)
     var pendingSellerProfileId by mutableStateOf<String?>(null)
+    var pendingUserReportId by mutableStateOf<String?>(null)
 
     /** Where the seller was before opening the full-screen create listing flow, so closing it can return there. */
     var createListingReturn by mutableStateOf<NavigationSnapshot?>(null)

@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun ProfileMarketplaceCard(
@@ -41,7 +43,7 @@ internal fun ProfileMarketplaceCard(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.size(8.dp))
+        Spacer(modifier = Modifier.size(BulletinSpacing.s))
         MarketplaceActionRow(
             icon = Icons.Outlined.GridView,
             title = "My listings",
@@ -72,7 +74,7 @@ private fun MarketplaceActionRow(
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Row(
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+            modifier = Modifier.padding(vertical = BulletinSpacing.m, horizontal = BulletinSpacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
@@ -87,7 +89,7 @@ private fun MarketplaceActionRow(
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(title, style = MaterialTheme.typography.titleSmall)
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
@@ -98,13 +100,16 @@ private fun MarketplaceActionRow(
             }
             if (badge != null) {
                 Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
+                    shape = BulletinShapes.pill,
                     color = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Text(
                         text = badge,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).widthIn(min = 12.dp),
+                        modifier = Modifier.padding(
+                            horizontal = BulletinSpacing.s,
+                            vertical = 2.dp
+                        ).widthIn(min = 12.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center

@@ -31,7 +31,11 @@ class MessagesViewModel(
     private val listingPreviewProvider: ConversationListingPreviewProvider = EmptyConversationListingPreviewProvider,
     threadOperations: MessageThreadOperations = MessageThreadOperations()
 ) : ViewModel() {
-    private val threadState = MutableStateFlow(MessagesUiState())
+    private val threadState = MutableStateFlow(
+        MessagesUiState(
+            block = ConversationBlockUiState(statusRequired = threadOperations.userBlocker != null)
+        )
+    )
     val uiState: StateFlow<MessagesUiState> = MessagesUiStateProjection(threadState, inbox.state, viewModelScope)
     val inboxState: StateFlow<InboxState> = inbox.state
     private var loadJob: Job? = null
@@ -75,6 +79,7 @@ class MessagesViewModel(
         showFailure
     )
     private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
+    private val blocking = ConversationBlockActions(threadState, threadOperations.userBlocker, viewModelScope)
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
     private val olderHistory =
         MessagesOlderHistoryLoader(threadState, getConversationMessages, viewModelScope, showFailure)
@@ -138,7 +143,10 @@ class MessagesViewModel(
             requestedConversationId = null
             streamCallbacks.clearPending()
             messagePageLoader.reset()
-            threadState.value = MessagesUiState()
+            blocking.reset()
+            threadState.value = MessagesUiState(
+                block = ConversationBlockUiState(statusRequired = threadState.value.block.statusRequired)
+            )
             if (previousViewerId != null && snapshot.viewerId != null) {
                 threadState.update { it.copy(errorMessage = "Conversation is unavailable for this user.") }
             }
@@ -170,6 +178,7 @@ class MessagesViewModel(
 
     fun returnToInbox() {
         editing.cancel()
+        blocking.dismiss()
         threadState.update { it.copy(isConversationOpen = false) }
     }
 
@@ -219,15 +228,19 @@ class MessagesViewModel(
         applyInboxSelection(inbox.state.value)
         editing.begin(messageId)
     }
-
     val cancelEditing: () -> Unit = editing::cancel
 
     fun sendCurrentMessage() {
         inbox.synchronizeIdentity()
         applyInboxSelection(inbox.state.value)
+        if (!uiState.value.canSendToCounterpart()) return
         if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send(showFailure)
     }
-
+    val requestBlock: (BlockTarget) -> Unit = blocking::request
+    val confirmBlock: () -> Unit = blocking::confirm
+    val dismissBlock: () -> Unit = blocking::dismiss
+    val unblock: (BlockTarget) -> Unit = blocking::unblock
+    val refreshBlockStatus: (SenderId) -> Unit = blocking::refreshStatus
     val report: (MessageId) -> Unit = messageReportActions::begin
     val selectMessageReportReason: (ReportReason) -> Unit = messageReportActions::selectReason
     val updateMessageReportDescription: (String) -> Unit = messageReportActions::updateDescription

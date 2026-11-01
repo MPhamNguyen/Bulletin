@@ -3,8 +3,6 @@ package com.jdrms.bulletin.core.designsystem
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -13,7 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 data class ListingFilterOption(val value: String, val label: String)
 
@@ -29,7 +28,7 @@ fun ListingFilterMenus(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
     ) {
         ListingFilterMenu(
             label = "Categories",
@@ -59,10 +58,10 @@ private fun ListingFilterMenu(
     var expanded by remember { mutableStateOf(false) }
     val selectedLabel = options.firstOrNull { it.value == selectedValue }?.label
     Box(modifier = modifier) {
-        OutlinedButton(
+        BulletinButton(
             onClick = { expanded = true },
-            shape = MaterialTheme.shapes.small,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            variant = BulletinButtonVariant.Outlined
         ) {
             Text(
                 text = selectedLabel ?: "All $label",

@@ -31,21 +31,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
 internal fun MarketplaceProfileTopBar(onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "Profile",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
         Surface(
@@ -82,7 +82,7 @@ internal fun ProfileHero(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 8.dp),
+            .padding(top = BulletinSpacing.s, bottom = BulletinSpacing.s),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ProfileAvatarImage(
@@ -95,13 +95,12 @@ internal fun ProfileHero(
 
         Spacer(modifier = Modifier.height(10.dp))
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = fullName,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
@@ -146,7 +145,6 @@ internal fun ProfileAvatarImage(
         Text(
             text = profileInitials(fullName),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
             color = contentColor
         )
         if (!avatarUrl.isNullOrBlank()) {
@@ -164,12 +162,12 @@ internal fun ProfileAvatarImage(
 private fun VerifiedBadge() {
     Surface(
         shape = CircleShape,
-        color = BulletinExtras.colors.successContainer,
-        contentColor = BulletinExtras.colors.success
+        color = MaterialTheme.bulletinColors.successContainer,
+        contentColor = MaterialTheme.bulletinColors.success
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(

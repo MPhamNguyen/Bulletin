@@ -13,7 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jdrms.bulletin.app.navigation.AppDestination
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

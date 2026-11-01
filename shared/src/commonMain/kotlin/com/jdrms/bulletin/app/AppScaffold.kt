@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.app
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -28,7 +27,6 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryNavigation
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.HomeViewModel
@@ -64,7 +62,6 @@ fun MainAppScaffold(
     appContainer: AppContainer? = null,
     profileViewModel: ProfileViewModel? = null,
     themeViewModel: ThemeViewModel? = null,
-    darkTheme: Boolean = isSystemInDarkTheme(),
     onSignOut: () -> Unit = {}
 ) {
     val isInspectionMode = LocalInspectionMode.current
@@ -76,9 +73,7 @@ fun MainAppScaffold(
     val retries = rememberSaveable(saver = HomeSaveRetryPresentation.saver) { HomeSaveRetryPresentation() }
     LaunchedEffect(navigation.currentDestination) { chrome.behavior.onDestinationChanged() }
     MainHomeEffects(navigation, models, retries)
-    BulletinTheme(darkTheme = darkTheme) {
-        MainAppLayout(MainAppContentState(container, navigation, models, profile), chrome, retries)
-    }
+    MainAppLayout(MainAppContentState(container, navigation, models, profile), chrome, retries)
 }
 
 @Composable
@@ -95,7 +90,9 @@ private fun rememberMainScaffoldModels(container: AppContainer): MainScaffoldMod
                 container.messages.recentListingBuyersProvider,
                 container.listingChangedSignal
             ),
-            container.messages.createMessagesViewModel()
+            container.messages.createMessagesViewModel(
+                container.profile.conversationUserBlocker(container.listingChangedSignal)
+            )
         )
     }
 }

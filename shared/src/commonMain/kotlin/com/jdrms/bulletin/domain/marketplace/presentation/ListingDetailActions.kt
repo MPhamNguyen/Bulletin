@@ -9,15 +9,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun ListingDetailActions(
@@ -33,13 +33,12 @@ internal fun ListingDetailActions(
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
-        OutlinedButton(
+        BulletinButton(
             onClick = onToggleBookmark,
             modifier = Modifier.weight(1f),
-            colors = BulletinButtonDefaults.outlinedButtonColors(),
-            border = BulletinButtonDefaults.outlinedButtonBorder()
+            variant = BulletinButtonVariant.Outlined
         ) {
             Icon(
                 imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
@@ -49,20 +48,19 @@ internal fun ListingDetailActions(
             Spacer(modifier = Modifier.width(6.dp))
             Text(if (isBookmarked) "Bookmarked" else "Bookmark")
         }
-        Button(
+        BulletinButton(
             onClick = onDismiss,
             modifier = Modifier.weight(1f),
-            colors = BulletinButtonDefaults.buttonColors()
+            variant = BulletinButtonVariant.Primary
         ) {
             Text("Close")
         }
     }
     if (canReportListing) {
-        OutlinedButton(
+        BulletinButton(
             onClick = onReportListing,
             modifier = Modifier.fillMaxWidth(),
-            colors = BulletinButtonDefaults.destructiveOutlinedButtonColors(),
-            border = BulletinButtonDefaults.destructiveOutlinedButtonBorder()
+            variant = BulletinButtonVariant.DestructiveOutlined
         ) {
             Text("Report Listing")
         }

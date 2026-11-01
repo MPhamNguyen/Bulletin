@@ -15,21 +15,20 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ModeEdit
 import androidx.compose.material.icons.outlined.Sell
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 
@@ -157,13 +156,9 @@ private fun MyListingStatusButton(status: ListingStatus, onMarkSold: () -> Unit,
 
 @Composable
 private fun MyListingStateButton(label: String, onClick: () -> Unit) {
-    FilledTonalButton(
+    BulletinButton(
         onClick = onClick,
-        shape = MaterialTheme.shapes.small,
-        colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        variant = BulletinButtonVariant.Tonal
     ) {
         Icon(Icons.Outlined.Sell, contentDescription = null, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.width(4.dp))
@@ -178,22 +173,18 @@ private fun MyListingManagementActions(onDelete: () -> Unit, onEdit: () -> Unit)
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TextButton(
+        BulletinButton(
             onClick = onDelete,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            variant = BulletinButtonVariant.DestructiveText
         ) {
             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
             Text("Delete")
         }
-        FilledTonalButton(
+        BulletinButton(
             onClick = onEdit,
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+            variant = BulletinButtonVariant.Tonal
         ) {
             Icon(Icons.Outlined.ModeEdit, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))

@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 data class ItemDetailRow(val label: String, val value: String)
@@ -23,7 +22,6 @@ fun ItemDetailsSection(rows: List<ItemDetailRow>, modifier: Modifier = Modifier)
         Text(
             text = "Item details",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
         rows.forEach { row ->

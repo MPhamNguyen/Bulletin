@@ -15,9 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
 fun ListingFlashMessage(
@@ -26,26 +27,25 @@ fun ListingFlashMessage(
 ) {
     Row(
         modifier = modifier
-            .shadow(6.dp, MaterialTheme.shapes.large)
+            .shadow(BulletinElevation.floating, MaterialTheme.shapes.large)
             .background(
-                color = BulletinExtras.colors.successContainer,
+                color = MaterialTheme.bulletinColors.successContainer,
                 shape = MaterialTheme.shapes.large
             )
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Outlined.CheckCircle,
             contentDescription = null,
-            tint = BulletinExtras.colors.success,
+            tint = MaterialTheme.bulletinColors.success,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = message,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = BulletinExtras.colors.success
+            color = MaterialTheme.bulletinColors.success
         )
     }
 }

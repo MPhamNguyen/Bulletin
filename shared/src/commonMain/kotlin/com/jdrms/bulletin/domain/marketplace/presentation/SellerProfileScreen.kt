@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 
@@ -55,7 +56,7 @@ fun SellerProfileScreen(
             state.profile != null -> LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
             ) {
                 item { SellerProfileHero(state.profile) }
                 item { SellerProfileStats(state.profile, state.soldListingsCount) }
@@ -132,7 +133,7 @@ private fun SellerProfileLoading() {
 @Composable
 private fun SellerProfileError(message: String) {
     Box(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(BulletinSpacing.xl),
         contentAlignment = Alignment.Center
     ) {
         BulletinCard {

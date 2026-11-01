@@ -12,6 +12,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun HomeTrayPeek(
@@ -34,8 +35,8 @@ internal fun HomeTrayPeek(
         ).fillMaxWidth().height(HOME_TRAY_LIFT_DP.dp).graphicsLayer {
             alpha = homeTrayAlpha(progress())
             translationY = (1f - progress()) * 28.dp.toPx()
-        }.clipToBounds().padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom)
+        }.clipToBounds().padding(BulletinSpacing.s),
+        verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs, Alignment.Bottom)
     ) {
         // Measure the composer first. Optional header content yields space on short IME viewports.
         Column(Modifier.weight(1f, fill = false)) {
@@ -49,7 +50,7 @@ internal fun HomeTrayPeek(
 private fun HomeQuickReplyRow(active: Boolean, onSelected: (String) -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier.heightIn(min = 48.dp).fillMaxWidth().horizontalScroll(rememberScrollState(), enabled = active),
-        Arrangement.spacedBy(8.dp)
+        Arrangement.spacedBy(BulletinSpacing.s)
     ) {
         homeQuickReplies().forEach { reply ->
             SuggestionChip(modifier = Modifier.heightIn(min = 48.dp), onClick = {

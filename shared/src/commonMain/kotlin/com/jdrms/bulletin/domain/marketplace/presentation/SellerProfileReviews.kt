@@ -19,11 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.ReviewPaginationActions
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 
 @Composable
@@ -33,8 +33,8 @@ internal fun SellerProfileReviews(reviews: List<MarketplaceSellerReview>) {
     }
     val visibleReviews = reviews.take(visibleReviewCount)
     BulletinCard {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Reviews", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
+            Text("Reviews", style = MaterialTheme.typography.titleMedium)
             if (reviews.isEmpty()) {
                 Text(
                     text = "This seller has no reviews yet.",
@@ -71,10 +71,10 @@ internal fun nextVisibleReviewCount(currentCount: Int, totalCount: Int): Int {
 
 @Composable
 private fun SellerReview(review: MarketplaceSellerReview) {
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
         ) {
             Text(review.reviewerName, style = MaterialTheme.typography.labelLarge)
             Row(Modifier.semantics { contentDescription = "${review.rating} out of 5 stars" }) {
@@ -83,7 +83,7 @@ private fun SellerReview(review: MarketplaceSellerReview) {
                         imageVector = Icons.Filled.Star,
                         contentDescription = null,
                         tint = if (value <= review.rating) {
-                            BulletinExtras.colors.star
+                            MaterialTheme.bulletinColors.star
                         } else {
                             MaterialTheme.colorScheme.outlineVariant
                         },

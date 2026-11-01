@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tune
@@ -15,7 +14,7 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,7 +27,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 
@@ -73,17 +73,17 @@ private fun MarketplaceSearchBar(
     onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
+        BulletinTextField(
             value = filters.query,
             onValueChange = onQueryChanged,
-            placeholder = { Text("Search textbooks, furniture, etc.") },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.showKeyboardOnFocusOrTap()
+            modifier = Modifier
                 .weight(1f)
                 .onGloballyPositioned(onSearchPositioned)
-                .semantics { contentDescription = "Search marketplace listings" }
+                .semantics { contentDescription = "Search marketplace listings" },
+            decoration = BulletinFieldDecoration(
+                placeholder = { Text("Search textbooks, furniture, etc.") },
+                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) }
+            )
         )
         FilterButton(filters.activeFilterCount, isFilterSheetOpen, onToggleFilters)
     }
@@ -103,7 +103,7 @@ private fun FilterButton(activeCount: Int, isExpanded: Boolean, onClick: () -> U
                     else -> "Show filters, $activeCount active"
                 }
             },
-            shape = RoundedCornerShape(16.dp)
+            shape = MaterialTheme.shapes.large
         ) {
             Icon(Icons.Outlined.Tune, contentDescription = null)
         }

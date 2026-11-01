@@ -9,35 +9,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.ItemDetailRow
 import com.jdrms.bulletin.core.designsystem.ItemDetailsSection
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSheetDefaults
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,7 +51,7 @@ internal fun BookmarkedListingDetailSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        shape = BulletinSheetDefaults.shape
     ) {
         Column(
             modifier = Modifier.dismissKeyboardOnTapOutside()
@@ -76,7 +74,6 @@ internal fun BookmarkedListingDetailSheet(
                 Text(
                     text = "About this item",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = listing.description,
@@ -104,10 +101,10 @@ internal fun BookmarkedListingDetailSheet(
                 )
             }
             if (actions.review.isAvailable) {
-                Button(
+                BulletinButton(
                     onClick = actions.review.onOpen,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = BulletinButtonDefaults.buttonColors()
+                    variant = BulletinButtonVariant.Primary
                 ) {
                     Text("Leave Review for Seller")
                 }
@@ -138,14 +135,12 @@ private fun ListingTitleAndPrice(listing: ProfileBookmarkedListing) {
         Text(
             text = listing.title,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = listing.price,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
     }
@@ -158,12 +153,11 @@ private fun ListingDetailActions(
     onDismiss: () -> Unit
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedButton(
+        BulletinButton(
             onClick = onRemoveBookmark,
             enabled = !isRemovingBookmark,
             modifier = Modifier.weight(1f),
-            colors = BulletinButtonDefaults.outlinedButtonColors(),
-            border = BulletinButtonDefaults.outlinedButtonBorder()
+            variant = BulletinButtonVariant.Outlined
         ) {
             if (isRemovingBookmark) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -177,10 +171,10 @@ private fun ListingDetailActions(
             Spacer(modifier = Modifier.width(6.dp))
             Text(if (isRemovingBookmark) "Removing..." else "Remove Bookmark")
         }
-        Button(
+        BulletinButton(
             onClick = onDismiss,
             modifier = Modifier.weight(1f),
-            colors = BulletinButtonDefaults.buttonColors()
+            variant = BulletinButtonVariant.Primary
         ) {
             Text("Close")
         }

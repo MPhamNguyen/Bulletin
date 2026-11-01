@@ -12,12 +12,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,10 +28,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
@@ -53,7 +56,7 @@ internal fun ReportMarketplaceUserScreen(
             modifier = Modifier.fillMaxWidth(0.92f).heightIn(max = 620.dp),
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = BulletinElevation.floating
         ) {
             Column(
                 Modifier.dismissKeyboardOnTapOutside().fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
@@ -74,15 +77,16 @@ internal fun ReportMarketplaceUserScreen(
                         onReasonSelected = onReasonSelected,
                         onDescriptionChanged = onDescriptionChanged
                     )
-                    Button(
+                    BulletinButton(
                         onClick = onSubmit,
                         enabled = !state.isSubmitting,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        variant = BulletinButtonVariant.Primary
                     ) {
                         if (state.isSubmitting) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
                                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -112,14 +116,17 @@ private fun ReportErrorContent(message: String) {
 
 @Composable
 private fun ReportSubmittedContent(onBack: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
         Surface(
-            color = BulletinExtras.colors.successContainer,
-            contentColor = BulletinExtras.colors.onSuccessContainer,
+            color = MaterialTheme.bulletinColors.successContainer,
+            contentColor = MaterialTheme.bulletinColors.onSuccessContainer,
             shape = MaterialTheme.shapes.medium,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
         ) {
-            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                Modifier.fillMaxWidth().padding(BulletinSpacing.m),
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
+            ) {
                 Text("Report submitted", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Your report was submitted successfully. Thank you for helping keep the marketplace safe.",
@@ -127,7 +134,9 @@ private fun ReportSubmittedContent(onBack: () -> Unit) {
                 )
             }
         }
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+        BulletinButton(onClick = onBack, modifier = Modifier.fillMaxWidth(), variant = BulletinButtonVariant.Primary) {
+            Text("Done")
+        }
     }
 }
 
@@ -151,15 +160,18 @@ private fun ReportFormContent(
                 Text(reason.label, style = MaterialTheme.typography.bodyMedium)
             }
         }
-        OutlinedTextField(
+        BulletinTextField(
             value = state.description,
             onValueChange = onDescriptionChanged,
-            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
-            label = { Text("Additional information (optional)") },
-            supportingText = { Text("${state.description.length}/1000") },
-            minLines = 3,
-            maxLines = 6,
-            colors = BulletinTextFieldDefaults.colors()
+            modifier = Modifier.fillMaxWidth(),
+            decoration = BulletinFieldDecoration(
+                label = { Text("Additional information (optional)") },
+                supportingText = { Text("${state.description.length}/1000") }
+            ),
+            options = BulletinFieldOptions(
+                minLines = 3,
+                maxLines = 6
+            )
         )
     }
 }

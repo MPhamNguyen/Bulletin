@@ -1,4 +1,4 @@
-package com.jdrms.bulletin.domain.profile.presentation
+package com.jdrms.bulletin.core.designsystem
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -29,18 +29,21 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
-internal fun ProfilePullRefreshIndicator(
+internal fun BulletinPullRefreshIndicator(
     state: PullToRefreshState,
     isRefreshing: Boolean,
     isComplete: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    completionContentDescription: String = "Updated"
 ) {
     val progress = state.distanceFraction.coerceIn(0f, 1f)
     val primary = MaterialTheme.colorScheme.primary
-    val success = BulletinExtras.colors.success
+    val success = MaterialTheme.bulletinColors.success
     val track = MaterialTheme.colorScheme.surfaceVariant
 
     val showIndicator = isRefreshing || isComplete || (progress > 0f && !state.isAnimating)
@@ -48,7 +51,7 @@ internal fun ProfilePullRefreshIndicator(
         val rotation by rememberInfiniteTransition().animateFloat(
             initialValue = 0f,
             targetValue = 360f,
-            animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Restart)
+            animationSpec = infiniteRepeatable(tween(BulletinMotion.SPIN, easing = LinearEasing), RepeatMode.Restart)
         )
         Surface(
             modifier = modifier
@@ -57,7 +60,7 @@ internal fun ProfilePullRefreshIndicator(
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp
+            shadowElevation = BulletinElevation.raised
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize().padding(3.dp)) {
@@ -93,7 +96,7 @@ internal fun ProfilePullRefreshIndicator(
                 when {
                     isComplete -> Icon(
                         imageVector = Icons.Outlined.Check,
-                        contentDescription = "Profile updated",
+                        contentDescription = completionContentDescription,
                         tint = success,
                         modifier = Modifier.size(20.dp)
                     )

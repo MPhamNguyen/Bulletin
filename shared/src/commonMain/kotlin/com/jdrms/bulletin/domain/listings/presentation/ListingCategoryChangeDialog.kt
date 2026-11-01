@@ -1,24 +1,19 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.WarningAmber
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
 
 /** Asks before a category switch discards nonblank item details. Cancel leaves the form unchanged. */
 @Composable
@@ -42,7 +40,7 @@ internal fun ListingCategoryChangeDialog(
             shape = MaterialTheme.shapes.large,
             color = scheme.surface,
             contentColor = scheme.onSurface,
-            tonalElevation = 6.dp
+            tonalElevation = BulletinElevation.floating
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -57,7 +55,6 @@ internal fun ListingCategoryChangeDialog(
                     Text(
                         text = "Change category?",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                     Text(
@@ -95,17 +92,15 @@ private fun WarningBadge() {
 private fun CategoryChangeActions(onConfirm: () -> Unit, onCancel: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(
+        BulletinButton(
             onClick = onCancel,
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            modifier = Modifier.fillMaxWidth(),
+            variant = BulletinButtonVariant.Primary
         ) { Text("Keep category", fontWeight = FontWeight.Bold) }
-        OutlinedButton(
+        BulletinButton(
             onClick = onConfirm,
-            shape = MaterialTheme.shapes.medium,
-            border = BorderStroke(1.5.dp, scheme.error),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.error),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            modifier = Modifier.fillMaxWidth(),
+            variant = BulletinButtonVariant.DestructiveOutlined
         ) { Text("Change category", fontWeight = FontWeight.Bold) }
     }
 }

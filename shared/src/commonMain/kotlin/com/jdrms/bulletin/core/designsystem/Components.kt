@@ -6,20 +6,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 /** Height occupied by the app navigation bar, including its system bar inset. */
 val LocalNavbarHeight = staticCompositionLocalOf<Dp> { 0.dp }
 
 @Composable
 fun SectionHeader(title: String, subtitle: String? = null) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = BulletinSpacing.s)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
         subtitle?.let {
@@ -45,9 +46,9 @@ fun BulletinCard(
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = BulletinElevation.none)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(BulletinSpacing.l)) {
             content()
         }
     }
@@ -63,12 +64,12 @@ fun ReviewPaginationActions(
     if (!isExpanded && !hasMore) return
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         if (isExpanded) {
-            TextButton(onClick = onSeeLess) {
+            BulletinButton(onClick = onSeeLess, variant = BulletinButtonVariant.Text) {
                 Text("See less reviews")
             }
         }
         if (hasMore) {
-            TextButton(onClick = onSeeMore) {
+            BulletinButton(onClick = onSeeMore, variant = BulletinButtonVariant.Text) {
                 Text("See more reviews")
             }
         }

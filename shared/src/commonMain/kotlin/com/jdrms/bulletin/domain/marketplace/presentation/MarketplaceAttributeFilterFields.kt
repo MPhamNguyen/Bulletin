@@ -9,13 +9,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
 
 /** Electronics-only filter inputs inside the filter sheet: device type, exact brand, RAM and storage ranges. */
@@ -93,16 +94,18 @@ private fun FilterTextField(
     modifier: Modifier = Modifier.fillMaxWidth(),
     onValueChange: (String) -> Unit
 ) {
-    OutlinedTextField(
+    BulletinTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        modifier = modifier,
         isError = error != null,
-        supportingText = error?.takeIf(String::isNotEmpty)?.let { message -> { Text(message) } },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        colors = BulletinTextFieldDefaults.colors(),
-        shape = MaterialTheme.shapes.small,
-        modifier = modifier
+        decoration = BulletinFieldDecoration(
+            label = { Text(label) },
+            supportingText = error?.takeIf(String::isNotEmpty)?.let { message -> { Text(message) } }
+        ),
+        options = BulletinFieldOptions(
+
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
+        )
     )
 }

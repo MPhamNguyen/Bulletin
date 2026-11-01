@@ -7,13 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -23,10 +21,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 private const val PREFETCH_REMAINING_ITEMS = 2
 
@@ -83,14 +83,21 @@ private fun HomeScreenBody(
     ) { paused ->
         HomeAnnouncementRegion(LocalHomeAnnouncements.current, state.interaction)
         HomeDeckContent(state, viewModel, motionDurationScale, profileAnchorInWindow, paused)
-        HomeSaveRetrySnackbar(state, viewModel, Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(1f))
-        HomeAccountNotice(state.interaction.accountNotice, Modifier.align(Alignment.BottomCenter).padding(16.dp))
+        HomeSaveRetrySnackbar(
+            state,
+            viewModel,
+            Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.l).zIndex(1f)
+        )
+        HomeAccountNotice(
+            state.interaction.accountNotice,
+            Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.l)
+        )
         if (state.feed.getOrNull(state.currentIndex) != null && error != null) {
             NextPageError(
                 message = error,
                 isRetrying = state.isLoadingMore,
                 onRetry = viewModel::loadNextPage,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                modifier = Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.l)
             )
         }
     }
@@ -158,10 +165,10 @@ private fun FeedErrorState(title: String, message: String, onRetry: () -> Unit, 
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             FeedStateMessage(title, message, isError = true)
-            Button(onClick = onRetry, shape = MaterialTheme.shapes.medium) {
+            BulletinButton(onClick = onRetry, variant = BulletinButtonVariant.Primary) {
                 Text("Try again", style = MaterialTheme.typography.labelLarge)
             }
         }
@@ -173,7 +180,6 @@ private fun FeedStateMessage(title: String, message: String, isError: Boolean = 
     Text(
         text = title,
         style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center
     )
@@ -199,9 +205,9 @@ private fun NextPageError(
             contentColor = MaterialTheme.colorScheme.onErrorContainer
         )
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s)) {
             Text(message, style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onRetry, enabled = !isRetrying) {
+            BulletinButton(onClick = onRetry, enabled = !isRetrying, variant = BulletinButtonVariant.Text) {
                 if (isRetrying) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
@@ -232,7 +238,7 @@ private fun EmptyFeedState(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             Text(text = "✨", style = MaterialTheme.typography.displayMedium)
             FeedStateMessage(
@@ -244,16 +250,15 @@ private fun EmptyFeedState(
                 }
             )
             onLoadMore?.let { loadMore ->
-                Button(onClick = loadMore, shape = MaterialTheme.shapes.medium) {
+                BulletinButton(onClick = loadMore, variant = BulletinButtonVariant.Primary) {
                     Text("Load More", style = MaterialTheme.typography.labelLarge)
                 }
             }
-            TextButton(onClick = onRefresh) { Text("Refresh") }
-            Button(onClick = onReset, shape = MaterialTheme.shapes.medium) {
+            BulletinButton(onClick = onRefresh, variant = BulletinButtonVariant.Text) { Text("Refresh") }
+            BulletinButton(onClick = onReset, variant = BulletinButtonVariant.Primary) {
                 Text(
                     text = "Start Over",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

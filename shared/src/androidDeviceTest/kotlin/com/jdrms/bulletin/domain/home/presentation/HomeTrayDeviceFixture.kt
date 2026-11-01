@@ -8,7 +8,7 @@ import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onNodeWithText
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.home.application.ContactSellerPort
 import com.jdrms.bulletin.domain.home.application.GetPersonalizedFeed
 import com.jdrms.bulletin.domain.home.application.SaveListingPort

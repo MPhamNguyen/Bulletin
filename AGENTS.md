@@ -21,7 +21,7 @@ Bulletin is a Kotlin Multiplatform campus marketplace. Android is the current ap
 | Concern | Source of truth |
 | --- | --- |
 | Backend state per repository | `README.md` **Backend status** table and actual bindings in `AppContainer` |
-| Shared UI tokens and components | `shared/src/commonMain/kotlin/com/jdrms/bulletin/core/designsystem/Theme.kt` and `Components.kt` |
+| Shared UI tokens and components | `shared/src/commonMain/kotlin/com/jdrms/bulletin/core/designsystem/theme/` (tokens and `Bulletin*Defaults`), `BulletinButton.kt`, `BulletinTextField.kt`, and `Components.kt` |
 | Dependency versions | `gradle/libs.versions.toml` |
 | Static analysis | `config/detekt/detekt.yml` and the Gradle checks |
 | Database schema, RLS, storage rules | `supabase/migrations/` |
@@ -49,6 +49,26 @@ Business code under `shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/` us
 - A context owns its aggregates, repositories, DTOs, and vocabulary. Do not import another context's entity, repository, DTO, mapper, ViewModel, or screen. Cross contexts through a typed ID when only identity is needed, or through a consumer-owned port, snapshot, event, or translation at the boundary.
 - Express meaningful state changes through named operations that protect invariants. Use value objects and sealed states when they clarify the domain; avoid turning every value or small operation into a new abstraction.
 - Use `com.jdrms.bulletin.core.common.Result` for expected failures. Keep I/O suspendable and off blocking coroutine paths. Keep platform-specific code in `androidMain` behind a suitable boundary when shared code needs it.
+
+## Design-system boundaries
+
+Compose UI extends `core/designsystem` instead of styling at call sites. Use `BulletinButton`
+(variant and size) and `BulletinTextField` for app actions and input. Read extended colors only
+through `MaterialTheme.bulletinColors`; third-party colors belong in `BulletinBrandColors`.
+Use Material typography or `BulletinTextStyles`, Material shapes or named `BulletinShapes`
+(`pill` for fully rounded ends), `BulletinElevation`, and `BulletinMotion` instead of literals.
+Do not repeat a font weight already provided by the typography token. `App` installs
+`BulletinTheme` once; screens and shells must not install another theme.
+
+`scripts/check-design-system-boundaries.sh` rejects `OutlinedTextField(`, `Button(`,
+`Color(0x`, and `RoundedCornerShape(` outside `core/designsystem`. Test source sets are
+excluded. Exceptions require `// design-system-exempt: <reason>` on the same or previous
+line; reviewers should challenge them. Run this script and its self-test
+`scripts/test-check-design-system-boundaries.sh` before pushing. CI runs both in the
+Design-system boundaries job. This script works without Detekt CLI type resolution.
+
+`BulletinButtonDeviceTest` and `BulletinTextFieldDeviceTest` sample rendered geometry and
+colors on a device or emulator; they do not compare golden screenshots.
 
 ## Cohesion and file organization
 
@@ -99,7 +119,7 @@ A ViewModel coordinates; it should not contain the flows themselves. When one gr
 
 - Keep the top-level screen composable small: collect state, handle events, choose which content to show.
 - Move each distinct region (a header, a form section, a list item, a dialog, a bottom sheet) to its own file once it has its own state or parameters.
-- Shared styling belongs in the design system (`Theme.kt`, `Components.kt`), not copied between screens.
+- Shared styling belongs in the design system (`theme/`, `Components.kt`), not copied between screens.
 - Previews go in a `*Previews.kt` file.
 
 ### Splitting an adapter
@@ -162,7 +182,7 @@ Any changed Kotlin file over 300 lines, ViewModel over 250, or screen over 300 n
 
 ## Compose and Kotlin
 
-- Before changing visual UI, read `Theme.kt`. Use `MaterialTheme` colors, typography, and shapes; add reusable tokens centrally. Check `Components.kt` before duplicating a shared component. Use a local value for content-specific geometry when that is clearer.
+- Before changing visual UI, read the relevant files in `core/designsystem/theme/`. Use `MaterialTheme` colors, typography, and shapes; add reusable tokens centrally. Use `BulletinButton` and `BulletinTextField` rather than raw Material buttons and text fields, and check `Components.kt` before duplicating a shared component. Use a local value for content-specific geometry when that is clearer.
 - Keep composables driven by state. Represent multi-step flows with explicit states when combinations of flags could become invalid. Keep independent loading and error states separate when users can see or act on them independently.
 - Scope a ViewModel to the screen or flow it serves. Keep transient snackbar messages as one-shot events rather than timer-cleared state; keep inline field errors in state. Obtain the acting user through the session abstraction, never a placeholder or a default ID.
 - Expose ViewModel state read-only; use `MutableStateFlow.update` and `viewModelScope` when working with the repository's coroutine-based state pattern. Extract stateless sub-composables when a screen contains distinct layout concerns. Keep functions at a consistent level of abstraction.

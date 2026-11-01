@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun AppearanceCard(themePreference: ThemePreference, onThemePreferenceChanged: (ThemePreference) -> Unit) {
@@ -45,7 +47,7 @@ internal fun AppearanceCard(themePreference: ThemePreference, onThemePreferenceC
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             Box(
                 modifier = Modifier
@@ -67,10 +69,10 @@ internal fun AppearanceCard(themePreference: ThemePreference, onThemePreferenceC
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.l))
         Row(
             modifier = Modifier.fillMaxWidth().selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
         ) {
             ThemePreference.entries.forEach { preference ->
                 AppearanceOption(
@@ -93,17 +95,17 @@ private fun AppearanceOption(
 ) {
     val backgroundColor by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerLow,
-        tween(durationMillis = 180),
+        tween(durationMillis = BulletinMotion.FAST),
         label = "Appearance option background"
     )
     val borderColor by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-        tween(durationMillis = 180),
+        tween(durationMillis = BulletinMotion.FAST),
         label = "Appearance option border"
     )
     val lift by animateDpAsState(
         if (selected) (-2).dp else 0.dp,
-        tween(durationMillis = 180),
+        tween(durationMillis = BulletinMotion.FAST),
         label = "Appearance option lift"
     )
     val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
@@ -118,7 +120,7 @@ private fun AppearanceOption(
                 contentDescription = themePreferenceDescription(preference)
                 stateDescription = if (selected) "Selected" else "Not selected"
             }
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .padding(horizontal = BulletinSpacing.xs, vertical = BulletinSpacing.s),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -128,7 +130,7 @@ private fun AppearanceOption(
             tint = contentColor,
             modifier = Modifier.size(22.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
         Text(
             text = themePreferenceLabel(preference),
             style = MaterialTheme.typography.labelMedium,

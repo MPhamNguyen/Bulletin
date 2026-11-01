@@ -11,11 +11,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
 internal fun HomeSwipeFeedback(save: () -> Float, pass: () -> Float, modifier: Modifier = Modifier) {
-    val saveColor = BulletinExtras.colors.success
+    val saveColor = MaterialTheme.bulletinColors.success
     val passColor = MaterialTheme.colorScheme.error
     Box(modifier.fillMaxSize().clip(MaterialTheme.shapes.large)) {
         Box(

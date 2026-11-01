@@ -6,9 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,8 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 @Composable
@@ -30,14 +31,14 @@ internal fun SignUpSuccessContent(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BulletinExtras.colors.successContainer, MaterialTheme.shapes.medium)
-            .padding(16.dp),
+            .background(MaterialTheme.bulletinColors.successContainer, MaterialTheme.shapes.medium)
+            .padding(BulletinSpacing.l),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = successMessage ?: "Account created successfully!",
             style = MaterialTheme.typography.titleMedium,
-            color = BulletinExtras.colors.onSuccessContainer,
+            color = MaterialTheme.bulletinColors.onSuccessContainer,
             fontWeight = FontWeight.SemiBold
         )
     }
@@ -48,14 +49,14 @@ internal fun SignUpSuccessContent(
         color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.s))
     Text(
         text = profile.email.value,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
     Text(
         text = profile.university,
         style = MaterialTheme.typography.bodyMedium,
@@ -63,21 +64,20 @@ internal fun SignUpSuccessContent(
         textAlign = TextAlign.Center
     )
     Spacer(modifier = Modifier.height(28.dp))
-    Button(
+    BulletinButton(
         onClick = onContinueToApp,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = BulletinButtonDefaults.buttonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Primary,
+        size = BulletinButtonSize.Large
     ) {
         Text("Continue to Bulletin", style = MaterialTheme.typography.titleMedium)
     }
-    Spacer(modifier = Modifier.height(12.dp))
-    OutlinedButton(
+    Spacer(modifier = Modifier.height(BulletinSpacing.m))
+    BulletinButton(
         onClick = onNavigateToSignIn,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        border = BulletinButtonDefaults.outlinedButtonBorder(),
-        colors = BulletinButtonDefaults.outlinedButtonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Outlined,
+        size = BulletinButtonSize.Large
     ) {
         Text("Back to Sign In", style = MaterialTheme.typography.titleMedium)
     }

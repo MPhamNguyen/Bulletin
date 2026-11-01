@@ -8,7 +8,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 
 @Composable
@@ -65,17 +67,13 @@ private fun ActiveListingTitleAndPrice(listing: Listing) {
 @Composable
 private fun ActiveListingActions(onDelete: () -> Unit, onMarkSold: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        FilledTonalButton(
+        BulletinButton(
             onClick = onMarkSold,
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            variant = BulletinButtonVariant.Tonal
         ) { Text("Mark as sold") }
-        TextButton(
+        BulletinButton(
             onClick = onDelete,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            variant = BulletinButtonVariant.DestructiveText
         ) {
             Text("Delete Listing")
         }
