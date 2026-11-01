@@ -10,6 +10,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 internal val BulletinTypography = Typography(
+    displayLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 46.sp),
+    displayMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 36.sp, lineHeight = 42.sp),
     displaySmall = TextStyle(
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
@@ -25,6 +27,7 @@ internal val BulletinTypography = Typography(
         fontSize = 24.sp,
         lineHeight = 30.sp
     ),
+    headlineSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 28.sp),
     titleLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 20.sp,
@@ -60,6 +63,7 @@ internal val BulletinTypography = Typography(
         fontSize = 14.sp,
         lineHeight = 20.sp
     ),
+    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 16.sp),
     labelMedium = TextStyle(
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,

@@ -7,13 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 private const val PREFETCH_REMAINING_ITEMS = 2
@@ -169,7 +169,7 @@ private fun FeedErrorState(title: String, message: String, onRetry: () -> Unit, 
             verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             FeedStateMessage(title, message, isError = true)
-            Button(onClick = onRetry, shape = MaterialTheme.shapes.medium) {
+            BulletinButton(onClick = onRetry, variant = BulletinButtonVariant.Primary) {
                 Text("Try again", style = MaterialTheme.typography.labelLarge)
             }
         }
@@ -209,7 +209,7 @@ private fun NextPageError(
     ) {
         Column(modifier = Modifier.padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s)) {
             Text(message, style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onRetry, enabled = !isRetrying) {
+            BulletinButton(onClick = onRetry, enabled = !isRetrying, variant = BulletinButtonVariant.Text) {
                 if (isRetrying) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
@@ -252,12 +252,12 @@ private fun EmptyFeedState(
                 }
             )
             onLoadMore?.let { loadMore ->
-                Button(onClick = loadMore, shape = MaterialTheme.shapes.medium) {
+                BulletinButton(onClick = loadMore, variant = BulletinButtonVariant.Primary) {
                     Text("Load More", style = MaterialTheme.typography.labelLarge)
                 }
             }
-            TextButton(onClick = onRefresh) { Text("Refresh") }
-            Button(onClick = onReset, shape = MaterialTheme.shapes.medium) {
+            BulletinButton(onClick = onRefresh, variant = BulletinButtonVariant.Text) { Text("Refresh") }
+            BulletinButton(onClick = onReset, variant = BulletinButtonVariant.Primary) {
                 Text(
                     text = "Start Over",
                     style = MaterialTheme.typography.labelLarge,

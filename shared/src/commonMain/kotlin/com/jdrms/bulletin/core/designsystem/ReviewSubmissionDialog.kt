@@ -13,18 +13,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,10 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 
 private const val MAX_COMMENT_LENGTH = 500
 
@@ -73,7 +68,7 @@ fun ReviewSubmissionDialog(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(0.92f),
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp,
                 shadowElevation = 20.dp
@@ -99,7 +94,7 @@ fun ReviewSubmissionDialog(
 private fun ReviewHeader() {
     Row(verticalAlignment = Alignment.Top) {
         Surface(
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.primaryContainer,
             modifier = Modifier.size(48.dp)
         ) {
@@ -153,15 +148,18 @@ private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
 @Composable
 private fun ReviewCommentField(comment: String, onCommentChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
-        OutlinedTextField(
+        BulletinTextField(
             value = comment,
             onValueChange = onCommentChange,
-            label = { Text("Comment (optional)") },
-            placeholder = { Text("Add details if you’d like") },
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
-            minLines = 3,
-            maxLines = 5
+            modifier = Modifier.fillMaxWidth(),
+            decoration = BulletinFieldDecoration(
+                label = { Text("Comment (optional)") },
+                placeholder = { Text("Add details if you’d like") }
+            ),
+            options = BulletinFieldOptions(
+                minLines = 3,
+                maxLines = 5
+            )
         )
         Text(
             "${comment.length}/$MAX_COMMENT_LENGTH",
@@ -192,11 +190,15 @@ private fun ReviewActions(
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TextButton(onClick = onDismiss, enabled = !isSubmitting) { Text("Cancel") }
-        Button(
+        BulletinButton(
+            onClick = onDismiss,
+            enabled = !isSubmitting,
+            variant = BulletinButtonVariant.Text
+        ) { Text("Cancel") }
+        BulletinButton(
             onClick = { onSubmit(score, comment) },
             enabled = !isSubmitting && score in 1..5,
-            colors = BulletinButtonDefaults.buttonColors()
+            variant = BulletinButtonVariant.Primary
         ) {
             Text(if (isSubmitting) "Submitting…" else "Submit review")
         }

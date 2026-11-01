@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,8 +40,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.app.theme.ThemePreference
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
@@ -315,14 +316,12 @@ internal fun DeleteProfileButton(
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    OutlinedButton(
+    BulletinButton(
         onClick = onClick,
         modifier = modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        shape = MaterialTheme.shapes.large,
-        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
-        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
+            .fillMaxWidth(),
+        variant = BulletinButtonVariant.DestructiveOutlined,
+        size = BulletinButtonSize.Large
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

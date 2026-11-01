@@ -9,9 +9,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 
@@ -48,12 +49,12 @@ fun ListingRestoreConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isRestoring) {
+            BulletinButton(onClick = onDismiss, enabled = !isRestoring, variant = BulletinButtonVariant.Text) {
                 Text("Cancel")
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = !isRestoring) {
+            BulletinButton(onClick = onConfirm, enabled = !isRestoring, variant = BulletinButtonVariant.Text) {
                 Text(if (isRestoring) "Restoring…" else "Restore listing")
             }
         }

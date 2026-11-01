@@ -21,16 +21,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.application.BlockedUser
 
@@ -61,7 +60,7 @@ internal fun BlockedUsersView(
                 item {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(message, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = onRefresh) { Text("Retry") }
+                        BulletinButton(onClick = onRefresh, variant = BulletinButtonVariant.Text) { Text("Retry") }
                     }
                 }
             }
@@ -123,11 +122,10 @@ private fun BlockedUserCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            OutlinedButton(
+            BulletinButton(
                 onClick = onUnblock,
                 enabled = actionEnabled,
-                colors = BulletinButtonDefaults.outlinedButtonColors(),
-                border = BulletinButtonDefaults.outlinedButtonBorder()
+                variant = BulletinButtonVariant.Outlined
             ) {
                 if (isRemoving) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)

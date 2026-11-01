@@ -2,8 +2,6 @@ package com.jdrms.bulletin.core.designsystem
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -11,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,7 +21,6 @@ fun MoneyInput(
     onDigitsChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     label: @Composable () -> Unit,
-    shape: Shape = MaterialTheme.shapes.small,
     textStyle: TextStyle = LocalTextStyle.current,
     error: String? = null
 ) {
@@ -34,7 +30,7 @@ fun MoneyInput(
     }
     var inputError by remember(text) { mutableStateOf<String?>(null) }
     val displayedError = inputError ?: error
-    OutlinedTextField(
+    BulletinTextField(
         value = fieldValue,
         onValueChange = {
             if (it.text == fieldValue.text) {
@@ -51,15 +47,16 @@ fun MoneyInput(
                 }
             }
         },
-        label = label,
+        modifier = modifier,
         isError = displayedError != null,
-        supportingText = displayedError?.let { { Text(it) } },
-        placeholder = { Text("$0.00") },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        textStyle = textStyle,
-        colors = BulletinTextFieldDefaults.colors(),
-        shape = shape,
-        modifier = modifier.showKeyboardOnFocusOrTap()
+        decoration = BulletinFieldDecoration(
+            label = label,
+            placeholder = { Text("$0.00") },
+            supportingText = displayedError?.let { { Text(it) } }
+        ),
+        options = BulletinFieldOptions(
+            textStyle = textStyle,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
     )
 }

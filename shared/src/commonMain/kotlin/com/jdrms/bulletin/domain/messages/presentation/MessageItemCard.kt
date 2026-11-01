@@ -18,7 +18,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +30,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
@@ -149,9 +150,10 @@ private fun MessageBubbleContent(
         Text(messageBodyText(message, isRevealed), style = MaterialTheme.typography.bodyMedium)
         if (message.isReported) {
             Text("Reported for moderation", style = MaterialTheme.typography.labelSmall)
-            TextButton(
+            BulletinButton(
                 onClick = onToggleVisibility,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                variant = BulletinButtonVariant.Text
             ) {
                 Text(
                     if (isRevealed) "Hide message" else "Show message",

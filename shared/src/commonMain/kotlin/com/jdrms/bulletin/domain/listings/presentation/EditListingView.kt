@@ -10,21 +10,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 
@@ -72,14 +75,13 @@ fun EditListingView(
                 )
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
-                OutlinedTextField(
+                BulletinTextField(
                     value = uiState.editTitle,
                     onValueChange = actions.onTitleChange,
-                    label = { Text("Item Title") },
-                    singleLine = true,
-                    colors = BulletinTextFieldDefaults.colors(),
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    decoration = BulletinFieldDecoration(
+                        label = { Text("Item Title") }
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
@@ -87,7 +89,6 @@ fun EditListingView(
                 CurrencyTextField(
                     digits = uiState.editPriceCents,
                     onDigitsChange = actions.onPriceChange,
-                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -114,15 +115,17 @@ fun EditListingView(
 
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
-                OutlinedTextField(
+                BulletinTextField(
                     value = uiState.editDescription,
                     onValueChange = actions.onDescriptionChange,
-                    label = { Text("Description & Campus Pick-Up Details") },
-                    minLines = 3,
-                    maxLines = 6,
-                    colors = BulletinTextFieldDefaults.colors(),
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    decoration = BulletinFieldDecoration(
+                        label = { Text("Description & Campus Pick-Up Details") }
+                    ),
+                    options = BulletinFieldOptions(
+                        minLines = 3,
+                        maxLines = 6
+                    )
                 )
             }
 
@@ -143,14 +146,13 @@ fun EditListingView(
 
             Spacer(modifier = Modifier.height(BulletinSpacing.s))
 
-            Button(
+            BulletinButton(
                 onClick = actions.onSave,
                 enabled = !uiState.isUpdating,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.medium,
-                colors = BulletinButtonDefaults.buttonColors()
+                    .fillMaxWidth(),
+                variant = BulletinButtonVariant.Primary,
+                size = BulletinButtonSize.Large
             ) {
                 if (uiState.isUpdating) {
                     CircularProgressIndicator(
@@ -166,12 +168,11 @@ fun EditListingView(
                 }
             }
 
-            OutlinedButton(
+            BulletinButton(
                 onClick = actions.onBack,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = MaterialTheme.shapes.medium
+                    .fillMaxWidth(),
+                variant = BulletinButtonVariant.Outlined
             ) {
                 Text(
                     text = "Cancel",

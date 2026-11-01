@@ -10,10 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +30,11 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
@@ -108,7 +111,9 @@ private fun MessageReportSubmitted(onDismiss: () -> Unit) {
             )
         }
     }
-    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+    BulletinButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), variant = BulletinButtonVariant.Primary) {
+        Text("Done")
+    }
 }
 
 @Composable
@@ -125,15 +130,18 @@ private fun MessageReportForm(
         ReportReason.forType(ReportType.MESSAGE).forEach { reason ->
             MessageReportReasonOption(reason, form.selectedReason, onReasonSelected)
         }
-        OutlinedTextField(
+        BulletinTextField(
             value = form.description,
             onValueChange = onDescriptionChanged,
-            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
-            label = { Text("Additional information (optional)") },
-            supportingText = { Text("${form.description.length}/1000") },
-            minLines = 3,
-            maxLines = 6,
-            colors = BulletinTextFieldDefaults.colors()
+            modifier = Modifier.fillMaxWidth(),
+            decoration = BulletinFieldDecoration(
+                label = { Text("Additional information (optional)") },
+                supportingText = { Text("${form.description.length}/1000") }
+            ),
+            options = BulletinFieldOptions(
+                minLines = 3,
+                maxLines = 6
+            )
         )
     }
 }
@@ -159,11 +167,11 @@ private fun MessageReportSubmitButton(
     isInboxLoading: Boolean,
     onSubmit: () -> Unit
 ) {
-    Button(
+    BulletinButton(
         onClick = onSubmit,
         enabled = !isSubmitting && !isInboxLoading,
         modifier = Modifier.fillMaxWidth(),
-        colors = BulletinButtonDefaults.buttonColors()
+        variant = BulletinButtonVariant.Primary
     ) {
         if (isSubmitting || isInboxLoading) {
             Row(

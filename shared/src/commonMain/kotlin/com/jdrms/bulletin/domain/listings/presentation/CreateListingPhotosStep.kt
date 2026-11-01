@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
@@ -55,15 +56,14 @@ internal fun CreateListingPhotosStep(
             hint = "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} " +
                 "photos, 5 MB each. Adjust each photo to fit the square. The first is the cover."
         )
-        OutlinedTextField(
+        BulletinTextField(
             value = state.newTitle,
             onValueChange = actions.onTitleChange,
-            label = { ListingRequiredLabel("Title") },
-            placeholder = { Text("e.g. Calculus textbook, 8th edition") },
-            singleLine = true,
-            colors = BulletinTextFieldDefaults.colors(),
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            decoration = BulletinFieldDecoration(
+                label = { ListingRequiredLabel("Title") },
+                placeholder = { Text("e.g. Calculus textbook, 8th edition") }
+            )
         )
         ListingRequiredLabel("Category", style = MaterialTheme.typography.titleSmall)
         CategoryGrid(selected = state.newCategory, onSelected = actions.onCategorySelected)
