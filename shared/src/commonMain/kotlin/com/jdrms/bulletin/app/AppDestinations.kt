@@ -49,7 +49,13 @@ internal fun MainAppContent(
             onSaveCelebration = onSaveCelebration
         )
         AppDestination.MARKETPLACE -> MarketplaceDestination(container, navigation, models, onContentNoLongerScrollable)
-        AppDestination.LISTINGS -> ListingsScreen(models.listings)
+        AppDestination.LISTINGS -> ListingsScreen(
+            models.listings,
+            onClose = {
+                models.listings.clearMessages()
+                navigation.closeCreateListing()
+            }
+        )
         AppDestination.MESSAGES -> MessagesScreen(
             viewModel = models.messages,
             onViewProfile = { sellerId ->

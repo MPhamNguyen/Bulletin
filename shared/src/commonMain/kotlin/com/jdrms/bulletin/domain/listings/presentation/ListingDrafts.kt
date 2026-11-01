@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributes
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
@@ -16,7 +17,8 @@ internal data class NewListingDraft(
     val price: Double,
     val category: ListingCategory,
     val condition: ListingCondition,
-    val images: List<ListingImageUpload>
+    val images: List<ListingImageUpload>,
+    val attributes: ListingAttributes = ListingAttributes.EMPTY
 )
 
 internal data class ValidatedEditDraft(
@@ -26,5 +28,6 @@ internal data class ValidatedEditDraft(
     val price: Double,
     val category: ListingCategory,
     val condition: ListingCondition,
-    val photos: List<ListingPhotoDraft>
+    val photos: List<ListingPhotoDraft>,
+    val attributes: ListingAttributes = ListingAttributes.EMPTY
 )

@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class SupabaseMarketplaceListingDto(
@@ -18,7 +19,8 @@ data class SupabaseMarketplaceListingDto(
     @SerialName("seller_profile") val sellerProfile: SupabaseMarketplaceProfileDto? = null,
     @SerialName("buyer_id") val buyerId: String? = null,
     @SerialName("profiles") val profile: SupabaseMarketplaceProfileDto? = null,
-    @SerialName("listing_images") val listingImages: List<SupabaseMarketplaceListingImageDto> = emptyList()
+    @SerialName("listing_images") val listingImages: List<SupabaseMarketplaceListingImageDto> = emptyList(),
+    @SerialName("attributes") val attributes: JsonElement? = null
 )
 
 @Serializable

@@ -171,7 +171,11 @@ internal fun navigateTo(
         listings.cancelEditing()
         listings.clearMessages()
     }
-    navigation.apply(navigation.snapshot().selectBottomNavigationDestination(destination))
+    if (destination == AppDestination.LISTINGS) {
+        navigation.openCreateListing()
+    } else {
+        navigation.apply(navigation.snapshot().selectBottomNavigationDestination(destination))
+    }
 }
 
 internal fun <T> resolveProvidedOrCreate(provided: T?, create: () -> T): T = provided ?: create()

@@ -32,32 +32,13 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.ItemDetailRow
+import com.jdrms.bulletin.core.designsystem.ItemDetailsSection
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
-
-internal data class BookmarkedListingReviewActions(
-    val isAvailable: Boolean = false,
-    val onOpen: () -> Unit = {},
-    val isOpen: Boolean = false,
-    val isSubmitting: Boolean = false,
-    val errorMessage: String? = null,
-    val onDismiss: () -> Unit = {},
-    val onSubmit: (score: Int, comment: String) -> Unit = { _, _ -> }
-)
-
-internal data class BookmarkedListingDetailActions(
-    val onDismiss: () -> Unit,
-    val onRemoveBookmark: () -> Unit,
-    val canMessageSeller: Boolean,
-    val onMessageSeller: suspend (String) -> Boolean,
-    val hasExistingConversation: suspend () -> Boolean,
-    val onMessageSent: () -> Unit,
-    val review: BookmarkedListingReviewActions = BookmarkedListingReviewActions(),
-    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,6 +89,7 @@ internal fun BookmarkedListingDetailSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            ItemDetailsSection(listing.attributes.map { ItemDetailRow(it.label, it.value) })
             if (actions.canMessageSeller) {
                 MessageSellerQuickAction(
                     actions = MessageSellerQuickActionActions(

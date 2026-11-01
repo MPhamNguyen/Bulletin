@@ -1,10 +1,11 @@
 package com.jdrms.bulletin.domain.listings.presentation
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.common.currentTimeMillis
+import com.jdrms.bulletin.core.designsystem.normalizeCurrencyReplacement
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -19,9 +20,7 @@ import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplac
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
-import com.jdrms.bulletin.domain.listings.domain.model.ListingDetails
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
-import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -71,12 +70,30 @@ class ListingsViewModel(
             manageListing = manageListing,
             manageImages = manageListingImages,
             sellerProvider = currentSellerProvider,
-            callbacks = listingActionCallbacks
+            callbacks = listingActionCallbacks,
+            attributeActions = attributeActions
         )
     }
     private val photoActions by lazy { ListingPhotoActions(_uiState) }
+    private val attributeActions by lazy { ListingAttributeDraftActions(_uiState) }
+    private val editActions by lazy {
+        ListingEditActions(
+            state = _uiState,
+            scope = viewModelScope,
+            manageListing = manageListing,
+            manageImages = manageListingImages,
+            sellerProvider = currentSellerProvider,
+            callbacks = listingActionCallbacks,
+            attributeActions = attributeActions
+        )
+    }
     private val listingActionCallbacks by lazy {
-        ListingActionCallbacks(listingChangedSignal, ::showFlashNotification, ::loadMyListings)
+        ListingActionCallbacks(
+            listingChangedSignal,
+            ::showFlashNotification,
+            ::loadMyListings,
+            cancelNotification = { flashNotificationJob?.cancel() }
+        )
     }
     init {
         loadMyListings()
@@ -115,9 +132,10 @@ class ListingsViewModel(
             )
         }
     }
-    fun onCategorySelected(category: ListingCategory) {
-        _uiState.update { it.copy(newCategory = category) }
-    }
+    fun onCategorySelected(category: ListingCategory) =
+        attributeActions.selectCategory(ListingForm.NEW, category)
+    fun onNewAttributeChanged(key: String, text: String) =
+        attributeActions.inputChanged(ListingForm.NEW, key, text)
     fun onConditionSelected(condition: ListingCondition) {
         _uiState.update { it.copy(newCondition = condition) }
     }
@@ -185,55 +203,8 @@ class ListingsViewModel(
             }
         }
     }
-    fun startEditing(listing: Listing) {
-        flashNotificationJob?.cancel()
-        viewModelScope.launch {
-            when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
-                is Result.Success -> {
-                    val seller = sellerResult.data
-                    if (!listing.isOwnedBy(seller.id)) {
-                        _uiState.update {
-                            it.copy(errorMessage = "Only the owner can edit this listing.")
-                        }
-                        return@launch
-                    }
-                    _uiState.update {
-                        it.copy(
-                            editingListing = listing,
-                            editTitle = listing.title,
-                            editDescription = listing.description,
-                            editPriceCents = amountToCurrencyDigits(listing.price.amount),
-                            editCategory = listing.category,
-                            editCondition = listing.condition,
-                            editPhotos = listing.images.map { ListingPhotoDraft.Existing(it) },
-                            errorMessage = null,
-                            successMessage = null
-                        )
-                    }
-                }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception))
-                    }
-                }
-            }
-        }
-    }
-    fun cancelEditing() {
-        flashNotificationJob?.cancel()
-        _uiState.update {
-            it.copy(
-                editingListing = null,
-                editTitle = "",
-                editDescription = "",
-                editPriceCents = "",
-                editPhotos = emptyList(),
-                isUpdating = false,
-                errorMessage = null,
-                successMessage = null
-            )
-        }
-    }
+    fun startEditing(listing: Listing) = editActions.start(listing)
+    fun cancelEditing() = editActions.cancel()
     fun onEditTitleChanged(title: String) {
         _uiState.update { it.copy(editTitle = title, errorMessage = null, successMessage = null) }
     }
@@ -249,146 +220,16 @@ class ListingsViewModel(
             )
         }
     }
-    fun onEditCategorySelected(category: ListingCategory) {
-        _uiState.update { it.copy(editCategory = category) }
-    }
+    fun onEditCategorySelected(category: ListingCategory) =
+        attributeActions.selectCategory(ListingForm.EDIT, category)
+    fun onEditAttributeChanged(key: String, text: String) =
+        attributeActions.inputChanged(ListingForm.EDIT, key, text)
+    fun confirmCategoryChange() = attributeActions.confirmCategoryChange()
+    fun cancelCategoryChange() = attributeActions.cancelCategoryChange()
     fun onEditConditionSelected(condition: ListingCondition) {
         _uiState.update { it.copy(editCondition = condition) }
     }
-    fun saveListingChanges() {
-        val draft = validateEditDraft() ?: return
-        while (true) {
-            val state = _uiState.value
-            if (state.isUpdating) return
-            if (_uiState.compareAndSet(state, state.copy(isUpdating = true, errorMessage = null))) break
-        }
-        viewModelScope.launch { applyListingUpdate(draft) }
-    }
-    private fun validateEditDraft(): ValidatedEditDraft? {
-        val currentListing = _uiState.value.editingListing ?: return null
-        val state = _uiState.value
-        val validationError = when {
-            state.editPriceCents.isEmpty() ->
-                "Please enter a price"
-            state.editTitle.trim().length < 3 ->
-                "Title must be at least 3 characters"
-            state.editDescription.trim().isBlank() ->
-                "Description cannot be empty"
-            else -> null
-        }
-        return if (validationError != null) {
-            _uiState.update { it.copy(errorMessage = validationError) }
-            null
-        } else {
-            ValidatedEditDraft(
-                currentListing = currentListing,
-                title = state.editTitle.trim(),
-                description = state.editDescription.trim(),
-                price = currencyDigitsToAmount(state.editPriceCents),
-                category = state.editCategory,
-                condition = state.editCondition,
-                photos = state.editPhotos
-            )
-        }
-    }
-    private suspend fun applyListingUpdate(draft: ValidatedEditDraft) {
-        when (val sellerResult = currentSellerProvider.getCurrentSeller()) {
-            is Result.Success -> {
-                val seller = sellerResult.data
-                if (!draft.currentListing.isOwnedBy(seller.id)) {
-                    _uiState.update {
-                        it.copy(isUpdating = false, errorMessage = "Only the owner can edit this listing.")
-                    }
-                    return
-                }
-                executeListingUpdate(draft, seller)
-            }
-            is Result.Error -> {
-                _uiState.update {
-                    it.copy(
-                        isUpdating = false,
-                        errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
-                    )
-                }
-            }
-        }
-    }
-    private suspend fun executeListingUpdate(draft: ValidatedEditDraft, seller: ListingSeller) {
-        val updatedDetails = runCatching {
-            draft.currentListing.updateDetails(
-                editorSellerId = seller.id,
-                details = ListingDetails(
-                    title = draft.title,
-                    description = draft.description,
-                    price = ListingPrice(draft.price),
-                    category = draft.category,
-                    condition = draft.condition,
-                    images = draft.currentListing.images
-                ),
-                updatedAtMillis = currentTimeMillis()
-            )
-        }
-        if (updatedDetails.isFailure) {
-            _uiState.update {
-                it.copy(
-                    isUpdating = false,
-                    errorMessage = updatedDetails.exceptionOrNull()?.message ?: "Validation failed"
-                )
-            }
-            return
-        }
-        val updated = updatedDetails.getOrThrow()
-        when (val result = manageListing.updateListing(updated, seller.id)) {
-            is Result.Success -> {
-                if (!synchronizeEditedImages(draft, seller, updated)) return
-                _uiState.update {
-                    it.copy(
-                        editingListing = null,
-                        isUpdating = false
-                    )
-                }
-                showFlashNotification("Listing updated successfully!")
-                loadMyListings(seller)
-                listingChangedSignal?.emit()
-            }
-            is Result.Error -> {
-                _uiState.update {
-                    it.copy(
-                        isUpdating = false,
-                        errorMessage = CreateListingErrorMessages.toUserMessage(result.exception)
-                    )
-                }
-            }
-        }
-    }
-
-    private suspend fun synchronizeEditedImages(
-        draft: ValidatedEditDraft,
-        seller: ListingSeller,
-        listing: Listing
-    ): Boolean {
-        val retained = draft.photos.filterIsInstance<ListingPhotoDraft.Existing>().map { it.url }
-        val uploads = draft.photos.filterIsInstance<ListingPhotoDraft.Pending>().map { it.upload }
-        if (draft.currentListing.images.isEmpty() && uploads.isEmpty()) return true
-        val result = manageListingImages?.synchronize(listing.id, seller.id, retained, uploads)
-            ?: Result.Error(IllegalStateException("Listing image updates are not configured."))
-        return when (result) {
-            is Result.Success -> {
-                manageListing.updateListing(listing.copy(images = result.data), seller.id)
-                true
-            }
-            is Result.Error -> {
-                _uiState.update {
-                    it.copy(
-                        isUpdating = false,
-                        errorMessage = "Listing details were saved, but image changes failed: " +
-                            result.exception.message
-                    )
-                }
-                false
-            }
-        }
-    }
+    fun saveListingChanges() = editActions.save()
     fun clearMessages() {
         flashNotificationJob?.cancel()
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }

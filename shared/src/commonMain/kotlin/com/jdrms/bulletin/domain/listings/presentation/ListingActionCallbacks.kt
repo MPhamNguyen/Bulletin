@@ -6,5 +6,6 @@ import com.jdrms.bulletin.domain.listings.application.ListingSeller
 internal data class ListingActionCallbacks(
     val listingChangedSignal: RefreshSignal?,
     val notify: (String) -> Unit,
-    val reload: (ListingSeller?) -> Unit
+    val reload: (ListingSeller?) -> Unit,
+    val cancelNotification: () -> Unit = {}
 )

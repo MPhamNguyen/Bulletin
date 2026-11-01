@@ -44,6 +44,7 @@ fun MyListingItemCard(
 ) {
     BulletinCard(modifier = modifier) {
         MyListingSummary(listing)
+        ListingAttributeSummary(listing, Modifier.padding(top = 6.dp))
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = listing.description,
