@@ -31,34 +31,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
+import com.jdrms.bulletin.core.designsystem.ItemDetailRow
+import com.jdrms.bulletin.core.designsystem.ItemDetailsSection
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
-
-internal data class BookmarkedListingReviewActions(
-    val isAvailable: Boolean = false,
-    val onOpen: () -> Unit = {},
-    val isOpen: Boolean = false,
-    val isSubmitting: Boolean = false,
-    val errorMessage: String? = null,
-    val onDismiss: () -> Unit = {},
-    val onSubmit: (score: Int, comment: String) -> Unit = { _, _ -> }
-)
-
-internal data class BookmarkedListingDetailActions(
-    val onDismiss: () -> Unit,
-    val onRemoveBookmark: () -> Unit,
-    val canMessageSeller: Boolean,
-    val onMessageSeller: suspend (String) -> Boolean,
-    val hasExistingConversation: suspend () -> Boolean,
-    val onMessageSent: () -> Unit,
-    val review: BookmarkedListingReviewActions = BookmarkedListingReviewActions(),
-    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,11 +61,11 @@ internal fun BookmarkedListingDetailSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             BookmarkedListingPhotos(listing.photos)
             ListingTitleAndPrice(listing)
-            Row(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ListingBadge(listing.category, isPrimary = false)
                 ListingBadge(listing.condition.replace("_", " "), isPrimary = true)
             }
@@ -109,6 +89,7 @@ internal fun BookmarkedListingDetailSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            ItemDetailsSection(listing.attributes.map { ItemDetailRow(it.label, it.value) })
             if (actions.canMessageSeller) {
                 MessageSellerQuickAction(
                     actions = MessageSellerQuickActionActions(
@@ -160,7 +141,7 @@ private fun ListingTitleAndPrice(listing: ProfileBookmarkedListing) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.width(BulletinSpacing.m))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = listing.price,
             style = MaterialTheme.typography.headlineSmall,
@@ -176,7 +157,7 @@ private fun ListingDetailActions(
     onRemoveBookmark: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedButton(
             onClick = onRemoveBookmark,
             enabled = !isRemovingBookmark,
@@ -224,7 +205,7 @@ private fun ListingBadge(text: String, isPrimary: Boolean) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = BulletinSpacing.xs)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
 }

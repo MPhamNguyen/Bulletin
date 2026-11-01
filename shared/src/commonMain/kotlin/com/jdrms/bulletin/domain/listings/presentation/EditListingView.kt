@@ -2,44 +2,31 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import bulletin.shared.generated.resources.Res
-import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
-import org.jetbrains.compose.resources.painterResource
 
 data class EditListingActions(
     val onTitleChange: (String) -> Unit,
@@ -51,6 +38,9 @@ data class EditListingActions(
     val onImageSelectionError: (String) -> Unit,
     val onRemoveImage: (Int) -> Unit,
     val onCropImage: (Int, ImageCropSettings) -> Unit,
+    val onAttributeChange: (String, String) -> Unit,
+    val onConfirmCategoryChange: () -> Unit,
+    val onCancelCategoryChange: () -> Unit,
     val onSave: () -> Unit,
     val onBack: () -> Unit
 )
@@ -70,8 +60,8 @@ fun EditListingView(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.s),
-            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             BulletinCard {
                 Text(
@@ -80,7 +70,7 @@ fun EditListingView(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(BulletinSpacing.m))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = uiState.editTitle,
@@ -92,31 +82,37 @@ fun EditListingView(
                     modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(BulletinSpacing.m))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 CurrencyTextField(
                     digits = uiState.editPriceCents,
                     onDigitsChange = actions.onPriceChange,
-                    colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(BulletinSpacing.m))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 ListingCategorySelectionRow(
                     selectedCategory = uiState.editCategory,
                     onCategorySelected = actions.onCategorySelected
                 )
 
-                Spacer(modifier = Modifier.height(BulletinSpacing.m))
+                ListingAttributeFields(
+                    category = uiState.editCategory,
+                    draft = uiState.editAttributes,
+                    onInputChange = actions.onAttributeChange,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 ListingConditionSelectionRow(
                     selectedCondition = uiState.editCondition,
                     onConditionSelected = actions.onConditionSelected
                 )
 
-                Spacer(modifier = Modifier.height(BulletinSpacing.m))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = uiState.editDescription,
@@ -145,7 +141,7 @@ fun EditListingView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(BulletinSpacing.s))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = actions.onSave,
@@ -184,97 +180,10 @@ fun EditListingView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(BulletinSpacing.l))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
-}
-
-@Composable
-private fun EditListingTopBar(
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_arrow_back),
-                    contentDescription = "Cancel",
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Spacer(modifier = Modifier.width(BulletinSpacing.s))
-            Text(
-                text = "Edit Listing",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        TextButton(onClick = onBack) {
-            Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-private fun ListingCategorySelectionRow(
-    selectedCategory: ListingCategory?,
-    onCategorySelected: (ListingCategory) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Category",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(ListingCategory.entries.toTypedArray()) { category ->
-                FilterChip(
-                    selected = selectedCategory == category,
-                    onClick = { onCategorySelected(category) },
-                    label = { Text(category.name, style = MaterialTheme.typography.labelSmall) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ListingConditionSelectionRow(
-    selectedCondition: ListingCondition?,
-    onConditionSelected: (ListingCondition) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Condition",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(ListingCondition.entries.toTypedArray()) { condition ->
-                FilterChip(
-                    selected = selectedCondition == condition,
-                    onClick = { onConditionSelected(condition) },
-                    label = {
-                        Text(
-                            text = condition.name.replace("_", " "),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                )
-            }
-        }
+    uiState.pendingCategoryChange?.takeIf { it.form == ListingForm.EDIT }?.let { change ->
+        ListingCategoryChangeDialog(change, actions.onConfirmCategoryChange, actions.onCancelCategoryChange)
     }
 }

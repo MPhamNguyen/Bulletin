@@ -1,8 +1,7 @@
-package com.jdrms.bulletin.domain.listings.presentation
+package com.jdrms.bulletin.core.designsystem
 
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import com.jdrms.bulletin.domain.listings.domain.model.MAX_LISTING_PRICE_CENTS
 import kotlin.math.round
 
 internal const val MAX_CURRENCY_DIGITS = 9
@@ -41,7 +40,7 @@ internal fun currencyDigitsToAmount(digits: String): Double =
 internal fun amountToCurrencyDigits(amount: Double): String {
     require(amount.isFinite() && amount >= 0.0) { "Currency amount must be finite and non-negative." }
     val cents = round(amount * 100).toLong()
-    require(cents <= MAX_LISTING_PRICE_CENTS) { "Currency amount exceeds the listing price limit." }
+    require(cents <= 999_999_999L) { "Currency amount exceeds the listing price limit." }
     return cents.toString()
 }
 

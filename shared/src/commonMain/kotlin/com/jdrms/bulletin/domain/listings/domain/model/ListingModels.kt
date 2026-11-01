@@ -60,7 +60,8 @@ data class ListingDetails(
     val price: ListingPrice,
     val category: ListingCategory,
     val condition: ListingCondition,
-    val images: List<String>
+    val images: List<String>,
+    val attributes: ListingAttributes = ListingAttributes.EMPTY
 )
 
 data class Listing(
@@ -76,7 +77,8 @@ data class Listing(
     val status: ListingStatus = ListingStatus.AVAILABLE,
     val images: List<String> = emptyList(),
     val createdAtMillis: Long = 0L,
-    val updatedAtMillis: Long = 0L
+    val updatedAtMillis: Long = 0L,
+    val attributes: ListingAttributes = ListingAttributes.EMPTY
 ) {
     init {
         require(title.isNotBlank()) { "Listing title cannot be blank." }
@@ -112,6 +114,7 @@ data class Listing(
             category = details.category,
             condition = details.condition,
             images = details.images,
+            attributes = details.attributes,
             updatedAtMillis = updatedAtMillis
         )
     }

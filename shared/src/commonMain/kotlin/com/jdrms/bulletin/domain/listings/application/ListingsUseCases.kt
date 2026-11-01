@@ -50,6 +50,10 @@ class CreateListing(
         if (validation.isError()) {
             return Result.Error((validation as Result.Error).exception)
         }
+        val preserved = policy.validatePreservedAttributes(listing, existing = null)
+        if (preserved.isError()) {
+            return Result.Error((preserved as Result.Error).exception)
+        }
         return listingsRepository.createListing(listing)
     }
 }
@@ -63,17 +67,21 @@ class ManageListing(
         if (editorSellerId != null) {
             val persistedListing = listingsRepository.getListing(listing.id)
                 ?: return Result.Error(NoSuchElementException("Listing not found with ID: ${listing.id.value}"))
-            val ownershipValidation = policy.validateOwnership(persistedListing, editorSellerId)
-            if (ownershipValidation.isError()) {
-                return Result.Error((ownershipValidation as Result.Error).exception)
-            }
+            val validation = policy.validateOwnership(persistedListing, editorSellerId)
+            val preserved = policy.validatePreservedAttributes(listing, persistedListing)
+            val error = (validation as? Result.Error) ?: (preserved as? Result.Error)
+            if (error != null) return error
             // Identity and server-owned fields always come from storage, never from the request payload.
+            // Attributes the client could not interpret are carried over from storage so they are never erased.
             canonicalListing = persistedListing.copy(
                 title = listing.title,
                 description = listing.description,
                 price = listing.price,
                 category = listing.category,
-                condition = listing.condition
+                condition = listing.condition,
+                attributes = listing.attributes.withPreserved(
+                    persistedListing.attributes.preserved - listing.attributes.values.keys
+                )
             )
         }
         val listingValidation = policy.validateListing(canonicalListing)

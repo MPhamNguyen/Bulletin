@@ -31,6 +31,12 @@ class FakeSupabase:
         self.auth_account = dict(id=TARGET, banned_until=None)
         self.admin_account = dict(id=ADMIN, banned_until=None)
         self.patches = []
+        self.events = []
+        self.event_failure = None
+        self.event_failure_on_call = None
+        self.event_calls = 0
+        self.history_failure = None
+        self.ban_failure = None
         self.bans = []
         self.queries = []
         self.page_rows = None
@@ -79,9 +85,27 @@ class FakeSupabase:
         self.queries.append((table, query))
         if table == "listing_images":
             return deepcopy(self.images)
+        if table == "moderation_events":
+            if self.history_failure:
+                raise self.history_failure
+            rows = [event for event in self.events if event["report_id"] == query.get("report_id", "").removeprefix("eq.")]
+            return deepcopy(rows)
+        if table == "profiles":
+            profile_ids = query.get("id", "").removeprefix("in.(").removesuffix(")").split(",")
+            return deepcopy([self.profiles[user_id] for user_id in profile_ids if user_id in self.profiles])
         return deepcopy(self.page_rows if self.page_rows is not None else [self.report])
 
     def request(self, method, path, **kwargs):
+        if method == "POST" and path == "/rest/v1/moderation_events":
+            self.event_calls += 1
+            if self.event_failure:
+                raise self.event_failure
+            if self.event_failure_on_call == self.event_calls:
+                raise PortalError("Audit storage unavailable", 502)
+            event = dict(id="event-" + str(len(self.events) + 1), **kwargs["data"],
+                         created_at="2026-10-31T12:00:00Z")
+            self.events.append(event)
+            return [deepcopy(event)]
         if method == "DELETE":
             return self.delete_listing_data(path, kwargs)
         assert method == "PATCH" and path == "/rest/v1/reports"
@@ -117,6 +141,8 @@ class FakeSupabase:
         return deepcopy(self.admin_account if user_id == ADMIN else self.auth_account)
 
     def set_ban(self, user_id, duration):
+        if self.ban_failure:
+            raise self.ban_failure
         if self.failure:
             raise self.failure
         self.bans.append((user_id, duration))

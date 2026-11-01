@@ -54,7 +54,11 @@ data class NavigationSnapshot(
     val profileDestination: ProfileDestination = ProfileDestination.PROFILE
 ) {
     val showsBottomNavigation: Boolean
-        get() = currentDestination != AppDestination.PROFILE || profileDestination == ProfileDestination.PROFILE
+        get() = when (currentDestination) {
+            AppDestination.LISTINGS -> false
+            AppDestination.PROFILE -> profileDestination == ProfileDestination.PROFILE
+            else -> true
+        }
 
     fun selectBottomNavigationDestination(destination: AppDestination): NavigationSnapshot = copy(
         currentDestination = destination,

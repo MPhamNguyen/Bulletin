@@ -30,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 
@@ -45,7 +44,8 @@ fun MyListingItemCard(
 ) {
     BulletinCard(modifier = modifier) {
         MyListingSummary(listing)
-        Spacer(modifier = Modifier.height(BulletinSpacing.s))
+        ListingAttributeSummary(listing, Modifier.padding(top = 6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = listing.description,
             style = MaterialTheme.typography.bodyMedium,
@@ -55,9 +55,9 @@ fun MyListingItemCard(
         )
         MyListingSoldBadge(listing.status)
         MyListingImageCount(listing.images.size)
-        Spacer(modifier = Modifier.height(BulletinSpacing.m))
+        Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        Spacer(modifier = Modifier.height(BulletinSpacing.s))
+        Spacer(modifier = Modifier.height(8.dp))
         MyListingStatusButton(listing.status, onMarkSold, onRestore)
         MyListingManagementActions(onDelete, onEdit)
     }
@@ -67,7 +67,7 @@ fun MyListingItemCard(
 private fun MyListingSummary(listing: Listing) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top
     ) {
         ListingThumbnail(listing)
@@ -92,7 +92,7 @@ private fun MyListingTitleAndPrice(listing: Listing) {
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
     )
-    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
+    Spacer(modifier = Modifier.height(4.dp))
     Text(
         text = listing.price.formatted,
         style = MaterialTheme.typography.titleMedium,
@@ -116,13 +116,13 @@ private fun MyListingMetadataChip(label: String) {
 @Composable
 private fun MyListingSoldBadge(status: ListingStatus) {
     if (status != ListingStatus.SOLD) return
-    Spacer(modifier = Modifier.height(BulletinSpacing.s))
+    Spacer(modifier = Modifier.height(8.dp))
     Surface(shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.secondaryContainer) {
         Text(
             text = "SOLD",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = BulletinSpacing.xs)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
 }
@@ -130,7 +130,7 @@ private fun MyListingSoldBadge(status: ListingStatus) {
 @Composable
 private fun MyListingImageCount(imageCount: Int) {
     if (imageCount == 0) return
-    Spacer(modifier = Modifier.height(BulletinSpacing.s))
+    Spacer(modifier = Modifier.height(8.dp))
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Icon(
             imageVector = Icons.Outlined.Image,
@@ -166,7 +166,7 @@ private fun MyListingStateButton(label: String, onClick: () -> Unit) {
         )
     ) {
         Icon(Icons.Outlined.Sell, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(BulletinSpacing.xs))
+        Spacer(modifier = Modifier.width(4.dp))
         Text(label)
     }
 }
@@ -183,7 +183,7 @@ private fun MyListingManagementActions(onDelete: () -> Unit, onEdit: () -> Unit)
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
         ) {
             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(BulletinSpacing.xs))
+            Spacer(modifier = Modifier.width(4.dp))
             Text("Delete")
         }
         FilledTonalButton(
