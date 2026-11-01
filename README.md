@@ -90,7 +90,7 @@ Bulletin/
 ├── admin/                 # Flask admin portal (Python)
 ├── supabase/              # Local Supabase config, email templates, seed data and script
 ├── config/detekt/         # Detekt rules
-├── .github/workflows/     # CI (ci.yml, detekt.yml, admin.yml, stale-branch cleanup)
+├── .github/workflows/     # CI (ci.yml, detekt.yml, stale-branch cleanup)
 ├── AGENTS.md              # Contribution rules for AI agents and humans
 └── CODEOWNERS
 ```
@@ -238,10 +238,9 @@ GitHub Actions (`.github/workflows/`):
 
 | Workflow | Purpose |
 | --- | --- |
-| `ci.yml` | Decides scope from the diff against `main`, then runs size checks, static analysis, domain/shared tests (sharded on full runs), admin tests, and the Android build. Full runs happen on `main`, the merge queue, the weekly schedule, and manual dispatch. The required gate is **Build and Test**. |
-| `detekt.yml` | Detekt scan |
-| `admin.yml` | Admin portal unit tests |
-| `remove-stale-branches.yml` | Branch cleanup |
+| `ci.yml` | Decides scope from the diff against `main`, then runs size checks, static analysis, domain/shared tests (sharded on full runs), and admin tests. A change to `reporting` also tests its consumers (marketplace, messages, profile). Full runs happen on `main`, the merge queue, the weekly schedule, and manual dispatch. The required gate is **Build and Test**. |
+| `detekt.yml` | Detekt CLI scan with SARIF upload for code scanning (complements the type-resolved Detekt run inside `check`) |
+| `remove-stale-branches.yml` | Daily cleanup of branches with no open PR after 28 days of inactivity (14 to mark stale, 14 more to delete) |
 
 ---
 

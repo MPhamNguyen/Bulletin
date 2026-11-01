@@ -45,7 +45,7 @@ class SupabaseErrorMessageMappingTest {
     }
 
     @Test
-    fun testSupabaseProfileRepositoryErrorMapping() {
+    fun testSupabaseProfileRepositorySchemaAndConnectionErrorMapping() {
         val schemaCacheError = Exception(
             "Could not find the table `public.profiles` in the schema cache.\n\n" +
                 "URL:\n" +
@@ -75,7 +75,10 @@ class SupabaseErrorMessageMappingTest {
             "Unable to connect to server. Please check your internet connection.",
             SupabaseProfileRepository.mapProfileErrorMessage(timeoutError)
         )
+    }
 
+    @Test
+    fun testSupabaseProfileRepositoryAuthorizationErrorMapping() {
         val unauthorizedError = Exception("invalid api key provided in apikey header")
         assertEquals(
             "Unauthorized database request. Please check your Supabase API credentials.",
@@ -87,7 +90,10 @@ class SupabaseErrorMessageMappingTest {
             "Database permission denied. Please check your Supabase RLS policies.",
             SupabaseProfileRepository.mapProfileErrorMessage(rlsError)
         )
+    }
 
+    @Test
+    fun testSupabaseProfileRepositoryValidationAndCustomErrorMapping() {
         val customFirstLineError = Exception("User profile is temporarily locked by administrator.\nURL: https://...\n")
         assertEquals(
             "User profile is temporarily locked by administrator.",
