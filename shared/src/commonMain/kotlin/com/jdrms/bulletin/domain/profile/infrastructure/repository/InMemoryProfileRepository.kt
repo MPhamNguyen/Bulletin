@@ -1,0 +1,181 @@
+package com.jdrms.bulletin.domain.profile.infrastructure.repository
+
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
+import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
+import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
+
+class InMemoryProfileRepository(
+    private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
+    initialProfiles: Map<String, ProfileDto> = defaultSeedProfiles,
+    initialReviews: Map<String, List<ReviewDto>> = defaultSeedReviews
+) : ProfileRepository {
+
+    private val profiles = initialProfiles.mapValues { ProfileMapper.toDomain(it.value) }.toMutableMap()
+    private val reviewsByUser = initialReviews.mapValues { entry ->
+        entry.value.map { ProfileMapper.toDomain(it) }.toMutableList()
+    }.toMutableMap()
+
+    override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
+        val baseProfile = profiles[userId.value] ?: return Result.Success(null)
+        val rep = getReputation(userId)
+        return Result.Success(baseProfile.copy(reputation = rep))
+    }
+
+    override suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile> {
+        profiles[profile.id.value] = profile
+        return Result.Success(profile)
+    }
+
+    override suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit> {
+        val existing = profiles[userId.value] ?: return Result.Error(IllegalArgumentException("Profile not found."))
+        profiles[userId.value] = existing.copy(deletedAt = deletedAt)
+        return Result.Success(Unit)
+    }
+
+    override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
+        val list = reviewsByUser.getOrPut(targetUserId.value) { mutableListOf() }
+        list.add(review)
+        return Result.Success(Unit)
+    }
+
+    override suspend fun getReputation(userId: UserId): StudentReputation {
+        val userReviews = reviewsByUser[userId.value] ?: emptyList()
+        return policy.calculateReputation(userId, userReviews)
+    }
+
+    companion object {
+        /** Seeded signed-in student; [InMemoryAuthRepository] maps its seeded credentials to this profile. */
+        const val SEED_CURRENT_STUDENT_ID = "current_student"
+
+        private val defaultSeedProfiles = mapOf(
+            SEED_CURRENT_STUDENT_ID to ProfileDto(
+                id = SEED_CURRENT_STUDENT_ID,
+                email = "dominic.alfonso@student.csulb.edu",
+                fullName = "Dominic Alfonso",
+                major = "Computer Science",
+                university = "CSU Long Beach",
+                bio = "Senior Computer Science student @ CSULB. Buying and selling tech & textbooks.",
+                isVerified = true
+            ),
+            "seller_101" to ProfileDto(
+                id = "seller_101",
+                email = "dominic.alfonso@student.csulb.edu",
+                fullName = "Dominic Alfonso",
+                major = "Computer Science",
+                university = "CSU Long Beach",
+                bio = "Senior Computer Science student @ CSULB. Buying and selling tech & textbooks.",
+                isVerified = true
+            ),
+            "seller_102" to ProfileDto(
+                id = "seller_102",
+                email = "sean.gallagher@student.csulb.edu",
+                fullName = "Sean Gallagher",
+                major = "Business Administration",
+                university = "CSU Long Beach",
+                bio = "Junior in Business Administration. Audiophile and tech enthusiast.",
+                isVerified = true
+            ),
+            "seller_103" to ProfileDto(
+                id = "seller_103",
+                email = "jacob.ayoub@student.csulb.edu",
+                fullName = "Jacob Ayoub",
+                major = "Mechanical Engineering",
+                university = "CSU Long Beach",
+                bio = "Sophomore MechE. Moving off-campus, clearing dorm furniture.",
+                isVerified = true
+            ),
+            "seller_104" to ProfileDto(
+                id = "seller_104",
+                email = "roger.carrillo@student.csulb.edu",
+                fullName = "Roger Carrillo",
+                major = "Electrical Engineering",
+                university = "CSU Long Beach",
+                bio = "EE Senior. Go Beach!",
+                isVerified = true
+            )
+        )
+
+        private val defaultSeedReviews = mapOf(
+            SEED_CURRENT_STUDENT_ID to listOf(
+                ReviewDto(
+                    id = "rev_1",
+                    reviewerId = "user_201",
+                    reviewerName = "Sean G.",
+                    revieweeId = SEED_CURRENT_STUDENT_ID,
+                    score = 5,
+                    comment = "Super fast meetup at the campus library, textbook was in pristine shape!",
+                    createdAt = "1970-01-01T00:00:01Z"
+                ),
+                ReviewDto(
+                    id = "rev_2",
+                    reviewerId = "user_202",
+                    reviewerName = "Jacob A.",
+                    revieweeId = SEED_CURRENT_STUDENT_ID,
+                    score = 5,
+                    comment = "Great buyer, communicative and punctual. Highly recommend.",
+                    createdAt = "1970-01-01T00:00:02Z"
+                )
+            ),
+            "seller_101" to listOf(
+                ReviewDto(
+                    id = "rev_101_1",
+                    reviewerId = "seller_102",
+                    reviewerName = "Sean G.",
+                    revieweeId = "seller_101",
+                    score = 5,
+                    comment = "Super fast meetup at the library, textbook was in pristine shape!",
+                    createdAt = "1970-01-01T00:00:01Z"
+                ),
+                ReviewDto(
+                    id = "rev_101_2",
+                    reviewerId = "seller_103",
+                    reviewerName = "Jacob A.",
+                    revieweeId = "seller_101",
+                    score = 5,
+                    comment = "Great seller, communicative and punctual. Highly recommend.",
+                    createdAt = "1970-01-01T00:00:02Z"
+                )
+            ),
+            "seller_102" to listOf(
+                ReviewDto(
+                    id = "rev_102_1",
+                    reviewerId = "seller_101",
+                    reviewerName = "Dominic A.",
+                    revieweeId = "seller_102",
+                    score = 5,
+                    comment = "Headphones were practically brand new. Smooth trade!",
+                    createdAt = "1970-01-01T00:00:01Z"
+                )
+            ),
+            "seller_103" to listOf(
+                ReviewDto(
+                    id = "rev_103_1",
+                    reviewerId = "seller_104",
+                    reviewerName = "Roger C.",
+                    revieweeId = "seller_103",
+                    score = 5,
+                    comment = "Helped carry the fridge down to the curb. Awesome guy!",
+                    createdAt = "1970-01-01T00:00:01Z"
+                )
+            ),
+            "seller_104" to listOf(
+                ReviewDto(
+                    id = "rev_104_1",
+                    reviewerId = "seller_101",
+                    reviewerName = "Dominic A.",
+                    revieweeId = "seller_104",
+                    score = 5,
+                    comment = "Crewneck looks great. Super polite and responsive.",
+                    createdAt = "1970-01-01T00:00:01Z"
+                )
+            )
+        )
+    }
+}

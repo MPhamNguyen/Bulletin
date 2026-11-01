@@ -9,10 +9,9 @@
     <ID>LongMethod:MarketplaceDomainTest.kt$MarketplaceDomainTest$@Test fun testSearchPolicyFiltering()</ID>
     <ID>LongMethod:MarketplaceViewModel.kt$MarketplaceViewModel$fun loadNextPage()</ID>
     <ID>LongMethod:MarketplaceViewModel.kt$MarketplaceViewModel$private fun loadFirstPage(userId: String, debounceMillis: Long)</ID>
-    <ID>LongMethod:MarketplaceViewModelTestPart2.kt$MarketplaceViewModelTestPart2$@OptIn(ExperimentalCoroutinesApi::class) @Test fun categoryAndKeywordsRemainAppliedAcrossEveryPage()</ID>
-    <ID>LongMethod:MarketplaceViewModelTestPart2.kt$MarketplaceViewModelTestPart2$@OptIn(ExperimentalCoroutinesApi::class) @Test fun everyCategoryPaginatesWithTheSameAppendBehaviorAsAll()</ID>
+    <ID>LongMethod:MarketplaceViewModelPaginationTest.kt$MarketplaceViewModelPaginationTest$@OptIn(ExperimentalCoroutinesApi::class) @Test fun categoryAndKeywordsRemainAppliedAcrossEveryPage()</ID>
+    <ID>LongMethod:MarketplaceViewModelPaginationTest.kt$MarketplaceViewModelPaginationTest$@OptIn(ExperimentalCoroutinesApi::class) @Test fun everyCategoryPaginatesWithTheSameAppendBehaviorAsAll()</ID>
     <ID>LongMethod:ProfileEditingActions.kt$ProfileEditingActions$fun updateDetails()</ID>
-    <ID>LongMethod:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$@Test fun testSupabaseProfileRepositoryErrorMapping()</ID>
     <ID>LongMethod:ProfileRepositoryTest.kt$ProfileRepositoryTest$@Test fun testSupabaseProfileRepositoryErrorMapping()</ID>
     <ID>LongMethod:ProfileViewModelTest.kt$ProfileViewModelTest$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelCreateAccountAndValidation()</ID>
     <ID>LongMethod:ProfileViewModelTest.kt$ProfileViewModelTest$@OptIn(ExperimentalCoroutinesApi::class) @Test fun testProfileViewModelUpdatesAndResetsProfileDraft()</ID>
@@ -45,10 +44,6 @@
     <ID>LongParameterList:SupabaseMarketplaceListingSourceTest.kt$SupabaseMarketplaceListingSourceTest$( id: String, userId: String? = "seller_1", name: String? = "Supabase Calculator", category: String? = "TEXTBOOKS", price: Double? = 25.0, description: String? = "Seeded database listing", createdAt: String? = null )</ID>
     <ID>TooManyFunctions:ListingsViewModel.kt$ListingsViewModel : ViewModel</ID>
     <ID>TooManyFunctions:ProfileViewModel.kt$ProfileViewModel : ViewModel</ID>
-    <ID>UnusedPrivateClass:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$FakeProfilePhotoStorage : ProfilePhotoStorage</ID>
-    <ID>UnusedPrivateMember:ProfileDomainTestPart2.kt$ProfileDomainTestPart2$private fun pngBytes(): ByteArray</ID>
-    <ID>UnusedPrivateMember:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$private fun jpegBytes(): ByteArray</ID>
-    <ID>UnusedPrivateMember:ProfileInfrastructureTestPart2.kt$ProfileInfrastructureTestPart2$private fun pngBytes(): ByteArray</ID>
     <ID>VariableNaming:ListingsViewModel.kt$ListingsViewModel$internal val _uiState = MutableStateFlow(ListingsUiState())</ID>
   </CurrentIssues>
 </SmellBaseline>
