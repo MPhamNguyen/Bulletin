@@ -33,6 +33,7 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
@@ -88,7 +89,7 @@ fun EditListingView(
                     singleLine = true,
                     colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
@@ -125,7 +126,7 @@ fun EditListingView(
                     maxLines = 6,
                     colors = BulletinTextFieldDefaults.colors(),
                     shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
                 )
             }
 

@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.home.presentation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -36,10 +35,7 @@ internal fun HomeTrayPeek(
         ).fillMaxWidth().height(HOME_TRAY_LIFT_DP.dp).graphicsLayer {
             alpha = homeTrayAlpha(progress())
             translationY = (1f - progress()) * 28.dp.toPx()
-        }.clipToBounds().background(
-            MaterialTheme.colorScheme.surfaceContainer,
-            MaterialTheme.shapes.large
-        ).padding(BulletinSpacing.s),
+        }.clipToBounds().padding(BulletinSpacing.s),
         verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs, Alignment.Bottom)
     ) {
         // Measure the composer first. Optional header content yields space on short IME viewports.

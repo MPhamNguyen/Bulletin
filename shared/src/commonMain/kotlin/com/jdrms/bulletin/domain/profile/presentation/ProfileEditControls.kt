@@ -3,14 +3,11 @@ package com.jdrms.bulletin.domain.profile.presentation
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material3.DropdownMenuItem
@@ -30,13 +27,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
@@ -182,7 +177,7 @@ internal fun ProfileComboField(
                 supportingText = spec.errorMessage?.let { { Text(it) } },
                 shape = MaterialTheme.shapes.medium,
                 colors = BulletinTextFieldDefaults.colors(),
-                modifier = Modifier
+                modifier = Modifier.showKeyboardOnFocusOrTap()
                     .fillMaxWidth()
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
             )
@@ -225,39 +220,11 @@ internal fun ProfileComboField(
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 colors = BulletinTextFieldDefaults.colors(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
             )
         }
     }
 }
-
-@Composable
-internal fun BioField(value: String, onValueChange: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        FieldLabel("Bio")
-        OutlinedTextField(
-            value = value,
-            onValueChange = { onValueChange(it.take(BIO_MAX_LENGTH)) },
-            placeholder = { Text("Introduce yourself to buyers and sellers on campus…") },
-            minLines = 3,
-            maxLines = 3,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                imeAction = ImeAction.Default
-            ),
-            shape = MaterialTheme.shapes.medium,
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.fillMaxWidth()
-        )
-        BioFieldFooter(value)
-    }
-}
-
-@Composable
-internal expect fun rememberProfilePhotoPicker(
-    onPhotoSelected: (ByteArray, String) -> Unit,
-    onError: (String) -> Unit
-): () -> Unit
 
 @Composable
 internal fun SignOutButton(
@@ -282,31 +249,6 @@ internal fun SignOutButton(
             "Sign Out",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.error
-        )
-    }
-}
-
-@Composable
-private fun BioFieldFooter(value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            "Shown on your listings and public profile.",
-            modifier = Modifier.weight(1f).padding(end = BulletinSpacing.m),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            "${value.length} / $BIO_MAX_LENGTH",
-            style = MaterialTheme.typography.labelMedium,
-            color = if (value.length >= BIO_WARN_LENGTH) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
         )
     }
 }

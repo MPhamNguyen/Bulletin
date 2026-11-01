@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
@@ -185,7 +186,7 @@ private fun RecoveryField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
         placeholder = { Text(placeholder) },
         singleLine = true,
         visualTransformation = if (isPassword && !isPasswordVisible) {

@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
@@ -194,7 +195,7 @@ internal fun EmailVerificationContent(
                     errorBorderColor = colors.error,
                     cursorColor = colors.primary
                 ),
-                modifier = Modifier
+                modifier = Modifier.showKeyboardOnFocusOrTap(enabled = !uiState.isLoading)
                     .fillMaxWidth()
                     .padding(top = BulletinSpacing.l)
                     .height(60.dp)

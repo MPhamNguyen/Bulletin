@@ -26,6 +26,7 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_graduation_cap
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import org.jetbrains.compose.resources.painterResource
 
@@ -39,7 +40,7 @@ internal fun SignInEmailField(email: String, onEmailChange: (String) -> Unit, on
             onEmailChange(it)
             onClearMessages()
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
         placeholder = { Text("you@university.edu") },
         singleLine = true,
         shape = MaterialTheme.shapes.medium,
@@ -60,7 +61,7 @@ internal fun SignInPasswordField(password: String, onPasswordChange: (String) ->
             onPasswordChange(it)
             onClearMessages()
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
         placeholder = { Text("Enter your password") },
         singleLine = true,
         visualTransformation = if (isPasswordVisible) {

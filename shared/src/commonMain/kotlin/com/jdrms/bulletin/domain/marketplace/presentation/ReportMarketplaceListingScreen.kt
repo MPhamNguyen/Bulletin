@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
+import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
@@ -52,7 +54,7 @@ internal fun ReportMarketplaceListingScreen(
             tonalElevation = 6.dp
         ) {
             Column(
-                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                Modifier.dismissKeyboardOnTapOutside().fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text("Report listing", style = MaterialTheme.typography.titleLarge)
@@ -130,7 +132,7 @@ private fun ListingReportForm(
         OutlinedTextField(
             value = state.description,
             onValueChange = onDescriptionChanged,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
             label = { Text("Additional information (optional)") },
             supportingText = { Text("${state.description.length}/1000") },
             minLines = 3,
