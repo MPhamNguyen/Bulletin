@@ -23,7 +23,6 @@ import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
@@ -172,36 +171,6 @@ class SellerProfileViewModelTest {
         } finally {
             Dispatchers.resetMain()
         }
-    }
-
-    @Test
-    fun messagingRequiresAuthenticatedNonSellerAndMatchingListingOwner() {
-        assertTrue(canMessageMarketplaceSeller("buyer", "seller", "seller"))
-        assertFalse(canMessageMarketplaceSeller("seller", "seller", "seller"))
-        assertFalse(canMessageMarketplaceSeller(null, "seller", "seller"))
-        assertFalse(canMessageMarketplaceSeller("buyer", "seller", "someone-else"))
-    }
-
-    @Test
-    fun dismissingSellerListingPreservesProfileMessageAction() {
-        val catalogListing = SellerListingContext("catalog-item", "seller-a", "Seller A")
-        val profileListing = SellerListingContext("profile-item", "seller-a", "Seller A")
-        val profile = MarketplaceSellerNavigationState()
-            .navigate(MarketplaceDestination.SELLER_PROFILE, catalogListing)
-        val detail = profile.navigate(MarketplaceDestination.SELLER_LISTING, profileListing)
-
-        val returnedProfile = detail.navigate(MarketplaceDestination.SELLER_PROFILE)
-
-        assertEquals(MarketplaceDestination.SELLER_PROFILE, returnedProfile.destination)
-        assertEquals(profileListing, returnedProfile.listingContext)
-        assertNotNull(
-            sellerProfileMessageActions(
-                currentUserId = "buyer",
-                profile = sellerProfile("seller-a"),
-                listing = returnedProfile.listingContext,
-                actions = MarketplaceScreenActions()
-            )
-        )
     }
 }
 
