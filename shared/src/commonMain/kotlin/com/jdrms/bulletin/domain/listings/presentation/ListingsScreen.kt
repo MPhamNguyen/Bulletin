@@ -64,7 +64,13 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
         state.successMessage?.let {
             ListingFlashMessage(
                 message = it,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 72.dp, start = BulletinSpacing.xl, end = BulletinSpacing.xl)
+                modifier = Modifier.align(
+                    Alignment.TopCenter
+                ).padding(
+                    top = 72.dp,
+                    start = BulletinSpacing.xl,
+                    end = BulletinSpacing.xl
+                )
             )
         }
     }

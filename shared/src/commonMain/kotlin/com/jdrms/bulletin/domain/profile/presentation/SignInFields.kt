@@ -25,8 +25,6 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_graduation_cap
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
-import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField

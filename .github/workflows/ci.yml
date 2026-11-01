@@ -100,6 +100,12 @@ jobs:
                   : "${full_reason:=unrecognized path: $path}" ;;
               esac
             done < "$RUNNER_TEMP/ci-paths"
+            # reporting is shared vocabulary; its consumers must be tested when it changes.
+            if [[ " $changed " == *" reporting "* ]]; then
+              for consumer in marketplace messages profile; do
+                [[ " $changed " == *" $consumer "* ]] || changed="$changed $consumer"
+              done
+            fi
             if [ "$count" -eq 0 ]; then
               mode=full
               reason="empty diff against main, so running everything (safe default)"

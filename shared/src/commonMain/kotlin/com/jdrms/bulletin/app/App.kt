@@ -12,8 +12,8 @@ import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.createPasswordRecoveryViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemePreference
-import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
