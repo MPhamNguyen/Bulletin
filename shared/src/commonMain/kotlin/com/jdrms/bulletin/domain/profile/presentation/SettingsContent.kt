@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.profile.presentation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,13 +35,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 internal data class SettingsActions(
@@ -62,6 +59,7 @@ internal fun SettingsView(
     actions: SettingsActions,
     themePreference: ThemePreference? = null,
     onThemePreferenceChanged: ((ThemePreference) -> Unit)? = null,
+    reportedListingVisibilitySetting: ReportedListingVisibilitySetting? = null,
     showDeleteConfirmation: Boolean? = null
 ) {
     var localShowDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false) }
@@ -123,6 +121,9 @@ internal fun SettingsView(
             }
 
             SettingsSectionHeader(title = "SAFETY")
+            if (reportedListingVisibilitySetting != null) {
+                ReportedListingVisibilityCard(reportedListingVisibilitySetting)
+            }
             SettingsActionCard(
                 icon = Icons.Outlined.Block,
                 title = "Blocked Users",
@@ -248,65 +249,6 @@ private fun SettingsSectionHeader(title: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
     )
-}
-
-@Composable
-private fun SettingsActionCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    onClick: () -> Unit
-) {
-    BulletinCard {
-        Surface(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            shape = MaterialTheme.shapes.medium
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Outlined.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
 }
 
 @Composable
