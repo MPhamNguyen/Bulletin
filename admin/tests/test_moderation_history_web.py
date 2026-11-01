@@ -79,6 +79,15 @@ class ModerationHistoryWebTests(unittest.TestCase):
         self.assertEqual("Appeal approved.", self.backend.events[0]["comment"])
         self.assertEqual("account_restore", self.backend.events[1]["event_type"])
 
+    def test_missing_account_action_returns_validation_error_without_audit_or_mutation(self):
+        data = self.review_form()
+        data.update(confirm="yes")
+        result = self.client.post("/reports/" + REPORT + "/account", data=data)
+        self.assertEqual(400, result.status_code)
+        self.assertIn("Choose a valid account action", result.get_data(as_text=True))
+        self.assertFalse(self.backend.events)
+        self.assertFalse(self.backend.bans)
+
     def test_account_action_failure_does_not_create_a_success_event(self):
         self.backend.ban_failure = PortalError("Account service unavailable", 502)
         data = self.review_form()

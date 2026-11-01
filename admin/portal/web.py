@@ -339,6 +339,8 @@ def account_action(report_id):
         raise PortalError("Confirm the account action before applying it.")
     comment = normalize_comment(request.form.get("comment", ""), allow_empty=True)
     action = request.form.get("action")
+    if action not in ACCOUNT_ACTIONS:
+        raise PortalError("Choose a valid account action.")
     add_report_event(
         g.backend, report_id, g.admin["id"], "account_" + action + "_attempted",
         comment,
