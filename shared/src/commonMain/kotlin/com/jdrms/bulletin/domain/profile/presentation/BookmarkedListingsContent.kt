@@ -301,7 +301,6 @@ private fun BookmarkedListingsTopBar(
         Text(
             text = "Bookmarked Listings",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.weight(1f)
         )

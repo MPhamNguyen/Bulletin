@@ -20,8 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.ReviewPaginationActions
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 
@@ -69,7 +69,7 @@ private fun ProfileReview(review: StudentReview) {
                         imageVector = Icons.Filled.Star,
                         contentDescription = null,
                         tint = if (value <= review.rating.score) {
-                            BulletinExtras.colors.star
+                            MaterialTheme.bulletinColors.star
                         } else {
                             MaterialTheme.colorScheme.outlineVariant
                         },

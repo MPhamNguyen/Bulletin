@@ -50,6 +50,26 @@ Business code under `shared/src/commonMain/kotlin/com/jdrms/bulletin/domain/` us
 - Express meaningful state changes through named operations that protect invariants. Use value objects and sealed states when they clarify the domain; avoid turning every value or small operation into a new abstraction.
 - Use `com.jdrms.bulletin.core.common.Result` for expected failures. Keep I/O suspendable and off blocking coroutine paths. Keep platform-specific code in `androidMain` behind a suitable boundary when shared code needs it.
 
+## Design-system boundaries
+
+Compose UI extends `core/designsystem` instead of styling at call sites. Use `BulletinButton`
+(variant and size) and `BulletinTextField` for app actions and input. Read extended colors only
+through `MaterialTheme.bulletinColors`; third-party colors belong in `BulletinBrandColors`.
+Use Material typography or `BulletinTextStyles`, Material shapes or named `BulletinShapes`
+(`pill` for fully rounded ends), `BulletinElevation`, and `BulletinMotion` instead of literals.
+Do not repeat a font weight already provided by the typography token. `App` installs
+`BulletinTheme` once; screens and shells must not install another theme.
+
+`scripts/check-design-system-boundaries.sh` rejects `OutlinedTextField(`, `Button(`,
+`Color(0x`, and `RoundedCornerShape(` outside `core/designsystem`. Test source sets are
+excluded. Exceptions require `// design-system-exempt: <reason>` on the same or previous
+line; reviewers should challenge them. Run this script and its self-test
+`scripts/test-check-design-system-boundaries.sh` before pushing. CI runs both in the
+Design-system boundaries job. This script works without Detekt CLI type resolution.
+
+`BulletinButtonDeviceTest` and `BulletinTextFieldDeviceTest` sample rendered geometry and
+colors on a device or emulator; they do not compare golden screenshots.
+
 ## Cohesion and file organization
 
 The most common failure in this repository is one file or class that quietly accumulates unrelated behavior: a ViewModel that also validates, maps, and formats; a screen file that holds every sub-composable and preview; an adapter that holds DTOs, mappers, and the in-memory fake. **Plan the file layout before writing code, and add new files instead of growing existing ones.**

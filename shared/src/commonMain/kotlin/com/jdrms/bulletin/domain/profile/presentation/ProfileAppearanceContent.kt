@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.theme.ThemePreference
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -94,17 +95,17 @@ private fun AppearanceOption(
 ) {
     val backgroundColor by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerLow,
-        tween(durationMillis = 180),
+        tween(durationMillis = BulletinMotion.FAST),
         label = "Appearance option background"
     )
     val borderColor by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-        tween(durationMillis = 180),
+        tween(durationMillis = BulletinMotion.FAST),
         label = "Appearance option border"
     )
     val lift by animateDpAsState(
         if (selected) (-2).dp else 0.dp,
-        tween(durationMillis = 180),
+        tween(durationMillis = BulletinMotion.FAST),
         label = "Appearance option lift"
     )
     val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface

@@ -21,8 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinBrandColors
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -37,16 +39,17 @@ internal fun MicrosoftSignInAction(
         Text("Microsoft sign-in cancelled. You can try again.", style = MaterialTheme.typography.bodySmall)
     }
     MicrosoftSignInDivider()
+    // design-system-exempt: branded sign-in needs a pill shape, surface fill, and border
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = BulletinShapes.pill,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = BulletinElevation.low),
         border = BorderStroke(
             1.5.dp,
             MaterialTheme.colorScheme.outlineVariant
@@ -91,12 +94,12 @@ private fun MicrosoftLogo() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFFF25022)))
-            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFF00A4EF)))
+            Box(Modifier.size(8.dp).background(BulletinBrandColors.microsoftRed))
+            Box(Modifier.size(8.dp).background(BulletinBrandColors.microsoftBlue))
         }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFF7FBA00)))
-            Box(Modifier.size(8.dp).background(androidx.compose.ui.graphics.Color(0xFFFFB900)))
+            Box(Modifier.size(8.dp).background(BulletinBrandColors.microsoftGreen))
+            Box(Modifier.size(8.dp).background(BulletinBrandColors.microsoftYellow))
         }
     }
 }

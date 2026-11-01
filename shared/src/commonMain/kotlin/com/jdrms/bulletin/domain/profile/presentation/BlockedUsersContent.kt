@@ -89,7 +89,7 @@ private fun BlockedUsersTopBar(onBack: () -> Unit) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to Settings")
         }
         Spacer(Modifier.width(BulletinSpacing.s))
-        Text("Blocked Users", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text("Blocked Users", style = MaterialTheme.typography.titleLarge)
     }
 }
 
@@ -114,7 +114,6 @@ private fun BlockedUserCard(
                 Text(
                     profile?.fullName?.ifBlank { null } ?: "Blocked user",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     "Their listings are hidden from you.",

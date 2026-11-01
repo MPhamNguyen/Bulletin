@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 
 @Composable
 internal fun EditProfilePhoto(
@@ -44,7 +45,7 @@ internal fun EditProfilePhoto(
             Box(
                 modifier = Modifier
                     .size(96.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), MaterialTheme.shapes.extraLarge)
+                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), BulletinShapes.pill)
             ) {
                 ProfileAvatarImage(avatarUrl = avatarUrl, fullName = fullName, size = 96.dp)
             }
@@ -52,8 +53,8 @@ internal fun EditProfilePhoto(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .size(32.dp)
-                    .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge)
-                    .border(2.dp, MaterialTheme.colorScheme.background, MaterialTheme.shapes.extraLarge),
+                    .background(MaterialTheme.colorScheme.primary, BulletinShapes.pill)
+                    .border(2.dp, MaterialTheme.colorScheme.background, BulletinShapes.pill),
                 contentAlignment = Alignment.Center
             ) {
                 if (isUploading) {

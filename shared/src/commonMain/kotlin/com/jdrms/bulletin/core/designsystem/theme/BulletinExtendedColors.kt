@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.core.designsystem.theme
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -21,7 +23,10 @@ data class BulletinExtendedColors(
     val onSuccess: Color,
     val successContainer: Color,
     val onSuccessContainer: Color,
-    val star: Color
+    val star: Color,
+    val unreadGradientStart: Color,
+    val unreadGradientEnd: Color,
+    val unreadBorder: Color
 )
 
 internal val LightExtendedColors = BulletinExtendedColors(
@@ -29,7 +34,10 @@ internal val LightExtendedColors = BulletinExtendedColors(
     onSuccess = Color.White,
     successContainer = Color(0xFFDDF3E6),
     onSuccessContainer = Color(0xFF0B3D24),
-    star = StarLight
+    star = StarLight,
+    unreadGradientStart = Color(0xFFDCEBFF),
+    unreadGradientEnd = Color(0xFFDDF3F0),
+    unreadBorder = Color(0xFF3E5C76)
 )
 
 internal val DarkExtendedColors = BulletinExtendedColors(
@@ -37,12 +45,24 @@ internal val DarkExtendedColors = BulletinExtendedColors(
     onSuccess = Color(0xFF0A2B1D),
     successContainer = Color(0xFF123629),
     onSuccessContainer = Color(0xFF6EE7B7),
-    star = StarDark
+    star = StarDark,
+    unreadGradientStart = Color(0xFF193A67),
+    unreadGradientEnd = Color(0xFF22495D),
+    unreadBorder = Color(0xFF77A7F7)
 )
 
-val LocalBulletinExtendedColors = staticCompositionLocalOf { LightExtendedColors }
+internal val LocalBulletinExtendedColors = staticCompositionLocalOf { LightExtendedColors }
 
-object BulletinExtras {
-    val colors: BulletinExtendedColors
-        @Composable get() = LocalBulletinExtendedColors.current
+/** Access colors not provided by Material's ColorScheme. */
+val MaterialTheme.bulletinColors: BulletinExtendedColors
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalBulletinExtendedColors.current
+
+/** Fixed third-party brand colors. */
+object BulletinBrandColors {
+    val microsoftRed = Color(0xFFF25022)
+    val microsoftGreen = Color(0xFF7FBA00)
+    val microsoftBlue = Color(0xFF00A4EF)
+    val microsoftYellow = Color(0xFFFFB900)
 }

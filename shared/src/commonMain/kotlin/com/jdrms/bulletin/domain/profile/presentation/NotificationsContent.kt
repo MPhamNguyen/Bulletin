@@ -112,7 +112,6 @@ private fun NotificationsTopBar(onBackClick: () -> Unit) {
         Text(
             text = "Notifications",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
     }

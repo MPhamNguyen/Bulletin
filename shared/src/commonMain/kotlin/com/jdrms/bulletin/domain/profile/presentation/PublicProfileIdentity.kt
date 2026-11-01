@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 @Composable
@@ -34,7 +34,7 @@ internal fun PublicProfileIdentity(profile: StudentProfile) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
             ) {
-                Text(profile.fullName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(profile.fullName, style = MaterialTheme.typography.headlineSmall)
                 if (profile.isVerified) PublicEmailVerificationBadge()
             }
             val academicInfo = listOf(profile.major, profile.university).filter(String::isNotBlank).joinToString(" • ")
@@ -53,8 +53,8 @@ internal fun PublicProfileIdentity(profile: StudentProfile) {
 private fun PublicEmailVerificationBadge() {
     Surface(
         shape = CircleShape,
-        color = BulletinExtras.colors.successContainer,
-        contentColor = BulletinExtras.colors.success
+        color = MaterialTheme.bulletinColors.successContainer,
+        contentColor = MaterialTheme.bulletinColors.success
     ) {
         Row(
             Modifier.padding(horizontal = BulletinSpacing.s, vertical = 3.dp),

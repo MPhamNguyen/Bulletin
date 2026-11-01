@@ -7,11 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 
 @Composable
@@ -51,7 +50,7 @@ private fun ReputationScore(reputation: StudentReputation) {
             Icon(
                 Icons.Filled.Star,
                 contentDescription = "Rating",
-                tint = BulletinExtras.colors.star,
+                tint = MaterialTheme.bulletinColors.star,
                 modifier = Modifier.size(20.dp)
             )
             val rating = if (reputation.totalReviews == 0) {
@@ -59,7 +58,7 @@ private fun ReputationScore(reputation: StudentReputation) {
             } else {
                 "${(reputation.averageRating * 10).toInt() / 10.0} / 5.0"
             }
-            Text(rating, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(rating, style = MaterialTheme.typography.titleLarge)
         }
     }
 }

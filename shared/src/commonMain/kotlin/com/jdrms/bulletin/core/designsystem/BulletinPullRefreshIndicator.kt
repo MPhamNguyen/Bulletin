@@ -29,7 +29,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
 internal fun BulletinPullRefreshIndicator(
@@ -41,7 +43,7 @@ internal fun BulletinPullRefreshIndicator(
 ) {
     val progress = state.distanceFraction.coerceIn(0f, 1f)
     val primary = MaterialTheme.colorScheme.primary
-    val success = BulletinExtras.colors.success
+    val success = MaterialTheme.bulletinColors.success
     val track = MaterialTheme.colorScheme.surfaceVariant
 
     val showIndicator = isRefreshing || isComplete || (progress > 0f && !state.isAnimating)
@@ -49,7 +51,7 @@ internal fun BulletinPullRefreshIndicator(
         val rotation by rememberInfiniteTransition().animateFloat(
             initialValue = 0f,
             targetValue = 360f,
-            animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Restart)
+            animationSpec = infiniteRepeatable(tween(BulletinMotion.SPIN, easing = LinearEasing), RepeatMode.Restart)
         )
         Surface(
             modifier = modifier
@@ -58,7 +60,7 @@ internal fun BulletinPullRefreshIndicator(
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp
+            shadowElevation = BulletinElevation.raised
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize().padding(3.dp)) {

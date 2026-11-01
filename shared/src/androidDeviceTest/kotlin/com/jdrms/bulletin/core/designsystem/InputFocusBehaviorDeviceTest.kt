@@ -17,6 +17,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.profile.presentation.SignInEmailField
 import com.jdrms.bulletin.domain.profile.presentation.SignInPasswordField
 import org.junit.Rule

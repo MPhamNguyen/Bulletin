@@ -7,7 +7,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
@@ -33,7 +32,7 @@ internal fun CreateListingPriceStep(
             digits = state.newPriceCents,
             onDigitsChange = actions.onPriceChange,
             required = true,
-            textStyle = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            textStyle = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.fillMaxWidth()
         )
         BulletinTextField(

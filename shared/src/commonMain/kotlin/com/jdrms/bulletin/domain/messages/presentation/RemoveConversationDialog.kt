@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -29,7 +30,7 @@ internal fun RemoveConversationDialog(
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = 8.dp
+            shadowElevation = BulletinElevation.overlay
         ) {
             Column(
                 modifier = Modifier.padding(BulletinSpacing.xl),

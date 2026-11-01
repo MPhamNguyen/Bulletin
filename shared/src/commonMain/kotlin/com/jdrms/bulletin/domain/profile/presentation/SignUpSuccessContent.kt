@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 
 @Composable
@@ -31,14 +31,14 @@ internal fun SignUpSuccessContent(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BulletinExtras.colors.successContainer, MaterialTheme.shapes.medium)
+            .background(MaterialTheme.bulletinColors.successContainer, MaterialTheme.shapes.medium)
             .padding(BulletinSpacing.l),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = successMessage ?: "Account created successfully!",
             style = MaterialTheme.typography.titleMedium,
-            color = BulletinExtras.colors.onSuccessContainer,
+            color = MaterialTheme.bulletinColors.onSuccessContainer,
             fontWeight = FontWeight.SemiBold
         )
     }

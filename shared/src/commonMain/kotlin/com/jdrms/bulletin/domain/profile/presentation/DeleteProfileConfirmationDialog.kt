@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Delete
@@ -56,6 +55,7 @@ import androidx.compose.ui.window.Dialog
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 private const val PROFILE_SOFT_DELETE_CONSEQUENCE = "Your profile is marked for soft-delete"
@@ -84,7 +84,7 @@ internal fun DeleteProfileConfirmationDialog(
             modifier = modifier
                 .fillMaxWidth()
                 .widthIn(max = 380.dp),
-            shape = RoundedCornerShape(28.dp),
+            shape = BulletinShapes.dialog,
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
@@ -132,7 +132,7 @@ internal fun DeleteProfileConfirmationDialog(
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = BulletinShapes.inset,
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 ) {
@@ -174,7 +174,6 @@ internal fun DeleteProfileConfirmationDialog(
                     Text(
                         text = "Keep my profile",
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
@@ -249,7 +248,6 @@ private fun HoldButtonLabel(
     Text(
         text = label,
         style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
         color = textColor
     )
 }
@@ -313,11 +311,11 @@ internal fun HoldToDeleteButton(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .clip(RoundedCornerShape(26.dp))
+                .clip(BulletinShapes.pill)
                 .border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(26.dp)
+                    shape = BulletinShapes.pill
                 )
                 .semantics {
                     role = Role.Button

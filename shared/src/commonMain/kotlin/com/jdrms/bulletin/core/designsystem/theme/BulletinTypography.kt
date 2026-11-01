@@ -1,12 +1,11 @@
 package com.jdrms.bulletin.core.designsystem.theme
 
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
 internal val BulletinTypography = Typography(
@@ -29,7 +28,7 @@ internal val BulletinTypography = Typography(
     ),
     headlineSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 28.sp),
     titleLarge = TextStyle(
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
         lineHeight = 26.sp
     ),
@@ -71,10 +70,13 @@ internal val BulletinTypography = Typography(
     )
 )
 
-internal val BulletinShapes = Shapes(
-    extraSmall = RoundedCornerShape(6.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp),
-    extraLarge = CircleShape
-)
+/** Styles beyond the Material typography scale. */
+object BulletinTextStyles {
+    val otpInput = TextStyle(
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 26.sp,
+        letterSpacing = 0.5.em,
+        textAlign = TextAlign.Center
+    )
+}

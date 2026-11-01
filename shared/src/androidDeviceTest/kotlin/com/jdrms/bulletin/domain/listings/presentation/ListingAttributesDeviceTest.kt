@@ -17,7 +17,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule

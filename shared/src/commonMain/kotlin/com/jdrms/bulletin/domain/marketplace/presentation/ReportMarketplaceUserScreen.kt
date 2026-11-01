@@ -38,6 +38,8 @@ import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 
@@ -57,7 +59,7 @@ internal fun ReportMarketplaceUserScreen(
             modifier = Modifier.fillMaxWidth(0.92f).heightIn(max = 620.dp),
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = BulletinElevation.floating
         ) {
             Column(
                 Modifier.dismissKeyboardOnTapOutside().fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
@@ -119,8 +121,8 @@ private fun ReportErrorContent(message: String) {
 private fun ReportSubmittedContent(onBack: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
         Surface(
-            color = BulletinExtras.colors.successContainer,
-            contentColor = BulletinExtras.colors.onSuccessContainer,
+            color = MaterialTheme.bulletinColors.successContainer,
+            contentColor = MaterialTheme.bulletinColors.onSuccessContainer,
             shape = MaterialTheme.shapes.medium,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
         ) {

@@ -22,7 +22,7 @@ fun BulletinTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = BulletinTypography,
-            shapes = BulletinShapes,
+            shapes = BulletinMaterialShapes,
             content = content
         )
     }

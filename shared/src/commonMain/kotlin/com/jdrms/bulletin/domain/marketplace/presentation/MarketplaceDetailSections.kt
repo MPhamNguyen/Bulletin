@@ -40,8 +40,8 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import kotlinx.coroutines.launch
 
 @Composable
@@ -270,7 +270,6 @@ internal fun SellerInfoCard(
                         Text(
                             text = seller.name,
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1
                         )
@@ -297,7 +296,7 @@ internal fun SellerInfoCard(
                         Icon(
                             imageVector = Icons.Filled.Star,
                             contentDescription = "Seller rating",
-                            tint = BulletinExtras.colors.star,
+                            tint = MaterialTheme.bulletinColors.star,
                             modifier = Modifier.size(18.dp)
                         )
                         Text(

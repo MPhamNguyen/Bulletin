@@ -13,13 +13,14 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
 import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
 
 /** Fixed card surface revealed as the artwork lifts. */
 internal val homeTraySurface: Color
     @Composable get() = MaterialTheme.colorScheme.surfaceContainer
 
-private val TrayShadowElevation = 16.dp
+private val TrayShadowElevation = BulletinElevation.tray
 private val TrayFade = 60.dp
 private val TrayJoinOverlap = 16.dp
 

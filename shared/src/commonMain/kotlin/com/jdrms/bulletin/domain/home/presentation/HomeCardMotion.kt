@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -61,7 +62,8 @@ internal class HomeCardMotion(private val durationScale: Float = 1f) {
     fun snapBack(scope: CoroutineScope) {
         snapJob?.cancel()
         snapJob = scope.launch(HomeMotionClock) {
-            animate(dragDp, 0f, animationSpec = tween(homeMotionMillis(320, durationScale), easing = SnapEasing)) {
+            val settle = tween<Float>(homeMotionMillis(BulletinMotion.SETTLE, durationScale), easing = SnapEasing)
+            animate(dragDp, 0f, animationSpec = settle) {
                     value, _ ->
                 drag(value)
             }

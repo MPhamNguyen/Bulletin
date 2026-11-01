@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
@@ -36,7 +35,7 @@ fun UniversityCard(name: String) {
                 }
             }
             Column {
-                Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(name, style = MaterialTheme.typography.titleSmall)
                 Text(
                     "University provided by this user",
                     style = MaterialTheme.typography.bodySmall,
