@@ -7,8 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 
 data class MarketplaceScreenNavigation(
     val sellerProfileIdToOpen: String? = null,
@@ -127,7 +125,6 @@ private fun MarketplaceSellerProfileFlow(
 
     SellerProfileScreen(
         state = state.sellerProfileState,
-        messageActions = state.messageActions(actions),
         listingActions = SellerProfileListingActions(
             onListingClick = onOpenListing,
             onCategorySelected = viewModels.sellerProfile::onCategorySelected,
@@ -183,35 +180,6 @@ private data class MarketplaceSellerFlowUiState(
 ) {
     val destination: MarketplaceDestination
         get() = navigation.destination
-
-    fun messageActions(actions: MarketplaceScreenActions): MessageSellerQuickActionActions? {
-        val profile = sellerProfileState.profile ?: return null
-        return sellerProfileMessageActions(
-            marketplaceState.currentUserId,
-            profile,
-            navigation.listingContext,
-            actions
-        )
-    }
-}
-
-internal fun sellerProfileMessageActions(
-    currentUserId: String?,
-    profile: MarketplaceSellerProfile,
-    listing: SellerListingContext?,
-    actions: MarketplaceScreenActions
-): MessageSellerQuickActionActions? {
-    listing ?: return null
-    if (!canMessageMarketplaceSeller(currentUserId, profile.sellerId, listing.sellerId)) return null
-    return MessageSellerQuickActionActions(
-        conversationKey = "${listing.listingId}:${profile.sellerId}",
-        hasExistingConversation = { actions.hasExistingConversation(listing.listingId, profile.sellerId) },
-        onSend = { content ->
-            actions.onMessageSeller(listing.listingId, profile.sellerId, profile.name ?: listing.sellerName, content)
-        },
-        onSent = {},
-        onSeeChat = { actions.onSeeChat(listing.listingId, profile.sellerId) }
-    )
 }
 
 private data class MarketplaceSellerFlowViewModels(
@@ -231,9 +199,3 @@ internal enum class MarketplaceDestination {
 
 private val MarketplaceDestination.showsSellerProfile: Boolean
     get() = this == MarketplaceDestination.SELLER_PROFILE || this == MarketplaceDestination.SELLER_LISTING
-
-internal fun canMessageMarketplaceSeller(
-    currentUserId: String?,
-    profileSellerId: String,
-    listingSellerId: String
-): Boolean = currentUserId != null && currentUserId != profileSellerId && listingSellerId == profileSellerId

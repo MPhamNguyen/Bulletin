@@ -22,15 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
-import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 
 @Composable
 fun SellerProfileScreen(
     state: SellerProfileUiState,
-    messageActions: MessageSellerQuickActionActions?,
     listingActions: SellerProfileListingActions,
     onBack: () -> Unit,
     onReportUser: () -> Unit,
@@ -59,7 +56,6 @@ fun SellerProfileScreen(
             ) {
                 item { SellerProfileHero(state.profile) }
                 item { SellerProfileStats(state.profile, state.soldListingsCount) }
-                messageActions?.let { actions -> item { MessageSellerQuickAction(actions) } }
                 item { SellerProfileAbout(state.profile) }
                 item { SellerProfileVerification(state.profile) }
                 item { SellerProfileReviews(state.profile.reviews) }
