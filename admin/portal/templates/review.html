@@ -67,8 +67,29 @@
         {% if aliases.get(report.status, report.status) not in statuses %}<option value="" selected>Choose a status</option>{% endif %}
         {% for value, label in statuses.items() %}<option value="{{ value }}" {% if aliases.get(report.status, report.status) == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
+      <label for="status-comment">Comment (optional)</label>
+      <textarea id="status-comment" name="comment" maxlength="4000" rows="3" placeholder="Explain this status change"></textarea>
       <p class="muted">Changing the status also updates the report's modified time. Saving a status does not perform an account action.</p>
       <button type="submit">Save report status</button>
+    </form>
+    <h2>Moderation history</h2>
+    {% if history_error %}<p class="error" role="alert">{{ history_error }}</p>{% endif %}
+    {% if moderation_events %}
+      <ol class="moderation-history">
+        {% for event in moderation_events %}
+        <li>
+          <strong>{{ event.event_type|replace('_', ' ')|title }}</strong>
+          <span class="muted">by {{ event.moderator.full_name or event.moderator.email if event.moderator else event.moderator_id }} · {{ event.created_at|utc_timestamp }}</span>
+          {% if event.comment %}<p class="content">{{ event.comment }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    {% else %}<p class="muted">No moderation activity recorded yet.</p>{% endif %}
+    <form method="post" action="{{ url_for('moderation_history.add_report_comment', report_id=report.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <label for="moderation-comment">Add a comment</label>
+      <textarea id="moderation-comment" name="comment" maxlength="4000" rows="4" required></textarea>
+      <button type="submit">Add comment</button>
     </form>
     {% if delete_version %}
     <section class="danger-zone" aria-labelledby="delete-listing-heading">

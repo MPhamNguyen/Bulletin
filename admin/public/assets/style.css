@@ -7,7 +7,8 @@ header form { margin: 0; }
 main { max-width: 1240px; margin: 2rem auto; padding: 0 1.25rem; }
 h1 { font-size: 1.75rem; } h2 { font-size: 1.2rem; margin-top: 1.8rem; }
 a { color: #174fa8; } a:hover { text-decoration-thickness: 2px; }
-button, input, select { font: inherit; border: 1px solid #aeb7c2; border-radius: 4px; padding: .55rem .75rem; max-width: 100%; }
+button, input, select, textarea { font: inherit; border: 1px solid #aeb7c2; border-radius: 4px; padding: .55rem .75rem; max-width: 100%; }
+textarea { display: block; width: 100%; min-height: 7rem; margin-bottom: 1rem; resize: vertical; }
 button { cursor: pointer; background: #fff; color: #174fa8; font-weight: 600; }
 button:hover { background: #edf2fb; }
 .button { display: inline-block; border: 1px solid #aeb7c2; border-radius: 4px; padding: .55rem .75rem; background: #fff; font-weight: 600; text-decoration: none; }
@@ -20,7 +21,7 @@ button:hover { background: #edf2fb; }
 .reported-message { border: 2px solid #174fa8; }
 .user-listings { display: grid; gap: 1rem; }
 .user-listing { background: #fff; border: 1px solid #d8dde3; border-radius: 6px; padding: 1.5rem; }
-button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #245fc4; outline-offset: 3px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid #245fc4; outline-offset: 3px; }
 label { display: block; margin-bottom: .3rem; font-weight: 600; }
 fieldset { border: 1px solid #d8dde3; border-radius: 4px; margin: 0 0 1rem; padding: 1rem; }
 fieldset input, fieldset select { display: block; width: 100%; margin-bottom: .75rem; }
