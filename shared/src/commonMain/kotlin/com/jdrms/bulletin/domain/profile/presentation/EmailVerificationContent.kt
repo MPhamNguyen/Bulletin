@@ -14,22 +14,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -48,10 +41,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.SectionHeader
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
@@ -168,37 +165,28 @@ internal fun EmailVerificationContent(
                 textAlign = TextAlign.Center,
                 color = colors.onBackground
             )
-            OutlinedTextField(
+            BulletinTextField(
                 value = code,
                 onValueChange = { input -> code = input.filter(Char::isDigit).take(CODE_LENGTH) },
-                placeholder = {
-                    Text(
-                        "······",
-                        style = codeTextStyle.copy(color = colors.onSurfaceVariant.copy(alpha = 0.6f)),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                textStyle = codeTextStyle,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                singleLine = true,
-                enabled = !uiState.isLoading,
-                isError = uiState.errorMessage != null,
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = colors.surfaceVariant,
-                    unfocusedContainerColor = colors.surfaceVariant,
-                    disabledContainerColor = colors.surfaceVariant,
-                    errorContainerColor = colors.surfaceVariant,
-                    focusedBorderColor = colors.primary,
-                    unfocusedBorderColor = Color.Transparent,
-                    disabledBorderColor = Color.Transparent,
-                    errorBorderColor = colors.error,
-                    cursorColor = colors.primary
-                ),
-                modifier = Modifier.showKeyboardOnFocusOrTap(enabled = !uiState.isLoading)
+                modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = BulletinSpacing.l)
-                    .height(60.dp)
+                    .padding(top = BulletinSpacing.l),
+                isError = uiState.errorMessage != null,
+                decoration = BulletinFieldDecoration(
+                    placeholder = {
+                        Text(
+                            "······",
+                            style = codeTextStyle.copy(color = colors.onSurfaceVariant.copy(alpha = 0.6f)),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                ),
+                options = BulletinFieldOptions(
+                    enabled = !uiState.isLoading,
+
+                    textStyle = codeTextStyle,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+                )
             )
 
             Column(
@@ -216,15 +204,14 @@ internal fun EmailVerificationContent(
                     )
                 }
             }
-            Button(
+            BulletinButton(
                 onClick = { onVerify(code) },
                 enabled = canVerify,
-                shape = CircleShape,
-                colors = BulletinButtonDefaults.buttonColors(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = BulletinSpacing.m)
-                    .height(52.dp)
+                    .padding(top = BulletinSpacing.m),
+                variant = BulletinButtonVariant.Primary,
+                size = BulletinButtonSize.Large
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = colors.onPrimary)
@@ -237,17 +224,14 @@ internal fun EmailVerificationContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
             ) {
-                TextButton(
+                BulletinButton(
                     onClick = {
                         onResend()
                         cooldownRun++
                     },
                     enabled = !uiState.isLoading && !resendLocked,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = colors.primary,
-                        disabledContentColor = colors.onSurfaceVariant
-                    ),
-                    modifier = Modifier.height(44.dp)
+                    modifier = Modifier,
+                    variant = BulletinButtonVariant.Text
                 ) {
                     Text(
                         text = if (resendLocked) {
@@ -258,10 +242,11 @@ internal fun EmailVerificationContent(
                         fontWeight = FontWeight.Medium
                     )
                 }
-                TextButton(
+                BulletinButton(
                     onClick = onChangeEmail,
                     enabled = !uiState.isLoading,
-                    modifier = Modifier.height(44.dp)
+                    modifier = Modifier,
+                    variant = BulletinButtonVariant.Text
                 ) {
                     Text("Use a different email", color = colors.onSurfaceVariant, fontWeight = FontWeight.Medium)
                 }
@@ -287,13 +272,17 @@ internal fun EmailVerificationRecoveryContent(
             uiState.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             uiState.informationMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             if (uiState.isLoading) CircularProgressIndicator()
-            Button(
+            BulletinButton(
                 onClick = onRetry,
                 enabled = !uiState.isLoading,
-                colors = BulletinButtonDefaults.buttonColors(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                variant = BulletinButtonVariant.Primary
             ) { Text("Retry setup") }
-            TextButton(onClick = onSignIn, enabled = !uiState.isLoading) { Text("Sign in instead") }
+            BulletinButton(
+                onClick = onSignIn,
+                enabled = !uiState.isLoading,
+                variant = BulletinButtonVariant.Text
+            ) { Text("Sign in instead") }
         }
     }
 }

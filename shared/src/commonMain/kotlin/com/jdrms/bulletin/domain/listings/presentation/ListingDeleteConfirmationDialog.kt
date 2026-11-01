@@ -7,12 +7,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 
@@ -49,17 +49,15 @@ fun ListingDeleteConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isDeleting) {
+            BulletinButton(onClick = onDismiss, enabled = !isDeleting, variant = BulletinButtonVariant.Text) {
                 Text("Cancel")
             }
         },
         confirmButton = {
-            TextButton(
+            BulletinButton(
                 onClick = onConfirm,
                 enabled = !isDeleting,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
+                variant = BulletinButtonVariant.DestructiveText
             ) {
                 Text(if (isDeleting) "Deleting…" else "Delete")
             }

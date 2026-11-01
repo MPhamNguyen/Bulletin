@@ -26,9 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +38,9 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
@@ -89,7 +88,10 @@ internal fun BookmarkedListingsView(
                             color = MaterialTheme.colorScheme.error
                         )
                         if (listings.isEmpty()) {
-                            TextButton(onClick = actions.onRefresh) { Text("Retry") }
+                            BulletinButton(
+                                onClick = actions.onRefresh,
+                                variant = BulletinButtonVariant.Text
+                            ) { Text("Retry") }
                         }
                     }
                 }
@@ -116,11 +118,10 @@ internal fun BookmarkedListingsView(
             if (hasMore || isLoadingMore) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        OutlinedButton(
+                        BulletinButton(
                             onClick = actions.onLoadMore,
                             enabled = !isLoadingMore,
-                            colors = BulletinButtonDefaults.outlinedButtonColors(),
-                            border = BulletinButtonDefaults.outlinedButtonBorder()
+                            variant = BulletinButtonVariant.Outlined
                         ) {
                             if (isLoadingMore) {
                                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -183,11 +184,10 @@ private fun BookmarkedListingCard(
         )
         Spacer(modifier = Modifier.height(BulletinSpacing.m))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            OutlinedButton(
+            BulletinButton(
                 onClick = onRemoveBookmark,
                 enabled = bookmarkActionEnabled,
-                colors = BulletinButtonDefaults.outlinedButtonColors(),
-                border = BulletinButtonDefaults.outlinedButtonBorder()
+                variant = BulletinButtonVariant.Outlined
             ) {
                 if (isRemoving) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)

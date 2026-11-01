@@ -21,21 +21,21 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Verified
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 internal const val BIO_MAX_LENGTH = 160
@@ -64,7 +64,7 @@ internal fun EditProfileView(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterStart
             ) {
-                TextButton(onClick = actions.onCancel) {
+                BulletinButton(onClick = actions.onCancel, variant = BulletinButtonVariant.Text) {
                     Text(
                         "Cancel",
                         style = MaterialTheme.typography.labelLarge,
@@ -202,12 +202,12 @@ private fun EditProfileBody(
         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
     }
     Spacer(Modifier.height(BulletinSpacing.l))
-    Button(
+    BulletinButton(
         onClick = actions.onUpdate,
         enabled = uiState.isProfileModified && !uiState.isLoading,
-        modifier = Modifier.fillMaxWidth().height(50.dp),
-        shape = MaterialTheme.shapes.medium,
-        colors = BulletinButtonDefaults.buttonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Primary,
+        size = BulletinButtonSize.Large
     ) {
         Text("Save Changes", style = MaterialTheme.typography.labelLarge)
     }

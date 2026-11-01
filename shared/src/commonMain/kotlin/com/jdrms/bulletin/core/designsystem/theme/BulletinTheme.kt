@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.jdrms.bulletin.core.designsystem.PlatformSystemBarAppearance
 
+/** Provides the app color scheme, typography, shapes, and extended colors. */
 @Composable
 fun BulletinTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

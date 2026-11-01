@@ -3,10 +3,11 @@ package com.jdrms.bulletin.domain.messages.presentation
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 
@@ -76,14 +77,17 @@ private fun ChatStatusMessages(state: MessagesUiState, viewModel: MessagesViewMo
     error?.let {
         Row(Modifier.padding(horizontal = BulletinSpacing.gutter), verticalAlignment = Alignment.CenterVertically) {
             Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
-            TextButton(onClick = {
-                if (state.block.statusErrorMessage != null) {
-                    state.conversations.firstOrNull { it.id == state.selectedConversationId }
-                        ?.counterpart(state.viewerId)?.let { viewModel.refreshBlockStatus(it.id) }
-                } else {
-                    viewModel.loadConversations()
-                }
-            }) { Text("Retry") }
+            BulletinButton(
+                onClick = {
+                    if (state.block.statusErrorMessage != null) {
+                        state.conversations.firstOrNull { it.id == state.selectedConversationId }
+                            ?.counterpart(state.viewerId)?.let { viewModel.refreshBlockStatus(it.id) }
+                    } else {
+                        viewModel.loadConversations()
+                    }
+                },
+                variant = BulletinButtonVariant.Text
+            ) { Text("Retry") }
         }
     }
     state.statusMessage?.let {

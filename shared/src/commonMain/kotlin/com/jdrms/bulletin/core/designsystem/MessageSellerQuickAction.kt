@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,9 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 import kotlinx.coroutines.launch
 
 private const val DEFAULT_SELLER_MESSAGE = "Hi, is this available?"
@@ -75,7 +72,7 @@ fun MessageSellerQuickAction(
             horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
+            BulletinTextField(
                 value = status.fieldText,
                 onValueChange = {
                     if (conversationExists == false) {
@@ -83,32 +80,35 @@ fun MessageSellerQuickAction(
                         errorMessage = null
                     }
                 },
-                modifier = Modifier.showKeyboardOnFocusOrTap(readOnly = !status.isEditable).weight(1f),
-                minLines = 1,
-                maxLines = 3,
-                placeholder = { Text(DEFAULT_SELLER_MESSAGE) },
-                readOnly = !status.isEditable,
-                leadingIcon = if (status.isMessageSent) {
-                    { androidx.compose.material3.Icon(Icons.Filled.Check, contentDescription = "Message sent") }
-                } else {
-                    null
-                },
-                textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
-                    color = if (!status.isEditable) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                modifier = Modifier.weight(1f),
+                decoration = BulletinFieldDecoration(
+                    placeholder = { Text(DEFAULT_SELLER_MESSAGE) },
+                    leadingIcon = if (status.isMessageSent) {
+                        { androidx.compose.material3.Icon(Icons.Filled.Check, contentDescription = "Message sent") }
                     } else {
-                        MaterialTheme.colorScheme.onSurface
+                        null
                     }
                 ),
-                colors = BulletinTextFieldDefaults.colors()
+                options = BulletinFieldOptions(
+                    readOnly = !status.isEditable,
+                    minLines = 1,
+                    maxLines = 3,
+                    textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                        color = if (!status.isEditable) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+                    )
+                )
             )
-            Button(
+            BulletinButton(
                 onClick = {
                     if (status.isMessageSent) {
                         scope.launch { actions.onSeeChat() }
-                        return@Button
+                        return@BulletinButton
                     }
-                    if (isSending) return@Button
+                    if (isSending) return@BulletinButton
                     isSending = true
                     errorMessage = null
                     scope.launch {
@@ -118,7 +118,7 @@ fun MessageSellerQuickAction(
                     }
                 },
                 enabled = !isSending && (status.isMessageSent || (status.isEditable && message.isNotBlank())),
-                colors = BulletinButtonDefaults.buttonColors()
+                variant = BulletinButtonVariant.Primary
             ) {
                 if (isSending) {
                     CircularProgressIndicator(modifier = Modifier, strokeWidth = 2.dp)

@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -36,14 +38,20 @@ internal fun BlockConversationUserDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onConfirm,
+            BulletinButton(
+                onClick = onConfirm,
                 enabled = !isBlocking,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                variant = BulletinButtonVariant.DestructiveText
             ) {
                 Text(if (isBlocking) "Blocking…" else "Block")
             }
         },
-        dismissButton = { TextButton(onDismiss, enabled = !isBlocking) { Text("Cancel") } }
+        dismissButton = {
+            BulletinButton(
+                onClick = onDismiss,
+                enabled = !isBlocking,
+                variant = BulletinButtonVariant.Text
+            ) { Text("Cancel") }
+        }
     )
 }

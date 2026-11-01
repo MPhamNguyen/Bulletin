@@ -14,7 +14,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -22,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 
 @Composable
 internal fun EditProfilePhoto(
@@ -72,14 +73,14 @@ internal fun EditProfilePhoto(
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onChangePhoto, enabled = !isUploading) {
+            BulletinButton(onClick = onChangePhoto, enabled = !isUploading, variant = BulletinButtonVariant.Text) {
                 Text(
                     if (isUploading) "Uploading…" else "Upload New",
                     style = MaterialTheme.typography.labelLarge
                 )
             }
             Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TextButton(onClick = {}, enabled = false) {
+            BulletinButton(onClick = {}, enabled = false, variant = BulletinButtonVariant.Text) {
                 Text(
                     "Remove",
                     style = MaterialTheme.typography.labelLarge,

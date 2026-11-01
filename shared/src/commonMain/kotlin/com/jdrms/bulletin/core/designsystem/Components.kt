@@ -9,20 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 /** Height occupied by the app navigation bar, including its system bar inset. */
 val LocalNavbarHeight = staticCompositionLocalOf<Dp> { 0.dp }
-
-object BulletinIconButtonDefaults {
-    @Composable
-    fun filledColors(): IconButtonColors = IconButtonDefaults.filledIconButtonColors(
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
-    )
-}
 
 @Composable
 fun SectionHeader(title: String, subtitle: String? = null) {
@@ -74,12 +65,12 @@ fun ReviewPaginationActions(
     if (!isExpanded && !hasMore) return
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         if (isExpanded) {
-            TextButton(onClick = onSeeLess) {
+            BulletinButton(onClick = onSeeLess, variant = BulletinButtonVariant.Text) {
                 Text("See less reviews")
             }
         }
         if (hasMore) {
-            TextButton(onClick = onSeeMore) {
+            BulletinButton(onClick = onSeeMore, variant = BulletinButtonVariant.Text) {
                 Text("See more reviews")
             }
         }

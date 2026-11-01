@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,7 +19,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -48,7 +49,10 @@ internal fun MessagesInboxContent(
         state.errorMessage?.let { error ->
             BulletinCard {
                 Text(error, color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = viewModel::loadConversations) { Text("Retry") }
+                BulletinButton(
+                    onClick = viewModel::loadConversations,
+                    variant = BulletinButtonVariant.Text
+                ) { Text("Retry") }
             }
         }
         when {

@@ -6,18 +6,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 
 @Composable
 internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewModel) {
@@ -27,25 +26,32 @@ internal fun MessageComposer(state: MessagesUiState, viewModel: MessagesViewMode
         if (isEditing) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Editing message", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                TextButton(onClick = viewModel.cancelEditing, enabled = !isBusy) { Text("Cancel") }
+                BulletinButton(
+                    onClick = viewModel.cancelEditing,
+                    enabled = !isBusy,
+                    variant = BulletinButtonVariant.Text
+                ) { Text("Cancel") }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
+            BulletinTextField(
                 value = state.messageInput,
                 onValueChange = viewModel::onMessageInputChanged,
-                placeholder = { Text(if (isEditing) "Edit your message..." else "Type a message...") },
-                enabled = !isBusy,
-                maxLines = 4,
+                modifier = Modifier.weight(1f),
                 isError = state.editError != null,
-                colors = BulletinTextFieldDefaults.colors(),
-                modifier = Modifier.showKeyboardOnFocusOrTap(enabled = !isBusy).weight(1f)
+                decoration = BulletinFieldDecoration(
+                    placeholder = { Text(if (isEditing) "Edit your message..." else "Type a message...") }
+                ),
+                options = BulletinFieldOptions(
+                    enabled = !isBusy,
+                    maxLines = 4
+                )
             )
             Spacer(Modifier.width(BulletinSpacing.s))
-            Button(
+            BulletinButton(
                 onClick = viewModel::sendCurrentMessage,
                 enabled = !isBusy && !state.isLoadingMessages && state.messageInput.isNotBlank(),
-                colors = BulletinButtonDefaults.buttonColors()
+                variant = BulletinButtonVariant.Primary
             ) { Text(composerActionLabel(isEditing, isBusy)) }
         }
         state.editError?.let {

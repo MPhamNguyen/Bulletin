@@ -6,9 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
@@ -64,21 +64,20 @@ internal fun SignUpSuccessContent(
         textAlign = TextAlign.Center
     )
     Spacer(modifier = Modifier.height(28.dp))
-    Button(
+    BulletinButton(
         onClick = onContinueToApp,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = BulletinButtonDefaults.buttonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Primary,
+        size = BulletinButtonSize.Large
     ) {
         Text("Continue to Bulletin", style = MaterialTheme.typography.titleMedium)
     }
     Spacer(modifier = Modifier.height(BulletinSpacing.m))
-    OutlinedButton(
+    BulletinButton(
         onClick = onNavigateToSignIn,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        border = BulletinButtonDefaults.outlinedButtonBorder(),
-        colors = BulletinButtonDefaults.outlinedButtonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Outlined,
+        size = BulletinButtonSize.Large
     ) {
         Text("Back to Sign In", style = MaterialTheme.typography.titleMedium)
     }

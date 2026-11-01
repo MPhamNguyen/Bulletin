@@ -53,7 +53,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 private const val PROFILE_SOFT_DELETE_CONSEQUENCE = "Your profile is marked for soft-delete"
@@ -162,13 +164,12 @@ internal fun DeleteProfileConfirmationDialog(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Button(
+                BulletinButton(
                     onClick = onDismiss,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    colors = BulletinButtonDefaults.buttonColors()
+                        .fillMaxWidth(),
+                    variant = BulletinButtonVariant.Primary,
+                    size = BulletinButtonSize.Large
                 ) {
                     Text(
                         text = "Keep my profile",

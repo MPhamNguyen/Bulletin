@@ -5,8 +5,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 
 private const val DATE_FORMAT_HINT = "YYYY-MM-DD"
 
@@ -36,7 +33,7 @@ fun DateInput(
     LaunchedEffect(value) {
         if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
     }
-    OutlinedTextField(
+    BulletinTextField(
         value = field,
         onValueChange = { input ->
             val digitsBeforeCursor = dateDigits(input.text.take(input.selection.end)).length
@@ -44,19 +41,21 @@ fun DateInput(
             field = TextFieldValue(formatted, TextRange(formattedCursorOffset(digitsBeforeCursor)))
             if (formatted != value) onValueChange(formatted)
         },
-        label = { Text(label) },
-        placeholder = { Text(DATE_FORMAT_HINT) },
-        supportingText = { Text(error ?: "Format: $DATE_FORMAT_HINT") },
-        trailingIcon = {
-            IconButton(onClick = onOpenCalendar) {
-                Icon(Icons.Outlined.CalendarMonth, contentDescription = "Choose date from calendar")
-            }
-        },
+        modifier = modifier,
         isError = error != null,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        colors = BulletinTextFieldDefaults.colors(),
-        shape = MaterialTheme.shapes.small,
-        modifier = modifier.showKeyboardOnFocusOrTap()
+        decoration = BulletinFieldDecoration(
+            label = { Text(label) },
+            placeholder = { Text(DATE_FORMAT_HINT) },
+            supportingText = { Text(error ?: "Format: $DATE_FORMAT_HINT") },
+            trailingIcon = {
+                IconButton(onClick = onOpenCalendar) {
+                    Icon(Icons.Outlined.CalendarMonth, contentDescription = "Choose date from calendar")
+                }
+            }
+        ),
+        options = BulletinFieldOptions(
+
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
     )
 }

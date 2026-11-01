@@ -11,10 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
@@ -85,12 +86,20 @@ fun ListingSoldConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = actions.onDismiss, enabled = !state.isMarkingSold) {
+            BulletinButton(
+                onClick = actions.onDismiss,
+                enabled = !state.isMarkingSold,
+                variant = BulletinButtonVariant.Text
+            ) {
                 Text("Cancel")
             }
         },
         confirmButton = {
-            TextButton(onClick = actions.onConfirm, enabled = !state.isMarkingSold) {
+            BulletinButton(
+                onClick = actions.onConfirm,
+                enabled = !state.isMarkingSold,
+                variant = BulletinButtonVariant.Text
+            ) {
                 Text(if (state.isMarkingSold) "Marking as sold..." else "Mark as sold")
             }
         }

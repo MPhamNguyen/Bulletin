@@ -2,8 +2,6 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,8 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
-import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
 
 private const val ISBN_FORMAT_HINT = "ISBN-10: 10 digits or 9 digits + X · ISBN-13: 978/979 + 10 digits"
@@ -34,7 +33,7 @@ internal fun ListingIsbnAttributeField(
     }
     val formatError = isbnInputError(field.text)
     val message = error ?: formatError
-    OutlinedTextField(
+    BulletinTextField(
         value = field,
         onValueChange = { input ->
             val formatted = formatIsbnInput(input.text)
@@ -42,13 +41,15 @@ internal fun ListingIsbnAttributeField(
             field = TextFieldValue(formatted, TextRange(cursor))
             if (formatted != value) onInputChange(definition.key, formatted)
         },
-        label = { Text(ListingAttributeDisplay.fieldLabel(definition)) },
-        supportingText = { Text(message ?: ISBN_FORMAT_HINT) },
+        modifier = Modifier.fillMaxWidth(),
         isError = message != null,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-        colors = BulletinTextFieldDefaults.colors(),
-        shape = MaterialTheme.shapes.small,
-        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
+        decoration = BulletinFieldDecoration(
+            label = { Text(ListingAttributeDisplay.fieldLabel(definition)) },
+            supportingText = { Text(message ?: ISBN_FORMAT_HINT) }
+        ),
+        options = BulletinFieldOptions(
+
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+        )
     )
 }

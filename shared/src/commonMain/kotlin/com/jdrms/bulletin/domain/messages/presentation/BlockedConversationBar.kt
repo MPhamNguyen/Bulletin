@@ -5,7 +5,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -29,11 +30,11 @@ internal fun BlockedConversationBar(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
             )
-            Button(
-                onUnblock,
+            BulletinButton(
+                onClick = onUnblock,
                 enabled = !isUnblocking,
-                colors = BulletinButtonDefaults.neutralButtonColors(),
-                modifier = Modifier.heightIn(min = BulletinSpacing.control)
+                modifier = Modifier.heightIn(min = BulletinSpacing.control),
+                variant = BulletinButtonVariant.Neutral
             ) {
                 Text(if (isUnblocking) "Unblocking…" else "Unblock")
             }

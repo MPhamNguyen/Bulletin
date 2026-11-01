@@ -1,12 +1,8 @@
 package com.jdrms.bulletin.core.designsystem.theme
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -21,6 +17,12 @@ object BulletinSpacing {
     val xl = 24.dp
     val gutter = l
     val control = 48.dp
+    val controlLarge = 52.dp
+}
+
+/** Shared shape for modal bottom sheets. */
+object BulletinSheetDefaults {
+    val shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
 }
 
 // Artwork stays dark in either app theme so overlaid listing details remain readable.
@@ -61,80 +63,4 @@ object BulletinConversationDefaults {
         @Composable get() = if (isDark) Color(0xFF22495D) else Color(0xFFDDF3F0)
     val unreadBorder: Color
         @Composable get() = if (isDark) Color(0xFF77A7F7) else Color(0xFF3E5C76)
-}
-
-object BulletinTextFieldDefaults {
-    @Composable
-    fun colors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-        focusedBorderColor = MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
-    )
-}
-
-object BulletinInactiveButtonDefaults {
-    @Composable
-    fun colors(): ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        contentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
-        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
-    )
-}
-
-object BulletinButtonDefaults {
-    // Primary CTAs (Sign in, Verify Email, Post Listing, Message Seller,
-    // Create Account, Update) use `primary`, not tertiary.
-    @Composable
-    fun buttonColors(): ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    )
-
-    @Composable
-    fun inactiveButtonColors(): ButtonColors = BulletinInactiveButtonDefaults.colors()
-
-    @Composable
-    fun outlinedButtonColors(): ButtonColors = ButtonDefaults.outlinedButtonColors(
-        containerColor = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.primary
-    )
-
-    @Composable
-    fun outlinedButtonBorder(): BorderStroke = BorderStroke(
-        width = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
-    )
-
-    @Composable
-    fun destructiveButtonColors(): ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = MaterialTheme.colorScheme.error,
-        contentColor = MaterialTheme.colorScheme.onError
-    )
-
-    @Composable
-    fun destructiveOutlinedButtonColors(): ButtonColors = ButtonDefaults.outlinedButtonColors(
-        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
-        contentColor = MaterialTheme.colorScheme.error
-    )
-
-    @Composable
-    fun destructiveOutlinedButtonBorder(): BorderStroke = BorderStroke(
-        width = 1.dp,
-        color = MaterialTheme.colorScheme.error.copy(alpha = 0.45f)
-    )
-
-    @Composable
-    fun neutralButtonColors(): ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    )
-
-    @Composable
-    fun textButtonColors(): ButtonColors = ButtonDefaults.textButtonColors(
-        contentColor = MaterialTheme.colorScheme.primary
-    )
 }
