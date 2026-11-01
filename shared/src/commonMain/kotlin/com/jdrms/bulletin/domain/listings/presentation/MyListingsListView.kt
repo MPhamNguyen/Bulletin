@@ -127,7 +127,6 @@ private fun MyListingsTopBar(
             Text(
                 text = "My Listings",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(

@@ -56,7 +56,6 @@ internal fun SignUpFormContent(
         text = "Get started on Bulletin",
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
     Spacer(modifier = Modifier.height(BulletinSpacing.s))

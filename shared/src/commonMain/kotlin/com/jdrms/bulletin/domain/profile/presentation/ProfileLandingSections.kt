@@ -32,8 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
 internal fun ProfileAboutCard(
@@ -77,7 +78,7 @@ internal fun ProfileAboutCard(
 @Composable
 private fun ProfileInformationChip(icon: ImageVector, text: String) {
     Surface(
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = BulletinShapes.pill,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
@@ -95,7 +96,6 @@ private fun ProfileInformationChip(icon: ImageVector, text: String) {
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -138,7 +138,7 @@ internal fun MarketplaceActivityStatsCard(
                 value = formatProfileStat(rating),
                 label = "Reputation",
                 icon = Icons.Filled.Star,
-                iconTint = BulletinExtras.colors.star,
+                iconTint = MaterialTheme.bulletinColors.star,
                 modifier = Modifier.weight(1f)
             )
         }

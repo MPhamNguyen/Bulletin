@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
 
 /** Asks before a category switch discards nonblank item details. Cancel leaves the form unchanged. */
 @Composable
@@ -39,7 +40,7 @@ internal fun ListingCategoryChangeDialog(
             shape = MaterialTheme.shapes.large,
             color = scheme.surface,
             contentColor = scheme.onSurface,
-            tonalElevation = 6.dp
+            tonalElevation = BulletinElevation.floating
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -54,7 +55,6 @@ internal fun ListingCategoryChangeDialog(
                     Text(
                         text = "Change category?",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                     Text(

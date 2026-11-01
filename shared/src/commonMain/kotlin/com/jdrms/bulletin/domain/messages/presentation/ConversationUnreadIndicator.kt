@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
 
 @Composable
 internal fun ConversationUnreadIndicator() {
@@ -23,7 +24,7 @@ internal fun ConversationUnreadIndicator() {
     ) {
         Box(
             modifier = Modifier.size(7.dp)
-                .shadow(5.dp, CircleShape)
+                .shadow(BulletinElevation.raised, CircleShape)
                 .background(MaterialTheme.colorScheme.primary, CircleShape)
         )
     }

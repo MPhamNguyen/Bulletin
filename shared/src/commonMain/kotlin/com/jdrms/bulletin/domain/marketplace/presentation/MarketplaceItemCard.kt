@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -25,6 +24,8 @@ import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.common.imageRequestUrl
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
@@ -55,9 +56,9 @@ private fun SingleColumnListingCard(
             .fillMaxWidth()
             .wrapContentHeight()
             .clickable(onClick = onCardClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = BulletinShapes.card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = BulletinElevation.low)
     ) {
         Column {
             MarketplaceListingPhoto(item, SINGLE_PHOTO_HEIGHT, isBookmarked, onBookmarkClick)
@@ -82,9 +83,9 @@ private fun TwoColumnListingCard(
             .fillMaxWidth()
             .wrapContentHeight()
             .clickable(onClick = onCardClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = BulletinShapes.cardCompact,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = BulletinElevation.low)
     ) {
         Column {
             MarketplaceListingPhoto(item, DOUBLE_PHOTO_HEIGHT, isBookmarked, onBookmarkClick)

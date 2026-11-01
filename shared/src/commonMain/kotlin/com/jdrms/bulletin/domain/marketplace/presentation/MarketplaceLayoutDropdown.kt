@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +19,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
 
 @Composable
@@ -101,6 +101,6 @@ private fun LayoutShape(width: androidx.compose.ui.unit.Dp, height: androidx.com
     Box(
         Modifier
             .size(width, height)
-            .background(color, RoundedCornerShape(1.dp))
+            .background(color, BulletinShapes.swatch)
     )
 }

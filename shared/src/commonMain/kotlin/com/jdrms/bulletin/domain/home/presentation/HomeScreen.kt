@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -181,7 +180,6 @@ private fun FeedStateMessage(title: String, message: String, isError: Boolean = 
     Text(
         text = title,
         style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center
     )
@@ -261,7 +259,6 @@ private fun EmptyFeedState(
                 Text(
                     text = "Start Over",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

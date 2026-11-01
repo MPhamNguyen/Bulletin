@@ -26,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -63,12 +65,15 @@ fun MessagesScreen(
                 targetState = selected?.id.takeIf { isChat },
                 modifier = Modifier.fillMaxSize(),
                 transitionSpec = {
+                    val slide = tween<IntOffset>(BulletinMotion.EMPHASIZED)
+                    val enter = fadeIn(tween(BulletinMotion.STANDARD))
+                    val exit = fadeOut(tween(BulletinMotion.FAST))
                     if (targetState != null) {
-                        (slideInHorizontally(tween(300)) { it } + fadeIn(tween(220))) togetherWith
-                            (slideOutHorizontally(tween(300)) { -it / 4 } + fadeOut(tween(180)))
+                        (slideInHorizontally(slide) { it } + enter) togetherWith
+                            (slideOutHorizontally(slide) { -it / 4 } + exit)
                     } else {
-                        (slideInHorizontally(tween(300)) { -it / 4 } + fadeIn(tween(220))) togetherWith
-                            (slideOutHorizontally(tween(300)) { it } + fadeOut(tween(180)))
+                        (slideInHorizontally(slide) { -it / 4 } + enter) togetherWith
+                            (slideOutHorizontally(slide) { it } + exit)
                     }
                 },
                 label = "messages-destination"

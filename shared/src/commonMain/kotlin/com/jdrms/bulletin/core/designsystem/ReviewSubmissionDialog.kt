@@ -28,13 +28,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 private const val MAX_COMMENT_LENGTH = 500
 
@@ -63,15 +64,15 @@ fun ReviewSubmissionDialog(
             visibleState = visibility,
             enter = slideInVertically(
                 initialOffsetY = { fullHeight -> fullHeight / 2 },
-                animationSpec = tween(durationMillis = 280)
-            ) + fadeIn(animationSpec = tween(durationMillis = 220))
+                animationSpec = tween(durationMillis = BulletinMotion.ENTER)
+            ) + fadeIn(animationSpec = tween(durationMillis = BulletinMotion.STANDARD))
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(0.92f),
                 shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
-                shadowElevation = 20.dp
+                tonalElevation = BulletinElevation.overlay,
+                shadowElevation = BulletinElevation.modal
             ) {
                 Column(
                     modifier = Modifier.dismissKeyboardOnTapOutside().padding(BulletinSpacing.xl),
@@ -101,13 +102,13 @@ private fun ReviewHeader() {
             Icon(
                 imageVector = Icons.Filled.Star,
                 contentDescription = null,
-                tint = BulletinExtras.colors.star,
+                tint = MaterialTheme.bulletinColors.star,
                 modifier = Modifier.padding(BulletinSpacing.m)
             )
         }
         Spacer(Modifier.size(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text("Share your experience", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("Share your experience", style = MaterialTheme.typography.titleLarge)
             Text(
                 "How was your purchase from this seller?",
                 style = MaterialTheme.typography.bodyMedium,
@@ -131,7 +132,7 @@ private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
                     Icon(
                         imageVector = if (value <= score) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = "$value star${if (value == 1) "" else "s"}",
-                        tint = BulletinExtras.colors.star,
+                        tint = MaterialTheme.bulletinColors.star,
                         modifier = Modifier.size(34.dp)
                     )
                 }

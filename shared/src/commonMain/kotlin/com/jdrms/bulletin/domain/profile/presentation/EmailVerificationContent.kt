@@ -33,14 +33,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
@@ -49,7 +45,9 @@ import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextStyles
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import kotlinx.coroutines.delay
@@ -74,7 +72,7 @@ internal fun EmailVerificationContent(
     LaunchedEffect(pending, cooldownRun) {
         secondsLeft = RESEND_COOLDOWN_SECONDS
         while (secondsLeft > 0) {
-            delay(1_000L)
+            delay(BulletinMotion.TICK_MILLIS)
             secondsLeft--
         }
     }
@@ -129,9 +127,7 @@ internal fun EmailVerificationContent(
             }
             Text(
                 text = "Verify your email",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.01).em,
+                style = MaterialTheme.typography.headlineMedium,
                 color = colors.onBackground,
                 modifier = Modifier.padding(top = BulletinSpacing.xl)
             )
@@ -157,14 +153,7 @@ internal fun EmailVerificationContent(
                 modifier = Modifier.padding(top = BulletinSpacing.m)
             )
 
-            val codeTextStyle = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 26.sp,
-                letterSpacing = 0.5.em,
-                textAlign = TextAlign.Center,
-                color = colors.onBackground
-            )
+            val codeTextStyle = BulletinTextStyles.otpInput.copy(color = colors.onBackground)
             BulletinTextField(
                 value = code,
                 onValueChange = { input -> code = input.filter(Char::isDigit).take(CODE_LENGTH) },
@@ -216,7 +205,7 @@ internal fun EmailVerificationContent(
                 if (uiState.isLoading) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = colors.onPrimary)
                 } else {
-                    Text("Verify email", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Verify email", style = MaterialTheme.typography.titleMedium)
                 }
             }
             Column(

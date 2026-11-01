@@ -16,14 +16,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 internal enum class SwipeFeedback { SAVE, PASS }
 
 @Composable
 internal fun SwipeStamp(verdict: SwipeFeedback, progress: () -> Float, modifier: Modifier = Modifier) {
-    val color = if (verdict == SwipeFeedback.SAVE) BulletinExtras.colors.success else MaterialTheme.colorScheme.error
+    val color = if (verdict == SwipeFeedback.SAVE) {
+        MaterialTheme.bulletinColors.success
+    } else {
+        MaterialTheme.colorScheme.error
+    }
     val shape = MaterialTheme.shapes.medium
     Row(
         modifier.swipeStampPose(verdict, progress)

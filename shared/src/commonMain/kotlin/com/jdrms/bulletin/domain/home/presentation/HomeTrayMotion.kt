@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -33,7 +34,7 @@ internal class HomeTrayMotion(private val durationScale: Float) {
         job = scope.launch(HomeMotionClock) {
             progress.animateTo(
                 if (open) 1f else 0f,
-                tween(homeMotionMillis(500, durationScale), easing = TraySettleEasing)
+                tween(homeMotionMillis(BulletinMotion.LONG, durationScale), easing = TraySettleEasing)
             )
             if (!open) visible = false
         }

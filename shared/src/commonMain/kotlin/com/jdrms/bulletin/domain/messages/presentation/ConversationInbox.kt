@@ -36,8 +36,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinConversationDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -134,8 +134,8 @@ private fun ConversationCardSurface(
         modifier.background(
             brush = Brush.horizontalGradient(
                 colors = listOf(
-                    BulletinConversationDefaults.unreadGradientStart,
-                    BulletinConversationDefaults.unreadGradientEnd
+                    MaterialTheme.bulletinColors.unreadGradientStart,
+                    MaterialTheme.bulletinColors.unreadGradientEnd
                 )
             ),
             shape = cardShape

@@ -223,6 +223,22 @@ jobs:
           done
           [ "$failed" = false ]
 
+  design-system:
+    name: "🎨 Design-system boundaries"
+    needs: scope
+    if: needs.scope.outputs.mode != 'skip'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify the boundary check itself
+        run: scripts/test-check-design-system-boundaries.sh
+      - name: Reject raw components and literals outside core/designsystem
+        run: scripts/check-design-system-boundaries.sh
+
   # check retains Android app tests, lint and detekt; host tests run separately.
   static:
     name: "🧹 Static analysis"
@@ -416,7 +432,7 @@ jobs:
   # Keep this required-check name stable. Failed or cancelled dependencies fail it.
   build:
     name: Build and Test
-    needs: [scope, size-check, static, full-tests, domain-tests, shared-tests, admin]
+    needs: [scope, size-check, design-system, static, full-tests, domain-tests, shared-tests, admin]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

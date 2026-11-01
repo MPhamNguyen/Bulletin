@@ -48,7 +48,7 @@ internal fun PublicProfileView(profile: StudentProfile? = null, onBack: () -> Un
 private fun PublicProfileAbout(bio: String) {
     BulletinCard {
         Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
-            Text("About", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("About", style = MaterialTheme.typography.titleMedium)
             Text(
                 bio,
                 style = MaterialTheme.typography.bodyMedium,
@@ -115,7 +115,6 @@ private fun PublicProfileTopBar(onBackClick: () -> Unit) {
         Text(
             text = "Public Profile",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
     }

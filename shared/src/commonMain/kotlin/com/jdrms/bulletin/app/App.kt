@@ -46,7 +46,7 @@ fun App(appContainer: AppContainer? = null) {
     }
     BulletinTheme(darkTheme = isDarkTheme) {
         Box(Modifier.fillMaxSize().dismissKeyboardOnTapOutside()) {
-            AppRoot(container, themeViewModel, isDarkTheme, recovery)
+            AppRoot(container, themeViewModel, recovery)
         }
     }
 }

@@ -31,8 +31,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
 internal fun MarketplaceProfileTopBar(onSettingsClick: () -> Unit) {
@@ -46,7 +46,6 @@ internal fun MarketplaceProfileTopBar(onSettingsClick: () -> Unit) {
         Text(
             text = "Profile",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
         Surface(
@@ -102,7 +101,6 @@ internal fun ProfileHero(
             Text(
                 text = fullName,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
@@ -147,7 +145,6 @@ internal fun ProfileAvatarImage(
         Text(
             text = profileInitials(fullName),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
             color = contentColor
         )
         if (!avatarUrl.isNullOrBlank()) {
@@ -165,8 +162,8 @@ internal fun ProfileAvatarImage(
 private fun VerifiedBadge() {
     Surface(
         shape = CircleShape,
-        color = BulletinExtras.colors.successContainer,
-        contentColor = BulletinExtras.colors.success
+        color = MaterialTheme.bulletinColors.successContainer,
+        contentColor = MaterialTheme.bulletinColors.success
     ) {
         Row(
             modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = 3.dp),

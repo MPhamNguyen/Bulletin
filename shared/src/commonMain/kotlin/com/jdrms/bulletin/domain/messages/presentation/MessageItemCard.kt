@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEditing
@@ -194,11 +194,9 @@ private fun messageBubbleContentColor(message: Message, isMine: Boolean) = when 
     else -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
-private fun messageBubbleShape(presentation: MessageItemCardPresentation) = RoundedCornerShape(
-    topStart = 18.dp,
-    topEnd = 18.dp,
-    bottomEnd = if (presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp,
-    bottomStart = if (!presentation.isMine && presentation.showTimestamp) 4.dp else 18.dp
+private fun messageBubbleShape(presentation: MessageItemCardPresentation) = BulletinShapes.bubble(
+    squareBottomStart = !presentation.isMine && presentation.showTimestamp,
+    squareBottomEnd = presentation.isMine && presentation.showTimestamp
 )
 
 private fun reportableBubbleModifier(canReport: Boolean, onLongClick: () -> Unit): Modifier =

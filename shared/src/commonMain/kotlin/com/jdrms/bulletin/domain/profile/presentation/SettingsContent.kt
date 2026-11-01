@@ -166,7 +166,6 @@ private fun SettingsTopBar(onBackClick: () -> Unit) {
         Text(
             text = "Settings",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = BulletinSpacing.xs)
         )
@@ -290,7 +289,6 @@ private fun SettingsActionCard(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(2.dp))

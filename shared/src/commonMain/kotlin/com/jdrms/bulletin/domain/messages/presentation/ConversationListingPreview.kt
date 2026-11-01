@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Icon
@@ -29,7 +28,7 @@ internal fun ConversationListingPreview(imageUrl: String?, imageSize: Dp = 64.dp
     SubcomposeAsyncImage(
         model = imageUrl.imageRequestUrl(),
         contentDescription = "Listing image",
-        modifier = Modifier.size(imageSize).clip(RoundedCornerShape(10.dp)).clipToBounds(),
+        modifier = Modifier.size(imageSize).clip(MaterialTheme.shapes.small).clipToBounds(),
         contentScale = ContentScale.Crop,
         loading = { ListingPreviewPlaceholder(imageSize) },
         error = { ListingPreviewPlaceholder(imageSize) },

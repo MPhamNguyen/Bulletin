@@ -23,8 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
 internal fun BookmarkedListingSeller(sellerName: String, reputationScore: Double?) {
@@ -55,7 +55,7 @@ internal fun BookmarkedListingSeller(sellerName: String, reputationScore: Double
                     Icon(Icons.Outlined.Person, "Seller Avatar", modifier = Modifier.size(24.dp))
                 }
                 Column {
-                    Text(sellerName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(sellerName, style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Verified CSULB Student",
                         style = MaterialTheme.typography.bodySmall,
@@ -70,7 +70,7 @@ internal fun BookmarkedListingSeller(sellerName: String, reputationScore: Double
                 Icon(
                     Icons.Filled.Star,
                     "Reputation Score",
-                    tint = BulletinExtras.colors.star,
+                    tint = MaterialTheme.bulletinColors.star,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(

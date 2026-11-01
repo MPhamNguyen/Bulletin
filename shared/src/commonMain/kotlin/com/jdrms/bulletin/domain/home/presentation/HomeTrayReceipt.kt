@@ -16,8 +16,9 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
-import com.jdrms.bulletin.core.designsystem.theme.BulletinExtras
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
@@ -45,8 +46,13 @@ internal fun HomeTrayReceipt(sent: Boolean, durationScale: Float) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(Modifier.graphicsLayer { alpha = motion.second.value }, verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Check, null, tint = BulletinExtras.colors.success, modifier = Modifier.size(18.dp))
-            Text(stringResource(Res.string.home_sent), color = BulletinExtras.colors.success)
+            Icon(
+                Icons.Default.Check,
+                null,
+                tint = MaterialTheme.bulletinColors.success,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(stringResource(Res.string.home_sent), color = MaterialTheme.bulletinColors.success)
         }
         Text(
             stringResource(if (sent) Res.string.home_message_bubble else Res.string.home_sending),
@@ -75,11 +81,13 @@ private fun rememberHomeReceiptMotion(
     val swoosh = remember { Animatable(0f) }
     val receipt = remember { Animatable(0f) }
     LaunchedEffect(durationScale) {
-        withContext(HomeMotionClock) { swoosh.animateTo(1f, tween(homeMotionMillis(500, durationScale))) }
+        withContext(HomeMotionClock) {
+            swoosh.animateTo(1f, tween(homeMotionMillis(BulletinMotion.LONG, durationScale)))
+        }
     }
     LaunchedEffect(sent, durationScale) {
         withContext(HomeMotionClock) {
-            receipt.animateTo(if (sent) 1f else 0f, tween(homeMotionMillis(300, durationScale)))
+            receipt.animateTo(if (sent) 1f else 0f, tween(homeMotionMillis(BulletinMotion.EMPHASIZED, durationScale)))
         }
     }
     return swoosh to receipt

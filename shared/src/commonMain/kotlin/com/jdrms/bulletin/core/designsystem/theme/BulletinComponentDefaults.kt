@@ -1,11 +1,7 @@
 package com.jdrms.bulletin.core.designsystem.theme
 
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
 /** Shared spacing scale, screen gutter, and minimum control height. */
@@ -22,7 +18,7 @@ object BulletinSpacing {
 
 /** Shared shape for modal bottom sheets. */
 object BulletinSheetDefaults {
-    val shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    val shape = BulletinShapes.sheet
 }
 
 // Artwork stays dark in either app theme so overlaid listing details remain readable.
@@ -51,16 +47,4 @@ object BulletinFeedCardDefaults {
     val actionMessageEnd = Color(0xFF3A5272)
     val actionFocusRing = Color.White
     val actionShape = CircleShape
-}
-
-object BulletinConversationDefaults {
-    private val isDark: Boolean
-        @Composable get() = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-
-    val unreadGradientStart: Color
-        @Composable get() = if (isDark) Color(0xFF193A67) else Color(0xFFDCEBFF)
-    val unreadGradientEnd: Color
-        @Composable get() = if (isDark) Color(0xFF22495D) else Color(0xFFDDF3F0)
-    val unreadBorder: Color
-        @Composable get() = if (isDark) Color(0xFF77A7F7) else Color(0xFF3E5C76)
 }
