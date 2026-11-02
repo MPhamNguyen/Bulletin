@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinPullRefreshIndicator
 
 @Composable
 internal fun MarketplaceProfileView(
@@ -41,10 +42,11 @@ internal fun MarketplaceProfileView(
             onRefresh = onRefresh,
             state = pullRefreshState,
             indicator = {
-                ProfilePullRefreshIndicator(
+                BulletinPullRefreshIndicator(
                     state = pullRefreshState,
                     isRefreshing = uiState.isRefreshing,
                     isComplete = uiState.profileRefreshComplete,
+                    completeContentDescription = "Profile updated",
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             },

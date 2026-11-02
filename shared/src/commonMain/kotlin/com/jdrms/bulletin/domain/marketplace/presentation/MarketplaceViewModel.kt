@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,6 +71,22 @@ class MarketplaceViewModel(
 
     fun refreshListings(userId: String? = null) {
         loadFirstPage(userId = userId, debounceMillis = 0L)
+    }
+
+    val pullToRefresh: () -> Unit = pullToRefresh@{
+        if (_uiState.value.isRefreshing) return@pullToRefresh
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, refreshComplete = false) }
+            try {
+                if (firstPageLoader.load(userId = null, debounceMillis = 0L, retainItems = true)) {
+                    _uiState.update { it.copy(refreshComplete = true) }
+                    delay(REFRESH_COMPLETE_MILLIS)
+                }
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false, refreshComplete = false) }
+            }
+        }
     }
 
     private fun loadFirstPage(userId: String?, debounceMillis: Long) {
@@ -225,5 +242,6 @@ class MarketplaceViewModel(
 
     private companion object {
         const val SEARCH_DEBOUNCE_MILLIS = 300L
+        const val REFRESH_COMPLETE_MILLIS = 650L
     }
 }

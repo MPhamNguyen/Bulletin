@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -19,6 +20,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +40,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinPullRefreshIndicator
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -52,6 +56,7 @@ internal fun MarketplaceCatalogContent(
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
     val gridState = rememberLazyGridState()
+    val pullRefreshState = rememberPullToRefreshState()
     val focusManager = LocalFocusManager.current
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -78,7 +83,19 @@ internal fun MarketplaceCatalogContent(
             viewModel.loadNextPage()
         }
     }
-    Box(
+    PullToRefreshBox(
+        isRefreshing = state.isRefreshing,
+        onRefresh = viewModel.pullToRefresh,
+        state = pullRefreshState,
+        indicator = {
+            BulletinPullRefreshIndicator(
+                state = pullRefreshState,
+                isRefreshing = state.isRefreshing,
+                isComplete = state.refreshComplete,
+                completeContentDescription = "Marketplace updated",
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+        },
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { containerOrigin = it.positionInRoot() }
@@ -92,7 +109,10 @@ internal fun MarketplaceCatalogContent(
         LazyVerticalGrid(
             columns = GridCells.Fixed(state.layoutPreference.columns),
             state = gridState,
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(y = (pullRefreshState.distanceFraction.coerceIn(0f, 1f) * CONTENT_PULL_OFFSET).dp)
+                .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -100,7 +120,7 @@ internal fun MarketplaceCatalogContent(
             marketplaceCatalogHeader(state, viewModel) { coordinates ->
                 searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
             }
-            marketplaceLoadingItem(state.isLoading)
+            marketplaceLoadingItem(state.isLoading && !state.isRefreshing)
             marketplaceEmptyResultsItem(state)
             marketplaceListingItems(state, viewModel)
             marketplacePaginationItem(state)
@@ -214,72 +234,4 @@ private fun LazyGridScope.fullWidthItem(
 ) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
 
 private const val PREFETCH_ITEM_THRESHOLD = 6
-
-@Composable
-internal fun MarketplaceDetailFlow(
-    state: MarketplaceUiState,
-    viewModel: MarketplaceViewModel,
-    sellerProfileViewModel: SellerProfileViewModel,
-    listingReportViewModel: ListingReportViewModel,
-    actions: MarketplaceScreenActions,
-    onNavigate: (MarketplaceDestination) -> Unit,
-    onDetailDismiss: () -> Unit
-) {
-    if (!state.detail.isOpen) return
-    MarketplaceDetailOverlay(
-        state = state,
-        viewModel = viewModel,
-        sellerProfileViewModel = sellerProfileViewModel,
-        listingReportViewModel = listingReportViewModel,
-        actions = actions,
-        onNavigate = onNavigate,
-        onDetailDismiss = onDetailDismiss
-    )
-    MarketplaceListingReportFlow(listingReportViewModel) {
-        listingReportViewModel.dismiss()
-        onDetailDismiss()
-        viewModel.refreshListings()
-    }
-}
-
-@Composable
-private fun MarketplaceDetailOverlay(
-    state: MarketplaceUiState,
-    viewModel: MarketplaceViewModel,
-    sellerProfileViewModel: SellerProfileViewModel,
-    listingReportViewModel: ListingReportViewModel,
-    actions: MarketplaceScreenActions,
-    onNavigate: (MarketplaceDestination) -> Unit,
-    onDetailDismiss: () -> Unit
-) {
-    MarketplaceDetailBottomSheet(
-        state = MarketplaceDetailSheetState(
-            listing = state.detail.listing,
-            isLoading = state.detail.isLoading,
-            errorMessage = state.detail.errorMessage,
-            bookmarkErrorMessage = state.bookmarkErrorMessage,
-            isBookmarked = state.detail.listing?.let { it.id in state.bookmarkedItemIds } ?: false,
-            currentUserId = state.currentUserId,
-            hasReview = state.detail.hasReview,
-            isReviewDialogOpen = state.detail.isReviewDialogOpen,
-            isSubmittingReview = state.detail.isSubmittingReview,
-            reviewErrorMessage = state.detail.reviewErrorMessage
-        ),
-        actions = MarketplaceDetailSheetActions(
-            onDismiss = onDetailDismiss,
-            onRetry = viewModel::retryLoadListingDetail,
-            onToggleBookmark = { state.detail.listing?.let { viewModel.toggleBookmark(it.id) } },
-            onLeaveReview = viewModel.reviewActions::openReviewDialog,
-            onDismissReview = viewModel.reviewActions::dismissReviewDialog,
-            onSubmitReview = viewModel.reviewActions::submitReview,
-            onReportListing = { beginMarketplaceListingReport(listingReportViewModel, state.detail.listing) },
-            onSellerClick = { sellerId ->
-                sellerProfileViewModel.load(sellerId)
-                onNavigate(MarketplaceDestination.SELLER_PROFILE)
-            },
-            onMessageSeller = actions.onMessageSeller,
-            hasExistingConversation = actions.hasExistingConversation,
-            onSeeChat = actions.onSeeChat
-        )
-    )
-}
+private const val CONTENT_PULL_OFFSET = 48

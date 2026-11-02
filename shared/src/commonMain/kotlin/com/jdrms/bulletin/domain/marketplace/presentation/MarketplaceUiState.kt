@@ -14,6 +14,8 @@ data class MarketplaceUiState(
     val bookmarkedItemIds: Set<MarketplaceItemId> = emptySet(),
     val filters: MarketplaceFilterState = MarketplaceFilterState(),
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val refreshComplete: Boolean = false,
     val isLoadingMore: Boolean = false,
     val nextCursor: MarketplacePageCursor? = null,
     val endReached: Boolean = false,
