@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.designsystem.MAX_CURRENCY_DIGITS
 import com.jdrms.bulletin.core.designsystem.amountToCurrencyDigits
 import com.jdrms.bulletin.core.designsystem.currencyDigitsToAmount
@@ -18,29 +19,41 @@ class CurrencyInputTest {
     fun digitsEnterFromTheHundredthsPlace() {
         var digits = ""
 
-        digits = normalizeCurrencyTextInput(formatCurrencyDigits(digits) + "1", formatCurrencyDigits(digits))
+        digits = normalizeCurrencyTextInput(
+            formatCurrencyDigits(digits) + "1",
+            formatCurrencyDigits(digits)
+        ).getOrThrow()
         assertEquals("$0.01", formatCurrencyDigits(digits))
-        digits = normalizeCurrencyTextInput(formatCurrencyDigits(digits) + "2", formatCurrencyDigits(digits))
+        digits = normalizeCurrencyTextInput(
+            formatCurrencyDigits(digits) + "2",
+            formatCurrencyDigits(digits)
+        ).getOrThrow()
         assertEquals("$0.12", formatCurrencyDigits(digits))
-        digits = normalizeCurrencyTextInput(formatCurrencyDigits(digits) + "5", formatCurrencyDigits(digits))
+        digits = normalizeCurrencyTextInput(
+            formatCurrencyDigits(digits) + "5",
+            formatCurrencyDigits(digits)
+        ).getOrThrow()
         assertEquals("$1.25", formatCurrencyDigits(digits))
-        digits = normalizeCurrencyTextInput(formatCurrencyDigits(digits) + "0", formatCurrencyDigits(digits))
+        digits = normalizeCurrencyTextInput(
+            formatCurrencyDigits(digits) + "0",
+            formatCurrencyDigits(digits)
+        ).getOrThrow()
         assertEquals("$12.50", formatCurrencyDigits(digits))
     }
 
     @Test
     fun deletingTheLastDigitMovesTheDecimalLeft() {
         val displayed = formatCurrencyDigits("125")
-        assertEquals("12", normalizeCurrencyTextInput(displayed.dropLast(1), displayed))
+        assertEquals(Result.Success("12"), normalizeCurrencyTextInput(displayed.dropLast(1), displayed))
         assertEquals("$0.12", formatCurrencyDigits("12"))
-        assertEquals("", normalizeCurrencyTextInput("$0.0", "$0.00"))
+        assertEquals(Result.Success(""), normalizeCurrencyTextInput("$0.0", "$0.00"))
     }
 
     @Test
     fun pastedCurrencyTextUsesOnlyItsDigits() {
-        assertEquals("1250", normalizeCurrencyTextInput("$12.50", ""))
-        assertEquals("1250", normalizeCurrencyTextInput("12.5", ""))
-        assertEquals("12", normalizeCurrencyTextInput("12", ""))
+        assertEquals(Result.Success("1250"), normalizeCurrencyTextInput("$12.50", ""))
+        assertEquals(Result.Success("1250"), normalizeCurrencyTextInput("12.5", ""))
+        assertEquals(Result.Success("12"), normalizeCurrencyTextInput("12", ""))
         assertEquals(12.5, currencyDigitsToAmount("1250"))
     }
 
@@ -48,7 +61,7 @@ class CurrencyInputTest {
     fun pasteAtTheEndUsesOnlyThePastedPayload() {
         val previous = TextFieldValue("$1.25", selection = TextRange(5))
         assertEquals(
-            "1250",
+            Result.Success("1250"),
             normalizeCurrencyTextChange(
                 TextFieldValue("$1.2512.5", selection = TextRange(9)),
                 previous
@@ -87,7 +100,7 @@ class CurrencyInputTest {
     fun typingAfterMovingTheCursorAppendsAtTheEnd() {
         val previous = TextFieldValue("$1.25", selection = TextRange(2))
         assertEquals(
-            "1259",
+            Result.Success("1259"),
             normalizeCurrencyTextChange(TextFieldValue("$19.25", selection = TextRange(3)), previous)
         )
     }
@@ -96,7 +109,7 @@ class CurrencyInputTest {
     fun deletingTheDecimalPointBehavesLikeEndBackspace() {
         val previous = TextFieldValue("$1.25", selection = TextRange(3))
         assertEquals(
-            "12",
+            Result.Success("12"),
             normalizeCurrencyTextChange(TextFieldValue("$125", selection = TextRange(2)), previous)
         )
     }
@@ -105,7 +118,7 @@ class CurrencyInputTest {
     fun deletingASelectedMiddleRangeBehavesLikeEndBackspace() {
         val previous = TextFieldValue("$12.34", selection = TextRange(2, 5))
         assertEquals(
-            "123",
+            Result.Success("123"),
             normalizeCurrencyTextChange(TextFieldValue("$14", selection = TextRange(2)), previous)
         )
     }
@@ -114,7 +127,7 @@ class CurrencyInputTest {
     fun replacingAllTextUsesTheReplacementAsAStandaloneAmount() {
         val previous = TextFieldValue("$1.25", selection = TextRange(0, 5))
         assertEquals(
-            "1250",
+            Result.Success("1250"),
             normalizeCurrencyTextChange(TextFieldValue("12.5", selection = TextRange(4)), previous)
         )
     }

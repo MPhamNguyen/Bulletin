@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,8 +19,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeUnit
@@ -84,21 +84,23 @@ private fun ListingTextAttributeField(
     onInputChange: (String, String) -> Unit
 ) {
     val helper = error ?: helperTextFor(definition)
-    OutlinedTextField(
+    BulletinTextField(
         value = value,
         onValueChange = { onInputChange(definition.key, definition.filterInput(it)) },
-        label = { Text(ListingAttributeDisplay.fieldLabel(definition)) },
-        supportingText = if (helper != null) {
-            { Text(helper) }
-        } else {
-            null
-        },
+        modifier = Modifier.fillMaxWidth(),
         isError = error != null,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardTypeFor(definition)),
-        colors = BulletinTextFieldDefaults.colors(),
-        shape = MaterialTheme.shapes.small,
-        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
+        decoration = BulletinFieldDecoration(
+            label = { Text(ListingAttributeDisplay.fieldLabel(definition)) },
+            supportingText = if (helper != null) {
+                { Text(helper) }
+            } else {
+                null
+            }
+        ),
+        options = BulletinFieldOptions(
+
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardTypeFor(definition))
+        )
     )
     val suggestions = ListingAttributeSuggestions.suggestionsFor(category, definition.key, value)
     if (suggestions.isNotEmpty()) {

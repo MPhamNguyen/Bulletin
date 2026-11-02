@@ -15,21 +15,21 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ModeEdit
 import androidx.compose.material.icons.outlined.Sell
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 
@@ -45,7 +45,7 @@ fun MyListingItemCard(
     BulletinCard(modifier = modifier) {
         MyListingSummary(listing)
         ListingAttributeSummary(listing, Modifier.padding(top = 6.dp))
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.s))
         Text(
             text = listing.description,
             style = MaterialTheme.typography.bodyMedium,
@@ -55,9 +55,9 @@ fun MyListingItemCard(
         )
         MyListingSoldBadge(listing.status)
         MyListingImageCount(listing.images.size)
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.m))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.s))
         MyListingStatusButton(listing.status, onMarkSold, onRestore)
         MyListingManagementActions(onDelete, onEdit)
     }
@@ -67,7 +67,7 @@ fun MyListingItemCard(
 private fun MyListingSummary(listing: Listing) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
         verticalAlignment = Alignment.Top
     ) {
         ListingThumbnail(listing)
@@ -92,7 +92,7 @@ private fun MyListingTitleAndPrice(listing: Listing) {
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
     Text(
         text = listing.price.formatted,
         style = MaterialTheme.typography.titleMedium,
@@ -116,13 +116,13 @@ private fun MyListingMetadataChip(label: String) {
 @Composable
 private fun MyListingSoldBadge(status: ListingStatus) {
     if (status != ListingStatus.SOLD) return
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.s))
     Surface(shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.secondaryContainer) {
         Text(
             text = "SOLD",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = BulletinSpacing.xs)
         )
     }
 }
@@ -130,7 +130,7 @@ private fun MyListingSoldBadge(status: ListingStatus) {
 @Composable
 private fun MyListingImageCount(imageCount: Int) {
     if (imageCount == 0) return
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.s))
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Icon(
             imageVector = Icons.Outlined.Image,
@@ -157,16 +157,12 @@ private fun MyListingStatusButton(status: ListingStatus, onMarkSold: () -> Unit,
 
 @Composable
 private fun MyListingStateButton(label: String, onClick: () -> Unit) {
-    FilledTonalButton(
+    BulletinButton(
         onClick = onClick,
-        shape = MaterialTheme.shapes.small,
-        colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        variant = BulletinButtonVariant.Tonal
     ) {
         Icon(Icons.Outlined.Sell, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(BulletinSpacing.xs))
         Text(label)
     }
 }
@@ -178,22 +174,18 @@ private fun MyListingManagementActions(onDelete: () -> Unit, onEdit: () -> Unit)
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TextButton(
+        BulletinButton(
             onClick = onDelete,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            variant = BulletinButtonVariant.DestructiveText
         ) {
             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(BulletinSpacing.xs))
             Text("Delete")
         }
-        FilledTonalButton(
+        BulletinButton(
             onClick = onEdit,
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+            variant = BulletinButtonVariant.Tonal
         ) {
             Icon(Icons.Outlined.ModeEdit, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))

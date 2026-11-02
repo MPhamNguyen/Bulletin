@@ -24,7 +24,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class MarketplaceViewModelTestPart2 {
+class MarketplaceViewModelPaginationTest {
 
     private fun uploadedListing(): MarketplaceListingSnapshot {
         return MarketplaceListingSnapshot(

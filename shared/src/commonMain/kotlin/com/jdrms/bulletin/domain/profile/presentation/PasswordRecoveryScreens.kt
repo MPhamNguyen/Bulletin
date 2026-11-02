@@ -14,14 +14,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,9 +31,13 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -57,7 +58,7 @@ fun ForgotPasswordScreen(
             }
             Spacer(Modifier.height(20.dp))
             RecoveryButton("Continue", isLoading) { onSubmit(email) }
-            TextButton(onClick = onBack, colors = BulletinButtonDefaults.textButtonColors()) {
+            BulletinButton(onClick = onBack, variant = BulletinButtonVariant.Text) {
                 Text("Back to sign in")
             }
         }
@@ -83,7 +84,7 @@ fun PasswordConfirmationCodeScreen(
             }
             Spacer(Modifier.height(20.dp))
             RecoveryButton("Confirm code", isLoading) { onSubmit(code) }
-            TextButton(onClick = onBack, colors = BulletinButtonDefaults.textButtonColors()) {
+            BulletinButton(onClick = onBack, variant = BulletinButtonVariant.Text) {
                 Text("Back")
             }
         }
@@ -111,7 +112,7 @@ fun ChangePasswordScreen(
                 isPassword = true,
                 onValueChange = { password = it }
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(BulletinSpacing.l))
             RecoveryField(
                 label = "Confirm password",
                 value = confirmation,
@@ -121,7 +122,7 @@ fun ChangePasswordScreen(
             )
             Spacer(Modifier.height(20.dp))
             RecoveryButton("Change password", isLoading) { onSubmit(password, confirmation) }
-            TextButton(onClick = onBack, colors = BulletinButtonDefaults.textButtonColors()) {
+            BulletinButton(onClick = onBack, variant = BulletinButtonVariant.Text) {
                 Text("Back")
             }
         }
@@ -140,7 +141,7 @@ private fun RecoveryLayout(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = BulletinSpacing.xl)
             .verticalScroll(rememberScrollState())
             .padding(vertical = 32.dp)
             .widthIn(max = 480.dp),
@@ -151,20 +152,20 @@ private fun RecoveryLayout(
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(BulletinSpacing.s))
         Text(
             description,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(BulletinSpacing.xl))
         errorMessage?.let {
             Text(
                 it,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(BulletinSpacing.m))
         }
         content()
     }
@@ -182,44 +183,46 @@ private fun RecoveryField(
 
     Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
     Spacer(Modifier.height(6.dp))
-    OutlinedTextField(
+    BulletinTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth(),
-        placeholder = { Text(placeholder) },
-        singleLine = true,
-        visualTransformation = if (isPassword && !isPasswordVisible) {
-            PasswordVisualTransformation()
-        } else {
-            VisualTransformation.None
-        },
-        trailingIcon = if (isPassword) {
-            {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                    val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+        modifier = Modifier.fillMaxWidth(),
+        decoration = BulletinFieldDecoration(
+            placeholder = { Text(placeholder) },
+            trailingIcon = if (isPassword) {
+                {
+                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
+                        Icon(
+                            painter = painterResource(icon),
+                            contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+            } else {
+                null
             }
-        } else {
-            null
-        },
-        shape = MaterialTheme.shapes.medium,
-        colors = BulletinTextFieldDefaults.colors()
+        ),
+        options = BulletinFieldOptions(
+
+            visualTransformation = if (isPassword && !isPasswordVisible) {
+                PasswordVisualTransformation()
+            } else {
+                VisualTransformation.None
+            }
+        )
     )
 }
 
 @Composable
 private fun RecoveryButton(label: String, isLoading: Boolean, onClick: () -> Unit) {
-    Button(
+    BulletinButton(
         onClick = onClick,
         enabled = !isLoading,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = BulletinButtonDefaults.buttonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Primary,
+        size = BulletinButtonSize.Large
     ) {
         if (isLoading) {
             CircularProgressIndicator(

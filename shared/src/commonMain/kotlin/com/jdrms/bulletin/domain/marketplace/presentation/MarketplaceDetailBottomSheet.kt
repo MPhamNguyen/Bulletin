@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -26,11 +24,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSheetDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,7 +59,7 @@ fun MarketplaceDetailBottomSheet(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        shape = BulletinSheetDefaults.shape
     ) {
         Column(
             modifier = Modifier.dismissKeyboardOnTapOutside()
@@ -66,7 +67,7 @@ fun MarketplaceDetailBottomSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             when {
                 isLoading -> {
@@ -78,7 +79,7 @@ fun MarketplaceDetailBottomSheet(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                         ) {
                             CircularProgressIndicator(
                                 color = MaterialTheme.colorScheme.primary,
@@ -97,12 +98,12 @@ fun MarketplaceDetailBottomSheet(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp),
+                            .padding(vertical = BulletinSpacing.xl),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Warning,
@@ -115,10 +116,10 @@ fun MarketplaceDetailBottomSheet(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Button(
+                            Spacer(modifier = Modifier.height(BulletinSpacing.xs))
+                            BulletinButton(
                                 onClick = onRetry,
-                                colors = BulletinButtonDefaults.buttonColors()
+                                variant = BulletinButtonVariant.Primary
                             ) {
                                 Text("Retry")
                             }
@@ -155,13 +156,13 @@ fun MarketplaceDetailBottomSheet(
 
                     MarketplaceItemDetails(listing)
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
 
                     if (listing.isSold && listing.buyerId == state.currentUserId && !state.hasReview) {
-                        Button(
+                        BulletinButton(
                             onClick = onLeaveReview,
                             modifier = Modifier.fillMaxWidth(),
-                            colors = BulletinButtonDefaults.buttonColors()
+                            variant = BulletinButtonVariant.Primary
                         ) {
                             Text("Leave Review for Seller")
                         }
