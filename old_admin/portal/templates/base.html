@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Reports{% endblock %} · Bulletin Admin</title>
+  <link rel="stylesheet" href="{{ url_for('portal.asset', filename='style.css') }}">
+  {% block scripts %}{% endblock %}
+</head>
+<body>
+  <header>
+    <a href="{{ url_for('portal.home') }}">Bulletin Admin</a>
+    {% if g.admin is defined %}
+      <span>{{ g.admin.full_name or g.admin.email }}</span>
+      <form method="post" action="{{ url_for('portal.logout') }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button type="submit">Sign out</button>
+      </form>
+    {% endif %}
+  </header>
+  <main>
+    {% for message in get_flashed_messages() %}<p class="notice" role="status">{{ message }}</p>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

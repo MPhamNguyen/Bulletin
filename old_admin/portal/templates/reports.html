@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<a href="{{ url_for('portal.home') }}">Home</a>
+<h1>Reports</h1>
+<form method="get" class="filters">
+  <div><label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="active" {% if status == 'active' %}selected{% endif %}>Open and under review</option>
+      <option value="all" {% if status == 'all' %}selected{% endif %}>All statuses</option>
+      {% for value, label in statuses.items() %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label for="type">Report type</label>
+    <select id="type" name="type">
+      {% for value in ['all', 'user', 'message', 'listing'] %}<option value="{{ value }}" {% if report_type == value %}selected{% endif %}>{{ value|capitalize }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit">Apply filters</button>
+</form>
+<div class="table-scroll">
+<table>
+  <caption>Reports · page {{ page + 1 }}</caption>
+  <thead><tr><th scope="col">Report</th><th scope="col">Type</th><th scope="col">Reason</th><th scope="col">Status</th><th scope="col">Created (UTC)</th><th scope="col">Modified (UTC)</th></tr></thead>
+  <tbody>
+  {% for report in reports %}
+    <tr>
+      <td><a href="{{ url_for('portal.review', report_id=report.id) }}">Review {{ report.id }}</a></td>
+      <td>{{ report.type }}</td><td>{{ report.reason|replace('_', ' ') }}</td>
+      <td>{{ statuses.get(aliases.get(report.status, report.status), report.status or 'Unknown') }}</td>
+      <td>{{ report.created_at or '—' }}</td><td>{{ report.modified_at or '—' }}</td>
+    </tr>
+  {% else %}<tr><td colspan="6">No reports match these filters.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+<nav aria-label="Report pages">
+  {% if page > 0 %}<a href="{{ url_for('portal.reports', status=status, type=report_type, page=page-1) }}">Previous</a>{% endif %}
+  {% if has_next %}<a href="{{ url_for('portal.reports', status=status, type=report_type, page=page+1) }}">Next</a>{% endif %}
+</nav>
+{% endblock %}

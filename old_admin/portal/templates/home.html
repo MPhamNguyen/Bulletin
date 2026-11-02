@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Admin home</h1>
+<p>Review reports and manage reported accounts and listings.</p>
+<a class="button reports-button" href="{{ url_for('portal.reports') }}">
+  <img class="reports-icon" src="{{ url_for('portal.asset', filename='reports.png') }}" alt="" width="64" height="64">
+  <span>View Reports</span>
+</a>
+<a class="button reports-button" href="{{ url_for('users.index') }}">
+  <img class="reports-icon" src="https://static.vecteezy.com/system/resources/thumbnails/041/273/249/small/hand-drawn-red-x-sign-on-transparent-background-png.png" alt="" width="64" height="64" referrerpolicy="no-referrer">
+  <span>Manage Users</span>
+</a>
+<a class="button reports-button" href="{{ url_for('directory.index') }}">
+  <img class="reports-icon" src="{{ url_for('portal.asset', filename='search-users.png') }}" alt="" width="64" height="64">
+  <span>Search All Users</span>
+</a>
+{% endblock %}
