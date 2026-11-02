@@ -39,7 +39,13 @@ class EditProfileViewModel(
             sessionRepository.state.collect { session ->
                 val profile = (session as? SessionState.Authenticated)?.profile
                 state.update {
-                    it.copy(profile = profile, profileDraft = profile?.let(ProfileDraft::from) ?: ProfileDraft())
+                    val onlyPhotoChanged = it.profile != null && profile != null &&
+                        it.profile.copy(avatarUrl = profile.avatarUrl) == profile
+                    it.copy(
+                        profile = profile,
+                        profileDraft = if (onlyPhotoChanged) it.profileDraft
+                        else profile?.let(ProfileDraft::from) ?: ProfileDraft()
+                    )
                 }
             }
         }
