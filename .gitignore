@@ -40,3 +40,9 @@ supabase/.temp/
 
 # Admin Page
 .venv/
+__pycache__/
+*.py[cod]
+.venv/
+.vercel/
+.env*
+!.env.example
