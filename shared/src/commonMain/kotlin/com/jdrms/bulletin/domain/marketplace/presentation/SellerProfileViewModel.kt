@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
+import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,17 +23,16 @@ data class SellerProfileUiState(
     val errorMessage: String? = null
 ) {
     val filteredListings: List<MarketplaceItem>
-        get() = listings.filter { listing -> listing.matches(filters) }
+        get() = sellerProfileSearchPolicy.filterItems(
+            items = listings,
+            query = filters.query,
+            category = filters.category,
+            condition = filters.condition,
+            attributes = filters.attributes
+        )
 }
 
-private fun MarketplaceItem.matches(filters: MarketplaceFilterState): Boolean {
-    val keywords = filters.query.trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
-    val searchableText = "${title.lowercase()} ${category.name.lowercase()}"
-    return (filters.category == null || category == filters.category) &&
-        (filters.condition == null || condition == filters.condition) &&
-        filters.attributes.matches(attributes) &&
-        keywords.all(searchableText::contains)
-}
+private val sellerProfileSearchPolicy = MarketplaceSearchPolicy()
 
 class SellerProfileViewModel(
     private val viewSellerProfile: ViewMarketplaceSellerProfile
