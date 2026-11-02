@@ -61,4 +61,29 @@ class EditProfileViewModelTest {
         advanceUntilIdle()
         assertTrue(vm.uiState.value.profile?.avatarUrl?.startsWith("memory://profile-photo/") == true)
     }
+
+    @Test
+    fun successfulPhotoUploadPreservesUnsavedProfileDraft() = profileTest {
+        val fixture = ProfileFixture()
+        fixture.authenticate()
+        val vm = EditProfileViewModel(
+            fixture.session,
+            UpdateStudentProfile(fixture.profiles),
+            UploadProfilePhoto(InMemoryProfilePhotoRepository(), fixture.profiles),
+            FlowUserMessenger()
+        )
+        advanceUntilIdle()
+        val draft = vm.uiState.value.profileDraft.copy(
+            fullName = "Unsaved Name",
+            major = "Unsaved Major",
+            bio = "Unsaved bio"
+        )
+        vm.onDraftChanged(draft)
+
+        vm.uploadPhoto(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0x01), "image/jpeg")
+        advanceUntilIdle()
+
+        assertEquals(draft, vm.uiState.value.profileDraft)
+        assertTrue(vm.uiState.value.profile?.avatarUrl?.startsWith("memory://profile-photo/") == true)
+    }
 }
