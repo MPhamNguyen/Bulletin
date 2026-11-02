@@ -43,8 +43,11 @@ class EditProfileViewModel(
                         it.profile.copy(avatarUrl = profile.avatarUrl) == profile
                     it.copy(
                         profile = profile,
-                        profileDraft = if (onlyPhotoChanged) it.profileDraft
-                        else profile?.let(ProfileDraft::from) ?: ProfileDraft()
+                        profileDraft = if (onlyPhotoChanged) {
+                            it.profileDraft
+                        } else {
+                            profile?.let(ProfileDraft::from) ?: ProfileDraft()
+                        }
                     )
                 }
             }
