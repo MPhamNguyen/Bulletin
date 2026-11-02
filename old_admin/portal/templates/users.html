@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+<a href="{{ url_for('portal.home') }}">Home</a>
+<h1>Manage Users</h1>
+<p>Review suspended accounts, restore access, or change how long a suspension lasts.</p>
+<form method="get" class="filters">
+  <div><label for="search">Search email</label><input id="search" type="search" name="q" value="{{ search }}" maxlength="320"></div>
+  <button type="submit">Search</button>
+</form>
+<p class="muted">Only currently suspended users are shown. Accounts are checked in batches of 100; use Next batch to check more accounts, even if this batch has no suspensions.</p>
+<div class="table-scroll">
+<table>
+  <caption>Suspended users · account batch {{ page }}</caption>
+  <thead><tr><th scope="col">User</th><th scope="col">Suspended until</th><th scope="col">Last signed in</th><th scope="col">Action</th></tr></thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.profile.full_name or user.account.email or 'Unnamed account' if user.profile else user.account.email or 'Unavailable profile' }}<br>{{ user.account.email }}<br>{{ user.account.id }}</td>
+      <td>{{ user.account.banned_until|utc_timestamp }}</td>
+      <td>{{ user.account.last_sign_in_at|utc_timestamp }}</td>
+      <td><a href="{{ url_for('users.detail', user_id=user.account.id) }}">Manage account</a></td>
+    </tr>
+    {% else %}<tr><td colspan="4">No suspended users in this account batch.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+<nav aria-label="Account batches">
+  {% if page > 1 %}<a href="{{ url_for('users.index', page=page-1, q=search) }}">Previous batch</a>{% endif %}
+  {% if has_next %}<a href="{{ url_for('users.index', page=page+1, q=search) }}">Next batch</a>{% endif %}
+</nav>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}User profile and listings{% endblock %}
+{% block content %}
+<a href="{{ url_for('directory.index') }}">Search All Users</a>
+<h1>{{ profile.full_name or 'Unnamed user' }}</h1>
+{% if avatar %}<img class="profile-avatar" src="{{ avatar }}" alt="Profile photo" width="96" height="96" referrerpolicy="no-referrer">{% endif %}
+<p class="muted">{{ profile.id }}</p>
+{% if profile.deleted_at %}<p class="notice">This profile has been deleted.</p>{% endif %}
+<dl>
+  <dt>University</dt><dd>{{ profile.university or 'Not provided' }}</dd>
+  <dt>Major</dt><dd>{{ profile.major or 'Not provided' }}</dd>
+  <dt>Bio</dt><dd class="content">{{ profile.bio or 'Not provided' }}</dd>
+  <dt>Verification</dt><dd>{{ 'Verified' if profile.is_verified is sameas true else 'Not verified' }}</dd>
+</dl>
+<h2>Listings</h2>
+{% if listing_error %}<p class="error" role="alert">{{ listing_error }}</p>
+{% else %}
+<div class="user-listings">
+{% for item in listings %}
+  <article class="user-listing">
+    <h3>{{ item.listing.name or 'Untitled listing' }}</h3>
+    <p>Price: {{ item.listing.price if item.listing.price is not none else 'Not provided' }} · {{ 'Sold' if item.listing.is_sold else 'Not sold' }}</p>
+    <p>Category: {{ item.listing.category or 'Not provided' }} · Condition: {{ item.listing.condition or 'Not provided' }}</p>
+    <p class="content">{{ item.listing.description or 'No description provided.' }}</p>
+    <p class="muted">Listing {{ item.listing.id }} · {{ item.listing.created_at|utc_timestamp }}</p>
+    {% if item.photo_error %}<p class="error" role="alert">{{ item.photo_error }}</p>
+    {% elif item.photos %}<div class="listing-photos">
+      {% for photo in item.photos %}<a href="{{ photo }}" target="_blank" rel="noopener noreferrer"><img src="{{ photo }}" alt="{{ item.listing.name or 'Listing' }} — photo {{ loop.index }}" loading="lazy" referrerpolicy="no-referrer"></a>{% endfor %}
+    </div>{% else %}<p class="muted">No listing photos.</p>{% endif %}
+  </article>
+{% else %}<p>This user has no listings.</p>{% endfor %}
+</div>
+<nav aria-label="User listing pages">
+  {% if page > 1 %}<a href="{{ url_for('directory.detail', user_id=profile.id, page=page-1) }}">Previous listings</a>{% endif %}
+  {% if has_next %}<a href="{{ url_for('directory.detail', user_id=profile.id, page=page+1) }}">Next listings</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

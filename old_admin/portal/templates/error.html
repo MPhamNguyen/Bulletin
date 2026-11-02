@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block title %}Request unsuccessful{% endblock %}
+{% block content %}
+<h1>Request unsuccessful ({{ status }})</h1>
+<p class="error" role="alert">{{ message }}</p>
+<p><a href="{{ url_for('portal.reports') }}">Return to reports</a> · <a href="{{ url_for('portal.login') }}">Sign in</a></p>
+{% endblock %}
