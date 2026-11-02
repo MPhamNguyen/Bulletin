@@ -44,6 +44,7 @@ class EditProfileViewModel(
                         previousProfile.bio == profile.bio
                     it.copy(
                         profile = profile,
+                        photoAction = it.photoAction.takeIf { profile != null && previousProfile?.id == profile.id },
                         profileDraft = if (editableDetailsUnchanged) {
                             it.profileDraft
                         } else {
