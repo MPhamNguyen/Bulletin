@@ -1,9 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,13 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinCard
 
 internal const val BIO_MAX_LENGTH = 160
 internal const val BIO_WARN_LENGTH = 150
@@ -46,6 +41,7 @@ internal data class EditProfileActions(
     val onDraftChanged: (ProfileDraft) -> Unit,
     val onUpdate: () -> Unit,
     val onChangePhoto: () -> Unit,
+    val onRemovePhoto: () -> Unit,
     val onSignOut: () -> Unit
 )
 
@@ -109,8 +105,10 @@ private fun EditProfileBody(
     EditProfilePhoto(
         avatarUrl = uiState.profile?.avatarUrl,
         fullName = uiState.profile?.fullName.orEmpty(),
-        isUploading = uiState.isPhotoUploading,
-        onChangePhoto = actions.onChangePhoto
+        photoAction = uiState.photoAction,
+        isSaving = uiState.isLoading,
+        onChangePhoto = actions.onChangePhoto,
+        onRemovePhoto = actions.onRemovePhoto
     )
     Spacer(Modifier.height(20.dp))
 
@@ -203,7 +201,7 @@ private fun EditProfileBody(
     Spacer(Modifier.height(16.dp))
     Button(
         onClick = actions.onUpdate,
-        enabled = uiState.isProfileModified && !uiState.isLoading,
+        enabled = uiState.isProfileModified && !uiState.isLoading && !uiState.isPhotoBusy,
         modifier = Modifier.fillMaxWidth().height(50.dp),
         shape = MaterialTheme.shapes.medium,
         colors = BulletinButtonDefaults.buttonColors()
@@ -215,34 +213,6 @@ private fun EditProfileBody(
     Spacer(Modifier.height(16.dp))
     SignOutButton(onClick = actions.onSignOut)
     Spacer(Modifier.height(24.dp))
-}
-
-@Composable
-private fun ProfileEditCard(
-    title: String,
-    trailingContent: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    BulletinCard(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                title.uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            trailingContent?.invoke()
-        }
-        Spacer(Modifier.height(8.dp))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Spacer(Modifier.height(14.dp))
-        content()
-    }
 }
 
 @Composable

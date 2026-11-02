@@ -22,7 +22,8 @@ data class ProfileUpdateDto(
     @SerialName("major") val major: String = "",
     @SerialName("university") val university: String,
     @SerialName("bio") val bio: String = "",
-    @SerialName("avatar_url") val avatarUrl: String? = null
+    // No default: null must be sent to clear an existing photo.
+    @SerialName("avatar_url") val avatarUrl: String?
 )
 
 @Serializable

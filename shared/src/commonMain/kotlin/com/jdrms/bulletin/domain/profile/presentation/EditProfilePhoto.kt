@@ -9,15 +9,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddAPhoto
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -27,13 +24,16 @@ import androidx.compose.ui.unit.dp
 internal fun EditProfilePhoto(
     avatarUrl: String?,
     fullName: String,
-    isUploading: Boolean,
-    onChangePhoto: () -> Unit
+    photoAction: ProfilePhotoAction?,
+    isSaving: Boolean,
+    onChangePhoto: () -> Unit,
+    onRemovePhoto: () -> Unit
 ) {
+    val isBusy = photoAction != null || isSaving
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier.size(104.dp).clickable(
-                enabled = !isUploading,
+                enabled = !isBusy,
                 role = Role.Button,
                 onClickLabel = "Change profile photo",
                 onClick = onChangePhoto
@@ -55,7 +55,7 @@ internal fun EditProfilePhoto(
                     .border(2.dp, MaterialTheme.colorScheme.background, MaterialTheme.shapes.extraLarge),
                 contentAlignment = Alignment.Center
             ) {
-                if (isUploading) {
+                if (photoAction != null) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
@@ -72,19 +72,20 @@ internal fun EditProfilePhoto(
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onChangePhoto, enabled = !isUploading) {
+            TextButton(onClick = onChangePhoto, enabled = !isBusy) {
                 Text(
-                    if (isUploading) "Uploading…" else "Upload New",
+                    if (photoAction == ProfilePhotoAction.UPLOADING) "Uploading…" else "Upload New",
                     style = MaterialTheme.typography.labelLarge
                 )
             }
-            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TextButton(onClick = {}, enabled = false) {
-                Text(
-                    "Remove",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (!avatarUrl.isNullOrBlank()) {
+                Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onRemovePhoto, enabled = !isBusy) {
+                    Text(
+                        if (photoAction == ProfilePhotoAction.REMOVING) "Removing…" else "Remove",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
         }
     }
