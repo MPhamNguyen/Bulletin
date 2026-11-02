@@ -74,8 +74,11 @@ internal fun EditProfilePhoto(
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onChangePhoto, enabled = !isBusy) {
-            BulletinButton(onClick = onChangePhoto, enabled = !isUploading, variant = BulletinButtonVariant.Text) {
+            BulletinButton(
+                onClick = onChangePhoto,
+                enabled = !isBusy,
+                variant = BulletinButtonVariant.Text
+            ) {
                 Text(
                     if (photoAction == ProfilePhotoAction.UPLOADING) "Uploading…" else "Upload New",
                     style = MaterialTheme.typography.labelLarge
@@ -83,19 +86,16 @@ internal fun EditProfilePhoto(
             }
             if (!avatarUrl.isNullOrBlank()) {
                 Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onRemovePhoto, enabled = !isBusy) {
+                BulletinButton(
+                    onClick = onRemovePhoto,
+                    enabled = !isBusy,
+                    variant = BulletinButtonVariant.Text
+                ) {
                     Text(
                         if (photoAction == ProfilePhotoAction.REMOVING) "Removing…" else "Remove",
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
-            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            BulletinButton(onClick = {}, enabled = false, variant = BulletinButtonVariant.Text) {
-                Text(
-                    "Remove",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }

@@ -2,8 +2,10 @@ package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
@@ -207,9 +208,7 @@ private fun EditProfileBody(
         enabled = uiState.isProfileModified && !uiState.isLoading && !uiState.isPhotoBusy,
         modifier = Modifier.fillMaxWidth().height(50.dp),
         variant = BulletinButtonVariant.Primary,
-        size = BulletinButtonSize.Large,
-        shape = MaterialTheme.shapes.medium,
-        colors = BulletinButtonDefaults.buttonColors()
+        size = BulletinButtonSize.Large
     ) {
         Text("Save Changes", style = MaterialTheme.typography.labelLarge)
     }
