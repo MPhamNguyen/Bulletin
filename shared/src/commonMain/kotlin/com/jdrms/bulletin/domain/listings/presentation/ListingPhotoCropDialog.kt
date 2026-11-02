@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +23,8 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.jdrms.bulletin.core.common.ImageCropSettings
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 
 @Composable
 internal fun ListingPhotoCropDialog(
@@ -70,8 +70,16 @@ internal fun ListingPhotoCropDialog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
-                Button(onClick = { onSave(crop) }, modifier = Modifier.weight(1f)) { Text("Save crop") }
+                BulletinButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    variant = BulletinButtonVariant.Text
+                ) {
+                    Text("Cancel")
+                }
+                BulletinButton(onClick = {
+                    onSave(crop)
+                }, modifier = Modifier.weight(1f), variant = BulletinButtonVariant.Primary) { Text("Save crop") }
             }
         }
     }

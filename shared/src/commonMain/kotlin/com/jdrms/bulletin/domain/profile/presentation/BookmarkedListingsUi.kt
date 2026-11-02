@@ -23,7 +23,7 @@ internal data class BookmarkedListingsActions(
     val onRemoveBookmark: (String) -> Unit,
     val onRefresh: () -> Unit,
     val onLoadMore: () -> Unit,
-    val onCategorySelected: (String?) -> Unit,
-    val onConditionSelected: (String?) -> Unit,
+    val onQueryChanged: (String) -> Unit,
+    val onFiltersApplied: (category: String?, condition: String?) -> Unit,
     val onBack: () -> Unit
 )

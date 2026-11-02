@@ -35,15 +35,20 @@ class EditProfileViewModel(
             sessionRepository.state.collect { session ->
                 val profile = (session as? SessionState.Authenticated)?.profile
                 state.update {
-                    val draft = if (profile != null && profile.id == it.profile?.id && it.isProfileModified) {
-                        it.profileDraft
-                    } else {
-                        profile?.let(ProfileDraft::from) ?: ProfileDraft()
-                    }
+                    val previousProfile = it.profile
+                    val editableDetailsUnchanged = previousProfile != null && profile != null &&
+                        previousProfile.id == profile.id &&
+                        previousProfile.fullName == profile.fullName &&
+                        previousProfile.major == profile.major &&
+                        previousProfile.university == profile.university &&
+                        previousProfile.bio == profile.bio
                     it.copy(
                         profile = profile,
-                        profileDraft = draft,
-                        photoAction = it.photoAction.takeIf { _ -> profile?.id == it.profile?.id }
+                        profileDraft = if (editableDetailsUnchanged) {
+                            it.profileDraft
+                        } else {
+                            profile?.let(ProfileDraft::from) ?: ProfileDraft()
+                        }
                     )
                 }
             }

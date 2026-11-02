@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
@@ -33,10 +34,10 @@ internal fun HomeAnnouncementRegion(announcements: HomeAnnouncements, state: Hom
     LaunchedEffect(announcements) {
         for (next in announcements.messages) {
             message = ""
-            delay(120)
+            delay(BulletinMotion.MICRO.toLong())
             message = next
             // Android batches semantics events; preserve each queued update across a batch.
-            delay(300)
+            delay(BulletinMotion.EMPHASIZED.toLong())
         }
     }
     Box(

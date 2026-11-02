@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
@@ -63,7 +64,13 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
         state.successMessage?.let {
             ListingFlashMessage(
                 message = it,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 72.dp, start = 24.dp, end = 24.dp)
+                modifier = Modifier.align(
+                    Alignment.TopCenter
+                ).padding(
+                    top = 72.dp,
+                    start = BulletinSpacing.xl,
+                    end = BulletinSpacing.xl
+                )
             )
         }
     }

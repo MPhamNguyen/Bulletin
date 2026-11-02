@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +20,9 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.conversationLocalDayKey
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatConversationDate
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 
@@ -30,7 +32,8 @@ internal fun MessageList(
     viewModel: MessagesViewModel,
     conversation: Conversation,
     listState: LazyListState,
-    modifier: Modifier
+    modifier: Modifier,
+    onViewProfile: (String) -> Unit = {}
 ) {
     val seenMessageId = seenMessageId(state, conversation)
     BoxWithConstraints(modifier = modifier) {
@@ -42,17 +45,18 @@ internal fun MessageList(
         ) {
             if (state.olderCursor != null) {
                 item(key = "older-messages") {
-                    TextButton(
+                    BulletinButton(
                         onClick = viewModel::loadOlderMessages,
                         enabled = !state.isLoadingOlder,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        variant = BulletinButtonVariant.Text
                     ) {
                         Text(if (state.isLoadingOlder) "Loading..." else "Load older messages")
                     }
                 }
             }
             itemsIndexed(state.currentMessages, key = { _, message -> message.id.value }) { index, _ ->
-                MessageHistoryEntry(state, viewModel, conversation, index, maxBubbleWidth, seenMessageId)
+                MessageHistoryEntry(state, viewModel, conversation, index, maxBubbleWidth, seenMessageId, onViewProfile)
             }
         }
     }
@@ -72,7 +76,8 @@ private fun MessageHistoryEntry(
     conversation: Conversation,
     index: Int,
     maxBubbleWidth: Dp,
-    seenMessageId: MessageId?
+    seenMessageId: MessageId?,
+    onViewProfile: (String) -> Unit
 ) {
     val message = state.currentMessages[index]
     val previous = state.currentMessages.getOrNull(index - 1)
@@ -100,6 +105,7 @@ private fun MessageHistoryEntry(
                 onReport = { viewModel.report(message.id) },
                 onToggleVisibility = { viewModel.toggleReportedMessageVisibility(message.id) },
                 onEdit = { viewModel.edit(message.id) },
+                onViewSenderProfile = { onViewProfile(message.senderId.value) },
                 editingDisabled = state.isSending || state.editState is MessageEditState.Saving
             )
         )
@@ -119,7 +125,7 @@ private fun DateSeparator(timestampMillis: Long) {
         formatConversationDate(timestampMillis, currentTimeMillis()),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = BulletinSpacing.m),
         textAlign = TextAlign.Center
     )
 }

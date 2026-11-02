@@ -12,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
@@ -27,7 +26,6 @@ internal fun MarketplaceListingHeader(listing: Listing) {
         Text(
             text = listing.title,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
@@ -35,7 +33,6 @@ internal fun MarketplaceListingHeader(listing: Listing) {
         Text(
             text = listing.price.formatted,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
     }

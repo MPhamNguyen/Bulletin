@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 
@@ -46,7 +47,7 @@ private fun ConditionChips(selected: ListingCondition, onSelected: (ListingCondi
                 selected = condition == selected,
                 onClick = { onSelected(condition) },
                 label = { Text(condition.displayLabel(), style = MaterialTheme.typography.bodyMedium) },
-                shape = MaterialTheme.shapes.extraLarge,
+                shape = BulletinShapes.pill,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = scheme.surfaceVariant,
                     selectedContainerColor = scheme.primaryContainer

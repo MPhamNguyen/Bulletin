@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,8 +17,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,9 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 internal data class ComboOption(
     val label: String,
@@ -162,23 +161,22 @@ internal fun ProfileComboField(
             expanded = expanded,
             onExpandedChange = { expanded = it }
         ) {
-            OutlinedTextField(
+            BulletinTextField(
                 value = query,
                 onValueChange = {
                     query = it
                     expanded = true
                 },
-                placeholder = { Text(spec.placeholder) },
-                leadingIcon = { Icon(spec.leadingIcon, contentDescription = null) },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                singleLine = true,
-                isError = spec.errorMessage != null,
-                supportingText = spec.errorMessage?.let { { Text(it) } },
-                shape = MaterialTheme.shapes.medium,
-                colors = BulletinTextFieldDefaults.colors(),
-                modifier = Modifier.showKeyboardOnFocusOrTap()
+                modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
+                isError = spec.errorMessage != null,
+                decoration = BulletinFieldDecoration(
+                    placeholder = { Text(spec.placeholder) },
+                    supportingText = spec.errorMessage?.let { { Text(it) } },
+                    leadingIcon = { Icon(spec.leadingIcon, contentDescription = null) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }
+                )
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -212,14 +210,13 @@ internal fun ProfileComboField(
         if (spec.isOther) {
             Spacer(Modifier.height(2.dp))
             FieldLabel(spec.otherLabel)
-            OutlinedTextField(
+            BulletinTextField(
                 value = spec.value,
                 onValueChange = onOtherValueChange,
-                placeholder = { Text(spec.otherPlaceholder) },
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium,
-                colors = BulletinTextFieldDefaults.colors(),
-                modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                decoration = BulletinFieldDecoration(
+                    placeholder = { Text(spec.otherPlaceholder) }
+                )
             )
         }
     }
@@ -230,12 +227,10 @@ internal fun SignOutButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    OutlinedButton(
+    BulletinButton(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(48.dp),
-        shape = MaterialTheme.shapes.medium,
-        border = BulletinButtonDefaults.destructiveOutlinedButtonBorder(),
-        colors = BulletinButtonDefaults.destructiveOutlinedButtonColors()
+        modifier = modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.DestructiveOutlined
     ) {
         Icon(
             Icons.AutoMirrored.Outlined.Logout,
@@ -243,7 +238,7 @@ internal fun SignOutButton(
             modifier = Modifier.size(16.dp),
             tint = MaterialTheme.colorScheme.error
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(BulletinSpacing.s))
         Text(
             "Sign Out",
             style = MaterialTheme.typography.labelLarge,

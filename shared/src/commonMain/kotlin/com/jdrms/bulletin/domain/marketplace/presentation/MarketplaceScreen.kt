@@ -8,13 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
-data class MarketplaceScreenNavigation(
-    val sellerProfileIdToOpen: String? = null,
-    val onSellerProfileRequestHandled: () -> Unit = {},
-    val onReturnToInboxChat: () -> Unit = {},
-    val onContentNoLongerScrollable: () -> Unit = {}
-)
-
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel,
@@ -48,6 +41,16 @@ fun MarketplaceScreen(
             sellerProfileOpenedFromInbox = true
             sellerProfileViewModel.load(sellerId)
             navigation.onSellerProfileRequestHandled()
+        }
+    }
+
+    LaunchedEffect(navigation.userReportIdToOpen) {
+        navigation.userReportIdToOpen?.let { userId ->
+            sellerProfileOpenedFromInbox = true
+            sellerProfileViewModel.load(userId)
+            userReportViewModel.begin(userId)
+            sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.REPORT_USER)
+            navigation.onUserReportRequestHandled()
         }
     }
 
@@ -127,8 +130,8 @@ private fun MarketplaceSellerProfileFlow(
         state = state.sellerProfileState,
         listingActions = SellerProfileListingActions(
             onListingClick = onOpenListing,
-            onCategorySelected = viewModels.sellerProfile::onCategorySelected,
-            onConditionSelected = viewModels.sellerProfile::onConditionSelected
+            onQueryChanged = viewModels.sellerProfile::onSearchQueryChanged,
+            onFiltersApplied = viewModels.sellerProfile::onFiltersApplied
         ),
         onBack = onBackFromSellerProfile,
         onReportUser = {

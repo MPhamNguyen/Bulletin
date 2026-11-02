@@ -10,8 +10,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 internal fun Modifier.homeCardLayer(
     front: Boolean,
@@ -42,7 +42,7 @@ internal fun Modifier.homeCardLayer(
 @Composable
 internal fun HomeNextCardShade(motion: HomeCardMotion) {
     Box(
-        Modifier.fillMaxSize().padding(8.dp).clip(MaterialTheme.shapes.large).drawBehind {
+        Modifier.fillMaxSize().padding(BulletinSpacing.s).clip(MaterialTheme.shapes.large).drawBehind {
             drawRect(BulletinFeedCardDefaults.scrim.copy(alpha = homeNextCardPose(motion.promotion).shadeAlpha))
         }
     )

@@ -16,11 +16,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 data class SignInScreenActions(
     val onEmailChange: ((String) -> Unit)? = null,
@@ -66,7 +67,7 @@ fun SignInScreen(
     )
     Box(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp),
+            .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = BulletinSpacing.xl),
         contentAlignment = Alignment.Center
     ) {
         SignInContent(
@@ -108,7 +109,7 @@ private fun SignInContent(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        TextButton(onClick = actions.onCreateAccount, colors = BulletinButtonDefaults.textButtonColors()) {
+        BulletinButton(onClick = actions.onCreateAccount, variant = BulletinButtonVariant.Text) {
             Text("Create an account")
         }
     }
@@ -117,21 +118,21 @@ private fun SignInContent(
 @Composable
 private fun SignInHeader() {
     BulletinMark()
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(BulletinSpacing.xl))
     Text(
         "Welcome to Bulletin",
         style = MaterialTheme.typography.headlineLarge,
         color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center
     )
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(BulletinSpacing.s))
     Text(
         "Sign in to your campus marketplace",
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center
     )
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(BulletinSpacing.xl))
 }
 
 @Composable
@@ -141,7 +142,7 @@ private fun SignInError(message: String?) {
             Modifier.fillMaxWidth().background(
                 MaterialTheme.colorScheme.errorContainer,
                 MaterialTheme.shapes.medium
-            ).padding(12.dp)
+            ).padding(BulletinSpacing.m)
         ) {
             Text(
                 it,
@@ -149,26 +150,26 @@ private fun SignInError(message: String?) {
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(BulletinSpacing.l))
     }
 }
 
 @Composable
 private fun PasswordSignInActions(isLoading: Boolean, onForgotPassword: () -> Unit, onSignIn: () -> Unit) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-        TextButton(
+        BulletinButton(
             onClick = onForgotPassword,
             enabled = !isLoading,
-            colors = BulletinButtonDefaults.textButtonColors()
+            variant = BulletinButtonVariant.Text
         ) { Text("Forgot password?") }
     }
-    Spacer(Modifier.height(12.dp))
-    Button(
+    Spacer(Modifier.height(BulletinSpacing.m))
+    BulletinButton(
         onClick = onSignIn,
         enabled = !isLoading,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = BulletinButtonDefaults.buttonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Primary,
+        size = BulletinButtonSize.Large
     ) {
         if (isLoading) {
             CircularProgressIndicator(

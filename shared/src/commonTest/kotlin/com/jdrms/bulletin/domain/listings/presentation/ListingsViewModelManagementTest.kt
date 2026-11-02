@@ -36,7 +36,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ListingsViewModelTestPart2 {
+class ListingsViewModelManagementTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val sellerId = SellerId("seller_123")
