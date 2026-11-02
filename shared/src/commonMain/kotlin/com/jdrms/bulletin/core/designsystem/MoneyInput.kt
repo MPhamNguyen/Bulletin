@@ -16,6 +16,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import com.jdrms.bulletin.core.common.Result
 
 @Composable
 fun MoneyInput(
@@ -31,17 +32,28 @@ fun MoneyInput(
     var fieldValue by remember(text) {
         mutableStateOf(TextFieldValue(text = text, selection = TextRange(text.length)))
     }
+    var inputError by remember(text) { mutableStateOf<String?>(null) }
+    val displayedError = inputError ?: error
     OutlinedTextField(
         value = fieldValue,
         onValueChange = {
-            val nextDigits = normalizeCurrencyTextChange(it, fieldValue)
-            onDigitsChange(nextDigits)
-            val nextText = formatCurrencyDigits(nextDigits)
-            fieldValue = TextFieldValue(text = nextText, selection = TextRange(nextText.length))
+            if (it.text == fieldValue.text) {
+                fieldValue = it
+            } else {
+                when (val result = normalizeCurrencyTextChange(it, fieldValue)) {
+                    is Result.Success -> {
+                        inputError = null
+                        onDigitsChange(result.data)
+                        val nextText = formatCurrencyDigits(result.data)
+                        fieldValue = TextFieldValue(text = nextText, selection = TextRange(nextText.length))
+                    }
+                    is Result.Error -> inputError = result.message
+                }
+            }
         },
         label = label,
-        isError = error != null,
-        supportingText = error?.let { { Text(it) } },
+        isError = displayedError != null,
+        supportingText = displayedError?.let { { Text(it) } },
         placeholder = { Text("$0.00") },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
