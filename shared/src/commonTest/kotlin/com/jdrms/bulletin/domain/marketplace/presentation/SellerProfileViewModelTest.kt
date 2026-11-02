@@ -128,8 +128,14 @@ class SellerProfileViewModelTest {
             viewModel.load("seller-a")
             advanceUntilIdle()
 
-            viewModel.onCategorySelected(MarketplaceCategory.TEXTBOOKS)
-            viewModel.onConditionSelected(MarketplaceCondition.NEW)
+            viewModel.onSearchQueryChanged("new book")
+            viewModel.onFiltersApplied(
+                MarketplaceFilterState(
+                    query = "new book",
+                    category = MarketplaceCategory.TEXTBOOKS,
+                    condition = MarketplaceCondition.NEW
+                )
+            )
 
             assertEquals(listOf("new-book"), viewModel.uiState.value.filteredListings.map { it.id.value })
         } finally {

@@ -168,8 +168,8 @@ class ProfileViewModelTest {
         viewModel.loadBookmarkedListings()
         advanceUntilIdle()
 
-        viewModel.onBookmarkedCategorySelected("TEXTBOOKS")
-        viewModel.onBookmarkedConditionSelected("NEW")
+        viewModel.onBookmarkedQueryChanged("book")
+        viewModel.onBookmarkedFiltersApplied(category = "TEXTBOOKS", condition = "NEW")
 
         assertEquals(listOf("new-book"), viewModel.uiState.value.filteredBookmarkedListings.map { it.id })
     }

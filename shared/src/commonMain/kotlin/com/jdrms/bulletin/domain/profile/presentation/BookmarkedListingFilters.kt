@@ -1,21 +1,27 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.runtime.Composable
-import com.jdrms.bulletin.core.designsystem.ListingFilterMenus
 import com.jdrms.bulletin.core.designsystem.ListingFilterOption
+import com.jdrms.bulletin.core.designsystem.ListingSearchFilterState
+import com.jdrms.bulletin.core.designsystem.ListingSearchFilters
 
 @Composable
 internal fun BookmarkedListingFilters(
     state: BookmarkedListingsViewState,
     actions: BookmarkedListingsActions
 ) {
-    ListingFilterMenus(
-        selectedCategory = state.filters.category,
-        selectedCondition = state.filters.condition,
+    ListingSearchFilters(
+        state = ListingSearchFilterState(
+            query = state.filters.query,
+            category = state.filters.category,
+            condition = state.filters.condition
+        ),
         categories = state.filterOptions.categories.toFilterOptions(),
         conditions = state.filterOptions.conditions.toFilterOptions(),
-        onCategorySelected = actions.onCategorySelected,
-        onConditionSelected = actions.onConditionSelected
+        onQueryChanged = actions.onQueryChanged,
+        onFiltersApplied = { filters ->
+            actions.onFiltersApplied(filters.category, filters.condition)
+        }
     )
 }
 

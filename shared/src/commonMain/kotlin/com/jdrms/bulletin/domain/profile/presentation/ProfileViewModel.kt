@@ -179,12 +179,15 @@ class ProfileViewModel(
         state.update { it.copy(selectedBookmarkedListingId = null, errorMessage = null) }
     }
 
-    fun onBookmarkedCategorySelected(category: String?) {
-        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(category = category)) }
+    fun onBookmarkedQueryChanged(query: String) {
+        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(query = query)) }
     }
 
-    fun onBookmarkedConditionSelected(condition: String?) {
-        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(condition = condition)) }
+    fun onBookmarkedFiltersApplied(category: String?, condition: String?) {
+        state.update { current ->
+            val filters = current.bookmarkedListingFilters.copy(category = category, condition = condition)
+            current.copy(bookmarkedListingFilters = filters)
+        }
     }
 
     fun removeBookmarkedListing(listingId: String) {

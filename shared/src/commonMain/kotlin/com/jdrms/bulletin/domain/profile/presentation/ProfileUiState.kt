@@ -24,6 +24,7 @@ data class ProfileFormErrors(val school: String? = null, val major: String? = nu
 }
 
 data class ProfileListingFilterState(
+    val query: String = "",
     val category: String? = null,
     val condition: String? = null
 )
@@ -52,12 +53,19 @@ data class ProfileUiState(
 
     val filteredBookmarkedListings: List<ProfileBookmarkedListing>
         get() = bookmarkedListings.filter { listing ->
-            bookmarkedListingFilters.category.matches(listing.category) &&
+            bookmarkedListingFilters.query.matches(listing) &&
+                bookmarkedListingFilters.category.matches(listing.category) &&
                 bookmarkedListingFilters.condition.matches(listing.condition)
         }
 }
 
 private fun String?.matches(value: String): Boolean = this == null || equals(value, ignoreCase = true)
+
+private fun String.matches(listing: ProfileBookmarkedListing): Boolean {
+    val keywords = trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
+    val searchableText = "${listing.title.lowercase()} ${listing.category.lowercase()}"
+    return keywords.all(searchableText::contains)
+}
 
 fun validateProfileDraft(draft: ProfileDraft): ProfileFormErrors = ProfileFormErrors(
     school = if (draft.university.isBlank()) "Enter or select your school." else null,

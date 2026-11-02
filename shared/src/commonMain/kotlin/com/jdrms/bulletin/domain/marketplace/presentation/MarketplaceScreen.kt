@@ -127,8 +127,8 @@ private fun MarketplaceSellerProfileFlow(
         state = state.sellerProfileState,
         listingActions = SellerProfileListingActions(
             onListingClick = onOpenListing,
-            onCategorySelected = viewModels.sellerProfile::onCategorySelected,
-            onConditionSelected = viewModels.sellerProfile::onConditionSelected
+            onQueryChanged = viewModels.sellerProfile::onSearchQueryChanged,
+            onFiltersApplied = viewModels.sellerProfile::onFiltersApplied
         ),
         onBack = onBackFromSellerProfile,
         onReportUser = {

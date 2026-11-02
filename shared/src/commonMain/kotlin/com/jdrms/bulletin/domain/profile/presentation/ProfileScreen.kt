@@ -170,8 +170,8 @@ private fun ProfileDestinationContent(
                     onRemoveBookmark = states.viewModel::removeBookmarkedListing,
                     onRefresh = states.viewModel::loadBookmarkedListings,
                     onLoadMore = states.viewModel::loadMoreBookmarkedListings,
-                    onCategorySelected = states.viewModel::onBookmarkedCategorySelected,
-                    onConditionSelected = states.viewModel::onBookmarkedConditionSelected,
+                    onQueryChanged = states.viewModel::onBookmarkedQueryChanged,
+                    onFiltersApplied = states.viewModel::onBookmarkedFiltersApplied,
                     onBack = callbacks.onBack
                 )
             )
