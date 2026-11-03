@@ -83,142 +83,142 @@ fun ListingDetailsPage(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
             ) {
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(260.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(260.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.primary,
-                                strokeWidth = 3.dp
-                            )
-                            Text(
-                                text = "Loading listing details...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
-                errorMessage != null -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = BulletinSpacing.xl),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Warning,
-                                contentDescription = "Error",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(40.dp)
-                            )
-                            Text(
-                                text = errorMessage,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(BulletinSpacing.xs))
-                            BulletinButton(
-                                onClick = onRetry,
-                                variant = BulletinButtonVariant.Primary
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
                             ) {
-                                Text("Retry")
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    strokeWidth = 3.dp
+                                )
+                                Text(
+                                    text = "Loading listing details...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
-                }
 
-                listing != null -> {
-                    // Photos section
-                    ListingPhotosSection(photos = listing.photos)
-
-                    MarketplaceListingHeader(listing)
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                    // Seller Information & Reputation Score Card
-                    SellerInfoCard(
-                        seller = SellerInfoCardState(
-                            name = listing.sellerName,
-                            school = listing.sellerSchool,
-                            avatarUrl = listing.sellerAvatarUrl,
-                            reputationScore = listing.sellerReputationScore,
-                            major = listing.sellerMajor,
-                            reviewCount = listing.sellerReviewCount,
-                            isVerified = listing.sellerIsVerified
-                        ),
-                        onClick = { onSellerClick(listing.sellerId) }
-                    )
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                    // Description Section
-                    MarketplaceListingDescription(listing)
-
-                    MarketplaceItemDetails(listing)
-
-                    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
-
-                    if (listing.isSold && listing.buyerId == state.currentUserId && !state.hasReview) {
-                        BulletinButton(
-                            onClick = onLeaveReview,
-                            modifier = Modifier.fillMaxWidth(),
-                            variant = BulletinButtonVariant.Primary
+                    errorMessage != null -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = BulletinSpacing.xl),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text("Leave Review for Seller")
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Warning,
+                                    contentDescription = "Error",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Text(
+                                    text = errorMessage,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(modifier = Modifier.height(BulletinSpacing.xs))
+                                BulletinButton(
+                                    onClick = onRetry,
+                                    variant = BulletinButtonVariant.Primary
+                                ) {
+                                    Text("Retry")
+                                }
+                            }
                         }
                     }
 
-                    if (state.currentUserId != listing.sellerId) {
-                        MessageSellerQuickAction(
-                            actions = MessageSellerQuickActionActions(
-                                conversationKey = "${listing.id.value}:${listing.sellerId}",
-                                hasExistingConversation = {
-                                    hasExistingConversation(listing.id.value, listing.sellerId)
-                                },
-                                onSend = { content ->
-                                    onMessageSeller(listing.id.value, listing.sellerId, listing.sellerName, content)
-                                },
-                                onSent = onDismiss,
-                                onSeeChat = {
-                                    actions.onSeeChat(listing.id.value, listing.sellerId)
-                                }
+                    listing != null -> {
+                        // Photos section
+                        ListingPhotosSection(photos = listing.photos)
+
+                        MarketplaceListingHeader(listing)
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                        // Seller Information & Reputation Score Card
+                        SellerInfoCard(
+                            seller = SellerInfoCardState(
+                                name = listing.sellerName,
+                                school = listing.sellerSchool,
+                                avatarUrl = listing.sellerAvatarUrl,
+                                reputationScore = listing.sellerReputationScore,
+                                major = listing.sellerMajor,
+                                reviewCount = listing.sellerReviewCount,
+                                isVerified = listing.sellerIsVerified
+                            ),
+                            onClick = { onSellerClick(listing.sellerId) }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                        // Description Section
+                        MarketplaceListingDescription(listing)
+
+                        MarketplaceItemDetails(listing)
+
+                        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
+
+                        if (listing.isSold && listing.buyerId == state.currentUserId && !state.hasReview) {
+                            BulletinButton(
+                                onClick = onLeaveReview,
+                                modifier = Modifier.fillMaxWidth(),
+                                variant = BulletinButtonVariant.Primary
+                            ) {
+                                Text("Leave Review for Seller")
+                            }
+                        }
+
+                        if (state.currentUserId != listing.sellerId) {
+                            MessageSellerQuickAction(
+                                actions = MessageSellerQuickActionActions(
+                                    conversationKey = "${listing.id.value}:${listing.sellerId}",
+                                    hasExistingConversation = {
+                                        hasExistingConversation(listing.id.value, listing.sellerId)
+                                    },
+                                    onSend = { content ->
+                                        onMessageSeller(listing.id.value, listing.sellerId, listing.sellerName, content)
+                                    },
+                                    onSent = onDismiss,
+                                    onSeeChat = {
+                                        actions.onSeeChat(listing.id.value, listing.sellerId)
+                                    }
+                                )
                             )
+                        }
+
+                        ListingDetailActions(
+                            isBookmarked = isBookmarked,
+                            bookmarkErrorMessage = state.bookmarkErrorMessage,
+                            onToggleBookmark = onToggleBookmark,
+                            onDismiss = onDismiss,
+                            onReportListing = actions.onReportListing,
+                            canReportListing = state.currentUserId != listing.sellerId
                         )
                     }
-
-                    ListingDetailActions(
-                        isBookmarked = isBookmarked,
-                        bookmarkErrorMessage = state.bookmarkErrorMessage,
-                        onToggleBookmark = onToggleBookmark,
-                        onDismiss = onDismiss,
-                        onReportListing = actions.onReportListing,
-                        canReportListing = state.currentUserId != listing.sellerId
-                    )
                 }
             }
-        }
-        if (state.isReviewDialogOpen) {
-            ReviewSubmissionDialog(
-                isSubmitting = state.isSubmittingReview,
-                errorMessage = state.reviewErrorMessage,
-                onDismiss = onDismissReview,
-                onSubmit = onSubmitReview
-            )
-        }
+            if (state.isReviewDialogOpen) {
+                ReviewSubmissionDialog(
+                    isSubmitting = state.isSubmittingReview,
+                    errorMessage = state.reviewErrorMessage,
+                    onDismiss = onDismissReview,
+                    onSubmit = onSubmitReview
+                )
+            }
         }
     }
 }
