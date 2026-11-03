@@ -35,6 +35,19 @@ fun SignUpScreen(
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
+        // The code-entry screen is full-screen and owns its scrolling and insets. Keep it
+        // out of the form's scroll container, which would measure its scroll area unbounded.
+        (uiState.stage as? RegistrationStage.Verification)?.let { stage ->
+            EmailVerificationContent(
+                uiState = uiState,
+                pending = stage.pending,
+                onVerify = viewModel::verify,
+                onResend = viewModel::resendCode,
+                onChangeEmail = viewModel::reset
+            )
+            return@BoxWithConstraints
+        }
+
         val horizontalPadding = when {
             maxWidth >= 600.dp -> 40.dp
             maxWidth >= 480.dp -> 32.dp
@@ -85,13 +98,7 @@ fun SignUpScreen(
                         }
                     )
 
-                    is RegistrationStage.Verification -> EmailVerificationContent(
-                        uiState = uiState,
-                        pending = stage.pending,
-                        onVerify = viewModel::verify,
-                        onResend = viewModel::resendCode,
-                        onChangeEmail = viewModel::reset
-                    )
+                    is RegistrationStage.Verification -> Unit // Rendered full screen above.
 
                     RegistrationStage.Form -> SignUpFormContent(
                         uiState = uiState,

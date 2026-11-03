@@ -55,6 +55,10 @@ import kotlinx.coroutines.delay
 private const val CODE_LENGTH = 6
 private const val RESEND_COOLDOWN_SECONDS = 30
 
+/**
+ * Full-screen code entry. It scrolls itself and applies its own insets, so the caller must give it bounded
+ * height and must not place it inside another vertical scroll container.
+ */
 @Composable
 internal fun EmailVerificationContent(
     uiState: RegistrationUiState,
