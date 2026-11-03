@@ -116,7 +116,10 @@ internal fun MarketplaceCatalogContent(
             listingReportViewModel,
             actions,
             onNavigate,
-            { viewModel.dismissListingDetail(); onListingClosed() }
+            {
+                viewModel.dismissListingDetail()
+                onListingClosed()
+            }
         )
     }
 }

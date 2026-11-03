@@ -61,7 +61,12 @@ fun ListingDetailsPage(
     ) {
         Column(Modifier.fillMaxSize()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = BulletinSpacing.s, vertical = BulletinSpacing.xs),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = BulletinSpacing.s,
+                        vertical = BulletinSpacing.xs
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onDismiss) {
