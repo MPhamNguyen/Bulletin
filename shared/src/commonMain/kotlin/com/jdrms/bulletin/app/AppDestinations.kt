@@ -17,7 +17,6 @@ import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.app.navigation.backFromProfileDestination
-import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
@@ -29,7 +28,6 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavig
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
-import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
@@ -103,6 +101,9 @@ private fun MarketplaceDestination(
             userReportIdToOpen = navigation.pendingUserReportId,
             onUserReportRequestHandled = { navigation.pendingUserReportId = null },
             onSellerProfileRequestHandled = { navigation.pendingSellerProfileId = null },
+            listingIdToOpen = navigation.pendingListingId,
+            onListingRequestHandled = { navigation.pendingListingId = null },
+            onListingClosed = navigation::closeListing,
             onReturnToInboxChat = { navigation.currentDestination = AppDestination.MESSAGES },
             onContentNoLongerScrollable = onContentNoLongerScrollable
         ),
@@ -232,27 +233,12 @@ private fun profileCallbacks(
             listingsViewModel.clearMessages()
             navigation.profileDestination = ProfileDestination.MY_LISTINGS
         },
+        onOpenListing = navigation::openListing,
         onMessageSeller = conversationActions::messageSeller,
         onMessageSent = {
             navigation.apply(navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))
         },
         onSeeChat = conversationActions::seeChat,
-        hasExistingConversation = conversationActions::hasExistingConversation,
-        onSubmitReview = profileReviewCallback(container)
+        hasExistingConversation = conversationActions::hasExistingConversation
     )
 }
-
-private fun profileReviewCallback(
-    container: AppContainer
-): suspend (ProfileBookmarkedListing, String, Int, String) -> Result<Unit> =
-    { listing, reviewerId, score, comment ->
-        container.marketplace.submitMarketplaceReview.submitForSoldListing(
-            listingId = listing.id,
-            buyerId = listing.buyerId,
-            sellerId = listing.sellerId,
-            isSold = listing.isSold,
-            reviewerId = reviewerId,
-            score = score,
-            comment = comment
-        )
-    }

@@ -6,5 +6,8 @@ data class MarketplaceScreenNavigation(
     val onReturnToInboxChat: () -> Unit = {},
     val userReportIdToOpen: String? = null,
     val onUserReportRequestHandled: () -> Unit = {},
+    val listingIdToOpen: String? = null,
+    val onListingRequestHandled: () -> Unit = {},
+    val onListingClosed: () -> Unit = {},
     val onContentNoLongerScrollable: () -> Unit = {}
 )

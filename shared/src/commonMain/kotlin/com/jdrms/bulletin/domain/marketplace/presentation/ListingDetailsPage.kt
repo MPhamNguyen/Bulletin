@@ -1,9 +1,12 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -11,15 +14,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,12 +33,10 @@ import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSheetDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarketplaceDetailBottomSheet(
+fun ListingDetailsPage(
     state: MarketplaceDetailSheetState,
     actions: MarketplaceDetailSheetActions
 ) {
@@ -52,23 +53,31 @@ fun MarketplaceDetailBottomSheet(
     val onLeaveReview = actions.onLeaveReview
     val onDismissReview = actions.onDismissReview
     val onSubmitReview = actions.onSubmitReview
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = BulletinSheetDefaults.shape
+    BackHandler(onBack = onDismiss)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        Column(
-            modifier = Modifier.dismissKeyboardOnTapOutside()
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
-        ) {
+        Column(Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = BulletinSpacing.s, vertical = BulletinSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Text("Listing Details", style = MaterialTheme.typography.titleLarge)
+            }
+            Column(
+                modifier = Modifier.dismissKeyboardOnTapOutside()
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
+            ) {
             when {
                 isLoading -> {
                     Box(
@@ -204,6 +213,7 @@ fun MarketplaceDetailBottomSheet(
                 onDismiss = onDismissReview,
                 onSubmit = onSubmitReview
             )
+        }
         }
     }
 }

@@ -16,6 +16,21 @@ internal class MutableMainNavigationState {
     var createListingReturn by mutableStateOf<NavigationSnapshot?>(null)
 
     var pendingUserReportId by mutableStateOf<String?>(null)
+    var pendingListingId by mutableStateOf<String?>(null)
+    var listingReturnSnapshot by mutableStateOf<NavigationSnapshot?>(null)
+
+    fun openListing(listingId: String) {
+        listingReturnSnapshot = snapshot()
+        pendingListingId = listingId
+        currentDestination = AppDestination.MARKETPLACE
+    }
+
+    fun closeListing() {
+        pendingListingId = null
+        val target = listingReturnSnapshot
+        listingReturnSnapshot = null
+        if (target != null) apply(target)
+    }
 
     val showsBottomNavigation: Boolean
         get() = snapshot().showsBottomNavigation

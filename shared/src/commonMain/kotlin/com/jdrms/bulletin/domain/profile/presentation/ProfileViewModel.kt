@@ -82,15 +82,6 @@ class ProfileViewModel(
         bookmarksController.loadMore()
     }
 
-    fun viewBookmarkedListing(listingId: String) {
-        if (state.value.bookmarkedListings.none { it.id == listingId }) return
-        state.update { it.copy(selectedBookmarkedListingId = listingId, errorMessage = null) }
-    }
-
-    fun dismissBookmarkedListing() {
-        state.update { it.copy(selectedBookmarkedListingId = null, errorMessage = null) }
-    }
-
     fun onBookmarkedQueryChanged(query: String) {
         bookmarksController.updateQuery(query)
     }

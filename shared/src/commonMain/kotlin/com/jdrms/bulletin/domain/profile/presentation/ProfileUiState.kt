@@ -44,13 +44,9 @@ data class ProfileUiState(
     val isLoadingBookmarkedListings: Boolean = false,
     val isLoadingMoreBookmarkedListings: Boolean = false,
     val bookmarkedListingsNextCursor: ProfileBookmarksPageCursor? = null,
-    val selectedBookmarkedListingId: String? = null,
     val removingBookmarkedListingId: String? = null,
     val errorMessage: String? = null,
 ) {
-    val selectedBookmarkedListing: ProfileBookmarkedListing?
-        get() = bookmarkedListings.firstOrNull { it.id == selectedBookmarkedListingId }
-
     val filteredBookmarkedListings: List<ProfileBookmarkedListing>
         get() = bookmarkedListings.filter { listing ->
             bookmarkedListingFilters.query.matches(listing) &&
