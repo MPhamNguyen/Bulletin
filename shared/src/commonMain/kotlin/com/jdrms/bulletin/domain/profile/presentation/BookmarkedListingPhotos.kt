@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Icon
@@ -50,9 +49,9 @@ private fun ListingPhotoPlaceholder(label: String, modifier: Modifier) {
     Box(
         modifier = modifier
             .height(180.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)),
+            .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium),
         contentAlignment = Alignment.Center
     ) {
         Column(

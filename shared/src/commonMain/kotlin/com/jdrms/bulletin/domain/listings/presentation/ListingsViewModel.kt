@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.designsystem.normalizeCurrencyReplacement
 import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -75,6 +74,7 @@ class ListingsViewModel(
         )
     }
     private val photoActions by lazy { ListingPhotoActions(_uiState) }
+    private val priceActions by lazy { ListingPriceActions(_uiState) }
     private val attributeActions by lazy { ListingAttributeDraftActions(_uiState) }
     private val editActions by lazy {
         ListingEditActions(
@@ -123,15 +123,7 @@ class ListingsViewModel(
     fun onDescriptionChanged(description: String) {
         _uiState.update { it.copy(newDescription = description, errorMessage = null, successMessage = null) }
     }
-    fun onPriceChanged(price: String) {
-        _uiState.update {
-            it.copy(
-                newPriceCents = normalizeCurrencyReplacement(price),
-                errorMessage = null,
-                successMessage = null
-            )
-        }
-    }
+    fun onPriceChanged(price: String) = priceActions.changeNewPrice(price)
     fun onCategorySelected(category: ListingCategory) =
         attributeActions.selectCategory(ListingForm.NEW, category)
     fun onNewAttributeChanged(key: String, text: String) =
@@ -211,15 +203,7 @@ class ListingsViewModel(
     fun onEditDescriptionChanged(description: String) {
         _uiState.update { it.copy(editDescription = description, errorMessage = null, successMessage = null) }
     }
-    fun onEditPriceChanged(price: String) {
-        _uiState.update {
-            it.copy(
-                editPriceCents = normalizeCurrencyReplacement(price),
-                errorMessage = null,
-                successMessage = null
-            )
-        }
-    }
+    fun onEditPriceChanged(price: String) = priceActions.changeEditPrice(price)
     fun onEditCategorySelected(category: ListingCategory) =
         attributeActions.selectCategory(ListingForm.EDIT, category)
     fun onEditAttributeChanged(key: String, text: String) =

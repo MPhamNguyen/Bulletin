@@ -11,15 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,9 +31,13 @@ import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_visibility
 import bulletin.shared.generated.resources.ic_visibility_off
-import com.jdrms.bulletin.core.designsystem.BulletinButtonDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTextFieldDefaults
-import com.jdrms.bulletin.core.designsystem.showKeyboardOnFocusOrTap
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
+import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -56,10 +56,9 @@ internal fun SignUpFormContent(
         text = "Get started on Bulletin",
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.s))
     Text(
         text = "Sign up to access your campus marketplace and connect with peers safely.",
         style = MaterialTheme.typography.bodyMedium,
@@ -73,11 +72,11 @@ internal fun SignUpFormContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.medium)
-                .padding(12.dp)
+                .padding(BulletinSpacing.m)
         ) {
             Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(BulletinSpacing.l))
     }
 
     NameInputRow(
@@ -92,7 +91,7 @@ internal fun SignUpFormContent(
             if (uiState.errorMessage != null) onClearMessages()
         }
     )
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.l))
     EmailInputField(
         email = email,
         onEmailChange = {
@@ -100,7 +99,7 @@ internal fun SignUpFormContent(
             if (uiState.errorMessage != null) onClearMessages()
         }
     )
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(BulletinSpacing.l))
     PasswordInputField(
         password = password,
         onPasswordChange = {
@@ -110,12 +109,12 @@ internal fun SignUpFormContent(
     )
     Spacer(modifier = Modifier.height(40.dp))
 
-    Button(
+    BulletinButton(
         onClick = { onCreateAccount(firstName, lastName, email, password) },
         enabled = !uiState.isLoading,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = BulletinButtonDefaults.buttonColors()
+        modifier = Modifier.fillMaxWidth(),
+        variant = BulletinButtonVariant.Primary,
+        size = BulletinButtonSize.Large
     ) {
         if (uiState.isLoading) {
             CircularProgressIndicator(
@@ -129,7 +128,7 @@ internal fun SignUpFormContent(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 160.dp, bottom = 24.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 160.dp, bottom = BulletinSpacing.xl),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -138,7 +137,7 @@ internal fun SignUpFormContent(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        TextButton(onClick = onNavigateToSignIn) {
+        BulletinButton(onClick = onNavigateToSignIn, variant = BulletinButtonVariant.Text) {
             Text("Log in", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
     }
@@ -151,10 +150,9 @@ private fun NameInputRow(
     lastName: String,
     onLastNameChange: (String) -> Unit
 ) {
-    val inputFieldColors = BulletinTextFieldDefaults.colors()
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        NameInputField("First name", firstName, onFirstNameChange, inputFieldColors)
-        NameInputField("Last name", lastName, onLastNameChange, inputFieldColors)
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
+        NameInputField("First name", firstName, onFirstNameChange)
+        NameInputField("Last name", lastName, onLastNameChange)
     }
 }
 
@@ -162,20 +160,18 @@ private fun NameInputRow(
 private fun RowScope.NameInputField(
     label: String,
     value: String,
-    onValueChange: (String) -> Unit,
-    colors: androidx.compose.material3.TextFieldColors
+    onValueChange: (String) -> Unit
 ) {
     Column(modifier = Modifier.weight(1f)) {
         RequiredFieldLabel(label)
         Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
+        BulletinTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(label) },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = colors,
-            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth().height(52.dp)
+            modifier = Modifier.fillMaxWidth(),
+            decoration = BulletinFieldDecoration(
+                placeholder = { Text(label) }
+            )
         )
     }
 }
@@ -185,14 +181,13 @@ private fun EmailInputField(email: String, onEmailChange: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         RequiredFieldLabel("School email")
         Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
+        BulletinTextField(
             value = email,
             onValueChange = onEmailChange,
-            placeholder = { Text("you@student.school.edu") },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth().height(52.dp)
+            modifier = Modifier.fillMaxWidth(),
+            decoration = BulletinFieldDecoration(
+                placeholder = { Text("you@student.school.edu") }
+            )
         )
     }
 }
@@ -203,25 +198,31 @@ private fun PasswordInputField(password: String, onPasswordChange: (String) -> U
     Column(modifier = Modifier.fillMaxWidth()) {
         RequiredFieldLabel("Password")
         Spacer(modifier = Modifier.height(6.dp))
-        OutlinedTextField(
+        BulletinTextField(
             value = password,
             onValueChange = onPasswordChange,
-            placeholder = { Text("Create a password") },
-            singleLine = true,
-            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                    val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            modifier = Modifier.fillMaxWidth(),
+            decoration = BulletinFieldDecoration(
+                placeholder = { Text("Create a password") },
+                trailingIcon = {
+                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        val icon = if (isPasswordVisible) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off
+                        Icon(
+                            painter = painterResource(icon),
+                            contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            },
-            shape = RoundedCornerShape(14.dp),
-            colors = BulletinTextFieldDefaults.colors(),
-            modifier = Modifier.showKeyboardOnFocusOrTap().fillMaxWidth().height(52.dp)
+            ),
+            options = BulletinFieldOptions(
+
+                visualTransformation = if (isPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                }
+            )
         )
     }
 }

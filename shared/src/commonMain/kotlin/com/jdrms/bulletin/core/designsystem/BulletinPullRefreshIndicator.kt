@@ -26,107 +26,90 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 
 @Composable
-fun BulletinPullRefreshIndicator(
+internal fun BulletinPullRefreshIndicator(
     state: PullToRefreshState,
     isRefreshing: Boolean,
     isComplete: Boolean,
-    completeContentDescription: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    completionContentDescription: String = "Updated"
 ) {
     val progress = state.distanceFraction.coerceIn(0f, 1f)
     val primary = MaterialTheme.colorScheme.primary
-    val success = BulletinExtras.colors.success
+    val success = MaterialTheme.bulletinColors.success
     val track = MaterialTheme.colorScheme.surfaceVariant
-    val showIndicator = isRefreshing || isComplete || (progress > 0f && !state.isAnimating)
-    if (!showIndicator) return
 
-    val rotation by rememberInfiniteTransition().animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Restart)
-    )
-    Surface(
-        modifier = modifier
-            .offset(y = (progress * INDICATOR_MAX_DISTANCE).dp - INDICATOR_SIZE.dp)
-            .size(INDICATOR_SIZE.dp)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 4.dp
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Canvas(Modifier.fillMaxSize().padding(3.dp)) {
-                drawRefreshRing(
-                    track = track,
-                    active = if (isComplete) success else primary,
-                    progress = progress,
-                    rotation = rotation,
-                    isRefreshing = isRefreshing,
-                    isComplete = isComplete
-                )
+    val showIndicator = isRefreshing || isComplete || (progress > 0f && !state.isAnimating)
+    if (showIndicator) {
+        val rotation by rememberInfiniteTransition().animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(BulletinMotion.SPIN, easing = LinearEasing), RepeatMode.Restart)
+        )
+        Surface(
+            modifier = modifier
+                .offset(y = (progress * INDICATOR_MAX_DISTANCE).dp - INDICATOR_SIZE.dp)
+                .size(INDICATOR_SIZE.dp)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = BulletinElevation.raised
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Canvas(Modifier.fillMaxSize().padding(3.dp)) {
+                    val color = if (isComplete) success else primary
+                    drawCircle(
+                        color = track,
+                        style = Stroke(width = RING_STROKE.toPx())
+                    )
+                    when {
+                        isComplete -> drawArc(
+                            color = color,
+                            startAngle = -90f,
+                            sweepAngle = 360f,
+                            useCenter = false,
+                            style = Stroke(width = RING_STROKE.toPx(), cap = StrokeCap.Round)
+                        )
+                        isRefreshing -> drawArc(
+                            color = color,
+                            startAngle = rotation - 90f,
+                            sweepAngle = SPINNER_SWEEP,
+                            useCenter = false,
+                            style = Stroke(width = RING_STROKE.toPx(), cap = StrokeCap.Round)
+                        )
+                        progress > 0f -> drawArc(
+                            color = color,
+                            startAngle = -90f,
+                            sweepAngle = 360f * progress,
+                            useCenter = false,
+                            style = Stroke(width = RING_STROKE.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+                }
+                when {
+                    isComplete -> Icon(
+                        imageVector = Icons.Outlined.Check,
+                        contentDescription = completionContentDescription,
+                        tint = success,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    else -> Icon(
+                        imageVector = Icons.Outlined.ArrowDownward,
+                        contentDescription = if (progress >= 1f) "Release to refresh" else "Pull to refresh",
+                        tint = primary,
+                        modifier = Modifier.size(20.dp).rotate(if (progress >= 1f) 180f else 0f)
+                    )
+                }
             }
-            RefreshIndicatorIcon(
-                progress = progress,
-                isComplete = isComplete,
-                primary = primary,
-                success = success,
-                completeContentDescription = completeContentDescription
-            )
         }
     }
-}
-
-private fun DrawScope.drawRefreshRing(
-    track: Color,
-    active: Color,
-    progress: Float,
-    rotation: Float,
-    isRefreshing: Boolean,
-    isComplete: Boolean
-) {
-    drawCircle(color = track, style = Stroke(width = RING_STROKE.toPx()))
-    val startAngle = if (isRefreshing && !isComplete) rotation - 90f else -90f
-    val sweepAngle = when {
-        isComplete -> 360f
-        isRefreshing -> SPINNER_SWEEP
-        else -> 360f * progress
-    }
-    drawArc(
-        color = active,
-        startAngle = startAngle,
-        sweepAngle = sweepAngle,
-        useCenter = false,
-        style = Stroke(width = RING_STROKE.toPx(), cap = StrokeCap.Round)
-    )
-}
-
-@Composable
-private fun RefreshIndicatorIcon(
-    progress: Float,
-    isComplete: Boolean,
-    primary: Color,
-    success: Color,
-    completeContentDescription: String
-) {
-    Icon(
-        imageVector = if (isComplete) Icons.Outlined.Check else Icons.Outlined.ArrowDownward,
-        contentDescription = when {
-            isComplete -> completeContentDescription
-            progress >= 1f -> "Release to refresh"
-            else -> "Pull to refresh"
-        },
-        tint = if (isComplete) success else primary,
-        modifier = Modifier
-            .size(20.dp)
-            .rotate(if (!isComplete && progress >= 1f) 180f else 0f)
-    )
 }
 
 private const val INDICATOR_SIZE = 44

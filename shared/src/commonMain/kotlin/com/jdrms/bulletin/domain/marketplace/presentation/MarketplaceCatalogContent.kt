@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -19,9 +18,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,10 +35,13 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.BulletinPullRefreshIndicator
+import com.jdrms.bulletin.core.designsystem.BulletinPullToRefreshBox
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -56,7 +55,6 @@ internal fun MarketplaceCatalogContent(
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
     val gridState = rememberLazyGridState()
-    val pullRefreshState = rememberPullToRefreshState()
     val focusManager = LocalFocusManager.current
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -83,19 +81,11 @@ internal fun MarketplaceCatalogContent(
             viewModel.loadNextPage()
         }
     }
-    PullToRefreshBox(
+    BulletinPullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = viewModel.pullToRefresh,
-        state = pullRefreshState,
-        indicator = {
-            BulletinPullRefreshIndicator(
-                state = pullRefreshState,
-                isRefreshing = state.isRefreshing,
-                isComplete = state.refreshComplete,
-                completeContentDescription = "Marketplace updated",
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-        },
+        isComplete = state.refreshComplete,
+        completionContentDescription = "Marketplace updated",
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { containerOrigin = it.positionInRoot() }
@@ -111,11 +101,10 @@ internal fun MarketplaceCatalogContent(
             state = gridState,
             modifier = Modifier
                 .fillMaxSize()
-                .offset(y = (pullRefreshState.distanceFraction.coerceIn(0f, 1f) * CONTENT_PULL_OFFSET).dp)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = BulletinSpacing.l),
             contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
+            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             marketplaceCatalogHeader(state, viewModel) { coordinates ->
                 searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
@@ -217,7 +206,10 @@ private fun LazyGridScope.marketplaceErrorItems(state: MarketplaceUiState, viewM
         fullWidthItem {
             BulletinCard {
                 Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = viewModel::retryListings) { Text("Retry") }
+                BulletinButton(
+                    onClick = viewModel::retryListings,
+                    variant = BulletinButtonVariant.Text
+                ) { Text("Retry") }
             }
         }
     }
@@ -234,4 +226,3 @@ private fun LazyGridScope.fullWidthItem(
 ) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
 
 private const val PREFETCH_ITEM_THRESHOLD = 6
-private const val CONTENT_PULL_OFFSET = 48

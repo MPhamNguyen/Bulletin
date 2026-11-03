@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults as CardColors
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults as CardColors
 
 @Composable
 internal fun HomeFeedArtwork(modifier: Modifier = Modifier) {

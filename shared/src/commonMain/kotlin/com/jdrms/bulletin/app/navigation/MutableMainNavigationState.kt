@@ -15,6 +15,8 @@ internal class MutableMainNavigationState {
     /** Where the seller was before opening the full-screen create listing flow, so closing it can return there. */
     var createListingReturn by mutableStateOf<NavigationSnapshot?>(null)
 
+    var pendingUserReportId by mutableStateOf<String?>(null)
+
     val showsBottomNavigation: Boolean
         get() = snapshot().showsBottomNavigation
 

@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.domain.home.presentation.HomeMotionClock
 import com.jdrms.bulletin.domain.home.presentation.HomeSafeCubicBezierEasing
 import com.jdrms.bulletin.domain.home.presentation.homeMotionMillis
@@ -44,7 +45,7 @@ internal class ProfileTabCelebration {
             ripple.snapTo(0f)
             pulse.snapTo(1f)
             coroutineScope {
-                launch { ripple.animateTo(1f, tween(homeMotionMillis(800, durationScale))) }
+                launch { ripple.animateTo(1f, tween(homeMotionMillis(BulletinMotion.CELEBRATION, durationScale))) }
                 launch { animatePulse(durationScale) }
             }
         }
@@ -57,10 +58,10 @@ internal class ProfileTabCelebration {
                 tween(0)
             } else {
                 keyframes {
-                    durationMillis = homeMotionMillis(420, durationScale)
+                    durationMillis = homeMotionMillis(BulletinMotion.PULSE, durationScale)
                     val ease = HomeSafeCubicBezierEasing(0.2f, 0.9f, 0.3f, 1.3f)
-                    1.25f at homeMotionMillis(126, durationScale) using ease
-                    1f at homeMotionMillis(420, durationScale) using ease
+                    1.25f at homeMotionMillis(BulletinMotion.PULSE * 3 / 10, durationScale) using ease
+                    1f at homeMotionMillis(BulletinMotion.PULSE, durationScale) using ease
                 }
             }
         )

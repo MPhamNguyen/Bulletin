@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun SellerProfileTopBar(
@@ -35,13 +36,13 @@ internal fun SellerProfileTopBar(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to listing")
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(BulletinSpacing.s))
         Text(
             "Seller Profile",
             modifier = Modifier.weight(1f),

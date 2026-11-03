@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -16,9 +17,11 @@ internal class ProfileBookmarksController(
     private val dependencies: ProfileBookmarksDependencies
 ) {
     private var loadingJob: Job? = null
+    private var queryJob: Job? = null
     private var removalJob: Job? = null
 
     fun load() {
+        queryJob?.cancel()
         loadingJob?.cancel()
         loadingJob = scope.launch {
             state.update {
@@ -53,11 +56,17 @@ internal class ProfileBookmarksController(
     }
 
     fun updateQuery(query: String) {
-        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.copy(query = query)) }
-        loadRemainingPagesForActiveFilters()
+        state.update { it.copy(bookmarkedListingFilters = it.bookmarkedListingFilters.withQuery(query)) }
+        queryJob?.cancel()
+        loadingJob?.cancel()
+        queryJob = scope.launch {
+            delay(QUERY_DEBOUNCE_MILLIS)
+            loadRemainingPagesForActiveFilters()
+        }
     }
 
     fun applyFilters(category: String?, condition: String?) {
+        queryJob?.cancel()
         state.update { current ->
             current.copy(
                 bookmarkedListingFilters = current.bookmarkedListingFilters.copy(
@@ -193,6 +202,7 @@ internal class ProfileBookmarksController(
 
     private companion object {
         const val BOOKMARKS_PAGE_SIZE = 20
+        const val QUERY_DEBOUNCE_MILLIS = 300L
     }
 }
 

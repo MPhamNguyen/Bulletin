@@ -6,6 +6,10 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: read
@@ -18,11 +22,11 @@ jobs:
 
     steps:
       - name: Find stale branches
-        uses: fpicalausa/remove-stale-branches@bfaf2b7f95cfd85485960c9d2d98a0702c84a74c # v2.6.1
+        uses: fpicalausa/remove-stale-branches@9b829bc2975ade0c61e64e9613def53ec0732440 # v2.6.1
         with:
           dry-run: false
-          days-before-branch-stale: 7
-          days-before-branch-delete: 7
+          days-before-branch-stale: 14
+          days-before-branch-delete: 14
 
           ignore-branches-with-open-prs: true
 

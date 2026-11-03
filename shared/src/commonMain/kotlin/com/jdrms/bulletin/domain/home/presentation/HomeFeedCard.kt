@@ -34,7 +34,8 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import kotlin.math.max
 import kotlin.math.min
@@ -53,7 +54,7 @@ fun HomeFeedCard(
     // Keep the frame fixed while the artwork lifts to reveal the tray surface.
     val shape = MaterialTheme.shapes.large
     Box(
-        modifier.fillMaxSize().padding(8.dp).homeTrayShadow(shape, trayProgress).clip(shape)
+        modifier.fillMaxSize().padding(BulletinSpacing.s).homeTrayShadow(shape, trayProgress).clip(shape)
             .background(homeTraySurface)
     ) {
         HomePhotoMedia(item, cardIndex, isActive, Modifier.fillMaxSize().then(mediaModifier)) {
@@ -116,7 +117,7 @@ internal fun BoxScope.HomeFeedCardBackground(
             photoCount = photoCount,
             selectedIndex = photoIndex,
             activeProgress = photoProgress,
-            modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 12.dp, vertical = 10.dp)
+            modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = BulletinSpacing.m, vertical = 10.dp)
         )
     }
 }
@@ -166,7 +167,7 @@ private fun HomeFeedPhotoIndicator(
     activeProgress: Float,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
         repeat(photoCount) { index ->
             Box(
                 modifier = Modifier

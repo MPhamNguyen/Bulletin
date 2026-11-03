@@ -22,7 +22,6 @@ import kotlinx.coroutines.cancel
 internal fun AppRoot(
     container: AppContainer,
     theme: ThemeViewModel,
-    darkTheme: Boolean,
     recovery: PasswordRecoveryViewModel
 ) {
     var currentScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
@@ -43,8 +42,7 @@ internal fun AppRoot(
             AppRootScreen.CREATE_PROFILE -> RegistrationRoute(container) { currentScreen = it }
             AppRootScreen.MAIN -> MainAppScaffold(
                 appContainer = container,
-                themeViewModel = theme,
-                darkTheme = darkTheme
+                themeViewModel = theme
             ) { currentScreen = AppRootScreen.SIGN_IN }
         }
     }

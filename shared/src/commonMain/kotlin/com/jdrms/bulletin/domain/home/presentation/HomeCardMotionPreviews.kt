@@ -14,22 +14,27 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinFeedCardDefaults
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 
 @Composable
 private fun MotionPreview(dark: Boolean, dragDp: Float) {
     BulletinTheme(darkTheme = dark) {
         Box(Modifier.size(390.dp, 500.dp).background(MaterialTheme.colorScheme.background)) {
             Box(
-                Modifier.fillMaxSize().padding(8.dp).graphicsLayer {
+                Modifier.fillMaxSize().padding(BulletinSpacing.s).graphicsLayer {
                     val pose = homeCardPose(dragDp, null, 0f, size.width / density)
                     translationX = pose.xDp.dp.toPx()
                     rotationZ = pose.rotation
                     transformOrigin = TransformOrigin(0.5f, pose.pivotY)
                 }.clip(MaterialTheme.shapes.large).background(BulletinFeedCardDefaults.backgroundTop)
             ) {
-                Text("Mid-drag", color = BulletinFeedCardDefaults.content, modifier = Modifier.padding(24.dp))
+                Text(
+                    "Mid-drag",
+                    color = BulletinFeedCardDefaults.content,
+                    modifier = Modifier.padding(BulletinSpacing.xl)
+                )
                 HomeSwipeFeedback(
                     { if (dragDp > 0f) swipeFeedbackProgress(dragDp) else 0f },
                     { if (dragDp < 0f) swipeFeedbackProgress(dragDp) else 0f }

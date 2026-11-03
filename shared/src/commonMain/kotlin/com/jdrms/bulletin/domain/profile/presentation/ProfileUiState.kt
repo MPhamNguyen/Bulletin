@@ -25,9 +25,15 @@ data class ProfileFormErrors(val school: String? = null, val major: String? = nu
 
 data class ProfileListingFilterState(
     val query: String = "",
+    val queryKeywords: List<String> = emptyList(),
     val category: String? = null,
     val condition: String? = null
-)
+) {
+    fun withQuery(query: String): ProfileListingFilterState = copy(
+        query = query,
+        queryKeywords = query.toSearchKeywords()
+    )
+}
 
 data class ProfileUiState(
     val profile: StudentProfile? = null,
@@ -53,7 +59,7 @@ data class ProfileUiState(
 
     val filteredBookmarkedListings: List<ProfileBookmarkedListing>
         get() = bookmarkedListings.filter { listing ->
-            bookmarkedListingFilters.query.matches(listing) &&
+            bookmarkedListingFilters.queryKeywords.matches(listing) &&
                 bookmarkedListingFilters.category.matches(listing.category) &&
                 bookmarkedListingFilters.condition.matches(listing.condition)
         }
@@ -61,11 +67,15 @@ data class ProfileUiState(
 
 private fun String?.matches(value: String): Boolean = this == null || equals(value, ignoreCase = true)
 
-private fun String.matches(listing: ProfileBookmarkedListing): Boolean {
-    val keywords = trim().lowercase().split(Regex("\\s+")).filter(String::isNotEmpty)
+private fun List<String>.matches(listing: ProfileBookmarkedListing): Boolean {
     val searchableText = "${listing.title.lowercase()} ${listing.category.lowercase()}"
-    return keywords.all(searchableText::contains)
+    return all(searchableText::contains)
 }
+
+private fun String.toSearchKeywords(): List<String> =
+    trim().lowercase().split(QUERY_SEPARATOR).filter(String::isNotEmpty)
+
+private val QUERY_SEPARATOR = Regex("\\s+")
 
 fun validateProfileDraft(draft: ProfileDraft): ProfileFormErrors = ProfileFormErrors(
     school = if (draft.university.isBlank()) "Enter or select your school." else null,
