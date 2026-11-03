@@ -43,7 +43,11 @@ fun SignUpScreen(
                 pending = stage.pending,
                 onVerify = viewModel::verify,
                 onResend = viewModel::resendCode,
-                onChangeEmail = viewModel::reset
+                onChangeEmail = viewModel::reset,
+                onSignIn = {
+                    viewModel.reset()
+                    onNavigateToSignIn()
+                }
             )
             return@BoxWithConstraints
         }

@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,17 +38,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
-import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
-import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextStyles
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
-import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import kotlinx.coroutines.delay
 
 private const val CODE_LENGTH = 6
@@ -65,7 +61,8 @@ internal fun EmailVerificationContent(
     pending: PendingRegistration,
     onVerify: (String) -> Unit,
     onResend: () -> Unit,
-    onChangeEmail: () -> Unit
+    onChangeEmail: () -> Unit,
+    onSignIn: () -> Unit
 ) {
     var code by remember(pending) { mutableStateOf("") }
     var secondsLeft by remember(pending) { mutableStateOf(RESEND_COOLDOWN_SECONDS) }
@@ -80,7 +77,6 @@ internal fun EmailVerificationContent(
             secondsLeft--
         }
     }
-    val resendLocked = secondsLeft > 0
 
     Column(
         modifier = Modifier
@@ -136,7 +132,8 @@ internal fun EmailVerificationContent(
                 modifier = Modifier.padding(top = BulletinSpacing.xl)
             )
             Text(
-                text = "We sent a 6-digit code to",
+                // Repeat signup responses conceal whether the account exists.
+                text = "If you’re new to Bulletin, we sent a 6-digit code to",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -212,70 +209,16 @@ internal fun EmailVerificationContent(
                     Text("Verify email", style = MaterialTheme.typography.titleMedium)
                 }
             }
-            Column(
-                modifier = Modifier.padding(top = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
-            ) {
-                BulletinButton(
-                    onClick = {
-                        onResend()
-                        cooldownRun++
-                    },
-                    enabled = !uiState.isLoading && !resendLocked,
-                    modifier = Modifier,
-                    variant = BulletinButtonVariant.Text
-                ) {
-                    Text(
-                        text = if (resendLocked) {
-                            "Didn’t get a code? Resend in ${secondsLeft}s"
-                        } else {
-                            "Didn’t get a code? Resend verification email"
-                        },
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                BulletinButton(
-                    onClick = onChangeEmail,
-                    enabled = !uiState.isLoading,
-                    modifier = Modifier,
-                    variant = BulletinButtonVariant.Text
-                ) {
-                    Text("Use a different email", color = colors.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun EmailVerificationRecoveryContent(
-    uiState: RegistrationUiState,
-    email: StudentEmail,
-    onRetry: () -> Unit,
-    onSignIn: () -> Unit
-) {
-    BulletinCard {
-        Column {
-            SectionHeader("Email verified", email.value)
-            Text(
-                "Your code was accepted, but Bulletin could not finish loading your profile.",
-                style = MaterialTheme.typography.bodyMedium
+            EmailVerificationActions(
+                isLoading = uiState.isLoading,
+                secondsLeft = secondsLeft,
+                onResend = {
+                    onResend()
+                    cooldownRun++
+                },
+                onSignIn = onSignIn,
+                onChangeEmail = onChangeEmail
             )
-            uiState.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            uiState.informationMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-            if (uiState.isLoading) CircularProgressIndicator()
-            BulletinButton(
-                onClick = onRetry,
-                enabled = !uiState.isLoading,
-                modifier = Modifier.fillMaxWidth(),
-                variant = BulletinButtonVariant.Primary
-            ) { Text("Retry setup") }
-            BulletinButton(
-                onClick = onSignIn,
-                enabled = !uiState.isLoading,
-                variant = BulletinButtonVariant.Text
-            ) { Text("Sign in instead") }
         }
     }
 }
