@@ -29,6 +29,7 @@ fun App(appContainer: AppContainer? = null) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { container.messages.inboxStateOwner.onForeground() }
     val themeViewModel = remember(container) { container.createThemeViewModel() }
     val preference by themeViewModel.themePreference.collectAsState()
+    val themeColor by themeViewModel.themeColor.collectAsState()
     val recovery = remember(container) { container.profile.createPasswordRecoveryViewModel() }
     val recoveryState by recovery.uiState.collectAsState()
     val isDarkTheme = resolveAppIsDarkTheme(
@@ -44,7 +45,7 @@ fun App(appContainer: AppContainer? = null) {
             SessionState.Checking -> Unit
         }
     }
-    BulletinTheme(darkTheme = isDarkTheme) {
+    BulletinTheme(darkTheme = isDarkTheme, themeColor = themeColor) {
         Box(Modifier.fillMaxSize().dismissKeyboardOnTapOutside()) {
             AppRoot(container, themeViewModel, recovery)
         }

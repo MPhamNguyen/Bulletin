@@ -1,8 +1,10 @@
 package com.jdrms.bulletin.app.theme
 
+import androidx.compose.ui.graphics.Color
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
+import com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +49,24 @@ class AndroidThemePreferenceStoreTest {
         assertEquals(ThemePreference.LIGHT, store.preferenceFor(user2))
         assertEquals(ThemePreference.DARK, store.preferenceFor(user1))
         assertEquals(ThemePreference.LIGHT, store.lastAppliedPreference())
+    }
+
+    @Test
+    fun storesCustomColorPerUserAndRestoresLastAppliedColor() = runTest {
+        val store = createStore()
+        val user1 = UserId("user-1")
+        val user2 = UserId("user-2")
+
+        val forest = BulletinThemeColor(Color(0xFF356859).value)
+        val custom = BulletinThemeColor(Color(0xFF123ABC).value)
+        store.setThemeColor(user1, forest)
+        assertEquals(forest, store.themeColorFor(user1))
+        assertEquals(forest, store.lastAppliedThemeColor())
+        assertEquals(BulletinThemeColor.CLASSIC, store.themeColorFor(user2))
+
+        store.setThemeColor(user2, custom)
+        assertEquals(custom, store.themeColorFor(user2))
+        assertEquals(forest, store.themeColorFor(user1))
     }
 
     private fun createStore(): AndroidThemePreferenceStore =

@@ -141,4 +141,24 @@ class ThemeViewModelTest {
 
         assertEquals(ThemePreference.SYSTEM, viewModel.themePreference.value)
     }
+
+    @Test
+    fun customColorSelectionIsRestoredPerAccount() = runTest(testDispatcher) {
+        val store = InMemoryThemePreferenceStore()
+        val viewModel = ThemeViewModel(store)
+        advanceUntilIdle()
+        viewModel.setAccount(UserId("user-1"))
+        advanceUntilIdle()
+
+        val custom = com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor(0xFF123ABCUL)
+        viewModel.setThemeColor(custom)
+        advanceUntilIdle()
+        viewModel.setAccount(UserId("user-2"))
+        advanceUntilIdle()
+        assertEquals(com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor.CLASSIC, viewModel.themeColor.value)
+
+        viewModel.setAccount(UserId("user-1"))
+        advanceUntilIdle()
+        assertEquals(custom, viewModel.themeColor.value)
+    }
 }

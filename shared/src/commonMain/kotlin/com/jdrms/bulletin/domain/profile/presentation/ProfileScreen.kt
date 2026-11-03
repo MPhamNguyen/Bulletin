@@ -282,8 +282,14 @@ private fun ProfileSettingsDestination(
             onSignOut = { flows.account.signOut(callbacks.onSignOut) },
             onConfirmDeleteProfile = { flows.account.deleteProfile(callbacks.onSignOut) }
         ),
-        themePreference = themeViewModel?.themePreference?.collectAsState()?.value,
-        onThemePreferenceChanged = themeViewModel?.let { it::setThemePreference },
+        appearance = themeViewModel?.let { theme ->
+            ThemeAppearanceSettings(
+                preference = theme.themePreference.collectAsState().value,
+                onPreferenceChanged = theme::setThemePreference,
+                themeColor = theme.themeColor.collectAsState().value,
+                onThemeColorChanged = theme::setThemeColor
+            )
+        },
         reportedListingVisibilitySetting = reportedListingVisibilitySetting
     )
 }

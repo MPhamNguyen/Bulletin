@@ -40,7 +40,7 @@ Students can discover listings, buy or sell items, message other students, build
 | ⭐ **Ratings & Reviews** | Leave and view reviews tied to sold listings. |
 | 👤 **Profiles** | View and edit student profiles, including profile photos. |
 | 🚩 **Reporting & Blocking** | Report users, listings, or messages, and block or unblock users. |
-| 🌗 **Theme** | Light/dark theme preference. |
+| 🌗 **Theme** | System, light, or dark appearance with curated custom color palettes. |
 | 🛡️ **Admin Portal** | Web tool for reviewing reports and suspending or restoring accounts (see [Admin Portal](#%EF%B8%8F-admin-portal)). |
 
 > Feature availability depends on backend configuration. This README does not claim production readiness.

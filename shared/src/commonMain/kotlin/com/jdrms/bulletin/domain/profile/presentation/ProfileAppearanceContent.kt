@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.outlined.DarkMode
@@ -27,6 +28,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -37,12 +41,29 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.theme.ThemePreference
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor
 
 @Composable
-internal fun AppearanceCard(themePreference: ThemePreference, onThemePreferenceChanged: (ThemePreference) -> Unit) {
+internal fun AppearanceCard(
+    themePreference: ThemePreference,
+    themeColor: BulletinThemeColor,
+    onThemePreferenceChanged: (ThemePreference) -> Unit,
+    onThemeColorChanged: (BulletinThemeColor) -> Unit
+) {
+    var showPalettePicker by remember { mutableStateOf(false) }
+    if (showPalettePicker) {
+        ThemePaletteDialog(
+            selectedThemeColor = themeColor,
+            onThemeColorSelected = onThemeColorChanged,
+            onDismiss = { showPalettePicker = false }
+        )
+    }
     BulletinCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -82,6 +103,16 @@ internal fun AppearanceCard(themePreference: ThemePreference, onThemePreferenceC
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+        Spacer(modifier = Modifier.height(BulletinSpacing.s))
+        BulletinButton(
+            onClick = { showPalettePicker = true },
+            modifier = Modifier.fillMaxWidth(),
+            variant = BulletinButtonVariant.Tonal,
+            size = BulletinButtonSize.Regular
+        ) {
+            Box(Modifier.size(18.dp).background(themeColor.color, CircleShape))
+            Text("Custom")
         }
     }
 }
