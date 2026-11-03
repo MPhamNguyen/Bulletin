@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.application
 
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributes
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
@@ -20,7 +22,8 @@ data class MarketplaceListingSnapshot(
     val condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
     val primaryPhotoUrl: String? = null,
     val photoUrls: List<String> = listOfNotNull(primaryPhotoUrl),
-    val updatedAtMillis: Long = 0L
+    val updatedAtMillis: Long = 0L,
+    val attributes: MarketplaceAttributes = MarketplaceAttributes.EMPTY
 ) {
     val photos: List<String>
         get() = photoUrls
@@ -39,11 +42,15 @@ data class MarketplacePageRequest(
     val condition: MarketplaceCondition? = null,
     val viewerId: String? = null,
     val cursor: MarketplacePageCursor? = null,
-    val pageSize: Int = DEFAULT_MARKETPLACE_PAGE_SIZE
+    val pageSize: Int = DEFAULT_MARKETPLACE_PAGE_SIZE,
+    val attributeFilters: MarketplaceAttributeFilters = MarketplaceAttributeFilters.NONE
 ) {
     init {
         require(pageSize in 1..MAX_MARKETPLACE_PAGE_SIZE) {
             "Marketplace page size must be between 1 and $MAX_MARKETPLACE_PAGE_SIZE."
+        }
+        require(attributeFilters.isEmpty || category == MarketplaceCategory.ELECTRONICS) {
+            "Attribute filters currently apply only to the Electronics category."
         }
     }
 }
@@ -89,7 +96,8 @@ class MarketplaceRepositoryListingSource(
                 condition = item.condition,
                 primaryPhotoUrl = item.photos.firstOrNull(),
                 photoUrls = item.photos,
-                updatedAtMillis = item.updatedAtMillis
+                updatedAtMillis = item.updatedAtMillis,
+                attributes = item.attributes
             )
         }.pageFor(request)
     }
@@ -103,7 +111,9 @@ fun List<MarketplaceListingSnapshot>.pageFor(request: MarketplacePageRequest): M
         .filter { listing -> request.sellerId == null || listing.sellerId == request.sellerId }
         .filter { listing -> request.category == null || listing.category == request.category }
         .filter { listing -> request.condition == null || listing.condition == request.condition }
+        .filter { listing -> request.attributeFilters.matches(listing.attributes) }
         .filter { listing ->
+            // Attribute text deliberately does not feed free-text search; attributes are filtered, not searched.
             val searchableText = "${listing.title.lowercase()} ${listing.category.name.lowercase()}"
             keywords.all(searchableText::contains)
         }

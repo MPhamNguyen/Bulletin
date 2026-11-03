@@ -85,7 +85,7 @@ class MarketplaceViewModel(
     }
 
     fun onCategorySelected(category: MarketplaceCategory?) {
-        _uiState.update { it.copy(filters = it.filters.copy(category = category)) }
+        _uiState.update { it.copy(filters = it.filters.copy(category = category).normalized()) }
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
@@ -95,7 +95,7 @@ class MarketplaceViewModel(
     }
 
     fun onFiltersApplied(filters: MarketplaceFilterState) {
-        _uiState.update { state -> state.copy(filters = filters.copy(query = state.filters.query)) }
+        _uiState.update { state -> state.copy(filters = filters.copy(query = state.filters.query).normalized()) }
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
@@ -114,6 +114,7 @@ class MarketplaceViewModel(
                         query = filters.query,
                         category = filters.category,
                         condition = filters.condition,
+                        attributeFilters = filters.attributes,
                         viewerId = currentUserIdProvider(),
                         cursor = cursor
                     )

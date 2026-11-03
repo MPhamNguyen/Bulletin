@@ -3,6 +3,9 @@ package com.jdrms.bulletin.domain.profile.application
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import kotlin.jvm.JvmInline
 
+/** Display-ready item detail line (for example "RAM" to "16 GB") supplied by the integration layer. */
+data class ProfileListingAttribute(val label: String, val value: String)
+
 data class ProfileBookmarkedListing(
     val id: String,
     val title: String,
@@ -16,7 +19,8 @@ data class ProfileBookmarkedListing(
     val sellerId: String = "",
     val buyerId: String? = null,
     val isSold: Boolean = false,
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val attributes: List<ProfileListingAttribute> = emptyList()
 )
 
 @JvmInline

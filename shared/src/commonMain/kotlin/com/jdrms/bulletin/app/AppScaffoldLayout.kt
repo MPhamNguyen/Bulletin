@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
-import com.jdrms.bulletin.core.designsystem.BulletinExtras
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
+import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.LocalHomeSaveRetryPresentation
 import kotlinx.coroutines.CoroutineScope
@@ -80,7 +80,7 @@ internal fun MainAppLayout(content: MainAppContentState, chrome: MainAppChrome, 
             onDestinationSelected = { navigateTo(it, navigation, content.models.listings) },
             onFocused = chrome.behavior::reveal,
             profileIconModifier = chrome.anchor.modifier.then(
-                chrome.celebration.modifier(BulletinExtras.colors.success)
+                chrome.celebration.modifier(MaterialTheme.bulletinColors.success)
             ),
             modifier = Modifier.align(Alignment.BottomCenter).zIndex(100f).onSizeChanged {
                 navbarHeight = with(density) { it.height.toDp() } - inset

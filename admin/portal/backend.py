@@ -73,7 +73,7 @@ class Supabase:
         headers = {"apikey": key, "Accept": "application/json"}
         if access_token or not public:
             headers["Authorization"] = "Bearer " + (access_token or self.service_key)
-        if method in ("PATCH", "DELETE") and path.startswith("/rest/v1/"):
+        if method in ("POST", "PATCH", "DELETE") and path.startswith("/rest/v1/"):
             headers["Prefer"] = "return=representation"
         body = None
         if data is not None:

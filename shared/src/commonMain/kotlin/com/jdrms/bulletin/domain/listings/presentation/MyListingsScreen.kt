@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun MyListingsScreen(
@@ -59,6 +60,9 @@ fun MyListingsScreen(
                     onImageSelectionError = viewModel::imageSelectionFailed,
                     onRemoveImage = viewModel::removeEditImage,
                     onCropImage = viewModel::updateEditImageCrop,
+                    onAttributeChange = viewModel::onEditAttributeChanged,
+                    onConfirmCategoryChange = viewModel::confirmCategoryChange,
+                    onCancelCategoryChange = viewModel::cancelCategoryChange,
                     onSave = viewModel::saveListingChanges,
                     onBack = {
                         viewModel.cancelEditing()
@@ -87,7 +91,7 @@ fun MyListingsScreen(
             targetState = uiState.successMessage,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 72.dp, start = 24.dp, end = 24.dp)
+                .padding(top = 72.dp, start = BulletinSpacing.xl, end = BulletinSpacing.xl)
                 .zIndex(1f),
             transitionSpec = {
                 (slideInVertically(initialOffsetY = { -it }) + fadeIn()) togetherWith

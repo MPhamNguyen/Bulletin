@@ -136,7 +136,7 @@ class PortalTests(unittest.TestCase):
 
     def test_missing_and_forged_csrf_block_all_post_actions(self):
         self.authenticate()
-        for suffix in ("/login", "/logout", "/reports/" + REPORT + "/status", "/reports/" + REPORT + "/account"):
+        for suffix in ("/login", "/logout", "/reports/" + REPORT + "/status", "/reports/" + REPORT + "/account", "/reports/" + REPORT + "/comments"):
             for csrf in (None, "forged"):
                 result = self.client.post(suffix, data={} if csrf is None else {"csrf": csrf})
                 self.assertEqual(400, result.status_code)

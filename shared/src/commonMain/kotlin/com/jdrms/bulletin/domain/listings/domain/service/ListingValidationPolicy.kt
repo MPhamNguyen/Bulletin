@@ -8,10 +8,16 @@ sealed class ListingValidationException(message: String) : IllegalArgumentExcept
     class TitleTooShort : ListingValidationException("Listing title must be at least 3 characters.")
     class DescriptionEmpty : ListingValidationException("Listing description cannot be empty.")
     class PriceNegative : ListingValidationException("Listing price cannot be negative.")
+    class InvalidAttributes(val issues: List<ListingAttributeIssue>) :
+        ListingValidationException(issues.firstOrNull()?.message ?: "Listing attributes are not valid.")
+    class UnknownAttributes(val keys: Set<String>) :
+        ListingValidationException("Unknown listing attributes: ${keys.sorted().joinToString()}.")
     class Unauthorized(message: String = "Only the owner can edit this listing.") : ListingValidationException(message)
 }
 
-class ListingValidationPolicy {
+class ListingValidationPolicy(
+    private val attributePolicy: ListingAttributeValidationPolicy = ListingAttributeValidationPolicy()
+) {
     fun validateListing(listing: Listing): Result<Unit> {
         if (listing.title.isBlank() || listing.title.length < 3) {
             return Result.Error(ListingValidationException.TitleTooShort())
@@ -22,7 +28,26 @@ class ListingValidationPolicy {
         if (listing.price.amount < 0.0) {
             return Result.Error(ListingValidationException.PriceNegative())
         }
-        return Result.Success(Unit)
+        val attributeIssues = attributePolicy.validate(listing.category, listing.attributes)
+        return if (attributeIssues.isNotEmpty()) {
+            Result.Error(ListingValidationException.InvalidAttributes(attributeIssues))
+        } else {
+            Result.Success(Unit)
+        }
+    }
+
+    /**
+     * New attributes may only use catalog keys. [existing] is what storage already holds: preserved entries must
+     * match it exactly, so a normal write can neither introduce an unknown key nor alter one it cannot interpret.
+     */
+    fun validatePreservedAttributes(submitted: Listing, existing: Listing?): Result<Unit> {
+        val stored = existing?.attributes?.preserved.orEmpty()
+        val introduced = submitted.attributes.preserved.filter { (key, raw) -> stored[key] != raw }.keys
+        return if (introduced.isEmpty()) {
+            Result.Success(Unit)
+        } else {
+            Result.Error(ListingValidationException.UnknownAttributes(introduced))
+        }
     }
 
     fun validateOwnership(

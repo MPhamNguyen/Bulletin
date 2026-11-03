@@ -24,11 +24,10 @@ internal fun PublicProfilePreviewDestination(
     }
     SellerProfileScreen(
         state = sellerProfileState,
-        messageActions = null,
         listingActions = SellerProfileListingActions(
             onListingClick = {},
-            onCategorySelected = sellerProfileViewModel::onCategorySelected,
-            onConditionSelected = sellerProfileViewModel::onConditionSelected
+            onQueryChanged = sellerProfileViewModel::onSearchQueryChanged,
+            onFiltersApplied = sellerProfileViewModel::onFiltersApplied
         ),
         onBack = onBack,
         onReportUser = {},

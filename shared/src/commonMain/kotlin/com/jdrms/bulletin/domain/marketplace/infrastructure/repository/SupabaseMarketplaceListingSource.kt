@@ -124,6 +124,7 @@ internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplaceP
     request.query.toSafePrefixSearchQuery()?.let { query ->
         textSearch("name", query, TextSearchType.NONE)
     }
+    applyAttributeFilters(request.attributeFilters)
 }
 
 internal fun String.toSafePrefixSearchQuery(): String? {

@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.listings.infrastructure.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class SupabaseListingDto(
@@ -18,7 +19,9 @@ data class SupabaseListingDto(
     @SerialName("is_sold") val isSold: Boolean = false,
     @SerialName("seller_profile") val profile: SupabaseListingProfileDto? = null,
     @SerialName("buyer_id") val buyerId: String? = null,
-    @SerialName("listing_images") val listingImages: List<SupabaseListingImageDto> = emptyList()
+    @SerialName("listing_images") val listingImages: List<SupabaseListingImageDto> = emptyList(),
+    /** Raw JSONB column. Null means the payload predates the column; it is decoded by the attributes codec. */
+    @SerialName("attributes") val attributes: JsonElement? = null
 )
 
 @Serializable

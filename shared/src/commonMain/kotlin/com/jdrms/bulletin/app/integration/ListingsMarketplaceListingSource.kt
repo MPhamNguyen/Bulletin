@@ -35,7 +35,8 @@ class ListingsMarketplaceListingSource(
                     category = listing.category.toMarketplaceCategory(),
                     createdAtMillis = listing.createdAtMillis,
                     updatedAtMillis = listing.updatedAtMillis,
-                    condition = listing.condition.toMarketplaceCondition()
+                    condition = listing.condition.toMarketplaceCondition(),
+                    attributes = listing.attributes.toMarketplaceAttributes()
                 )
             }
             .pageFor(request)

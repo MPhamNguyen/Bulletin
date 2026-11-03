@@ -168,9 +168,52 @@ class ProfileViewModelTest {
         viewModel.loadBookmarkedListings()
         advanceUntilIdle()
 
-        viewModel.onBookmarkedCategorySelected("TEXTBOOKS")
-        viewModel.onBookmarkedConditionSelected("NEW")
+        viewModel.onBookmarkedQueryChanged("book")
+        viewModel.onBookmarkedFiltersApplied(category = "TEXTBOOKS", condition = "NEW")
 
         assertEquals(listOf("new-book"), viewModel.uiState.value.filteredBookmarkedListings.map { it.id })
+    }
+
+    @Test
+    fun filteringBookmarksLoadsMatchesFromAllRemainingPages() = profileTest {
+        val fixture = ProfileFixture()
+        fixture.authenticate()
+        val requestedOffsets = mutableListOf<Int?>()
+        val pages = mapOf(
+            null to ProfileBookmarkedListingsPage(
+                listOf(ProfileBookmarkedListing("lamp", "Lamp", "Alex", "${'$'}15.00", "OTHER")),
+                ProfileBookmarksPageCursor(1)
+            ),
+            1 to ProfileBookmarkedListingsPage(
+                listOf(ProfileBookmarkedListing("chair", "Chair", "Sam", "${'$'}25.00", "FURNITURE")),
+                ProfileBookmarksPageCursor(2)
+            ),
+            2 to ProfileBookmarkedListingsPage(
+                listOf(ProfileBookmarkedListing("book", "Physics Book", "Jo", "${'$'}10.00", "TEXTBOOKS")),
+                null
+            )
+        )
+        val bookmarksProvider = ProfileBookmarkedListingsProvider { _, cursor, _ ->
+            requestedOffsets += cursor?.offset
+            requireNotNull(pages[cursor?.offset])
+        }
+        val listingsProvider = ProfileActiveListingsProvider { 0 }
+        val viewModel = ProfileViewModel(
+            sessionRepository = fixture.session,
+            getProfileOverview = GetProfileOverview(fixture.profiles, listingsProvider),
+            getProfileActivity = GetProfileActivity(listingsProvider),
+            listingChangedSignal = RefreshSignal(),
+            bookmarks = ProfileBookmarksDependencies(bookmarksProvider)
+        )
+        advanceUntilIdle()
+        viewModel.loadBookmarkedListings()
+        advanceUntilIdle()
+
+        viewModel.onBookmarkedQueryChanged("physics")
+        advanceUntilIdle()
+
+        assertEquals(listOf(null, 1, 2), requestedOffsets)
+        assertEquals(listOf("book"), viewModel.uiState.value.filteredBookmarkedListings.map { it.id })
+        assertNull(viewModel.uiState.value.bookmarkedListingsNextCursor)
     }
 }

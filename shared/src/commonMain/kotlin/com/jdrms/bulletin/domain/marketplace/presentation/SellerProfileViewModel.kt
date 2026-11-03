@@ -4,9 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
+import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,11 +23,16 @@ data class SellerProfileUiState(
     val errorMessage: String? = null
 ) {
     val filteredListings: List<MarketplaceItem>
-        get() = listings.filter { listing ->
-            (filters.category == null || listing.category == filters.category) &&
-                (filters.condition == null || listing.condition == filters.condition)
-        }
+        get() = sellerProfileSearchPolicy.filterItems(
+            items = listings,
+            query = filters.query,
+            category = filters.category,
+            condition = filters.condition,
+            attributes = filters.attributes
+        )
 }
+
+private val sellerProfileSearchPolicy = MarketplaceSearchPolicy()
 
 class SellerProfileViewModel(
     private val viewSellerProfile: ViewMarketplaceSellerProfile
@@ -64,11 +68,11 @@ class SellerProfileViewModel(
         }
     }
 
-    fun onCategorySelected(category: MarketplaceCategory?) {
-        _uiState.update { it.copy(filters = it.filters.copy(category = category)) }
+    fun onSearchQueryChanged(query: String) {
+        _uiState.update { it.copy(filters = it.filters.copy(query = query)) }
     }
 
-    fun onConditionSelected(condition: MarketplaceCondition?) {
-        _uiState.update { it.copy(filters = it.filters.copy(condition = condition)) }
+    fun onFiltersApplied(filters: MarketplaceFilterState) {
+        _uiState.update { it.copy(filters = filters.normalized()) }
     }
 }

@@ -1,12 +1,14 @@
 package com.jdrms.bulletin.domain.home.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinTheme
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 
 private object PreviewTrayActions : HomeTrayActions {
     override fun openTray() = Unit
@@ -32,7 +34,9 @@ private fun TrayPreview(dark: Boolean, kind: String) {
         )
     )
     BulletinTheme(darkTheme = dark) {
-        Box(Modifier.width(390.dp)) { HomeTrayPeek(state, PreviewTrayActions, { 1f }, 0f) }
+        Box(Modifier.width(390.dp).background(homeTraySurface, MaterialTheme.shapes.large)) {
+            HomeTrayPeek(state, PreviewTrayActions, { 1f }, 0f)
+        }
     }
 }
 

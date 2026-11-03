@@ -36,6 +36,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.app.navigation.AppDestination
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 private val NavigationIconSize = 30.dp
 
@@ -52,7 +54,7 @@ fun Navbar(
     val navbarIsVisible = isVisible() && !WindowInsets.isImeVisible
     val hiddenFraction = animateFloatAsState(
         targetValue = if (navbarIsVisible) 0f else 1f,
-        animationSpec = tween(durationMillis = 250),
+        animationSpec = tween(durationMillis = BulletinMotion.NAVBAR),
         label = "navbar visibility"
     )
     Box(
@@ -64,7 +66,7 @@ fun Navbar(
                 alpha = 1f - hiddenFraction.value
             }
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s)
             .fillMaxWidth()
             .semantics { if (!navbarIsVisible) hideFromAccessibility() },
         contentAlignment = Alignment.Center
@@ -122,7 +124,7 @@ private fun DestinationItem(
     val colorScheme = MaterialTheme.colorScheme
     val itemColor = animateColorAsState(
         targetValue = if (selected) colorScheme.primary.copy(alpha = 0.2f) else colorScheme.surfaceContainer,
-        animationSpec = tween(durationMillis = 220),
+        animationSpec = tween(durationMillis = BulletinMotion.STANDARD),
         label = "navigation item background"
     )
     Surface(
@@ -148,12 +150,12 @@ private fun DestinationIcon(destination: AppDestination, selected: Boolean, prof
     val iconSize = if (destination == AppDestination.HOME) NavigationIconSize - 2.dp else NavigationIconSize
     val contentColor = animateColorAsState(
         targetValue = if (selected) colorScheme.primary else colorScheme.onSurfaceVariant,
-        animationSpec = tween(durationMillis = 220),
+        animationSpec = tween(durationMillis = BulletinMotion.STANDARD),
         label = "navigation item content"
     )
     val iconScale = animateFloatAsState(
         targetValue = if (selected) 1.1f else 1f,
-        animationSpec = tween(durationMillis = 220),
+        animationSpec = tween(durationMillis = BulletinMotion.STANDARD),
         label = "navigation item icon scale"
     )
     Icon(

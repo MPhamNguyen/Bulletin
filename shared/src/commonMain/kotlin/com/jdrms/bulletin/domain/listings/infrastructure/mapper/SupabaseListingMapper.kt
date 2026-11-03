@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.listings.infrastructure.mapper
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributes
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
@@ -14,10 +15,19 @@ import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingWrit
 import kotlin.time.Instant
 
 object SupabaseListingMapper {
+    private val attributesCodec = ListingAttributesJsonCodec()
+
+    /** Returns null for invalid required fields; malformed optional attributes are read as empty. */
     fun toDomain(dto: SupabaseListingDto, imageUrl: (String) -> String = { it }): Listing? {
-        val sellerId = dto.userId?.takeIf(String::isNotBlank) ?: return null
-        val title = dto.name?.takeIf(String::isNotBlank) ?: return null
-        val price = dto.price ?: return null
+        val sellerId = dto.userId
+        val title = dto.name
+        if (sellerId.isNullOrBlank() || title.isNullOrBlank()) return null
+        val price = dto.price
+        if (price == null || !price.isFinite()) return null
+        val category = runCatching { ListingCategory.valueOf(dto.category.orEmpty().uppercase()) }
+            .getOrDefault(ListingCategory.OTHER)
+        val attributes = (attributesCodec.decode(dto.attributes, category) as? ListingAttributesDecoding.Decoded)
+            ?.attributes ?: ListingAttributes.EMPTY
 
         return Listing(
             id = ListingId(dto.id),
@@ -27,8 +37,7 @@ object SupabaseListingMapper {
             title = title,
             description = dto.description?.takeIf(String::isNotBlank) ?: DEFAULT_DESCRIPTION,
             price = ListingPrice(price.coerceAtLeast(0.0)),
-            category = runCatching { ListingCategory.valueOf(dto.category.orEmpty().uppercase()) }
-                .getOrDefault(ListingCategory.OTHER),
+            category = category,
             condition = runCatching { ListingCondition.valueOf(dto.condition.orEmpty().uppercase()) }
                 .getOrDefault(ListingCondition.GOOD),
             status = dto.toListingStatus(),
@@ -38,7 +47,8 @@ object SupabaseListingMapper {
                 )
             },
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
-            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
+            attributes = attributes
         )
     }
 
@@ -52,7 +62,8 @@ object SupabaseListingMapper {
             condition = listing.condition.name,
             price = listing.price.amount,
             description = listing.description,
-            isSold = listing.status == ListingStatus.SOLD
+            isSold = listing.status == ListingStatus.SOLD,
+            attributes = attributesCodec.encode(listing.attributes)
         )
     }
 

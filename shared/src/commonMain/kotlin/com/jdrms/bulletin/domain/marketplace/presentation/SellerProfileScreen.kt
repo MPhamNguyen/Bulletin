@@ -22,15 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinCard
-import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
-import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun SellerProfileScreen(
     state: SellerProfileUiState,
-    messageActions: MessageSellerQuickActionActions?,
     listingActions: SellerProfileListingActions,
     onBack: () -> Unit,
     onReportUser: () -> Unit,
@@ -55,11 +51,10 @@ fun SellerProfileScreen(
             state.profile != null -> LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
             ) {
                 item { SellerProfileHero(state.profile) }
                 item { SellerProfileStats(state.profile, state.soldListingsCount) }
-                messageActions?.let { actions -> item { MessageSellerQuickAction(actions) } }
                 item { SellerProfileAbout(state.profile) }
                 item { SellerProfileVerification(state.profile) }
                 item { SellerProfileReviews(state.profile.reviews) }
@@ -72,10 +67,11 @@ fun SellerProfileScreen(
                 }
                 if (state.listings.isNotEmpty()) {
                     item {
-                        MarketplaceFilters(
+                        MarketplaceSearchFilters(
                             filters = state.filters,
-                            onCategorySelected = listingActions.onCategorySelected,
-                            onConditionSelected = listingActions.onConditionSelected
+                            onQueryChanged = listingActions.onQueryChanged,
+                            onFiltersApplied = listingActions.onFiltersApplied,
+                            onSearchPositioned = {}
                         )
                     }
                 }
@@ -118,8 +114,8 @@ data class SellerProfileScreenOptions(
 
 data class SellerProfileListingActions(
     val onListingClick: (String) -> Unit,
-    val onCategorySelected: (MarketplaceCategory?) -> Unit,
-    val onConditionSelected: (MarketplaceCondition?) -> Unit
+    val onQueryChanged: (String) -> Unit,
+    val onFiltersApplied: (MarketplaceFilterState) -> Unit
 )
 
 @Composable
@@ -132,7 +128,7 @@ private fun SellerProfileLoading() {
 @Composable
 private fun SellerProfileError(message: String) {
     Box(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(BulletinSpacing.xl),
         contentAlignment = Alignment.Center
     ) {
         BulletinCard {

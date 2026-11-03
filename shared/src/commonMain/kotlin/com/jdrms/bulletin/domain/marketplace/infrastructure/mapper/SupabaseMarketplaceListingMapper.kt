@@ -29,7 +29,8 @@ object SupabaseMarketplaceListingMapper {
             condition = snapshot.condition,
             createdAtMillis = snapshot.createdAtMillis,
             photos = snapshot.photos,
-            updatedAtMillis = snapshot.updatedAtMillis
+            updatedAtMillis = snapshot.updatedAtMillis,
+            attributes = snapshot.attributes
         )
     }
 
@@ -74,7 +75,11 @@ object SupabaseMarketplaceListingMapper {
                     .withCropSettings(ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY))
             },
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
-            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero()
+            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
+            attributes = MarketplaceAttributesJsonDecoder.decode(
+                dto.attributes,
+                runCatching { MarketplaceCategory.valueOf(category) }.getOrDefault(MarketplaceCategory.OTHER)
+            )
         )
     }
 
@@ -102,6 +107,7 @@ object SupabaseMarketplaceListingMapper {
             category = category,
             createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
             updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
+            attributes = MarketplaceAttributesJsonDecoder.decode(dto.attributes, category),
             condition = condition,
             primaryPhotoUrl = dto.listingImages.firstOrNull { it.position == 0 }
                 ?.let { image ->

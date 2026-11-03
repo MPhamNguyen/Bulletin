@@ -26,7 +26,8 @@ internal class ListingCreationActions(
     private val manageListing: ManageListing,
     private val manageImages: ManageListingImages?,
     private val sellerProvider: CurrentListingSellerProvider,
-    private val callbacks: ListingActionCallbacks
+    private val callbacks: ListingActionCallbacks,
+    private val attributeActions: ListingAttributeDraftActions
 ) {
     fun submit() {
         val draft = buildDraft() ?: return
@@ -41,6 +42,7 @@ internal class ListingCreationActions(
     private fun buildDraft(): NewListingDraft? {
         val validation = validateNewListingDraft(state.value)
         validation.errorMessage?.let { message -> state.update { it.copy(errorMessage = message) } }
+        attributeActions.showErrors(ListingForm.NEW, validation.attributeErrors)
         return validation.draft
     }
 
@@ -64,7 +66,8 @@ internal class ListingCreationActions(
             category = draft.category,
             condition = draft.condition,
             status = ListingStatus.AVAILABLE,
-            createdAtMillis = currentTimeMillis()
+            createdAtMillis = currentTimeMillis(),
+            attributes = draft.attributes
         )
         when (val result = createListing(listing)) {
             is Result.Success -> complete(seller, listing, draft.images)
@@ -95,6 +98,7 @@ internal class ListingCreationActions(
                 newDescription = "",
                 newPriceCents = "",
                 newImages = emptyList(),
+                newAttributes = ListingAttributeDraft(),
                 isSubmitting = false,
                 errorMessage = warning
             )

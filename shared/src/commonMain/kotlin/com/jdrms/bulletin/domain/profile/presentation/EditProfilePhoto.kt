@@ -1,0 +1,93 @@
+package com.jdrms.bulletin.domain.profile.presentation
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddAPhoto
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
+
+@Composable
+internal fun EditProfilePhoto(
+    avatarUrl: String?,
+    fullName: String,
+    isUploading: Boolean,
+    onChangePhoto: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier.size(104.dp).clickable(
+                enabled = !isUploading,
+                role = Role.Button,
+                onClickLabel = "Change profile photo",
+                onClick = onChangePhoto
+            ),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), BulletinShapes.pill)
+            ) {
+                ProfileAvatarImage(avatarUrl = avatarUrl, fullName = fullName, size = 96.dp)
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(32.dp)
+                    .background(MaterialTheme.colorScheme.primary, BulletinShapes.pill)
+                    .border(2.dp, MaterialTheme.colorScheme.background, BulletinShapes.pill),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        Icons.Outlined.AddAPhoto,
+                        contentDescription = "Upload photo",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            BulletinButton(onClick = onChangePhoto, enabled = !isUploading, variant = BulletinButtonVariant.Text) {
+                Text(
+                    if (isUploading) "Uploading…" else "Upload New",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            BulletinButton(onClick = {}, enabled = false, variant = BulletinButtonVariant.Text) {
+                Text(
+                    "Remove",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}

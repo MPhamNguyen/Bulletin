@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -27,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.*
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.CardAction
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
@@ -191,9 +191,12 @@ private fun androidx.compose.foundation.layout.BoxScope.HomeStackCardContents(
         isActive = active,
         modifier = Modifier.fillMaxSize(),
         informationBottomPadding = presentation.actionHeight,
-        mediaModifier = Modifier.graphicsLayer {
-            if (front) translationY = -presentation.tray.progress.value * HOME_TRAY_LIFT_DP.dp.toPx()
-        }
+        mediaModifier = if (front) {
+            Modifier.homeTrayLift(homeTraySurface) { presentation.tray.progress.value }
+        } else {
+            Modifier
+        },
+        trayProgress = { if (front) presentation.tray.progress.value else 0f }
     )
     if (front && presentation.tray.visible) {
         HomeTrayPeek(
@@ -201,12 +204,16 @@ private fun androidx.compose.foundation.layout.BoxScope.HomeStackCardContents(
             presentation.actions,
             { presentation.tray.progress.value },
             presentation.durationScale,
-            Modifier.align(Alignment.BottomCenter).padding(8.dp),
+            Modifier.align(Alignment.BottomCenter).padding(BulletinSpacing.s),
             composerFocus
         )
     }
     if (front) {
-        HomeSwipeFeedback(presentation.motion::saveProgress, presentation.motion::passProgress, Modifier.padding(8.dp))
+        HomeSwipeFeedback(
+            presentation.motion::saveProgress,
+            presentation.motion::passProgress,
+            Modifier.padding(BulletinSpacing.s)
+        )
     } else {
         HomeNextCardShade(presentation.motion)
     }
