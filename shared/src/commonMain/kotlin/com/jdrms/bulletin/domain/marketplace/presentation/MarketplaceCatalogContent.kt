@@ -51,7 +51,6 @@ internal fun MarketplaceCatalogContent(
     listingReportViewModel: ListingReportViewModel,
     actions: MarketplaceScreenActions,
     onContentNoLongerScrollable: () -> Unit,
-    onListingClosed: () -> Unit,
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
     val gridState = rememberLazyGridState()
@@ -118,7 +117,7 @@ internal fun MarketplaceCatalogContent(
             onNavigate,
             {
                 viewModel.dismissListingDetail()
-                onListingClosed()
+                actions.onListingClosed()
             }
         )
     }
