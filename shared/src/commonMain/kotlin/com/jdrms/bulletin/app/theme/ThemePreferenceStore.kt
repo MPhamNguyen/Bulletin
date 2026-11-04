@@ -19,18 +19,30 @@ interface ThemePreferenceStore {
     suspend fun themeColorFor(userId: UserId): BulletinThemeColor
 
     suspend fun setThemeColor(userId: UserId, themeColor: BulletinThemeColor)
+
+    suspend fun lastAppliedBaseColor(): BulletinThemeColor
+
+    suspend fun setLastAppliedBaseColor(baseColor: BulletinThemeColor)
+
+    suspend fun baseColorFor(userId: UserId): BulletinThemeColor
+
+    suspend fun setBaseColor(userId: UserId, baseColor: BulletinThemeColor)
 }
 
 class InMemoryThemePreferenceStore(
     initialPreferences: Map<UserId, ThemePreference> = emptyMap(),
     initialLastAppliedPreference: ThemePreference = ThemePreference.SYSTEM,
     initialThemeColors: Map<UserId, BulletinThemeColor> = emptyMap(),
-    initialLastAppliedThemeColor: BulletinThemeColor = BulletinThemeColor.CLASSIC
+    initialLastAppliedThemeColor: BulletinThemeColor = BulletinThemeColor.CLASSIC,
+    initialBaseColors: Map<UserId, BulletinThemeColor> = emptyMap(),
+    initialLastAppliedBaseColor: BulletinThemeColor = BulletinThemeColor.BASE
 ) : ThemePreferenceStore {
     private val preferences = initialPreferences.toMutableMap()
     private var lastAppliedPreference = initialLastAppliedPreference
     private val themeColors = initialThemeColors.toMutableMap()
     private var lastAppliedThemeColor = initialLastAppliedThemeColor
+    private val baseColors = initialBaseColors.toMutableMap()
+    private var lastAppliedBaseColor = initialLastAppliedBaseColor
 
     override suspend fun lastAppliedPreference(): ThemePreference = lastAppliedPreference
 
@@ -59,5 +71,19 @@ class InMemoryThemePreferenceStore(
     override suspend fun setThemeColor(userId: UserId, themeColor: BulletinThemeColor) {
         themeColors[userId] = themeColor
         setLastAppliedThemeColor(themeColor)
+    }
+
+    override suspend fun lastAppliedBaseColor(): BulletinThemeColor = lastAppliedBaseColor
+
+    override suspend fun setLastAppliedBaseColor(baseColor: BulletinThemeColor) {
+        lastAppliedBaseColor = baseColor
+    }
+
+    override suspend fun baseColorFor(userId: UserId): BulletinThemeColor =
+        baseColors[userId] ?: BulletinThemeColor.BASE
+
+    override suspend fun setBaseColor(userId: UserId, baseColor: BulletinThemeColor) {
+        baseColors[userId] = baseColor
+        setLastAppliedBaseColor(baseColor)
     }
 }

@@ -286,8 +286,9 @@ private fun ProfileSettingsDestination(
             ThemeAppearanceSettings(
                 preference = theme.themePreference.collectAsState().value,
                 onPreferenceChanged = theme::setThemePreference,
+                baseColor = theme.baseColor.collectAsState().value,
                 themeColor = theme.themeColor.collectAsState().value,
-                onThemeColorChanged = theme::setThemeColor
+                onThemeColorsChanged = theme::setThemeColors
             )
         },
         reportedListingVisibilitySetting = reportedListingVisibilitySetting

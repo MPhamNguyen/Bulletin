@@ -150,7 +150,9 @@ class ThemeViewModelTest {
         viewModel.setAccount(UserId("user-1"))
         advanceUntilIdle()
 
-        val custom = com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor(0xFF123ABCUL)
+        val custom = com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor(
+            androidx.compose.ui.graphics.Color(0xFF123ABC).value
+        )
         viewModel.setThemeColor(custom)
         advanceUntilIdle()
         viewModel.setAccount(UserId("user-2"))

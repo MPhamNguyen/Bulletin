@@ -52,15 +52,17 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor
 @Composable
 internal fun AppearanceCard(
     themePreference: ThemePreference,
+    baseColor: BulletinThemeColor,
     themeColor: BulletinThemeColor,
     onThemePreferenceChanged: (ThemePreference) -> Unit,
-    onThemeColorChanged: (BulletinThemeColor) -> Unit
+    onThemeColorsChanged: (BulletinThemeColor, BulletinThemeColor) -> Unit
 ) {
     var showPalettePicker by remember { mutableStateOf(false) }
     if (showPalettePicker) {
         ThemePaletteDialog(
+            selectedBaseColor = baseColor,
             selectedThemeColor = themeColor,
-            onThemeColorSelected = onThemeColorChanged,
+            onThemeColorsSelected = onThemeColorsChanged,
             onDismiss = { showPalettePicker = false }
         )
     }
@@ -111,6 +113,7 @@ internal fun AppearanceCard(
             variant = BulletinButtonVariant.Tonal,
             size = BulletinButtonSize.Regular
         ) {
+            Box(Modifier.size(18.dp).background(baseColor.color, CircleShape))
             Box(Modifier.size(18.dp).background(themeColor.color, CircleShape))
             Text("Custom")
         }

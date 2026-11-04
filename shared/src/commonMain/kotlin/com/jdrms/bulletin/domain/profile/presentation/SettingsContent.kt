@@ -53,8 +53,9 @@ internal data class SettingsActions(
 internal data class ThemeAppearanceSettings(
     val preference: ThemePreference,
     val onPreferenceChanged: (ThemePreference) -> Unit,
+    val baseColor: BulletinThemeColor,
     val themeColor: BulletinThemeColor,
-    val onThemeColorChanged: (BulletinThemeColor) -> Unit
+    val onThemeColorsChanged: (BulletinThemeColor, BulletinThemeColor) -> Unit
 )
 
 @Composable
@@ -120,9 +121,10 @@ internal fun SettingsView(
             appearance?.let { settings ->
                 AppearanceCard(
                     themePreference = settings.preference,
+                    baseColor = settings.baseColor,
                     themeColor = settings.themeColor,
                     onThemePreferenceChanged = settings.onPreferenceChanged,
-                    onThemeColorChanged = settings.onThemeColorChanged
+                    onThemeColorsChanged = settings.onThemeColorsChanged
                 )
             }
 

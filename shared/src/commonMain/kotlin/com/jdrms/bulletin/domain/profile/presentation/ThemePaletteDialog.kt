@@ -13,7 +13,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,13 +37,17 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinPalette
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ThemePaletteDialog(
+    selectedBaseColor: BulletinThemeColor,
     selectedThemeColor: BulletinThemeColor,
-    onThemeColorSelected: (BulletinThemeColor) -> Unit,
+    onThemeColorsSelected: (BulletinThemeColor, BulletinThemeColor) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var workingColor by remember(selectedThemeColor) { mutableStateOf(selectedThemeColor.color) }
+    var workingBaseColor by remember(selectedBaseColor) { mutableStateOf(selectedBaseColor.color) }
+    var workingAccentColor by remember(selectedThemeColor) { mutableStateOf(selectedThemeColor.color) }
+    var selectedTab by remember { mutableStateOf(0) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Choose a color") },
@@ -50,33 +57,52 @@ internal fun ThemePaletteDialog(
                 verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                TabRow(selectedTabIndex = selectedTab) {
+                    listOf("Base", "Accents").forEachIndexed { index, label ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(label) }
+                        )
+                    }
+                }
+                val workingColor = if (selectedTab == 0) workingBaseColor else workingAccentColor
                 BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     val wheelSize = (maxWidth - 48.dp).coerceIn(180.dp, 260.dp)
                     ThemeColorWheel(
                         color = workingColor,
-                        onColorSelected = { workingColor = it },
+                        onColorSelected = {
+                            if (selectedTab == 0) workingBaseColor = it else workingAccentColor = it
+                        },
                         wheelDiameter = wheelSize
                     )
                 }
-                Text("Presets", style = MaterialTheme.typography.labelLarge)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    BulletinPalette.entries.forEach { palette ->
-                        PresetOption(
-                            palette = palette,
-                            selected = workingColor == palette.color,
-                            onClick = { workingColor = palette.color }
-                        )
+                if (selectedTab == 1) {
+                    Text("Accent presets", style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        BulletinPalette.entries.forEach { palette ->
+                            PresetOption(
+                                palette = palette,
+                                selected = workingAccentColor == palette.color,
+                                onClick = { workingAccentColor = palette.color }
+                            )
+                        }
                     }
+                } else {
+                    Text("Choose a background tone", style = MaterialTheme.typography.labelLarge)
                 }
             }
         },
         confirmButton = {
             BulletinButton(
                 onClick = {
-                    onThemeColorSelected(BulletinThemeColor(workingColor.value))
+                    onThemeColorsSelected(
+                        BulletinThemeColor(workingBaseColor.value),
+                        BulletinThemeColor(workingAccentColor.value)
+                    )
                     onDismiss()
                 },
                 variant = BulletinButtonVariant.Primary,

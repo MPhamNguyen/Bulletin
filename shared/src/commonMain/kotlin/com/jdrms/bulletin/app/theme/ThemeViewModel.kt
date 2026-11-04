@@ -17,15 +17,19 @@ class ThemeViewModel(
     val themePreference: StateFlow<ThemePreference> = _themePreference.asStateFlow()
     private val _themeColor = MutableStateFlow(BulletinThemeColor.CLASSIC)
     val themeColor: StateFlow<BulletinThemeColor> = _themeColor.asStateFlow()
+    private val _baseColor = MutableStateFlow(BulletinThemeColor.BASE)
+    val baseColor: StateFlow<BulletinThemeColor> = _baseColor.asStateFlow()
     private var currentUserId: UserId? = null
 
     init {
         viewModelScope.launch {
             val initial = themePreferenceStore.lastAppliedPreference()
             val initialThemeColor = themePreferenceStore.lastAppliedThemeColor()
+            val initialBaseColor = themePreferenceStore.lastAppliedBaseColor()
             if (currentUserId == null) {
                 _themePreference.update { initial }
                 _themeColor.update { initialThemeColor }
+                _baseColor.update { initialBaseColor }
             }
         }
     }
@@ -39,10 +43,14 @@ class ThemeViewModel(
                 ?: themePreferenceStore.lastAppliedPreference()
             val resolvedThemeColor = userId?.let { themePreferenceStore.themeColorFor(it) }
                 ?: themePreferenceStore.lastAppliedThemeColor()
+            val resolvedBaseColor = userId?.let { themePreferenceStore.baseColorFor(it) }
+                ?: themePreferenceStore.lastAppliedBaseColor()
             themePreferenceStore.setLastAppliedPreference(resolvedPreference)
             themePreferenceStore.setLastAppliedThemeColor(resolvedThemeColor)
+            themePreferenceStore.setLastAppliedBaseColor(resolvedBaseColor)
             _themePreference.update { resolvedPreference }
             _themeColor.update { resolvedThemeColor }
+            _baseColor.update { resolvedBaseColor }
         }
     }
 
@@ -58,6 +66,16 @@ class ThemeViewModel(
         val userId = currentUserId ?: return
         _themeColor.update { themeColor }
         viewModelScope.launch {
+            themePreferenceStore.setThemeColor(userId, themeColor)
+        }
+    }
+
+    fun setThemeColors(baseColor: BulletinThemeColor, themeColor: BulletinThemeColor) {
+        val userId = currentUserId ?: return
+        _baseColor.update { baseColor }
+        _themeColor.update { themeColor }
+        viewModelScope.launch {
+            themePreferenceStore.setBaseColor(userId, baseColor)
             themePreferenceStore.setThemeColor(userId, themeColor)
         }
     }

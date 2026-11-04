@@ -60,7 +60,7 @@ class AndroidThemePreferenceStore(
         val prefs = dataStore.data
             .catch { exception -> if (exception is IOException) emit(emptyPreferences()) else throw exception }
             .first()
-        return themeColorFromStoredValue(prefs[LAST_APPLIED_THEME_COLOR_KEY])
+        return themeColorFromStoredValue(prefs[LAST_APPLIED_THEME_COLOR_KEY]) ?: BulletinThemeColor.CLASSIC
     }
 
     override suspend fun setLastAppliedThemeColor(themeColor: BulletinThemeColor) {
@@ -71,7 +71,7 @@ class AndroidThemePreferenceStore(
         val prefs = dataStore.data
             .catch { exception -> if (exception is IOException) emit(emptyPreferences()) else throw exception }
             .first()
-        return themeColorFromStoredValue(prefs[themeColorKeyFor(userId)])
+        return themeColorFromStoredValue(prefs[themeColorKeyFor(userId)]) ?: BulletinThemeColor.CLASSIC
     }
 
     override suspend fun setThemeColor(userId: UserId, themeColor: BulletinThemeColor) {
@@ -82,21 +82,51 @@ class AndroidThemePreferenceStore(
         }
     }
 
+    override suspend fun lastAppliedBaseColor(): BulletinThemeColor {
+        val prefs = dataStore.data
+            .catch { exception -> if (exception is IOException) emit(emptyPreferences()) else throw exception }
+            .first()
+        return themeColorFromStoredValue(prefs[LAST_APPLIED_BASE_COLOR_KEY]) ?: BulletinThemeColor.BASE
+    }
+
+    override suspend fun setLastAppliedBaseColor(baseColor: BulletinThemeColor) {
+        dataStore.edit { prefs -> prefs[LAST_APPLIED_BASE_COLOR_KEY] = baseColor.value.toString(16) }
+    }
+
+    override suspend fun baseColorFor(userId: UserId): BulletinThemeColor {
+        val prefs = dataStore.data
+            .catch { exception -> if (exception is IOException) emit(emptyPreferences()) else throw exception }
+            .first()
+        return themeColorFromStoredValue(prefs[baseColorKeyFor(userId)]) ?: BulletinThemeColor.BASE
+    }
+
+    override suspend fun setBaseColor(userId: UserId, baseColor: BulletinThemeColor) {
+        dataStore.edit { prefs ->
+            val storedColor = baseColor.value.toString(16)
+            prefs[baseColorKeyFor(userId)] = storedColor
+            prefs[LAST_APPLIED_BASE_COLOR_KEY] = storedColor
+        }
+    }
+
     private fun preferenceFromStoredValue(value: String?): ThemePreference {
         return ThemePreference.entries.firstOrNull { it.name == value } ?: ThemePreference.SYSTEM
     }
 
-    private fun themeColorFromStoredValue(value: String?): BulletinThemeColor =
-        value?.toULongOrNull(16)?.let(::BulletinThemeColor) ?: BulletinThemeColor.CLASSIC
+    private fun themeColorFromStoredValue(value: String?): BulletinThemeColor? =
+        value?.toULongOrNull(16)?.let(::BulletinThemeColor)
 
     private fun keyFor(userId: UserId): Preferences.Key<String> = stringPreferencesKey("$KEY_PREFIX${userId.value}")
     private fun themeColorKeyFor(userId: UserId): Preferences.Key<String> =
         stringPreferencesKey("$THEME_COLOR_KEY_PREFIX${userId.value}")
+    private fun baseColorKeyFor(userId: UserId): Preferences.Key<String> =
+        stringPreferencesKey("$BASE_COLOR_KEY_PREFIX${userId.value}")
 
     private companion object {
         const val KEY_PREFIX = "theme_"
         const val THEME_COLOR_KEY_PREFIX = "theme_color_"
+        const val BASE_COLOR_KEY_PREFIX = "theme_base_color_"
         val LAST_APPLIED_KEY = stringPreferencesKey("last_applied_theme")
         val LAST_APPLIED_THEME_COLOR_KEY = stringPreferencesKey("last_applied_theme_color")
+        val LAST_APPLIED_BASE_COLOR_KEY = stringPreferencesKey("last_applied_theme_base_color")
     }
 }
