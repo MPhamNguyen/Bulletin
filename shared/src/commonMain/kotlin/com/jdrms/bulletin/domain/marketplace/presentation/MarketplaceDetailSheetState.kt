@@ -28,5 +28,6 @@ data class MarketplaceDetailSheetActions(
     val onDismissReview: () -> Unit = {},
     val onSubmitReview: (score: Int, comment: String) -> Unit = { _, _ -> },
     val onReportListing: () -> Unit = {},
-    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> }
+    val onSeeChat: suspend (listingId: String, sellerId: String) -> Unit = { _, _ -> },
+    val onMessageSent: () -> Unit = {}
 )

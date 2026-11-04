@@ -110,7 +110,10 @@ private fun MarketplaceDestination(
         actions = MarketplaceScreenActions(
             onMessageSeller = conversationActions::messageSeller,
             hasExistingConversation = conversationActions::hasExistingConversation,
-            onSeeChat = conversationActions::seeChat
+            onSeeChat = conversationActions::seeChat,
+            onMessageSent = {
+                navigation.apply(navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))
+            }
         )
     )
 }
