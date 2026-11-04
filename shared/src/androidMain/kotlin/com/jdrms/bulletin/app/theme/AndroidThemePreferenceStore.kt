@@ -21,7 +21,7 @@ private val Context.themeDataStore: DataStore<Preferences> by preferencesDataSto
 
 class AndroidThemePreferenceStore(
     private val dataStore: DataStore<Preferences>
-) : ThemePreferenceStore {
+) : ThemePreferenceStores {
 
     constructor(context: Context) : this(context.themeDataStore)
 

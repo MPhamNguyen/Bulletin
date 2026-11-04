@@ -19,14 +19,6 @@ interface ThemePreferenceStore {
     suspend fun themeColorFor(userId: UserId): BulletinThemeColor
 
     suspend fun setThemeColor(userId: UserId, themeColor: BulletinThemeColor)
-
-    suspend fun lastAppliedBaseColor(): BulletinThemeColor
-
-    suspend fun setLastAppliedBaseColor(baseColor: BulletinThemeColor)
-
-    suspend fun baseColorFor(userId: UserId): BulletinThemeColor
-
-    suspend fun setBaseColor(userId: UserId, baseColor: BulletinThemeColor)
 }
 
 class InMemoryThemePreferenceStore(
@@ -36,7 +28,7 @@ class InMemoryThemePreferenceStore(
     initialLastAppliedThemeColor: BulletinThemeColor = BulletinThemeColor.CLASSIC,
     initialBaseColors: Map<UserId, BulletinThemeColor> = emptyMap(),
     initialLastAppliedBaseColor: BulletinThemeColor = BulletinThemeColor.BASE
-) : ThemePreferenceStore {
+) : ThemePreferenceStores {
     private val preferences = initialPreferences.toMutableMap()
     private var lastAppliedPreference = initialLastAppliedPreference
     private val themeColors = initialThemeColors.toMutableMap()

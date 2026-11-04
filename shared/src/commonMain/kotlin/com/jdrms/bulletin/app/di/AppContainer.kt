@@ -1,7 +1,7 @@
 package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
-import com.jdrms.bulletin.app.theme.ThemePreferenceStore
+import com.jdrms.bulletin.app.theme.ThemePreferenceStores
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.FlowUserMessenger
 import com.jdrms.bulletin.core.common.RefreshSignal
@@ -18,7 +18,7 @@ class AppContainer(
     supabaseConfig: SupabaseConfig = SupabaseConfig(),
     isInspectionMode: Boolean = false,
     allowInMemoryFallback: Boolean = false,
-    private val themePreferenceStore: ThemePreferenceStore = InMemoryThemePreferenceStore(),
+    private val themePreferenceStore: ThemePreferenceStores = InMemoryThemePreferenceStore(),
     marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore =
         InMemoryMarketplaceLayoutPreferenceStore(),
     providedSupabaseClient: SupabaseClient? = null,
@@ -55,7 +55,7 @@ class AppContainer(
     internal val messages = MessagesModule(infrastructure, profile, listings, marketplace)
     internal val home = HomeModule(marketplace, messages)
 
-    internal fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
+    internal fun createThemeViewModel() = ThemeViewModel(themePreferenceStore, themePreferenceStore)
 }
 
 data class ExternalAuthConfiguration(

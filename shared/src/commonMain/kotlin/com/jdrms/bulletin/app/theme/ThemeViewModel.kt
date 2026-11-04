@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ThemeViewModel(
-    private val themePreferenceStore: ThemePreferenceStore
+    private val themePreferenceStore: ThemePreferenceStore,
+    private val baseColorPreferenceStore: ThemeBaseColorPreferenceStore
 ) : ViewModel() {
     private val _themePreference = MutableStateFlow(ThemePreference.SYSTEM)
     val themePreference: StateFlow<ThemePreference> = _themePreference.asStateFlow()
@@ -25,7 +26,7 @@ class ThemeViewModel(
         viewModelScope.launch {
             val initial = themePreferenceStore.lastAppliedPreference()
             val initialThemeColor = themePreferenceStore.lastAppliedThemeColor()
-            val initialBaseColor = themePreferenceStore.lastAppliedBaseColor()
+            val initialBaseColor = baseColorPreferenceStore.lastAppliedBaseColor()
             if (currentUserId == null) {
                 _themePreference.update { initial }
                 _themeColor.update { initialThemeColor }
@@ -43,11 +44,11 @@ class ThemeViewModel(
                 ?: themePreferenceStore.lastAppliedPreference()
             val resolvedThemeColor = userId?.let { themePreferenceStore.themeColorFor(it) }
                 ?: themePreferenceStore.lastAppliedThemeColor()
-            val resolvedBaseColor = userId?.let { themePreferenceStore.baseColorFor(it) }
-                ?: themePreferenceStore.lastAppliedBaseColor()
+            val resolvedBaseColor = userId?.let { baseColorPreferenceStore.baseColorFor(it) }
+                ?: baseColorPreferenceStore.lastAppliedBaseColor()
             themePreferenceStore.setLastAppliedPreference(resolvedPreference)
             themePreferenceStore.setLastAppliedThemeColor(resolvedThemeColor)
-            themePreferenceStore.setLastAppliedBaseColor(resolvedBaseColor)
+            baseColorPreferenceStore.setLastAppliedBaseColor(resolvedBaseColor)
             _themePreference.update { resolvedPreference }
             _themeColor.update { resolvedThemeColor }
             _baseColor.update { resolvedBaseColor }
@@ -75,7 +76,7 @@ class ThemeViewModel(
         _baseColor.update { baseColor }
         _themeColor.update { themeColor }
         viewModelScope.launch {
-            themePreferenceStore.setBaseColor(userId, baseColor)
+            baseColorPreferenceStore.setBaseColor(userId, baseColor)
             themePreferenceStore.setThemeColor(userId, themeColor)
         }
     }
