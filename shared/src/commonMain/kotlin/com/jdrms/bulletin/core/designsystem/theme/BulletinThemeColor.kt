@@ -9,6 +9,6 @@ value class BulletinThemeColor(val value: ULong) {
 
     companion object {
         val CLASSIC = BulletinThemeColor(BulletinPalette.CLASSIC.color.value)
-        val BASE = BulletinThemeColor(Color(0xFFF5F5F5).value)
+        val BASE = BulletinThemeColor(BulletinBasePalette.CLOUD.color.value)
     }
 }

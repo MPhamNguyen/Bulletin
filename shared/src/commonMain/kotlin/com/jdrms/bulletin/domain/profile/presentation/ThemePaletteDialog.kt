@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -32,6 +33,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.theme.BulletinBasePalette
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinPalette
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
@@ -47,6 +49,9 @@ internal fun ThemePaletteDialog(
 ) {
     var workingBaseColor by remember(selectedBaseColor) { mutableStateOf(selectedBaseColor.color) }
     var workingAccentColor by remember(selectedThemeColor) { mutableStateOf(selectedThemeColor.color) }
+    var hexValue by remember(selectedBaseColor, selectedThemeColor) {
+        mutableStateOf(workingBaseColor.toHexRgbDigits())
+    }
     var selectedTab by remember { mutableStateOf(0) }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -61,7 +66,11 @@ internal fun ThemePaletteDialog(
                     listOf("Base", "Accents").forEachIndexed { index, label ->
                         Tab(
                             selected = selectedTab == index,
-                            onClick = { selectedTab = index },
+                            onClick = {
+                                selectedTab = index
+                                val color = if (index == 0) workingBaseColor else workingAccentColor
+                                hexValue = color.toHexRgbDigits()
+                            },
                             text = { Text(label) }
                         )
                     }
@@ -73,10 +82,20 @@ internal fun ThemePaletteDialog(
                         color = workingColor,
                         onColorSelected = {
                             if (selectedTab == 0) workingBaseColor = it else workingAccentColor = it
+                            hexValue = it.toHexRgbDigits()
                         },
                         wheelDiameter = wheelSize
                     )
                 }
+                ThemeHexField(
+                    value = hexValue,
+                    onValueChange = { input ->
+                        hexValue = input
+                        workingColor.withHexRgb(input)?.let { updated ->
+                            if (selectedTab == 0) workingBaseColor = updated else workingAccentColor = updated
+                        }
+                    }
+                )
                 if (selectedTab == 1) {
                     Text("Accent presets", style = MaterialTheme.typography.labelLarge)
                     Row(
@@ -85,14 +104,34 @@ internal fun ThemePaletteDialog(
                     ) {
                         BulletinPalette.entries.forEach { palette ->
                             PresetOption(
-                                palette = palette,
+                                label = palette.label,
+                                color = palette.color,
                                 selected = workingAccentColor == palette.color,
-                                onClick = { workingAccentColor = palette.color }
+                                onClick = {
+                                    workingAccentColor = palette.color
+                                    hexValue = palette.color.toHexRgbDigits()
+                                }
                             )
                         }
                     }
                 } else {
-                    Text("Choose a background tone", style = MaterialTheme.typography.labelLarge)
+                    Text("Base presets", style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        BulletinBasePalette.entries.forEach { palette ->
+                            PresetOption(
+                                label = palette.label,
+                                color = palette.color,
+                                selected = workingBaseColor == palette.color,
+                                onClick = {
+                                    workingBaseColor = palette.color
+                                    hexValue = palette.color.toHexRgbDigits()
+                                }
+                            )
+                        }
+                    }
                 }
             }
         },
@@ -120,12 +159,12 @@ internal fun ThemePaletteDialog(
 }
 
 @Composable
-private fun PresetOption(palette: BulletinPalette, selected: Boolean, onClick: () -> Unit) {
+private fun PresetOption(label: String, color: Color, selected: Boolean, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
             .semantics {
-                contentDescription = "${palette.label} preset"
+                contentDescription = "$label preset"
                 stateDescription = if (selected) "Selected" else "Not selected"
             }
             .padding(horizontal = BulletinSpacing.xs, vertical = BulletinSpacing.xs),
@@ -135,7 +174,7 @@ private fun PresetOption(palette: BulletinPalette, selected: Boolean, onClick: (
         Box(
             modifier = Modifier
                 .size(32.dp)
-                .background(palette.color, CircleShape)
+                .background(color, CircleShape)
                 .border(
                     width = if (selected) 3.dp else 1.dp,
                     color = if (selected) {
@@ -146,6 +185,6 @@ private fun PresetOption(palette: BulletinPalette, selected: Boolean, onClick: (
                     shape = CircleShape
                 )
         )
-        Text(palette.label, style = MaterialTheme.typography.labelSmall)
+        Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }
