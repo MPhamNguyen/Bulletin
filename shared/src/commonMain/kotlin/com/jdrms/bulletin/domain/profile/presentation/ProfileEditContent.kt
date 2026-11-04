@@ -1,9 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,14 +25,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
-import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
@@ -47,6 +42,7 @@ internal data class EditProfileActions(
     val onDraftChanged: (ProfileDraft) -> Unit,
     val onUpdate: () -> Unit,
     val onChangePhoto: () -> Unit,
+    val onRemovePhoto: () -> Unit,
     val onSignOut: () -> Unit
 )
 
@@ -110,8 +106,10 @@ private fun EditProfileBody(
     EditProfilePhoto(
         avatarUrl = uiState.profile?.avatarUrl,
         fullName = uiState.profile?.fullName.orEmpty(),
-        isUploading = uiState.isPhotoUploading,
-        onChangePhoto = actions.onChangePhoto
+        photoAction = uiState.photoAction,
+        isSaving = uiState.isLoading,
+        onChangePhoto = actions.onChangePhoto,
+        onRemovePhoto = actions.onRemovePhoto
     )
     Spacer(Modifier.height(20.dp))
 
@@ -204,8 +202,8 @@ private fun EditProfileBody(
     Spacer(Modifier.height(BulletinSpacing.l))
     BulletinButton(
         onClick = actions.onUpdate,
-        enabled = uiState.isProfileModified && !uiState.isLoading,
-        modifier = Modifier.fillMaxWidth(),
+        enabled = uiState.isProfileModified && !uiState.isLoading && !uiState.isPhotoBusy,
+        modifier = Modifier.fillMaxWidth().height(50.dp),
         variant = BulletinButtonVariant.Primary,
         size = BulletinButtonSize.Large
     ) {
@@ -216,34 +214,6 @@ private fun EditProfileBody(
     Spacer(Modifier.height(BulletinSpacing.l))
     SignOutButton(onClick = actions.onSignOut)
     Spacer(Modifier.height(BulletinSpacing.xl))
-}
-
-@Composable
-private fun ProfileEditCard(
-    title: String,
-    trailingContent: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    BulletinCard(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                title.uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            trailingContent?.invoke()
-        }
-        Spacer(Modifier.height(BulletinSpacing.s))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Spacer(Modifier.height(14.dp))
-        content()
-    }
 }
 
 @Composable

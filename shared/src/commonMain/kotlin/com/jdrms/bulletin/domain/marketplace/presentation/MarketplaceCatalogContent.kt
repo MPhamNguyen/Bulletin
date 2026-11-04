@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
+import com.jdrms.bulletin.core.designsystem.BulletinPullToRefreshBox
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
@@ -80,7 +81,11 @@ internal fun MarketplaceCatalogContent(
             viewModel.loadNextPage()
         }
     }
-    Box(
+    BulletinPullToRefreshBox(
+        isRefreshing = state.isRefreshing,
+        onRefresh = viewModel.pullToRefresh,
+        isComplete = state.refreshComplete,
+        completionContentDescription = "Marketplace updated",
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { containerOrigin = it.positionInRoot() }
@@ -94,7 +99,9 @@ internal fun MarketplaceCatalogContent(
         LazyVerticalGrid(
             columns = GridCells.Fixed(state.layoutPreference.columns),
             state = gridState,
-            modifier = Modifier.fillMaxSize().padding(horizontal = BulletinSpacing.l),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = BulletinSpacing.l),
             contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
             verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
             horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
@@ -102,7 +109,7 @@ internal fun MarketplaceCatalogContent(
             marketplaceCatalogHeader(state, viewModel) { coordinates ->
                 searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
             }
-            marketplaceLoadingItem(state.isLoading)
+            marketplaceLoadingItem(state.isLoading && !state.isRefreshing)
             marketplaceEmptyResultsItem(state)
             marketplaceListingItems(state, viewModel)
             marketplacePaginationItem(state)

@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,14 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
-import coil3.compose.SubcomposeAsyncImageContent
-import com.jdrms.bulletin.core.common.currentTimeMillis
-import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
@@ -68,8 +59,8 @@ internal fun BookmarkedListingsView(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
+            contentPadding = PaddingValues(horizontal = BulletinSpacing.l, vertical = BulletinSpacing.m),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
             if (isLoading) {
                 item {
@@ -133,103 +124,6 @@ internal fun BookmarkedListingsView(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BookmarkedListingCard(
-    listing: ProfileBookmarkedListing,
-    isRemoving: Boolean,
-    bookmarkActionEnabled: Boolean,
-    onClick: () -> Unit,
-    onRemoveBookmark: () -> Unit
-) {
-    BulletinCard(modifier = Modifier.clickable(onClick = onClick)) {
-        BookmarkedListingPhoto(listing.photos.firstOrNull())
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = listing.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = listing.price,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        Spacer(modifier = Modifier.height(BulletinSpacing.xs))
-        Text(
-            text = "Seller: ${listing.sellerName} • Category: ${listing.category}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(BulletinSpacing.s))
-        Text(
-            text = listing.description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = formatRelativeTime(listing.createdAtMillis, currentTimeMillis()),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(BulletinSpacing.m))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            BulletinButton(
-                onClick = onRemoveBookmark,
-                enabled = bookmarkActionEnabled,
-                variant = BulletinButtonVariant.Outlined
-            ) {
-                if (isRemoving) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(
-                        imageVector = Icons.Filled.Bookmark,
-                        contentDescription = "Remove bookmark",
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(if (isRemoving) "Removing..." else "Remove Bookmark")
-            }
-        }
-    }
-}
-
-@Composable
-private fun BookmarkedListingPhoto(photoUrl: String?) {
-    if (photoUrl == null) {
-        BookmarkedPhotoPlaceholder()
-    } else {
-        SubcomposeAsyncImage(
-            model = photoUrl,
-            contentDescription = "Listing photo",
-            modifier = Modifier.fillMaxWidth().height(140.dp).clip(MaterialTheme.shapes.medium),
-            contentScale = ContentScale.Crop,
-            error = { BookmarkedPhotoPlaceholder() },
-            success = { SubcomposeAsyncImageContent() }
-        )
-    }
-    Spacer(Modifier.height(BulletinSpacing.m))
-}
-
-@Composable
-private fun BookmarkedPhotoPlaceholder() {
-    Box(
-        modifier = Modifier.fillMaxWidth().height(140.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

@@ -13,7 +13,33 @@ internal fun MarketplaceDetailFlow(
     onDetailDismiss: () -> Unit
 ) {
     if (!state.detail.isOpen) return
-    ListingDetailsPage(
+    MarketplaceDetailOverlay(
+        state = state,
+        viewModel = viewModel,
+        sellerProfileViewModel = sellerProfileViewModel,
+        listingReportViewModel = listingReportViewModel,
+        actions = actions,
+        onNavigate = onNavigate,
+        onDetailDismiss = onDetailDismiss
+    )
+    MarketplaceListingReportFlow(listingReportViewModel) {
+        listingReportViewModel.dismiss()
+        onDetailDismiss()
+        viewModel.refreshListings()
+    }
+}
+
+@Composable
+private fun MarketplaceDetailOverlay(
+    state: MarketplaceUiState,
+    viewModel: MarketplaceViewModel,
+    sellerProfileViewModel: SellerProfileViewModel,
+    listingReportViewModel: ListingReportViewModel,
+    actions: MarketplaceScreenActions,
+    onNavigate: (MarketplaceDestination) -> Unit,
+    onDetailDismiss: () -> Unit
+) {
+    MarketplaceDetailBottomSheet(
         state = MarketplaceDetailSheetState(
             listing = state.detail.listing,
             isLoading = state.detail.isLoading,
@@ -44,9 +70,4 @@ internal fun MarketplaceDetailFlow(
             onSeeChat = actions.onSeeChat
         )
     )
-    MarketplaceListingReportFlow(listingReportViewModel) {
-        listingReportViewModel.dismiss()
-        onDetailDismiss()
-        viewModel.refreshListings()
-    }
 }

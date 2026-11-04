@@ -38,7 +38,7 @@ Students can discover listings, buy or sell items, message other students, build
 | 🔖 **Saved Listings** | Bookmark listings and revisit them from your profile. |
 | 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. |
 | ⭐ **Ratings & Reviews** | Leave and view reviews tied to sold listings. |
-| 👤 **Profiles** | View and edit student profiles, including profile photos. |
+| 👤 **Profiles** | View and edit student profiles, upload or replace profile photos, and remove a photo to restore the default initials avatar. |
 | 🚩 **Reporting & Blocking** | Report users, listings, or messages, and block or unblock users. |
 | 🌗 **Theme** | Light/dark theme preference. |
 | 🛡️ **Admin Portal** | Web tool for reviewing reports and suspending or restoring accounts (see [Admin Portal](#%EF%B8%8F-admin-portal)). |
@@ -138,6 +138,8 @@ Dependency injection is manual. `AppContainer` composes `HomeModule`, `ListingsM
 If Supabase is not configured, the normal Android runtime **fails to initialize** backend-backed contexts: in-memory fallback is disabled by default. In-memory implementations exist for tests, previews, and explicitly enabled local use.
 
 > These bindings describe what the code does, not that every flow has been verified against a deployed Supabase project.
+
+Profile photo removal clears the saved avatar URL. The uploaded image remains in Storage until replaced by a later upload.
 
 ---
 

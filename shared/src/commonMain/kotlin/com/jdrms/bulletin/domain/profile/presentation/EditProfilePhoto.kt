@@ -9,14 +9,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddAPhoto
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -29,13 +26,16 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 internal fun EditProfilePhoto(
     avatarUrl: String?,
     fullName: String,
-    isUploading: Boolean,
-    onChangePhoto: () -> Unit
+    photoAction: ProfilePhotoAction?,
+    isSaving: Boolean,
+    onChangePhoto: () -> Unit,
+    onRemovePhoto: () -> Unit
 ) {
+    val isBusy = photoAction != null || isSaving
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier.size(104.dp).clickable(
-                enabled = !isUploading,
+                enabled = !isBusy,
                 role = Role.Button,
                 onClickLabel = "Change profile photo",
                 onClick = onChangePhoto
@@ -57,7 +57,7 @@ internal fun EditProfilePhoto(
                     .border(2.dp, MaterialTheme.colorScheme.background, BulletinShapes.pill),
                 contentAlignment = Alignment.Center
             ) {
-                if (isUploading) {
+                if (photoAction != null) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
@@ -74,19 +74,28 @@ internal fun EditProfilePhoto(
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            BulletinButton(onClick = onChangePhoto, enabled = !isUploading, variant = BulletinButtonVariant.Text) {
+            BulletinButton(
+                onClick = onChangePhoto,
+                enabled = !isBusy,
+                variant = BulletinButtonVariant.Text
+            ) {
                 Text(
-                    if (isUploading) "Uploading…" else "Upload New",
+                    if (photoAction == ProfilePhotoAction.UPLOADING) "Uploading…" else "Upload New",
                     style = MaterialTheme.typography.labelLarge
                 )
             }
-            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            BulletinButton(onClick = {}, enabled = false, variant = BulletinButtonVariant.Text) {
-                Text(
-                    "Remove",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (!avatarUrl.isNullOrBlank()) {
+                Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                BulletinButton(
+                    onClick = onRemovePhoto,
+                    enabled = !isBusy,
+                    variant = BulletinButtonVariant.Text
+                ) {
+                    Text(
+                        if (photoAction == ProfilePhotoAction.REMOVING) "Removing…" else "Remove",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
         }
     }

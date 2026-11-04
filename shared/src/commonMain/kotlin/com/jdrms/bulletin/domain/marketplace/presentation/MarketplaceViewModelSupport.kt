@@ -27,11 +27,11 @@ internal class MarketplaceFirstPageLoader(
     private val bookmarks: MarketplaceBookmarkDependencies,
     private val currentUserId: suspend () -> String?
 ) {
-    suspend fun load(userId: String?, debounceMillis: Long) {
-        prepareForLoad()
+    suspend fun load(userId: String?, debounceMillis: Long, retainItems: Boolean = false): Boolean {
+        prepareForLoad(retainItems)
         if (debounceMillis > 0L) delay(debounceMillis)
         val filters = state.value.filters
-        runCatching {
+        return runCatching {
             val resolvedUserId = userId ?: currentUserId()
             val page = search.getPage(
                 MarketplacePageRequest(
@@ -50,10 +50,10 @@ internal class MarketplaceFirstPageLoader(
         )
     }
 
-    private fun prepareForLoad() {
+    private fun prepareForLoad(retainItems: Boolean) {
         state.update {
             it.copy(
-                items = emptyList(),
+                items = if (retainItems) it.items else emptyList(),
                 isLoading = true,
                 isLoadingMore = false,
                 nextCursor = null,
@@ -63,9 +63,11 @@ internal class MarketplaceFirstPageLoader(
         }
     }
 
-    private fun applySuccess(result: FirstPageResult, filters: MarketplaceFilterState) {
+    private fun applySuccess(result: FirstPageResult, filters: MarketplaceFilterState): Boolean {
+        var applied = false
         state.update { current ->
             if (current.filters != filters) return@update current
+            applied = true
             current.copy(
                 items = result.page.items,
                 bookmarkedItemIds = result.bookmarkedIds,
@@ -74,9 +76,10 @@ internal class MarketplaceFirstPageLoader(
                 endReached = result.page.nextCursor == null
             )
         }
+        return applied
     }
 
-    private fun applyFailure(error: Throwable, filters: MarketplaceFilterState) {
+    private fun applyFailure(error: Throwable, filters: MarketplaceFilterState): Boolean {
         error.rethrowCancellation()
         state.update { current ->
             if (current.filters != filters) return@update current
@@ -86,6 +89,7 @@ internal class MarketplaceFirstPageLoader(
                 errorMessage = "Unable to load marketplace listings. Please try again."
             )
         }
+        return false
     }
 }
 

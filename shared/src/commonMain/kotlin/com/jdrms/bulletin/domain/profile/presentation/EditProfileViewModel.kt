@@ -8,31 +8,27 @@ import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
-import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class EditProfileUiState(
-    val profile: StudentProfile? = null,
-    val profileDraft: ProfileDraft = ProfileDraft(),
-    val profileFormErrors: ProfileFormErrors = ProfileFormErrors(),
-    val isLoading: Boolean = false,
-    val isPhotoUploading: Boolean = false,
-    val errorMessage: String? = null
-) {
-    val isProfileModified: Boolean get() = profile != null && ProfileDraft.from(profile) != profileDraft
-}
-
 class EditProfileViewModel(
     private val sessionRepository: SessionRepository,
     private val updateStudentProfile: UpdateStudentProfile,
-    private val uploadProfilePhoto: UploadProfilePhoto,
+    uploadProfilePhoto: UploadProfilePhoto,
     private val messenger: UserMessenger
 ) : ViewModel() {
     private val state = MutableStateFlow(EditProfileUiState())
     val uiState = state.asStateFlow()
+    private val photos = EditProfilePhotoInteraction(
+        state,
+        viewModelScope,
+        sessionRepository,
+        updateStudentProfile,
+        uploadProfilePhoto,
+        messenger
+    )
 
     init {
         viewModelScope.launch {
@@ -48,6 +44,7 @@ class EditProfileViewModel(
                         previousProfile.bio == profile.bio
                     it.copy(
                         profile = profile,
+                        photoAction = it.photoAction.takeIf { profile != null && previousProfile?.id == profile.id },
                         profileDraft = if (editableDetailsUnchanged) {
                             it.profileDraft
                         } else {
@@ -88,6 +85,7 @@ class EditProfileViewModel(
     }
 
     fun save(onSaved: () -> Unit) {
+        if (state.value.isLoading || state.value.isPhotoBusy) return
         val profile = state.value.profile
         if (profile == null) {
             state.update { it.copy(errorMessage = "Profile is unavailable.") }
@@ -112,7 +110,9 @@ class EditProfileViewModel(
             ) {
                 is Result.Success -> {
                     sessionRepository.authenticated(result.data)
-                    state.update { it.copy(isLoading = false) }
+                    state.update {
+                        it.copy(profile = result.data, profileDraft = ProfileDraft.from(result.data), isLoading = false)
+                    }
                     messenger.show("Profile updated")
                     onSaved()
                 }
@@ -123,29 +123,9 @@ class EditProfileViewModel(
         }
     }
 
-    fun uploadPhoto(bytes: ByteArray, mediaType: String) {
-        val profile = state.value.profile ?: run {
-            state.update { it.copy(errorMessage = "Profile is unavailable.") }
-            return
-        }
-        if (state.value.isPhotoUploading) return
-        state.update { it.copy(isPhotoUploading = true, errorMessage = null) }
-        viewModelScope.launch {
-            when (val result = uploadProfilePhoto(profile, bytes, mediaType)) {
-                is Result.Success -> {
-                    sessionRepository.authenticated(result.data)
-                    state.update { it.copy(isPhotoUploading = false) }
-                    messenger.show("Profile photo updated")
-                }
-                is Result.Error -> state.update {
-                    it.copy(
-                        isPhotoUploading = false,
-                        errorMessage = result.exception.message ?: "Failed to upload profile photo"
-                    )
-                }
-            }
-        }
-    }
+    fun uploadPhoto(bytes: ByteArray, mediaType: String) = photos.upload(bytes, mediaType)
+
+    fun removePhoto() = photos.remove()
 
     fun onPhotoSelectionError(message: String) = state.update { it.copy(errorMessage = message) }
 

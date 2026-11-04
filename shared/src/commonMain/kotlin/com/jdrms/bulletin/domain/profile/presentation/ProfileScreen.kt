@@ -155,28 +155,6 @@ private fun ProfileLandingDestination(
 }
 
 @Composable
-private fun ProfileEditDestination(
-    state: EditProfileUiState,
-    flows: ProfileScreenFlows,
-    callbacks: ProfileScreenCallbacks
-) {
-    val photoPicker = rememberProfilePhotoPicker(
-        onPhotoSelected = flows.editing::uploadPhoto,
-        onError = flows.editing::onPhotoSelectionError
-    )
-    EditProfileView(
-        uiState = state,
-        actions = EditProfileActions(
-            onCancel = callbacks.onBack,
-            onDraftChanged = flows.editing::onDraftChanged,
-            onUpdate = { flows.editing.save { callbacks.onNavigate(ProfileDestination.PROFILE) } },
-            onChangePhoto = photoPicker,
-            onSignOut = { flows.account.signOut(callbacks.onSignOut) }
-        )
-    )
-}
-
-@Composable
 private fun ProfileSettingsDestination(
     state: ProfileUiState,
     flows: ProfileScreenFlows,
