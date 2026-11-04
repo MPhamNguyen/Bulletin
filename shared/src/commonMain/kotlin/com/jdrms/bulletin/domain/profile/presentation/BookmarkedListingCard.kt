@@ -186,16 +186,15 @@ private fun BookmarkedPhotoPlaceholder() {
 
 @Composable
 private fun BookmarkedListingTitleAndPrice(listing: ProfileBookmarkedListing) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = listing.title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
-        Spacer(modifier = Modifier.width(BulletinSpacing.s))
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = listing.price,
             style = MaterialTheme.typography.titleMedium,
