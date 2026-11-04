@@ -56,7 +56,7 @@ fun MarketplaceScreen(
 
     LaunchedEffect(navigation.listingIdToOpen) {
         navigation.listingIdToOpen?.let { listingId ->
-            viewModel.onListingClicked(listingId)
+            if (state.detail.listingId != listingId) viewModel.onListingClicked(listingId)
             navigation.onListingRequestHandled()
         }
     }

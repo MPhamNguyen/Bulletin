@@ -25,6 +25,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
@@ -75,6 +76,7 @@ internal fun MainAppContent(
             container,
             navigation,
             models.listings,
+            models.marketplace,
             models.sellerProfile,
             content.profile,
             models.messages
@@ -123,6 +125,7 @@ private fun ProfileDestinationContent(
     container: AppContainer,
     navigation: MutableMainNavigationState,
     listingsViewModel: ListingsViewModel,
+    marketplaceViewModel: MarketplaceViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
@@ -138,7 +141,14 @@ private fun ProfileDestinationContent(
             onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
         )
     } else {
-        StudentProfileDestination(container, navigation, listingsViewModel, profilePresentation, messagesViewModel)
+        StudentProfileDestination(
+            container,
+            navigation,
+            listingsViewModel,
+            marketplaceViewModel,
+            profilePresentation,
+            messagesViewModel
+        )
     }
 }
 
@@ -160,6 +170,7 @@ private fun StudentProfileDestination(
     container: AppContainer,
     navigation: MutableMainNavigationState,
     listingsViewModel: ListingsViewModel,
+    marketplaceViewModel: MarketplaceViewModel,
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
 ) {
@@ -195,6 +206,7 @@ private fun StudentProfileDestination(
             container,
             navigation,
             listingsViewModel,
+            marketplaceViewModel,
             messagesViewModel,
             profilePresentation.onSignOut
         ),
@@ -214,6 +226,7 @@ private fun profileCallbacks(
     container: AppContainer,
     navigation: MutableMainNavigationState,
     listingsViewModel: ListingsViewModel,
+    marketplaceViewModel: MarketplaceViewModel,
     messagesViewModel: MessagesViewModel,
     onSignOut: () -> Unit
 ): ProfileScreenCallbacks {
@@ -236,7 +249,10 @@ private fun profileCallbacks(
             listingsViewModel.clearMessages()
             navigation.profileDestination = ProfileDestination.MY_LISTINGS
         },
-        onOpenListing = navigation::openListing,
+        onOpenListing = { listingId ->
+            marketplaceViewModel.onListingClicked(listingId)
+            navigation.openListing(listingId)
+        },
         onMessageSeller = conversationActions::messageSeller,
         onMessageSent = {
             navigation.apply(navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))

@@ -39,7 +39,7 @@ private fun MarketplaceDetailOverlay(
     onNavigate: (MarketplaceDestination) -> Unit,
     onDetailDismiss: () -> Unit
 ) {
-    MarketplaceDetailBottomSheet(
+    ListingDetailsPage(
         state = MarketplaceDetailSheetState(
             listing = state.detail.listing,
             isLoading = state.detail.isLoading,
