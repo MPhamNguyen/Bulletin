@@ -80,6 +80,20 @@ class ProfilePhotoRemovalContractTest {
         }
     }
 
+    @Test
+    fun zeroRowSupabaseRemovalReturnsFailureAndKeepsSavedPhoto() = runTest {
+        val table = ProfileTable(skipUpdate = true)
+        try {
+            val repository = SupabaseProfileRepository(table.client)
+            val result = assertIs<Result.Error>(removePhoto(repository))
+            assertEquals("Profile update did not save any changes. Please try again.", result.message)
+            assertTrue(table.receivedAvatarNull)
+            assertEquals(profile.avatarUrl, repository.refreshProfile(profile.id).getOrThrow()!!.avatarUrl)
+        } finally {
+            table.client.close()
+        }
+    }
+
     private suspend fun removePhoto(repository: ProfileRepository): Result<StudentProfile> =
         UpdateStudentProfile(repository)(
             profile,
@@ -90,7 +104,7 @@ class ProfilePhotoRemovalContractTest {
             avatarUrl = null
         )
 
-    private class ProfileTable(failUpdate: Boolean = false) {
+    private class ProfileTable(failUpdate: Boolean = false, skipUpdate: Boolean = false) {
         private var stored = Json.encodeToJsonElement(ProfileDto.serializer(), ProfileMapper.toDto(profile)).jsonObject
         var receivedAvatarNull = false
             private set
@@ -105,6 +119,7 @@ class ProfilePhotoRemovalContractTest {
                     request.url.encodedPath != "/rest/v1/profiles" -> respond("[]", headers = headers)
                     request.method == HttpMethod.Patch -> {
                         assertEquals("eq.${profile.id.value}", request.url.parameters["id"])
+                        assertTrue(request.headers["Prefer"].orEmpty().contains("return=representation"))
                         val body = Json.parseToJsonElement(assertIs<TextContent>(request.body).text).jsonObject
                         assertTrue("avatar_url" in body, "Photo removal must send avatar_url explicitly")
                         receivedAvatarNull = body["avatar_url"] == JsonNull
@@ -113,9 +128,11 @@ class ProfilePhotoRemovalContractTest {
                                 """{"code":"42501","message":"row-level security denied"}""",
                                 HttpStatusCode.Forbidden, headers
                             )
+                        } else if (skipUpdate) {
+                            respond("[]", HttpStatusCode.OK, headers)
                         } else {
                             stored = kotlinx.serialization.json.JsonObject(stored + body)
-                            respond("", HttpStatusCode.NoContent)
+                            respond("[$stored]", HttpStatusCode.OK, headers)
                         }
                     }
                     else -> respond("[$stored]", headers = headers)

@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.application.UpdateStudentProfile
 import com.jdrms.bulletin.domain.profile.application.UploadProfilePhoto
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -49,26 +50,38 @@ internal class EditProfilePhotoInteraction(
         }
         state.update { it.copy(photoAction = action, errorMessage = null) }
         scope.launch {
-            val result = operation(profile)
-            if ((session.state.value as? SessionState.Authenticated)?.profile?.id != profile.id) return@launch
-            when (result) {
-                is Result.Success -> {
-                    session.authenticated(result.data)
-                    state.update { it.copy(photoAction = null) }
-                    messenger.show(
-                        if (action == ProfilePhotoAction.REMOVING) "Profile photo removed" else "Profile photo updated"
-                    )
+            try {
+                val result = runCatching { operation(profile) }.getOrElse { error ->
+                    if (error is CancellationException) throw error
+                    Result.Error(error)
                 }
-                is Result.Error -> state.update {
-                    it.copy(
-                        photoAction = null,
-                        errorMessage = result.exception.message ?: if (action == ProfilePhotoAction.REMOVING) {
-                            "Failed to remove profile photo"
-                        } else {
-                            "Failed to upload profile photo"
-                        }
-                    )
+                if ((session.state.value as? SessionState.Authenticated)?.profile?.id != profile.id) return@launch
+                handleResult(action, result)
+            } finally {
+                state.update {
+                    if (it.profile?.id == profile.id) it.copy(photoAction = null) else it
                 }
+            }
+        }
+    }
+
+    private fun handleResult(action: ProfilePhotoAction, result: Result<StudentProfile>) {
+        when (result) {
+            is Result.Success -> {
+                session.authenticated(result.data)
+                state.update { it.copy(photoAction = null) }
+                messenger.show(
+                    if (action == ProfilePhotoAction.REMOVING) "Profile photo removed" else "Profile photo updated"
+                )
+            }
+            is Result.Error -> state.update {
+                it.copy(
+                    errorMessage = result.exception.message ?: if (action == ProfilePhotoAction.REMOVING) {
+                        "Failed to remove profile photo"
+                    } else {
+                        "Failed to upload profile photo"
+                    }
+                )
             }
         }
     }
