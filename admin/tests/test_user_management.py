@@ -64,14 +64,14 @@ class UserManagementTests(unittest.TestCase):
     def test_empty_or_unavailable_reports_preserve_account_actions(self):
         self.backend.report = None
         response = self.client.get(self.path)
-        self.assertIn("No matching report tickets remain", response.get_data(as_text=True))
+        self.assertIn("No report tickets for this account", response.get_data(as_text=True))
         with patch.object(self.backend, "rows", side_effect=PortalError("Unavailable", 502)):
             response = self.client.get(self.path)
         html = response.get_data(as_text=True)
         self.assertEqual(200, response.status_code)
         self.assertIn("Report tickets could not be loaded", html)
         self.assertIn("Apply account action", html)
-        self.assertNotIn("No matching report tickets remain", html)
+        self.assertNotIn("No report tickets for this account", html)
 
     def test_invalid_report_page_is_rejected(self):
         for value in ("0", "-1", "abc", "100001"):
@@ -91,7 +91,7 @@ class UserManagementTests(unittest.TestCase):
         self.accounts = [dict(id=ADMIN, banned_until=None)] * 100
         response = self.client.get("/users")
         html = response.get_data(as_text=True)
-        self.assertIn("No suspended users in this account batch", html)
+        self.assertIn("No suspended users in this batch", html)
         self.assertIn("Next batch", html)
         self.assertNotIn("Previous batch", html)
 
