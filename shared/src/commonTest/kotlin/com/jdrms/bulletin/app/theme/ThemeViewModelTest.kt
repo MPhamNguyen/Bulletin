@@ -33,7 +33,7 @@ class ThemeViewModelTest {
     @Test
     fun startsWithLastAppliedPreferenceBeforeAccountIsRestored() = runTest(testDispatcher) {
         val store = InMemoryThemePreferenceStore(initialLastAppliedPreference = ThemePreference.DARK)
-        val viewModel = ThemeViewModel(store, store)
+        val viewModel = ThemeViewModel(store)
         advanceUntilIdle()
 
         assertEquals(ThemePreference.DARK, viewModel.themePreference.value)
@@ -41,7 +41,7 @@ class ThemeViewModelTest {
 
     @Test
     fun defaultsToSystemPreference() = runTest(testDispatcher) {
-        val viewModel = ThemeViewModel(InMemoryThemePreferenceStore(), InMemoryThemePreferenceStore())
+        val viewModel = ThemeViewModel(InMemoryThemePreferenceStore())
         advanceUntilIdle()
 
         viewModel.setAccount(UserId("user-1"))
@@ -52,7 +52,7 @@ class ThemeViewModelTest {
 
     @Test
     fun settingPreferenceUpdatesState() = runTest(testDispatcher) {
-        val viewModel = ThemeViewModel(InMemoryThemePreferenceStore(), InMemoryThemePreferenceStore())
+        val viewModel = ThemeViewModel(InMemoryThemePreferenceStore())
         advanceUntilIdle()
 
         viewModel.setAccount(UserId("user-1"))
@@ -67,7 +67,7 @@ class ThemeViewModelTest {
     @Test
     fun preferenceIsRestoredAcrossViewModelRecreation() = runTest(testDispatcher) {
         val store = InMemoryThemePreferenceStore()
-        val firstViewModel = ThemeViewModel(store, store)
+        val firstViewModel = ThemeViewModel(store)
         advanceUntilIdle()
 
         firstViewModel.setAccount(UserId("user-1"))
@@ -76,7 +76,7 @@ class ThemeViewModelTest {
         firstViewModel.setThemePreference(ThemePreference.LIGHT)
         advanceUntilIdle()
 
-        val recreatedViewModel = ThemeViewModel(store, store)
+        val recreatedViewModel = ThemeViewModel(store)
         advanceUntilIdle()
 
         recreatedViewModel.setAccount(UserId("user-1"))
@@ -88,7 +88,7 @@ class ThemeViewModelTest {
     @Test
     fun preferencesAreIsolatedPerAccount() = runTest(testDispatcher) {
         val store = InMemoryThemePreferenceStore()
-        val viewModel = ThemeViewModel(store, store)
+        val viewModel = ThemeViewModel(store)
         advanceUntilIdle()
 
         viewModel.setAccount(UserId("user-1"))
@@ -113,7 +113,7 @@ class ThemeViewModelTest {
 
     @Test
     fun clearingAccountRetainsLastAppliedPreference() = runTest(testDispatcher) {
-        val viewModel = ThemeViewModel(InMemoryThemePreferenceStore(), InMemoryThemePreferenceStore())
+        val viewModel = ThemeViewModel(InMemoryThemePreferenceStore())
         advanceUntilIdle()
 
         viewModel.setAccount(UserId("user-1"))
@@ -131,7 +131,7 @@ class ThemeViewModelTest {
     @Test
     fun anonymousPreferenceChangesDoNotPersist() = runTest(testDispatcher) {
         val store = InMemoryThemePreferenceStore()
-        val viewModel = ThemeViewModel(store, store)
+        val viewModel = ThemeViewModel(store)
         advanceUntilIdle()
 
         viewModel.setThemePreference(ThemePreference.DARK)
@@ -146,7 +146,7 @@ class ThemeViewModelTest {
     @Test
     fun customColorSelectionIsRestoredPerAccount() = runTest(testDispatcher) {
         val store = InMemoryThemePreferenceStore()
-        val viewModel = ThemeViewModel(store, store)
+        val viewModel = ThemeViewModel(store)
         advanceUntilIdle()
         viewModel.setAccount(UserId("user-1"))
         advanceUntilIdle()
@@ -166,6 +166,28 @@ class ThemeViewModelTest {
     }
 
     @Test
+    fun selectingThemeColorsPersistsBaseAndAccentTogether() = runTest(testDispatcher) {
+        val store = InMemoryThemePreferenceStore()
+        val viewModel = ThemeViewModel(store)
+        advanceUntilIdle()
+        val user = UserId("user-1")
+        val baseColor = com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor(
+            androidx.compose.ui.graphics.Color(0xFF123456).value
+        )
+        val accentColor = com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor(
+            androidx.compose.ui.graphics.Color(0xFFABCDEF).value
+        )
+        viewModel.setAccount(user)
+        advanceUntilIdle()
+
+        viewModel.setThemeColors(baseColor, accentColor)
+        advanceUntilIdle()
+
+        assertEquals(baseColor, store.baseColorFor(user))
+        assertEquals(accentColor, store.themeColorFor(user))
+    }
+
+    @Test
     fun latestAccountLoadWinsWhenAnEarlierLoadIsSuspended() = runTest(testDispatcher) {
         val backingStore = InMemoryThemePreferenceStore(
             initialPreferences = mapOf(UserId("user-1") to ThemePreference.DARK)
@@ -177,7 +199,7 @@ class ThemeViewModelTest {
                 return backingStore.preferenceFor(userId)
             }
         }
-        val viewModel = ThemeViewModel(store, store)
+        val viewModel = ThemeViewModel(store)
         advanceUntilIdle()
 
         viewModel.setAccount(UserId("user-1"))

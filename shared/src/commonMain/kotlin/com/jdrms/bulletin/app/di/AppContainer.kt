@@ -55,7 +55,7 @@ class AppContainer(
     internal val messages = MessagesModule(infrastructure, profile, listings, marketplace)
     internal val home = HomeModule(marketplace, messages)
 
-    internal fun createThemeViewModel() = ThemeViewModel(themePreferenceStore, themePreferenceStore)
+    internal fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }
 
 data class ExternalAuthConfiguration(

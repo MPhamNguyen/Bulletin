@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.BulletinSlider
 import com.jdrms.bulletin.core.designsystem.theme.BulletinBasePalette
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinPalette
@@ -82,6 +83,8 @@ internal fun ThemePaletteDialog(
                     }
                 }
                 val workingColor = if (selectedTab == 0) workingBaseColor else workingAccentColor
+                val (selectedHue, selectedSaturation, brightness) =
+                    themeWheelHueSaturationAndBrightness(workingColor)
                 BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     val wheelSize = (maxWidth - 48.dp).coerceIn(180.dp, 260.dp)
                     ThemeColorWheel(
@@ -91,6 +94,25 @@ internal fun ThemePaletteDialog(
                             hexValue = it.toHexRgbDigits()
                         },
                         wheelDiameter = wheelSize
+                    )
+                }
+                Column(Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Brightness", style = MaterialTheme.typography.labelLarge)
+                        Text("${(brightness * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
+                    }
+                    BulletinSlider(
+                        label = "Brightness",
+                        value = brightness,
+                        onValueChange = { value ->
+                            val updated = themeWheelColorAt(selectedHue, selectedSaturation, value)
+                            if (selectedTab == 0) workingBaseColor = updated else workingAccentColor = updated
+                            hexValue = updated.toHexRgbDigits()
+                        },
+                        valueRange = 0f..1f
                     )
                 }
                 ThemeHexField(

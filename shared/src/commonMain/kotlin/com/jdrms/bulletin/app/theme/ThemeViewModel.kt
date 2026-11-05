@@ -12,8 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ThemeViewModel(
-    private val themePreferenceStore: ThemePreferenceStore,
-    private val baseColorPreferenceStore: ThemeBaseColorPreferenceStore
+    private val themePreferenceStore: ThemePreferenceStores
 ) : ViewModel() {
     private val _themePreference = MutableStateFlow(ThemePreference.SYSTEM)
     val themePreference: StateFlow<ThemePreference> = _themePreference.asStateFlow()
@@ -28,7 +27,7 @@ class ThemeViewModel(
         viewModelScope.launch {
             val initial = themePreferenceStore.lastAppliedPreference()
             val initialThemeColor = themePreferenceStore.lastAppliedThemeColor()
-            val initialBaseColor = baseColorPreferenceStore.lastAppliedBaseColor()
+            val initialBaseColor = themePreferenceStore.lastAppliedBaseColor()
             if (currentUserId == null) {
                 _themePreference.update { initial }
                 _themeColor.update { initialThemeColor }
@@ -47,12 +46,11 @@ class ThemeViewModel(
                 ?: themePreferenceStore.lastAppliedPreference()
             val resolvedThemeColor = userId?.let { themePreferenceStore.themeColorFor(it) }
                 ?: themePreferenceStore.lastAppliedThemeColor()
-            val resolvedBaseColor = userId?.let { baseColorPreferenceStore.baseColorFor(it) }
-                ?: baseColorPreferenceStore.lastAppliedBaseColor()
+            val resolvedBaseColor = userId?.let { themePreferenceStore.baseColorFor(it) }
+                ?: themePreferenceStore.lastAppliedBaseColor()
             if (currentUserId != userId) return@launch
             themePreferenceStore.setLastAppliedPreference(resolvedPreference)
-            themePreferenceStore.setLastAppliedThemeColor(resolvedThemeColor)
-            baseColorPreferenceStore.setLastAppliedBaseColor(resolvedBaseColor)
+            themePreferenceStore.setLastAppliedThemeColors(resolvedBaseColor, resolvedThemeColor)
             if (currentUserId != userId) return@launch
             _themePreference.update { resolvedPreference }
             _themeColor.update { resolvedThemeColor }
@@ -72,7 +70,7 @@ class ThemeViewModel(
         val userId = currentUserId ?: return
         _themeColor.update { themeColor }
         viewModelScope.launch {
-            themePreferenceStore.setThemeColor(userId, themeColor)
+            themePreferenceStore.setThemeColors(userId, _baseColor.value, themeColor)
         }
     }
 
@@ -81,8 +79,7 @@ class ThemeViewModel(
         _baseColor.update { baseColor }
         _themeColor.update { themeColor }
         viewModelScope.launch {
-            baseColorPreferenceStore.setBaseColor(userId, baseColor)
-            themePreferenceStore.setThemeColor(userId, themeColor)
+            themePreferenceStore.setThemeColors(userId, baseColor, themeColor)
         }
     }
 }

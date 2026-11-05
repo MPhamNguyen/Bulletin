@@ -78,4 +78,20 @@ class InMemoryThemePreferenceStore(
         baseColors[userId] = baseColor
         setLastAppliedBaseColor(baseColor)
     }
+
+    override suspend fun setThemeColors(
+        userId: UserId,
+        baseColor: BulletinThemeColor,
+        themeColor: BulletinThemeColor
+    ) {
+        baseColors[userId] = baseColor
+        themeColors[userId] = themeColor
+        lastAppliedBaseColor = baseColor
+        lastAppliedThemeColor = themeColor
+    }
+
+    override suspend fun setLastAppliedThemeColors(baseColor: BulletinThemeColor, themeColor: BulletinThemeColor) {
+        lastAppliedBaseColor = baseColor
+        lastAppliedThemeColor = themeColor
+    }
 }

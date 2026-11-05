@@ -69,16 +69,36 @@ class AndroidThemePreferenceStoreTest {
         assertEquals(forest, store.themeColorFor(user1))
     }
 
+    @Test
+    fun storesBaseAndAccentColorsInOneDataStoreTransaction() = runTest {
+        val dataStore = InMemoryPreferencesDataStore()
+        val store = AndroidThemePreferenceStore(dataStore)
+        val user = UserId("user-1")
+        val baseColor = BulletinThemeColor(Color(0xFFF5F5F5).value)
+        val accentColor = BulletinThemeColor(Color(0xFF123ABC).value)
+
+        store.setThemeColors(user, baseColor, accentColor)
+
+        assertEquals(1, dataStore.writeCount)
+        assertEquals(baseColor, store.baseColorFor(user))
+        assertEquals(accentColor, store.themeColorFor(user))
+        assertEquals(baseColor, store.lastAppliedBaseColor())
+        assertEquals(accentColor, store.lastAppliedThemeColor())
+    }
+
     private fun createStore(): AndroidThemePreferenceStore =
         AndroidThemePreferenceStore(InMemoryPreferencesDataStore())
 }
 
 private class InMemoryPreferencesDataStore : DataStore<Preferences> {
     private val preferences = MutableStateFlow<Preferences>(emptyPreferences())
+    var writeCount = 0
+        private set
 
     override val data: Flow<Preferences> = preferences
 
     override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+        writeCount += 1
         val updatedPreferences = transform(preferences.value)
         preferences.value = updatedPreferences
         return updatedPreferences

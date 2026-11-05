@@ -1,11 +1,15 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
@@ -14,6 +18,8 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun ThemeHexField(value: String, onValueChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     BulletinTextField(
         value = value,
         onValueChange = { input ->
@@ -25,7 +31,11 @@ internal fun ThemeHexField(value: String, onValueChange: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         decoration = BulletinFieldDecoration(leadingIcon = { Text("#") }),
         options = BulletinFieldOptions(
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            })
         )
     )
 }

@@ -108,6 +108,28 @@ class AndroidThemePreferenceStore(
         }
     }
 
+    override suspend fun setThemeColors(
+        userId: UserId,
+        baseColor: BulletinThemeColor,
+        themeColor: BulletinThemeColor
+    ) {
+        dataStore.edit { prefs ->
+            val storedBaseColor = baseColor.value.toString(16)
+            val storedThemeColor = themeColor.value.toString(16)
+            prefs[baseColorKeyFor(userId)] = storedBaseColor
+            prefs[LAST_APPLIED_BASE_COLOR_KEY] = storedBaseColor
+            prefs[themeColorKeyFor(userId)] = storedThemeColor
+            prefs[LAST_APPLIED_THEME_COLOR_KEY] = storedThemeColor
+        }
+    }
+
+    override suspend fun setLastAppliedThemeColors(baseColor: BulletinThemeColor, themeColor: BulletinThemeColor) {
+        dataStore.edit { prefs ->
+            prefs[LAST_APPLIED_BASE_COLOR_KEY] = baseColor.value.toString(16)
+            prefs[LAST_APPLIED_THEME_COLOR_KEY] = themeColor.value.toString(16)
+        }
+    }
+
     private fun preferenceFromStoredValue(value: String?): ThemePreference {
         return ThemePreference.entries.firstOrNull { it.name == value } ?: ThemePreference.SYSTEM
     }

@@ -25,4 +25,16 @@ class ThemeColorWheelColorTest {
             "Expected half saturation, got $saturation from $selectedColor"
         )
     }
+
+    @Test
+    fun darkerColorsKeepTheirBrightnessWhenMappedBackToTheWheel() {
+        val selectedColor = Color(0.3f, 0.15f, 0.15f)
+        val (hue, saturation, brightness) = themeWheelHueSaturationAndBrightness(selectedColor)
+
+        val restoredColor = themeWheelColorAt(hue, saturation, brightness)
+
+        assertTrue(kotlin.math.abs(selectedColor.red - restoredColor.red) < 0.001f)
+        assertTrue(kotlin.math.abs(selectedColor.green - restoredColor.green) < 0.001f)
+        assertTrue(kotlin.math.abs(selectedColor.blue - restoredColor.blue) < 0.001f)
+    }
 }

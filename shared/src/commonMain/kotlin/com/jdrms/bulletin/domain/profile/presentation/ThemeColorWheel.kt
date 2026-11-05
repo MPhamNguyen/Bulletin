@@ -32,22 +32,25 @@ internal fun ThemeColorWheel(
     wheelDiameter: Dp
 ) {
     val selectionCallback = rememberUpdatedState(onColorSelected)
+    val selectedColor = rememberUpdatedState(color)
     val radius = with(LocalDensity.current) { wheelDiameter.toPx() / 2f }
     Box(
         modifier = modifier
             .size(wheelDiameter + 48.dp)
             .pointerInput(Unit) {
                 detectTapGestures { point ->
-                    selectionCallback.value(colorAt(point, this.size.width / 2f, radius))
+                    selectionCallback.value(colorAt(point, this.size.width / 2f, radius, selectedColor.value))
                 }
             }
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = { point ->
-                        selectionCallback.value(colorAt(point, this.size.width / 2f, radius))
+                        selectionCallback.value(colorAt(point, this.size.width / 2f, radius, selectedColor.value))
                     },
                     onDrag = { change, _ ->
-                        selectionCallback.value(colorAt(change.position, this.size.width / 2f, radius))
+                        selectionCallback.value(
+                            colorAt(change.position, this.size.width / 2f, radius, selectedColor.value)
+                        )
                     }
                 )
             }
@@ -55,6 +58,7 @@ internal fun ThemeColorWheel(
         Canvas(Modifier.align(Alignment.Center).size(wheelDiameter).clip(CircleShape)) {
             val wheelRadius = size.minDimension / 2f
             val center = Offset(size.width / 2f, size.height / 2f)
+            val (hue, saturation, brightness) = themeWheelHueSaturationAndBrightness(color)
             drawCircle(
                 brush = Brush.sweepGradient(
                     listOf(
@@ -78,8 +82,11 @@ internal fun ThemeColorWheel(
                 ),
                 radius = wheelRadius
             )
+            drawCircle(
+                color = Color.Black.copy(alpha = 1f - brightness),
+                radius = wheelRadius
+            )
 
-            val (hue, saturation) = themeWheelHueAndSaturation(color)
             val angle = hue * (PI.toFloat() / 180f)
             val marker = Offset(
                 x = center.x + cos(angle) * wheelRadius * saturation,
@@ -87,15 +94,18 @@ internal fun ThemeColorWheel(
             )
             drawCircle(Color.Black.copy(alpha = 0.72f), 11.dp.toPx(), marker)
             drawCircle(Color.White, 8.dp.toPx(), marker)
+            drawCircle(color, 5.dp.toPx(), marker)
         }
     }
 }
 
-private fun colorAt(point: Offset, centerCoordinate: Float, radius: Float): Color {
+private fun colorAt(point: Offset, centerCoordinate: Float, radius: Float, selectedColor: Color): Color {
     val center = Offset(centerCoordinate, centerCoordinate)
     val dx = point.x - center.x
     val dy = point.y - center.y
     val saturation = (sqrt(dx * dx + dy * dy) / radius).coerceIn(0f, 1f)
     val hue = (atan2(dy, dx) * (180f / PI.toFloat()) + 360f) % 360f
-    return themeWheelColorAt(hue, saturation)
+    val selectedBrightness = themeWheelHueSaturationAndBrightness(selectedColor).third
+    val brightness = if (selectedBrightness == 0f) 1f else selectedBrightness
+    return themeWheelColorAt(hue, saturation, brightness)
 }
