@@ -41,6 +41,7 @@ internal fun MessagesChatContent(
             )
         }
         ChatStatusMessages(state, viewModel)
+        MessageHistoryRetryNotice(state, viewModel::retryHistory)
         MessageList(
             state,
             viewModel,

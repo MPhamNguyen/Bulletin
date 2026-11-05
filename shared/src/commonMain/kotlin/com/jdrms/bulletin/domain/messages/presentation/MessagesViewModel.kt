@@ -38,7 +38,6 @@ class MessagesViewModel(
     )
     val uiState: StateFlow<MessagesUiState> = MessagesUiStateProjection(threadState, inbox.state, viewModelScope)
     val inboxState: StateFlow<InboxState> = inbox.state
-    private var loadJob: Job? = null
     private var requestedConversationId: ConversationId? = null
     private val listingPreviewLoader =
         ConversationListingPreviewLoader(threadState, listingPreviewProvider, viewModelScope)
@@ -59,8 +58,7 @@ class MessagesViewModel(
         val presented = threadState.value.withFailure(error)
         if (presented.identityUnavailable) {
             drafts.reset()
-            loadJob?.cancel()
-            olderHistory.cancel()
+            history.cancel()
             observeJob?.cancel()
         }
         threadState.value = presented.state
@@ -84,8 +82,6 @@ class MessagesViewModel(
     private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
     private val blocking = ConversationBlockActions(threadState, threadOperations.userBlocker, viewModelScope)
     private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
-    private val olderHistory =
-        MessagesOlderHistoryLoader(threadState, getConversationMessages, viewModelScope, showFailure)
     private val readReceiptHandler = ConversationReadReceiptHandler(
         inbox,
         threadState,
@@ -94,23 +90,23 @@ class MessagesViewModel(
         viewModelScope,
         showFailure
     )
-    private val messagePageLoader = ConversationMessagePageLoader(
+    private val history = MessageHistoryInteraction(
         threadState,
         inbox,
         getConversationMessages,
         readReceiptHandler,
+        viewModelScope,
         showFailure
     )
     private val conversationSelection = MessagesConversationSelection(
         threadState,
         drafts,
         cancelCurrentLoads = {
-            loadJob?.cancel()
-            olderHistory.cancel()
+            history.cancel()
             observeJob?.cancel()
             observeJob = null
         },
-        resetPage = messagePageLoader::reset,
+        resetPage = history::reset,
         isDestinationActive = { destinationLifecycle.isActive },
         reload = ::reloadSelectedConversation,
         observe = ::observeConversation
@@ -120,7 +116,7 @@ class MessagesViewModel(
         inbox,
         ::reloadSelectedConversation,
         showFailure,
-        { !messagePageLoader.initialPageLoaded },
+        { !history.initialPageLoaded },
         readReceiptHandler::markIfNeeded
     )
 
@@ -140,14 +136,13 @@ class MessagesViewModel(
             drafts.reset()
             val previousViewerId = visibleViewerId
             visibleViewerId = snapshot.viewerId
-            loadJob?.cancel()
-            olderHistory.cancel()
+            history.cancel()
             observeJob?.cancel()
             observeJob = null
             listingPreviewLoader.cancel()
             requestedConversationId = null
             streamCallbacks.clearPending()
-            messagePageLoader.reset()
+            history.reset()
             blocking.reset()
             threadState.value = MessagesUiState(
                 block = ConversationBlockUiState(statusRequired = threadState.value.block.statusRequired)
@@ -206,12 +201,14 @@ class MessagesViewModel(
         )
     }
 
-    private fun reloadSelectedConversation(conversationId: ConversationId) {
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch { messagePageLoader.load(conversationId) }
-    }
+    private fun reloadSelectedConversation(conversationId: ConversationId) = history.reload(conversationId)
 
-    fun loadOlderMessages() = olderHistory.load()
+    fun loadOlderMessages() = history.loadOlder()
+    fun retryHistory(request: MessageHistoryRequest) {
+        inbox.synchronizeIdentity()
+        applyInboxSelection(inbox.state.value)
+        history.retry(request)
+    }
     fun hideConversationFromInbox(conversationId: ConversationId) =
         actions.hideConversation(conversationId, showFailure)
 

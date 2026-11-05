@@ -25,6 +25,8 @@ data class MessagesUiState(
     val editError: String? = null,
     val isLoading: Boolean = false,
     val isLoadingMessages: Boolean = false,
+    val failedHistoryRequest: MessageHistoryRequest.Thread? = null,
+    val failedOlderHistoryRequest: MessageHistoryRequest.Older? = null,
     val sendStates: Map<ConversationId, MessageSendState> = emptyMap(),
     val isReporting: Boolean = false,
     val messageReportForm: MessageReportFormState? = null,

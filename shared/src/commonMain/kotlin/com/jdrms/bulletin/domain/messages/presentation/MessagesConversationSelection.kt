@@ -33,6 +33,8 @@ internal class MessagesConversationSelection(
                 olderCursor = null,
                 isLoadingMessages = conversationId != null,
                 isLoadingOlder = false,
+                failedHistoryRequest = null,
+                failedOlderHistoryRequest = null,
                 errorMessage = null,
                 statusMessage = null
             )
