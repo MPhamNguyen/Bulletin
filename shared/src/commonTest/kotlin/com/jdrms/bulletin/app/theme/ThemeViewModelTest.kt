@@ -1,10 +1,12 @@
 package com.jdrms.bulletin.app.theme
 
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -161,5 +163,30 @@ class ThemeViewModelTest {
         viewModel.setAccount(UserId("user-1"))
         advanceUntilIdle()
         assertEquals(custom, viewModel.themeColor.value)
+    }
+
+    @Test
+    fun latestAccountLoadWinsWhenAnEarlierLoadIsSuspended() = runTest(testDispatcher) {
+        val backingStore = InMemoryThemePreferenceStore(
+            initialPreferences = mapOf(UserId("user-1") to ThemePreference.DARK)
+        )
+        val userOneLoad = CompletableDeferred<Unit>()
+        val store = object : ThemePreferenceStores by backingStore {
+            override suspend fun preferenceFor(userId: UserId): ThemePreference {
+                if (userId == UserId("user-1")) userOneLoad.await()
+                return backingStore.preferenceFor(userId)
+            }
+        }
+        val viewModel = ThemeViewModel(store, store)
+        advanceUntilIdle()
+
+        viewModel.setAccount(UserId("user-1"))
+        runCurrent()
+        viewModel.setAccount(UserId("user-2"))
+        advanceUntilIdle()
+        userOneLoad.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(ThemePreference.SYSTEM, viewModel.themePreference.value)
     }
 }

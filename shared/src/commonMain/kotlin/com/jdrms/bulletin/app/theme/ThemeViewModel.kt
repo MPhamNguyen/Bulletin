@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.designsystem.theme.BulletinThemeColor
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,7 @@ class ThemeViewModel(
     private val _baseColor = MutableStateFlow(BulletinThemeColor.BASE)
     val baseColor: StateFlow<BulletinThemeColor> = _baseColor.asStateFlow()
     private var currentUserId: UserId? = null
+    private var accountLoadJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -39,16 +41,19 @@ class ThemeViewModel(
         if (currentUserId == userId) return
 
         currentUserId = userId
-        viewModelScope.launch {
+        accountLoadJob?.cancel()
+        accountLoadJob = viewModelScope.launch {
             val resolvedPreference = userId?.let { themePreferenceStore.preferenceFor(it) }
                 ?: themePreferenceStore.lastAppliedPreference()
             val resolvedThemeColor = userId?.let { themePreferenceStore.themeColorFor(it) }
                 ?: themePreferenceStore.lastAppliedThemeColor()
             val resolvedBaseColor = userId?.let { baseColorPreferenceStore.baseColorFor(it) }
                 ?: baseColorPreferenceStore.lastAppliedBaseColor()
+            if (currentUserId != userId) return@launch
             themePreferenceStore.setLastAppliedPreference(resolvedPreference)
             themePreferenceStore.setLastAppliedThemeColor(resolvedThemeColor)
             baseColorPreferenceStore.setLastAppliedBaseColor(resolvedBaseColor)
+            if (currentUserId != userId) return@launch
             _themePreference.update { resolvedPreference }
             _themeColor.update { resolvedThemeColor }
             _baseColor.update { resolvedBaseColor }

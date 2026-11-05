@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +61,10 @@ internal fun ThemePaletteDialog(
         title = { Text("Choose a color") },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxDialogContentHeight)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -157,6 +163,8 @@ internal fun ThemePaletteDialog(
         }
     )
 }
+
+private val maxDialogContentHeight = 420.dp
 
 @Composable
 private fun PresetOption(label: String, color: Color, selected: Boolean, onClick: () -> Unit) {

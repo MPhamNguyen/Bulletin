@@ -20,12 +20,16 @@ fun BulletinTheme(
     PlatformSystemBarAppearance(isDarkTheme = darkTheme)
     val baseColorScheme = if (darkTheme) DarkColors else LightColors
     val tintedBackground = baseColor.color.copy(alpha = 0.12f).compositeOver(baseColorScheme.background)
+    val tintedSurface = baseColor.color.copy(alpha = 0.06f).compositeOver(baseColorScheme.surface)
+    val primaryContainer = derivePrimaryContainerColor(themeColor.color, tintedSurface, darkTheme)
     val colorScheme = baseColorScheme.copy(
         primary = themeColor.color,
-        onPrimary = if (themeColor.color.luminance() > 0.45f) Color.Black else Color.White,
+        onPrimary = contentColorFor(themeColor.color),
+        primaryContainer = primaryContainer,
+        onPrimaryContainer = contentColorFor(primaryContainer),
         background = tintedBackground,
-        onBackground = if (tintedBackground.luminance() > 0.45f) Color.Black else Color.White,
-        surface = baseColor.color.copy(alpha = 0.06f).compositeOver(baseColorScheme.surface),
+        onBackground = contentColorFor(tintedBackground),
+        surface = tintedSurface,
         surfaceVariant = baseColor.color.copy(alpha = 0.08f).compositeOver(baseColorScheme.surfaceVariant),
         surfaceContainerLow = baseColor.color.copy(alpha = 0.06f)
             .compositeOver(baseColorScheme.surfaceContainerLow),
@@ -49,3 +53,15 @@ fun BulletinTheme(
         )
     }
 }
+
+internal fun contentColorFor(background: Color): Color =
+    if (background.luminance() > MINIMUM_LIGHTNESS_FOR_BLACK_TEXT) Color.Black else Color.White
+
+internal fun derivePrimaryContainerColor(primary: Color, surface: Color, darkTheme: Boolean): Color {
+    val tintAmount = if (darkTheme) DARK_PRIMARY_CONTAINER_TINT else LIGHT_PRIMARY_CONTAINER_TINT
+    return primary.copy(alpha = tintAmount).compositeOver(surface)
+}
+
+private const val MINIMUM_LIGHTNESS_FOR_BLACK_TEXT = 0.179f
+private const val LIGHT_PRIMARY_CONTAINER_TINT = 0.16f
+private const val DARK_PRIMARY_CONTAINER_TINT = 0.32f
