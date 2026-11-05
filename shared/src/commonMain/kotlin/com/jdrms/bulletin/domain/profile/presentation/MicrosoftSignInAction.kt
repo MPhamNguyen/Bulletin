@@ -23,8 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinBrandColors
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
-import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -39,12 +39,12 @@ internal fun MicrosoftSignInAction(
         Text("Microsoft sign-in cancelled. You can try again.", style = MaterialTheme.typography.bodySmall)
     }
     MicrosoftSignInDivider()
-    // design-system-exempt: branded sign-in needs a pill shape, surface fill, and border
+    // design-system-exempt: branded sign-in keeps its surface fill and border with the shared button shape
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = BulletinShapes.pill,
+        shape = BulletinButtonDefaults.shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface

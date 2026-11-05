@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
+import com.jdrms.bulletin.domain.profile.domain.model.EmailAlreadyInUseException
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
@@ -120,5 +121,29 @@ class RegistrationViewModelTest {
         advanceUntilIdle()
         assertEquals("resend failed", vm.uiState.value.errorMessage)
         assertIs<RegistrationStage.Verification>(vm.uiState.value.stage)
+    }
+
+    @Test
+    fun emailAlreadyInUseStaysOnFormAndShowsTheMessage() = profileTest {
+        val profiles = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
+        val delegate = InMemoryAuthRepository(profiles, testVerificationCode = "123456")
+        val auth = object : AuthRepository by delegate {
+            override suspend fun register(
+                email: StudentEmail,
+                password: String,
+                fullName: String,
+                university: String
+            ) = Result.Error(EmailAlreadyInUseException())
+        }
+        val vm = RegistrationViewModel(
+            RegisterStudent(auth),
+            VerifyStudentEmail(auth),
+            ResendVerificationCode(auth),
+            AuthSessionRepository(auth)
+        )
+        vm.register("Test", "Student", "student@school.edu", "password123")
+        advanceUntilIdle()
+        assertIs<RegistrationStage.Form>(vm.uiState.value.stage)
+        assertEquals(EmailAlreadyInUseException.MESSAGE, vm.uiState.value.errorMessage)
     }
 }

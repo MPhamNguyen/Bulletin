@@ -75,6 +75,8 @@ class EmailAuthConfigurationTest {
     companion object {
         private val email = StudentEmail("student@school.edu")
         private const val user = """{"id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-            "aud":"authenticated","email":"student@school.edu","identities":[]}"""
+            "aud":"authenticated","email":"student@school.edu","identities":[{"identity_id":"11111111-2222-3333-4444-555555555555",
+            "id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","user_id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "identity_data":{"email":"student@school.edu"},"provider":"email","created_at":"2026-01-01T00:00:00Z"}]}"""
     }
 }

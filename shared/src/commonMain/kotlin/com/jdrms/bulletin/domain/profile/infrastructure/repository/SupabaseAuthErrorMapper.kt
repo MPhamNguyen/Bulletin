@@ -1,13 +1,15 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
+import com.jdrms.bulletin.domain.profile.domain.model.EmailAlreadyInUseException
+
 internal object SupabaseAuthErrorMapper {
     private val COMMON_ERROR_RULES = listOf(
         listOf("otp_expired", "token has expired", "token is invalid") to
             "This code is invalid or has expired. Request a new code and try again.",
         listOf("over_request_rate_limit", "over_email_send_rate_limit", "email rate limit exceeded") to
             "Too many signup attempts. Please wait a few minutes before trying again.",
-        listOf("user_already_exists", "user already registered") to
-            "An account with this email address already exists. Please log in instead.",
+        listOf("user_already_exists", "user already registered", "bulletin_account_conflict") to
+            EmailAlreadyInUseException.MESSAGE,
         listOf("invalid_credentials", "invalid login credentials") to
             "Invalid email or password. Please try again.",
         listOf("email_address_invalid", "invalid email") to

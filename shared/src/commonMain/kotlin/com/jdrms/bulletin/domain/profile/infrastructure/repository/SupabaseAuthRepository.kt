@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.EmailAlreadyInUseException
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationCode
 import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
@@ -73,7 +74,7 @@ class SupabaseAuthRepository(
         university: String
     ): Result<PendingRegistration> {
         return runCatching {
-            supabase.auth.signUpWith(Email) {
+            val signUp = supabase.auth.signUpWith(Email) {
                 this.email = email.value
                 this.password = password
                 data = buildJsonObject {
@@ -81,6 +82,8 @@ class SupabaseAuthRepository(
                     put("university", university)
                 }
             }
+            // Empty identities mean the address already belongs to a confirmed account; null is unknown.
+            if (signUp?.identities?.isEmpty() == true) throw EmailAlreadyInUseException()
             // Confirmation must be enforced by the server, never inferred from a profile row.
             if (supabase.auth.currentSessionOrNull() != null) {
                 sessionGuard.rejectSession("Email confirmation is unavailable. Please contact support.")
@@ -171,6 +174,7 @@ class SupabaseAuthRepository(
 
     private fun authFailure(throwable: Throwable): Result.Error {
         if (throwable is CancellationException) throw throwable
+        if (throwable is EmailAlreadyInUseException) return Result.Error(throwable)
         return Result.Error(Exception(mapAuthErrorMessage(throwable), throwable))
     }
 
