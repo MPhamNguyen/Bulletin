@@ -45,6 +45,10 @@ Students can discover listings, buy or sell items, message other students, build
 
 > Feature availability depends on backend configuration. This README does not claim production readiness.
 
+Unsent message drafts are kept separately for each conversation while the messaging ViewModel is alive.
+Successful sends clear the submitted draft; failed sends retain it. Signing out or switching accounts clears
+all drafts. Drafts are held in memory and do not survive an app restart.
+
 ---
 
 ## 📱 App Flow

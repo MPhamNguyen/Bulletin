@@ -54,9 +54,11 @@ class MessagesViewModel(
         observeJob = null
     }
     private var visibleViewerId: SenderId? = null
+    private val drafts = ConversationMessageDrafts(threadState)
     private val showFailure: (Result.Error) -> Unit = { error ->
         val presented = threadState.value.withFailure(error)
         if (presented.identityUnavailable) {
+            drafts.reset()
             loadJob?.cancel()
             olderHistory.cancel()
             observeJob?.cancel()
@@ -69,7 +71,8 @@ class MessagesViewModel(
         sendMessage,
         reportMessage,
         hideConversation,
-        viewModelScope
+        viewModelScope,
+        drafts
     )
     private val messageReportActions = MessageReportActions(
         threadState,
@@ -100,6 +103,7 @@ class MessagesViewModel(
     )
     private val conversationSelection = MessagesConversationSelection(
         threadState,
+        drafts,
         cancelCurrentLoads = {
             loadJob?.cancel()
             olderHistory.cancel()
@@ -133,6 +137,7 @@ class MessagesViewModel(
 
     private fun applyInboxSelection(snapshot: InboxState) {
         if (snapshot.viewerId != visibleViewerId) {
+            drafts.reset()
             val previousViewerId = visibleViewerId
             visibleViewerId = snapshot.viewerId
             loadJob?.cancel()
@@ -210,16 +215,7 @@ class MessagesViewModel(
     fun hideConversationFromInbox(conversationId: ConversationId) =
         actions.hideConversation(conversationId, showFailure)
 
-    fun onMessageInputChanged(input: String) {
-        threadState.update {
-            it.copy(
-                messageInput = input,
-                editError = null,
-                errorMessage = null,
-                statusMessage = null
-            )
-        }
-    }
+    fun onMessageInputChanged(input: String) = drafts.inputChanged(input)
 
     val toggleReportedMessageVisibility: (MessageId) -> Unit = actions::toggleVisibility
 
