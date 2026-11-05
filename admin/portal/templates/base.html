@@ -3,23 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Reports{% endblock %} · Bulletin Admin</title>
+  <title>{% block title %}Reports{% endblock %} | Bulletin Admin</title>
+  <script src="{{ url_for('portal.asset', filename='theme-toggle.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('portal.asset', filename='style.css') }}">
   {% block scripts %}{% endblock %}
 </head>
 <body>
-  <header>
-    <a href="{{ url_for('portal.home') }}">Bulletin Admin</a>
-    {% if g.admin is defined %}
-      <span>{{ g.admin.full_name or g.admin.email }}</span>
-      <form method="post" action="{{ url_for('portal.logout') }}">
-        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-        <button type="submit">Sign out</button>
-      </form>
-    {% endif %}
+  <header class="border-b border-line bg-white dark:bg-slate-900 shadow-sm">
+    <div class="mx-auto flex min-h-[76px] max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:gap-6 sm:px-6 lg:flex-nowrap lg:gap-8 lg:px-8">
+      <a class="flex shrink-0 items-center gap-3 text-ink no-underline" href="{{ url_for('portal.home') }}" aria-label="Bulletin Admin home">
+        <span class="grid size-10 place-items-center rounded-xl bg-primary dark:bg-blue-800 text-white shadow-md" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 18.5V6l6-2 6 2v12.5l-6 2-6-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span><span class="block text-base font-bold tracking-tight">Bulletin</span><span class="hidden text-[10px] font-semibold uppercase tracking-[.14em] text-muted sm:block">Admin workspace</span></span>
+      </a>
+      {% if g.admin is defined %}
+      <nav class="order-3 flex w-full flex-1 items-center gap-1 overflow-x-auto lg:order-none lg:w-auto" aria-label="Main navigation">
+        <a class="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-muted no-underline hover:bg-primary-container hover:text-primary {% if request.endpoint == 'portal.home' %}bg-primary-container text-primary{% endif %}" href="{{ url_for('portal.home') }}" {% if request.endpoint == 'portal.home' %}aria-current="page"{% endif %}>
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3.5 10 8.5-7 8.5 7v10a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 21v-7h6v7" stroke="currentColor" stroke-width="1.7"/></svg>Overview
+        </a>
+        <a class="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-muted no-underline hover:bg-primary-container hover:text-primary {% if request.endpoint in ('portal.reports', 'portal.review', 'conversation.review') %}bg-primary-container text-primary{% endif %}" href="{{ url_for('portal.reports') }}" {% if request.endpoint in ('portal.reports', 'portal.review', 'conversation.review') %}aria-current="page"{% endif %}>
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h9l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14.5 3.5v5h5M8 13h8M8 16.5h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Reports
+        </a>
+        <a class="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-muted no-underline hover:bg-primary-container hover:text-primary {% if request.endpoint in ('users.index', 'users.detail') %}bg-primary-container text-primary{% endif %}" href="{{ url_for('users.index') }}" {% if request.endpoint in ('users.index', 'users.detail') %}aria-current="page"{% endif %}>
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 5a3.3 3.3 0 0 1 0 6.4M17 14.2a4.5 4.5 0 0 1 3.5 4.3V20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Manage users
+        </a>
+        <a class="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-muted no-underline hover:bg-primary-container hover:text-primary {% if request.endpoint in ('directory.index', 'directory.detail') %}bg-primary-container text-primary{% endif %}" href="{{ url_for('directory.index') }}" {% if request.endpoint in ('directory.index', 'directory.detail') %}aria-current="page"{% endif %}>
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.7"/><path d="m15.5 15.5 5 5M8 10.8h5.6M10.8 8v5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Directory
+        </a>
+      </nav>
+      {% endif %}
+      <div class="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+        <button class="grid size-9 place-items-center rounded-full border border-line bg-paper text-primary transition hover:bg-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" id="theme-toggle" type="button" aria-label="Switch to dark theme" aria-pressed="false" title="Switch to dark theme">
+          <svg class="size-4" data-theme-icon="sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="hidden size-4" data-theme-icon="moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        {% if g.admin is defined %}
+        <span class="grid size-9 place-items-center rounded-full bg-primary-container text-xs font-bold uppercase text-primary" aria-hidden="true">{{ (g.admin.full_name or g.admin.email)[:1] }}</span>
+        <span class="hidden max-w-44 truncate text-xs text-muted sm:block">{{ g.admin.full_name or g.admin.email }}</span>
+        <form class="m-0" method="post" action="{{ url_for('portal.logout') }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="rounded-lg border border-transparent bg-transparent px-3 py-2 text-xs font-semibold text-muted hover:bg-paper" type="submit">Sign out</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
   </header>
-  <main>
-    {% for message in get_flashed_messages() %}<p class="notice" role="status">{{ message }}</p>{% endfor %}
+  <main class="mx-auto min-h-[calc(100vh-77px)] max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-11">
+    {% for message in get_flashed_messages() %}<p class="mb-5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/50 px-4 py-3 text-sm text-blue-800 dark:text-blue-300" role="status">{{ message }}</p>{% endfor %}
     {% block content %}{% endblock %}
   </main>
 </body>

@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@source "../portal/templates";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", "Aptos", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #0D1321;
+  --color-paper: #F5F5F5;
+  --color-primary: #3E5C76;
+  --color-primary-dark: #30485D;
+  --color-primary-container: #DCE4EB;
+  --color-secondary: #748CAB;
+  --color-line: #DDE2E8;
+  --color-muted: #5C6C80;
+  --color-danger: #a34239;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-ink: #F0F4F8;
+  --color-paper: #0B0F19;
+  --color-primary: #AFC8FF;
+  --color-primary-dark: #D3E0F0;
+  --color-primary-container: #243348;
+  --color-secondary: #8FA8C8;
+  --color-line: #334155;
+  --color-muted: #A0AEC0;
+}
+
+@layer base {
+  * { @apply box-border; }
+  body { @apply m-0 min-w-80 bg-paper font-sans text-[15px] leading-relaxed text-ink antialiased; }
+  a { @apply text-primary underline-offset-4 hover:text-primary-dark; }
+  button, input, select, textarea { @apply max-w-full font-sans; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-primary; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

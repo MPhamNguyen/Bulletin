@@ -1,25 +1,26 @@
 {% extends 'base.html' %}
 {% block title %}Reported conversation{% endblock %}
 {% block content %}
-<a href="{{ url_for('portal.review', report_id=report.id) }}">Return to report</a>
-<h1>Conversation history</h1>
-<p>Report {{ report.id }}<br>Conversation {{ reported_message.conversation_id }}</p>
-<p class="muted">Stored messages are shown from oldest to newest, 50 per page. Use Next messages to read the rest of the chat. Deleted messages cannot be recovered here.</p>
-<p><strong>Reported message:</strong></p>
-<blockquote class="content">{{ reported_message.body or 'Empty message' }}</blockquote>
-<p class="muted">{{ reported_message.created_at|utc_timestamp }}</p>
-<h2>Chat · page {{ page }}</h2>
-<ol class="chat-history" aria-label="Conversation messages">
+<a class="mb-4 inline-block text-sm font-semibold text-primary no-underline hover:underline" href="{{ url_for('portal.review', report_id=report.id) }}">← Return to report</a>
+<div class="mb-6"><p class="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">Report {{ report.id }}</p><h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Conversation history</h1><p class="mt-2 break-all text-sm text-muted">Conversation {{ reported_message.conversation_id }}</p></div>
+<p class="mb-5 rounded-xl bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-sm leading-relaxed text-amber-900 dark:text-amber-200">Stored messages are shown from oldest to newest, 50 per page. Use Next messages to read the rest of the chat. Deleted messages cannot be recovered here.</p>
+<section class="mb-6 rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/50 p-5">
+  <p class="mb-2 text-xs font-bold uppercase tracking-wide text-blue-900 dark:text-blue-200">Reported message</p>
+  <blockquote class="whitespace-pre-wrap break-words border-l-2 border-primary pl-4 text-sm">{{ reported_message.body or 'Empty message' }}</blockquote>
+  <p class="mt-3 text-xs text-muted">{{ reported_message.created_at|utc_timestamp }}</p>
+</section>
+<h2 class="mb-4 text-lg font-bold tracking-tight">Chat — page {{ page }}</h2>
+<ol class="grid gap-3 p-0 [list-style:none]" aria-label="Conversation messages">
 {% for message in messages %}
-  <li class="chat-message{% if message.id == reported_message.id %} reported-message{% endif %}">
-    {% if message.id == reported_message.id %}<p><strong>Reported message</strong></p>{% endif %}
-    <p><strong>{{ senders.get(message.sender_id, 'Unavailable profile') }}</strong><br><span class="muted">{{ message.sender_id or 'Deleted sender' }} · {{ message.created_at|utc_timestamp }}</span></p>
-    <p class="content">{{ message.body or 'Empty message' }}</p>
+  <li class="rounded-2xl border p-4 {% if message.id == reported_message.id %}border-blue-300 bg-blue-50/70 dark:border-blue-800 dark:bg-blue-950/50{% else %}border-line bg-white dark:bg-slate-900{% endif %}">
+    {% if message.id == reported_message.id %}<p class="mb-2 text-xs font-bold text-primary">Reported message</p>{% endif %}
+    <p class="mb-2 text-sm font-semibold">{{ senders.get(message.sender_id, 'Unavailable profile') }}<br><span class="break-all text-xs font-normal text-muted">{{ message.sender_id or 'Deleted sender' }} · {{ message.created_at|utc_timestamp }}</span></p>
+    <p class="whitespace-pre-wrap break-words text-sm">{{ message.body or 'Empty message' }}</p>
   </li>
-{% else %}<li>No messages on this page.</li>{% endfor %}
+{% else %}<li class="rounded-xl bg-white dark:bg-slate-900 p-5 text-center text-sm text-muted">No messages on this page.</li>{% endfor %}
 </ol>
-<nav aria-label="Conversation pages">
-  {% if page > 1 %}<a href="{{ url_for('conversation.review', report_id=report.id, page=page-1) }}">Previous messages</a>{% endif %}
-  {% if has_next %}<a href="{{ url_for('conversation.review', report_id=report.id, page=page+1) }}">Next messages</a>{% endif %}
+<nav class="mt-5 flex gap-2" aria-label="Conversation pages">
+  {% if page > 1 %}<a class="rounded-lg border border-line bg-white dark:bg-slate-900 px-4 py-2 text-xs font-semibold text-primary no-underline hover:bg-primary-container" href="{{ url_for('conversation.review', report_id=report.id, page=page-1) }}">Previous messages</a>{% endif %}
+  {% if has_next %}<a class="rounded-lg border border-line bg-white dark:bg-slate-900 px-4 py-2 text-xs font-semibold text-primary no-underline hover:bg-primary-container" href="{{ url_for('conversation.review', report_id=report.id, page=page+1) }}">Next messages</a>{% endif %}
 </nav>
 {% endblock %}

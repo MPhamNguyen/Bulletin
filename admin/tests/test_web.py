@@ -105,9 +105,9 @@ class PortalTests(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(200, response.status_code)
         html = response.get_data(as_text=True)
-        self.assertIn("Admin home", html)
-        self.assertIn('href="/reports">', html)
-        self.assertIn('<span>View Reports</span>', html)
+        self.assertIn("Good work starts with a safer community.", html)
+        self.assertRegex(html, r'<a class="[^"]+" href="/reports">')
+        self.assertIn("Review reports", html)
         self.assertFalse(self.backend.queries)
         reports = self.client.get("/reports")
         self.assertEqual(200, reports.status_code)
@@ -378,6 +378,15 @@ class PortalTests(unittest.TestCase):
 
     def test_local_stylesheet_is_available_without_backend_configuration(self):
         self.backend.available = False
+        page = self.client.get("/login")
+        html = page.get_data(as_text=True)
+        self.assertIn('id="theme-toggle"', html)
+        self.assertIn('src="/assets/theme-toggle.js"', html)
+        self.assertIn("'self'", page.headers["Content-Security-Policy"].split("script-src ")[1].split(";")[0])
+        script = self.client.get("/assets/theme-toggle.js")
+        self.assertEqual(200, script.status_code)
+        self.assertIn("bulletin-admin-theme", script.get_data(as_text=True))
+        script.close()
         response = self.client.get("/assets/style.css")
         self.assertEqual(200, response.status_code)
         self.assertEqual("text/css", response.mimetype)

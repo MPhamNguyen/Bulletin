@@ -1,18 +1,25 @@
 {% extends 'base.html' %}
-{% block title %}Home{% endblock %}
+{% block title %}Overview{% endblock %}
 {% block content %}
-<h1>Admin home</h1>
-<p>Review reports and manage reported accounts and listings.</p>
-<a class="button reports-button" href="{{ url_for('portal.reports') }}">
-  <img class="reports-icon" src="{{ url_for('portal.asset', filename='reports.png') }}" alt="" width="64" height="64">
-  <span>View Reports</span>
-</a>
-<a class="button reports-button" href="{{ url_for('users.index') }}">
-  <img class="reports-icon" src="https://static.vecteezy.com/system/resources/thumbnails/041/273/249/small/hand-drawn-red-x-sign-on-transparent-background-png.png" alt="" width="64" height="64" referrerpolicy="no-referrer">
-  <span>Manage Users</span>
-</a>
-<a class="button reports-button" href="{{ url_for('directory.index') }}">
-  <img class="reports-icon" src="{{ url_for('portal.asset', filename='search-users.png') }}" alt="" width="64" height="64">
-  <span>Search All Users</span>
-</a>
+<section class="relative isolate overflow-hidden rounded-3xl bg-primary dark:bg-blue-800 px-6 py-10 text-white shadow-xl sm:px-11 sm:py-11">
+  <div class="pointer-events-none absolute -right-16 -top-36 -z-10 size-80 rounded-full border border-white/10 shadow-[0_0_0_42px_rgb(255_255_255_/_3%),0_0_0_86px_rgb(255_255_255_/_3%)]"></div>
+  <p class="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-slate-200/80">Moderator workspace</p>
+  <h1 class="max-w-2xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Good work starts with a safer community.</h1>
+  <p class="mt-4 max-w-xl text-sm leading-relaxed text-blue-50/90">Review reports, support account access, and find the context you need to make thoughtful decisions.</p>
+</section>
+<h2 class="mb-4 mt-9 text-xs font-bold uppercase tracking-[.12em] text-muted">Your tools</h2>
+<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+  <a class="group flex min-h-40 items-start gap-4 rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 text-ink no-underline shadow-sm transition hover:-translate-y-1 hover:border-blue-200 dark:hover:border-blue-900 hover:shadow-lg" href="{{ url_for('portal.reports') }}">
+    <span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary-container text-secondary" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M6 3.5h9l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14.5 3.5v5h5M8 13h8M8 16.5h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+    <span><span class="block text-base font-bold tracking-tight">Review reports</span><span class="mt-1 block text-xs leading-relaxed text-muted">Investigate reported listings, messages, and accounts.</span><span class="mt-4 block text-xs font-bold text-primary">Open report queue <span aria-hidden="true">→</span></span></span>
+  </a>
+  <a class="group flex min-h-40 items-start gap-4 rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 text-ink no-underline shadow-sm transition hover:-translate-y-1 hover:border-blue-200 dark:hover:border-blue-900 hover:shadow-lg" href="{{ url_for('users.index') }}">
+    <span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary-container text-secondary" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 5a3.3 3.3 0 0 1 0 6.4M17 14.2a4.5 4.5 0 0 1 3.5 4.3V20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+    <span><span class="block text-base font-bold tracking-tight">Manage users</span><span class="mt-1 block text-xs leading-relaxed text-muted">Review suspended accounts and restore access when appropriate.</span><span class="mt-4 block text-xs font-bold text-primary">Manage accounts <span aria-hidden="true">→</span></span></span>
+  </a>
+  <a class="group flex min-h-40 items-start gap-4 rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 text-ink no-underline shadow-sm transition hover:-translate-y-1 hover:border-blue-200 dark:hover:border-blue-900 hover:shadow-lg" href="{{ url_for('directory.index') }}">
+    <span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary-container text-secondary" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.7"/><path d="m15.5 15.5 5 5M8 10.8h5.6M10.8 8v5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+    <span><span class="block text-base font-bold tracking-tight">Search the directory</span><span class="mt-1 block text-xs leading-relaxed text-muted">Find a member profile and review their public listings.</span><span class="mt-4 block text-xs font-bold text-primary">Search users <span aria-hidden="true">→</span></span></span>
+  </a>
+</div>
 {% endblock %}

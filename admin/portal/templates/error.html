@@ -1,7 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Request unsuccessful{% endblock %}
 {% block content %}
-<h1>Request unsuccessful ({{ status }})</h1>
-<p class="error" role="alert">{{ message }}</p>
-<p><a href="{{ url_for('portal.reports') }}">Return to reports</a> · <a href="{{ url_for('portal.login') }}">Sign in</a></p>
+<section class="mx-auto max-w-xl rounded-2xl border border-line bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
+  <p class="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">Request error</p>
+  <h1 class="text-2xl font-bold tracking-tight text-ink">Request unsuccessful ({{ status }})</h1>
+  <p class="mt-4 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300" role="alert">{{ message }}</p>
+  <p class="mt-5 text-sm"><a class="font-semibold text-primary hover:underline" href="{{ url_for('portal.reports') }}">Return to reports</a><span class="px-2 text-slate-300">·</span><a class="font-semibold text-primary hover:underline" href="{{ url_for('portal.login') }}">Sign in</a></p>
+</section>
 {% endblock %}

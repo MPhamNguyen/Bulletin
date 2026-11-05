@@ -124,7 +124,7 @@ def security_headers(response):
         "Pragma": "no-cache",
         "Content-Security-Policy": (
             "default-src 'none'; script-src 'self'; style-src 'self'; "
-            "img-src 'self' https://static.vecteezy.com" + image_origin + "; "
+            "img-src 'self'" + image_origin + "; "
             "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
         ),
         "X-Content-Type-Options": "nosniff",

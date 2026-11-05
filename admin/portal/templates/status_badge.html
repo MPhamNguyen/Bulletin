@@ -1,0 +1,16 @@
+{% macro status_badge(value, statuses, aliases) -%}
+  {% set normalized = aliases.get(value, value) if value else '' %}
+  {% set label = statuses.get(normalized, value|replace('_', ' ')|title if value else 'Unknown') %}
+  {% if normalized == 'open' %}
+    {% set colors = 'bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300' %}
+  {% elif normalized == 'in_review' %}
+    {% set colors = 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200' %}
+  {% elif normalized == 'resolved' %}
+    {% set colors = 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300' %}
+  {% elif normalized == 'dismissed' %}
+    {% set colors = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' %}
+  {% else %}
+    {% set colors = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' %}
+  {% endif %}
+  <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ colors }}">{{ label }}</span>
+{%- endmacro %}

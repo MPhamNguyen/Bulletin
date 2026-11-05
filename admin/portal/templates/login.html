@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 {% block title %}Sign in{% endblock %}
 {% block content %}
-<section class="login">
-  <h1>Administrator sign in</h1>
-  <p>Use your Bulletin administrator account.</p>
-  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
-  <form method="post" action="{{ url_for('portal.login') }}">
+<section class="mx-auto my-[6vh] w-full max-w-md rounded-3xl border border-line bg-white dark:bg-slate-900 p-7 shadow-xl sm:p-9">
+  <div class="mb-7 grid size-12 place-items-center rounded-2xl bg-primary-container text-primary" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 18.5V6l6-2 6 2v12.5l-6 2-6-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <p class="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">Bulletin Admin</p>
+  <h1 class="text-3xl font-bold tracking-tight text-ink">Administrator sign in</h1>
+  <p class="mt-2 text-sm text-muted">Use your Bulletin administrator account.</p>
+  {% if error %}<p class="mt-5 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-800 dark:text-red-300" role="alert">{{ error }}</p>{% endif %}
+  <form class="mt-7 space-y-4" method="post" action="{{ url_for('portal.login') }}">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email" autocomplete="username" maxlength="320" required>
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" maxlength="4096" required>
-    <button type="submit">Sign in</button>
+    <div><label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200" for="email">Email</label><input class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-ink placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900" id="email" name="email" type="email" autocomplete="username" maxlength="320" required></div>
+    <div><label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200" for="password">Password</label><input class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-ink placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900" id="password" name="password" type="password" autocomplete="current-password" maxlength="4096" required></div>
+    <button class="mt-2 w-full rounded-lg bg-primary dark:bg-blue-800 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-dark dark:hover:bg-blue-700" type="submit">Sign in</button>
   </form>
 </section>
 {% endblock %}

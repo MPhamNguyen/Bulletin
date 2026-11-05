@@ -31,7 +31,7 @@ class UserDirectoryTests(unittest.TestCase):
     def test_home_links_to_all_user_search(self):
         html = self.client.get("/").get_data(as_text=True)
         self.assertIn('href="/directory"', html)
-        self.assertIn("Search All Users", html)
+        self.assertIn("Search the directory", html)
 
     def test_search_results_link_to_public_profile(self):
         response = self.client.get("/directory?q=Target")

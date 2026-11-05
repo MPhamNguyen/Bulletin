@@ -21,7 +21,10 @@ class ListingReviewTests(unittest.TestCase):
         response = self.client.get(self.path)
         self.assertEqual(200, response.status_code)
         html = response.get_data(as_text=True)
-        match = re.search(r'<form method="post" action="' + self.path + r'/listing/delete">(.*?)</form>', html, re.S)
+        match = re.search(
+            r'<form\b(?=[^>]*method="post")(?=[^>]*action="' +
+            re.escape(self.path) + r'/listing/delete")[^>]*>(.*?)</form>', html, re.S,
+        )
         self.assertIsNotNone(match)
         return {name: re.search(r'name="' + name + r'" value="([^"]+)"', match.group(1)).group(1)
                 for name in ("csrf", "version")}
@@ -34,10 +37,10 @@ class ListingReviewTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("https://project.supabase.co/storage/v1/object/public/listing_imgs/" + LISTING + "/first%20image.jpg", html)
         self.assertIn("Open full image", html)
-        self.assertIn("listing-photos", html)
+        self.assertIn("grid-cols-1", html)
         directives = dict(part.strip().split(None, 1) for part in
                           response.headers["Content-Security-Policy"].split(";") if part.strip())
-        self.assertEqual({"'self'", "https://project.supabase.co", "https://static.vecteezy.com"},
+        self.assertEqual({"'self'", "https://project.supabase.co"},
                          set(directives["img-src"].split()))
         self.assertNotIn("verified-token", html)
         query = next(query for table, query in self.backend.queries if table == "listing_images")

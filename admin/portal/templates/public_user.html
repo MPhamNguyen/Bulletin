@@ -1,38 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}User profile and listings{% endblock %}
 {% block content %}
-<a href="{{ url_for('directory.index') }}">Search All Users</a>
-<h1>{{ profile.full_name or 'Unnamed user' }}</h1>
-{% if avatar %}<img class="profile-avatar" src="{{ avatar }}" alt="Profile photo" width="96" height="96" referrerpolicy="no-referrer">{% endif %}
-<p class="muted">{{ profile.id }}</p>
-{% if profile.deleted_at %}<p class="notice">This profile has been deleted.</p>{% endif %}
-<dl>
-  <dt>University</dt><dd>{{ profile.university or 'Not provided' }}</dd>
-  <dt>Major</dt><dd>{{ profile.major or 'Not provided' }}</dd>
-  <dt>Bio</dt><dd class="content">{{ profile.bio or 'Not provided' }}</dd>
-  <dt>Verification</dt><dd>{{ 'Verified' if profile.is_verified is sameas true else 'Not verified' }}</dd>
-</dl>
-<h2>Listings</h2>
-{% if listing_error %}<p class="error" role="alert">{{ listing_error }}</p>
+<a class="mb-4 inline-block text-sm font-semibold text-primary no-underline hover:underline" href="{{ url_for('directory.index') }}">← Search all users</a>
+<section class="mb-5 rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 shadow-sm sm:p-7">
+  <div class="flex flex-wrap items-center gap-4">
+    {% if avatar %}<img class="size-20 rounded-full border-4 border-primary-container object-cover" src="{{ avatar }}" alt="Profile photo" width="96" height="96" referrerpolicy="no-referrer">{% else %}<span class="grid size-20 place-items-center rounded-full bg-primary-container text-2xl font-bold uppercase text-primary" aria-hidden="true">{{ (profile.full_name or 'U')[:1] }}</span>{% endif %}
+    <div class="min-w-0"><p class="mb-1 text-[11px] font-bold uppercase tracking-[.14em] text-muted">Member profile</p><h1 class="break-words text-3xl font-bold tracking-tight text-ink">{{ profile.full_name or 'Unnamed user' }}</h1><p class="mt-1 break-all text-xs text-muted">{{ profile.id }}</p></div>
+  </div>
+  {% if profile.deleted_at %}<p class="mt-5 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">This profile has been deleted.</p>{% endif %}
+  <dl class="mt-6 grid gap-x-8 sm:grid-cols-2">
+    <div class="border-t border-slate-100 dark:border-slate-800 py-4"><dt class="text-[10px] font-bold uppercase tracking-wider text-muted">University</dt><dd class="mt-1 text-sm">{{ profile.university or 'Not provided' }}</dd></div>
+    <div class="border-t border-slate-100 dark:border-slate-800 py-4"><dt class="text-[10px] font-bold uppercase tracking-wider text-muted">Major</dt><dd class="mt-1 text-sm">{{ profile.major or 'Not provided' }}</dd></div>
+    <div class="border-t border-slate-100 dark:border-slate-800 py-4"><dt class="text-[10px] font-bold uppercase tracking-wider text-muted">Bio</dt><dd class="mt-1 whitespace-pre-wrap break-words text-sm">{{ profile.bio or 'Not provided' }}</dd></div>
+    <div class="border-t border-slate-100 dark:border-slate-800 py-4"><dt class="text-[10px] font-bold uppercase tracking-wider text-muted">Verification</dt><dd class="mt-1 text-sm">{{ 'Verified' if profile.is_verified is sameas true else 'Not verified' }}</dd></div>
+  </dl>
+</section>
+<h2 class="mb-4 text-lg font-bold tracking-tight">Listings</h2>
+{% if listing_error %}<p class="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300" role="alert">{{ listing_error }}</p>
 {% else %}
-<div class="user-listings">
+<div class="grid gap-4">
 {% for item in listings %}
-  <article class="user-listing">
-    <h3>{{ item.listing.name or 'Untitled listing' }}</h3>
-    <p>Price: {{ item.listing.price if item.listing.price is not none else 'Not provided' }} · {{ 'Sold' if item.listing.is_sold else 'Not sold' }}</p>
-    <p>Category: {{ item.listing.category or 'Not provided' }} · Condition: {{ item.listing.condition or 'Not provided' }}</p>
-    <p class="content">{{ item.listing.description or 'No description provided.' }}</p>
-    <p class="muted">Listing {{ item.listing.id }} · {{ item.listing.created_at|utc_timestamp }}</p>
-    {% if item.photo_error %}<p class="error" role="alert">{{ item.photo_error }}</p>
-    {% elif item.photos %}<div class="listing-photos">
-      {% for photo in item.photos %}<a href="{{ photo }}" target="_blank" rel="noopener noreferrer"><img src="{{ photo }}" alt="{{ item.listing.name or 'Listing' }} — photo {{ loop.index }}" loading="lazy" referrerpolicy="no-referrer"></a>{% endfor %}
-    </div>{% else %}<p class="muted">No listing photos.</p>{% endif %}
+  <article class="rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <h3 class="text-lg font-bold tracking-tight">{{ item.listing.name or 'Untitled listing' }}</h3>
+    <p class="mt-2 text-sm">Price: {{ item.listing.price if item.listing.price is not none else 'Not provided' }} · {{ 'Sold' if item.listing.is_sold else 'Not sold' }}</p>
+    <p class="text-sm">Category: {{ item.listing.category or 'Not provided' }} · Condition: {{ item.listing.condition or 'Not provided' }}</p>
+    <p class="mt-3 whitespace-pre-wrap break-words text-sm">{{ item.listing.description or 'No description provided.' }}</p>
+    <p class="mt-3 break-all text-xs text-muted">Listing {{ item.listing.id }} · {{ item.listing.created_at|utc_timestamp }}</p>
+    {% if item.photo_error %}<p class="mt-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-800 dark:text-red-300" role="alert">{{ item.photo_error }}</p>
+    {% elif item.photos %}<div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {% for photo in item.photos %}<a href="{{ photo }}" target="_blank" rel="noopener noreferrer"><img class="max-h-72 w-full rounded-xl border border-line bg-paper object-contain" src="{{ photo }}" alt="{{ item.listing.name or 'Listing' }} — photo {{ loop.index }}" loading="lazy" referrerpolicy="no-referrer"></a>{% endfor %}
+    </div>{% else %}<p class="mt-3 text-xs text-muted">No listing photos.</p>{% endif %}
   </article>
-{% else %}<p>This user has no listings.</p>{% endfor %}
+{% else %}<p class="rounded-xl border border-line bg-white dark:bg-slate-900 p-5 text-sm text-muted">This user has no listings.</p>{% endfor %}
 </div>
-<nav aria-label="User listing pages">
-  {% if page > 1 %}<a href="{{ url_for('directory.detail', user_id=profile.id, page=page-1) }}">Previous listings</a>{% endif %}
-  {% if has_next %}<a href="{{ url_for('directory.detail', user_id=profile.id, page=page+1) }}">Next listings</a>{% endif %}
+<nav class="mt-5 flex gap-2" aria-label="User listing pages">
+  {% if page > 1 %}<a class="rounded-lg border border-line bg-white dark:bg-slate-900 px-4 py-2 text-xs font-semibold text-primary no-underline hover:bg-primary-container" href="{{ url_for('directory.detail', user_id=profile.id, page=page-1) }}">Previous listings</a>{% endif %}
+  {% if has_next %}<a class="rounded-lg border border-line bg-white dark:bg-slate-900 px-4 py-2 text-xs font-semibold text-primary no-underline hover:bg-primary-container" href="{{ url_for('directory.detail', user_id=profile.id, page=page+1) }}">Next listings</a>{% endif %}
 </nav>
 {% endif %}
 {% endblock %}

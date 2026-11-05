@@ -40,7 +40,7 @@ class ConversationReviewTests(unittest.TestCase):
         self.assertIn("Message content", html)
         self.assertIn("Target", html)
         self.assertIn("2026-10-01 00:00:00 UTC", html)
-        self.assertIn('class="chat-message reported-message"', html)
+        self.assertIn('border-blue-300 bg-blue-50/70', html)
         table, query = self.queries[0]
         self.assertEqual("messages", table)
         self.assertEqual("eq." + LISTING, query["conversation_id"])
@@ -58,7 +58,7 @@ class ConversationReviewTests(unittest.TestCase):
     def test_pagination_exposes_more_than_one_page(self):
         self.messages *= 51
         html = self.client.get(self.path + "?page=2").get_data(as_text=True)
-        self.assertEqual(50, html.count('class="chat-message reported-message"'))
+        self.assertEqual(50, html.count('border-blue-300 bg-blue-50/70'))
         self.assertIn("Previous messages", html)
         self.assertIn("Next messages", html)
         self.assertEqual(50, self.queries[0][1]["offset"])

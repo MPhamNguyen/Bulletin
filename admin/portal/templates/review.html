@@ -2,104 +2,108 @@
 {% block title %}Review report{% endblock %}
 {% block scripts %}<script src="{{ url_for('portal.asset', filename='account-action.js') }}" defer></script>{% endblock %}
 {% block content %}
-<a href="{{ url_for('portal.reports') }}">← Reports</a>
-<h1>Review {{ report.type }} report</h1>
-<p class="muted">{{ report.id }}</p>
-<div class="columns">
-  <section>
-    <h2>Report details</h2>
+{% from 'status_badge.html' import status_badge %}
+<a class="mb-4 inline-block text-sm font-semibold text-primary no-underline hover:underline" href="{{ url_for('portal.reports') }}">← Reports</a>
+<div class="mb-6"><p class="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">Moderation case</p><h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Review {{ report.type }} report</h1><p class="mt-2 break-all text-xs text-muted">{{ report.id }}</p></div>
+<div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(340px,.9fr)]">
+  <section class="min-w-0 rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 shadow-sm sm:p-6">
+    <h2 class="mb-4 border-b border-slate-100 dark:border-slate-800 pb-3 text-lg font-bold tracking-tight">Report details</h2>
     <dl>
-      <dt>Reason</dt><dd>{{ report.reason|replace('_', ' ') }}</dd>
-      <dt>Description</dt><dd class="content">{{ report.description or 'No description provided.' }}</dd>
-      <dt>Reporter</dt><dd>{{ reporter.full_name or reporter.email if reporter else 'Unavailable' }}<br>{{ report.reporter_id }}</dd>
-      <dt>Created (UTC)</dt><dd>{{ report.created_at or '—' }}</dd>
-      <dt>Modified (UTC)</dt><dd>{{ report.modified_at or '—' }}</dd>
-      <dt>Current status</dt><dd>{{ statuses.get(aliases.get(report.status, report.status), report.status or 'Unknown') }}</dd>
+      <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted">Reason</dt><dd class="mb-4 text-sm">{{ report.reason|replace('_', ' ') }}</dd>
+      <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted">Description</dt><dd class="mb-4 whitespace-pre-wrap break-words text-sm">{{ report.description or 'No description provided.' }}</dd>
+      <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted">Reporter</dt><dd class="mb-4 break-words text-sm">{{ reporter.full_name or reporter.email if reporter else 'Unavailable' }}<br>{{ report.reporter_id }}</dd>
+      <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted">Created (UTC)</dt><dd class="mb-4 text-sm">{{ report.created_at or '—' }}</dd>
+      <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted">Modified (UTC)</dt><dd class="mb-4 text-sm">{{ report.modified_at or '—' }}</dd>
+      <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted">Current status</dt><dd class="mb-4">{{ status_badge(report.status, statuses, aliases) }}</dd>
     </dl>
-    <h2>Reported content</h2>
+    <h2 class="mb-4 mt-7 border-b border-slate-100 dark:border-slate-800 pb-3 text-lg font-bold tracking-tight">Reported content</h2>
     {% if report.type == 'message' and content %}
-      <p class="content">{{ content.body }}</p>
-      <p class="muted">Message {{ content.id }} · {{ content.created_at }}</p>
-      <p><a class="button" href="{{ url_for('conversation.review', report_id=report.id) }}">View full conversation</a></p>
+      <p class="whitespace-pre-wrap break-words text-sm">{{ content.body }}</p>
+      <p class="text-xs text-muted">Message {{ content.id }} · {{ content.created_at }}</p>
+      <p><a class="inline-flex rounded-lg bg-primary dark:bg-blue-800 px-4 py-2 text-xs font-bold text-white no-underline hover:bg-primary-dark dark:hover:bg-blue-700" href="{{ url_for('conversation.review', report_id=report.id) }}">View full conversation</a></p>
     {% elif report.type == 'listing' and content %}
-      <h3>{{ content.name }}</h3><p class="content">{{ content.description }}</p>
-      <p>Price: {{ content.price }} · {{ 'Sold' if content.is_sold else 'Not sold' }}</p>
-      <p class="muted">Listing {{ content.id }}</p>
-      {% if image_error %}<p class="error" role="alert">{{ image_error }}</p>
+      <h3 class="text-base font-bold">{{ content.name }}</h3><p class="whitespace-pre-wrap break-words text-sm">{{ content.description }}</p>
+      <p class="text-sm">Price: {{ content.price }} · {{ 'Sold' if content.is_sold else 'Not sold' }}</p>
+      <p class="text-xs text-muted">Listing {{ content.id }}</p>
+      {% if image_error %}<p class="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-800 dark:text-red-300" role="alert">{{ image_error }}</p>
       {% elif images %}
-        <div class="listing-photos" aria-label="Reported listing photos">
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Reported listing photos">
           {% for image_url in images %}
           <figure>
             <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer">
-              <img src="{{ image_url }}" alt="{{ content.name or 'Reported listing' }} — photo {{ loop.index }}" loading="lazy" referrerpolicy="no-referrer">
+              <img class="max-h-72 w-full rounded-xl border border-line bg-paper object-contain" src="{{ image_url }}" alt="{{ content.name or 'Reported listing' }} — photo {{ loop.index }}" loading="lazy" referrerpolicy="no-referrer">
             </a>
-            <figcaption>Photo {{ loop.index }} · <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer">Open full image</a></figcaption>
+            <figcaption class="mt-1 text-xs text-muted">Photo {{ loop.index }} · <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer">Open full image</a></figcaption>
           </figure>
           {% endfor %}
         </div>
-      {% else %}<p class="muted">This listing has no photos.</p>{% endif %}
-    {% elif report.type == 'user' %}<p>This report concerns the account shown here.</p>
-    {% else %}<p>The reported content is unavailable. It may have been deleted.</p>{% endif %}
+      {% else %}<p class="text-xs text-muted">This listing has no photos.</p>{% endif %}
+    {% elif report.type == 'user' %}<p class="text-sm">This report concerns the account shown here.</p>
+    {% else %}<p class="text-sm">The reported content is unavailable. It may have been deleted.</p>{% endif %}
   </section>
-  <section>
-    <h2>Reported account</h2>
+  <section class="min-w-0 rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 shadow-sm sm:p-6">
+    <h2 class="mb-4 border-b border-slate-100 dark:border-slate-800 pb-3 text-lg font-bold tracking-tight">Reported account</h2>
     {% if target %}
-      <p>{{ target.full_name or 'Unnamed account' }}<br>{{ target.email }}<br><span class="muted">{{ target.id }}</span></p>
-      {% if target.deleted_at %}<p>Profile deleted: {{ target.deleted_at }}</p>{% endif %}
-      <p>Last signed in: {{ account.last_sign_in_at|utc_timestamp if account else 'Unavailable' }}</p>
-      <p class="muted">The last recorded sign-in does not indicate whether the user is currently online.</p>
-      {% if account %}<p>Suspended until: {{ account.banned_until or 'Not suspended' }}</p>{% endif %}
+      <p class="break-words text-sm font-semibold">{{ target.full_name or 'Unnamed account' }}<br><span class="font-normal">{{ target.email }}</span><br><span class="text-xs font-normal text-muted">{{ target.id }}</span></p>
+      {% if target.deleted_at %}<p class="text-sm">Profile deleted: {{ target.deleted_at }}</p>{% endif %}
+      <p class="text-sm">Last signed in: {{ account.last_sign_in_at|utc_timestamp if account else 'Unavailable' }}</p>
+      <p class="text-xs text-muted">The last recorded sign-in does not indicate whether the user is currently online.</p>
+      {% if account %}<p class="text-sm">Suspended until: {{ account.banned_until or 'Not suspended' }}</p>{% endif %}
       {% if account and not target.deleted_at and target.is_admin is sameas false and target.id != g.admin.id %}
-      <form method="post" action="{{ url_for('portal.account_action', report_id=report.id) }}">
+      <form class="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4" method="post" action="{{ url_for('portal.account_action', report_id=report.id) }}">
         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
         <input type="hidden" name="version" value="{{ version }}">
         <input type="hidden" name="account_version" value="{{ account_version }}">
         {% include 'account_action_fields.html' %}
       </form>
-      {% else %}<p>Account actions are unavailable for this account.</p>{% endif %}
-    {% else %}<p>The reported account is unavailable. No account action can be performed.</p>{% endif %}
-    <h2>Review outcome</h2>
+      {% else %}<p class="text-sm text-muted">Account actions are unavailable for this account.</p>{% endif %}
+    {% else %}<p class="text-sm text-muted">The reported account is unavailable. No account action can be performed.</p>{% endif %}
+    <h2 class="mb-4 mt-7 border-b border-slate-100 dark:border-slate-800 pb-3 text-lg font-bold tracking-tight">Review outcome</h2>
     <form method="post" action="{{ url_for('portal.save_status', report_id=report.id) }}">
       <input type="hidden" name="csrf" value="{{ csrf_token() }}">
       <input type="hidden" name="version" value="{{ version }}">
-      <label for="new-status">Report status</label>
-      <select name="status" id="new-status" required>
+      <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200" for="new-status">Report status</label>
+      <select class="mb-4 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900" name="status" id="new-status" required>
         {% if aliases.get(report.status, report.status) not in statuses %}<option value="" selected>Choose a status</option>{% endif %}
         {% for value, label in statuses.items() %}<option value="{{ value }}" {% if aliases.get(report.status, report.status) == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
-      <label for="status-comment">Comment (optional)</label>
-      <textarea id="status-comment" name="comment" maxlength="4000" rows="3" placeholder="Explain this status change"></textarea>
-      <p class="muted">Changing the status also updates the report's modified time. Saving a status does not perform an account action.</p>
-      <button type="submit">Save report status</button>
+      <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200" for="status-comment">Comment (optional)</label>
+      <textarea class="mb-3 min-h-24 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900" id="status-comment" name="comment" maxlength="4000" rows="3" placeholder="Explain this status change"></textarea>
+      <p class="mb-3 text-xs leading-relaxed text-muted">Changing the status also updates the report's modified time. Saving a status does not perform an account action.</p>
+      <button class="rounded-lg bg-primary dark:bg-blue-800 px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark dark:hover:bg-blue-700" type="submit">Save report status</button>
     </form>
-    <h2>Moderation history</h2>
-    {% if history_error %}<p class="error" role="alert">{{ history_error }}</p>{% endif %}
-    {% if moderation_events %}
-      <ol class="moderation-history">
+    <h2 class="mb-4 mt-7 border-b border-slate-100 dark:border-slate-800 pb-3 text-lg font-bold tracking-tight">Moderation history</h2>
+    {% if history_error %}<p class="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-800 dark:text-red-300" role="alert">{{ history_error }}</p>
+    {% elif moderation_events %}
+      <ol class="m-0 list-none p-0" aria-label="Moderation activity, newest first">
         {% for event in moderation_events %}
-        <li>
-          <strong>{{ event.event_type|replace('_', ' ')|title }}</strong>
-          <span class="muted">by {{ event.moderator.full_name or event.moderator.email if event.moderator else event.moderator_id }} · {{ event.created_at|utc_timestamp }}</span>
-          {% if event.comment %}<p class="content">{{ event.comment }}</p>{% endif %}
+        <li class="relative border-l border-line pb-5 pl-6 last:border-transparent last:pb-0">
+          <span class="absolute -left-[5px] top-1 size-2.5 rounded-full bg-secondary ring-4 ring-white dark:ring-slate-900" aria-hidden="true"></span>
+          <div class="rounded-xl bg-paper p-3.5">
+          <strong class="text-sm">{{ event.event_type|replace('_', ' ')|title }}</strong>
+          <time class="mt-1 block text-xs text-muted" datetime="{{ event.created_at }}">{{ event.created_at|utc_timestamp }}</time>
+          <span class="mt-1 block text-xs text-muted">by {{ event.moderator.full_name or event.moderator.email if event.moderator else event.moderator_id }}</span>
+          {% if event.comment %}<p class="mt-2 whitespace-pre-wrap break-words border-t border-line pt-2 text-sm">{{ event.comment }}</p>{% endif %}
+          </div>
         </li>
         {% endfor %}
       </ol>
-    {% else %}<p class="muted">No moderation activity recorded yet.</p>{% endif %}
-    <form method="post" action="{{ url_for('moderation_history.add_report_comment', report_id=report.id) }}">
+    {% else %}<div class="rounded-xl bg-paper p-3.5"><p class="text-sm font-semibold">No moderation activity yet</p><p class="mt-1 text-xs text-muted">Status changes and account actions will appear here. Add a comment below to leave context for the next reviewer.</p></div>{% endif %}
+    <form class="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4" method="post" action="{{ url_for('moderation_history.add_report_comment', report_id=report.id) }}">
       <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-      <label for="moderation-comment">Add a comment</label>
-      <textarea id="moderation-comment" name="comment" maxlength="4000" rows="4" required></textarea>
-      <button type="submit">Add comment</button>
+      <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200" for="moderation-comment">Add a comment</label>
+      <textarea class="mb-3 min-h-24 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900" id="moderation-comment" name="comment" maxlength="4000" rows="4" required></textarea>
+      <button class="rounded-lg border border-line bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary-container" type="submit">Add comment</button>
     </form>
     {% if delete_version %}
-    <section class="danger-zone" aria-labelledby="delete-listing-heading">
-      <h2 id="delete-listing-heading">Delete reported listing</h2>
-      <p>This permanently deletes the listing and all its photos, reports, bookmarks, and reviews. This cannot be undone.</p>
-      <form method="post" action="{{ url_for('portal.delete_listing', report_id=report.id) }}">
+    <section class="mt-7 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50/60 dark:bg-red-950/40 p-4" aria-labelledby="delete-listing-heading">
+      <h2 class="mb-2 text-base font-bold text-red-900 dark:text-red-200" id="delete-listing-heading">Delete reported listing</h2>
+      <p class="text-sm leading-relaxed text-red-900 dark:text-red-200/80">This permanently deletes the listing and all its photos, reports, bookmarks, and reviews. This cannot be undone.</p>
+      <form class="mt-3" method="post" action="{{ url_for('portal.delete_listing', report_id=report.id) }}">
         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
         <input type="hidden" name="version" value="{{ delete_version }}">
-        <label class="checkbox"><input type="checkbox" name="confirm" value="delete" required> I confirm permanent deletion of this listing and its associated data.</label>
-        <button class="danger" type="submit">Delete listing and reports</button>
+        <label class="my-4 flex items-start gap-2 text-sm"><input class="mt-1 size-4 accent-red-700" type="checkbox" name="confirm" value="delete" required> I confirm permanent deletion of this listing and its associated data.</label>
+        <button class="rounded-lg bg-danger px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 dark:hover:bg-red-700" type="submit">Delete listing and reports</button>
       </form>
     </section>
     {% endif %}
