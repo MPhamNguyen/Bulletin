@@ -230,7 +230,7 @@ class MessagesViewModel(
         inbox.synchronizeIdentity()
         applyInboxSelection(inbox.state.value)
         if (!uiState.value.canSendToCounterpart()) return
-        if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send(showFailure)
+        if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send()
     }
     val requestBlock: (BlockTarget) -> Unit = blocking::request
     val confirmBlock: () -> Unit = blocking::confirm

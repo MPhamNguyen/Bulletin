@@ -26,7 +26,7 @@ internal class MessagesActions(
     private var hideJob: kotlinx.coroutines.Job? = null
     private val sending = MessageSendingActions(inbox, state, sendMessage, drafts, scope)
 
-    fun send(showFailure: (Result.Error) -> Unit) = sending.send(showFailure)
+    fun send() = sending.send()
 
     fun report(
         messageId: MessageId,

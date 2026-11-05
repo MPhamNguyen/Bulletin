@@ -74,18 +74,25 @@ internal fun MessagesChatContent(
 @Composable
 private fun ChatStatusMessages(state: MessagesUiState, viewModel: MessagesViewModel) {
     val error = state.errorMessage ?: state.block.statusErrorMessage
+    val isSendFailure = state.sendErrorMessage != null && error == state.sendErrorMessage
     error?.let {
         Row(Modifier.padding(horizontal = BulletinSpacing.gutter), verticalAlignment = Alignment.CenterVertically) {
             Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
             BulletinButton(
                 onClick = {
-                    if (state.block.statusErrorMessage != null) {
-                        state.conversations.firstOrNull { it.id == state.selectedConversationId }
-                            ?.counterpart(state.viewerId)?.let { viewModel.refreshBlockStatus(it.id) }
-                    } else {
-                        viewModel.loadConversations()
+                    when {
+                        isSendFailure -> viewModel.sendCurrentMessage()
+                        state.block.statusErrorMessage != null -> {
+                            state.conversations.firstOrNull { it.id == state.selectedConversationId }
+                                ?.counterpart(state.viewerId)?.let { viewModel.refreshBlockStatus(it.id) }
+                        }
+                        else -> viewModel.loadConversations()
                     }
                 },
+                enabled = !isSendFailure || (
+                    !state.isLoading && !state.isLoadingMessages && state.editState == MessageEditState.Composing &&
+                        state.messageInput.isNotBlank() && state.canSendToCounterpart()
+                    ),
                 variant = BulletinButtonVariant.Text
             ) { Text("Retry") }
         }

@@ -28,5 +28,5 @@ private fun withInbox(thread: MessagesUiState, inbox: InboxState): MessagesUiSta
     viewerId = inbox.viewerId,
     conversations = inbox.conversations,
     isLoading = inbox.isLoading,
-    errorMessage = thread.errorMessage ?: inbox.errorMessage
+    errorMessage = thread.errorMessage ?: thread.sendErrorMessage ?: inbox.errorMessage
 )

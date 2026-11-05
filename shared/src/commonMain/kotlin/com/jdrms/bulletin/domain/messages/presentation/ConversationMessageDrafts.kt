@@ -25,7 +25,20 @@ internal class ConversationMessageDrafts(private val state: MutableStateFlow<Mes
 
     fun inputChanged(input: String) {
         state.update {
-            it.copy(messageInput = input, editError = null, errorMessage = null, statusMessage = null)
+            val conversationId = it.selectedConversationId
+            it.copy(
+                messageInput = input,
+                editError = null,
+                errorMessage = null,
+                statusMessage = null,
+                sendStates = if (conversationId != null && it.sendErrorMessage != null &&
+                    it.editState == MessageEditState.Composing
+                ) {
+                    it.sendStates - conversationId
+                } else {
+                    it.sendStates
+                }
+            )
         }
     }
 

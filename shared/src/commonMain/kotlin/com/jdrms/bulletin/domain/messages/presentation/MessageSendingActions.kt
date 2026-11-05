@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.SendMessage
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
@@ -17,27 +18,33 @@ internal class MessageSendingActions(
     private val drafts: ConversationMessageDrafts,
     private val scope: CoroutineScope
 ) {
-    fun send(showFailure: (Result.Error) -> Unit) {
+    fun send() {
         val snapshot = state.value
         val conversationId = snapshot.selectedConversationId ?: return
         val viewerId = inbox.state.value.viewerId ?: return
         val session = drafts.session
         val busy = snapshot.isSending || inbox.state.value.isLoading || snapshot.isLoadingMessages
         if (busy || snapshot.editState != MessageEditState.Composing || snapshot.messageInput.isBlank()) return
-        state.update { it.copy(isSending = true, errorMessage = null, statusMessage = null) }
+        state.update {
+            it.copy(
+                sendStates = it.sendStates + (conversationId to MessageSendState.Sending),
+                errorMessage = null,
+                statusMessage = null
+            )
+        }
         scope.launch {
             // Identity may have changed before this coroutine started or while the send was pending.
             if (!synchronizeSession(viewerId, session)) return@launch
             val sent = sendMessage(conversationId, snapshot.messageInput)
             if (!synchronizeSession(viewerId, session)) return@launch
             when (sent) {
-                is Result.Error -> {
-                    state.update { it.copy(isSending = false) }
-                    if (state.value.selectedConversationId == conversationId) showFailure(sent)
-                }
+                is Result.Error -> finish(
+                    conversationId,
+                    "Unable to send message. Check your connection and try again."
+                )
                 is Result.Success -> {
                     drafts.clearSent(conversationId, snapshot.messageInput)
-                    complete(sent.data, showFailure)
+                    complete(sent.data)
                 }
             }
         }
@@ -48,7 +55,7 @@ internal class MessageSendingActions(
         return drafts.session === session && inbox.state.value.viewerId == viewerId
     }
 
-    private fun complete(message: Message, showFailure: (Result.Error) -> Unit) {
+    private fun complete(message: Message) {
         val recorded = inbox.recordMessage(message)
         state.update { current ->
             current.copy(
@@ -56,12 +63,24 @@ internal class MessageSendingActions(
                     MessageTimeline.merge(current.currentMessages, listOf(message))
                 } else {
                     current.currentMessages
-                },
-                isSending = false
+                }
             )
         }
-        if (recorded is Result.Error && state.value.selectedConversationId == message.conversationId) {
-            showFailure(recorded)
+        finish(
+            message.conversationId,
+            if (recorded is Result.Error) "Message sent, but the conversation could not be updated." else null
+        )
+    }
+
+    private fun finish(conversationId: ConversationId, errorMessage: String? = null) {
+        state.update { current ->
+            current.copy(
+                sendStates = if (errorMessage == null) {
+                    current.sendStates - conversationId
+                } else {
+                    current.sendStates + (conversationId to MessageSendState.Failed(errorMessage))
+                }
+            )
         }
     }
 }

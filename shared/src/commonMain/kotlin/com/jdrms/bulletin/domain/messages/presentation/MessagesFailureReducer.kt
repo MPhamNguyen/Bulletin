@@ -26,7 +26,6 @@ internal fun MessagesUiState.withFailure(error: Result.Error): PresentedMessages
             isLoading = false,
             isLoadingMessages = false,
             isLoadingOlder = false,
-            isSending = false,
             isReporting = false,
             errorMessage = message,
             statusMessage = null

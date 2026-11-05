@@ -25,13 +25,16 @@ data class MessagesUiState(
     val editError: String? = null,
     val isLoading: Boolean = false,
     val isLoadingMessages: Boolean = false,
-    val isSending: Boolean = false,
+    val sendStates: Map<ConversationId, MessageSendState> = emptyMap(),
     val isReporting: Boolean = false,
     val messageReportForm: MessageReportFormState? = null,
     val errorMessage: String? = null,
     val statusMessage: String? = null,
     val block: ConversationBlockUiState = ConversationBlockUiState()
-)
+) {
+    val isSending: Boolean get() = sendStates[selectedConversationId] == MessageSendState.Sending
+    val sendErrorMessage: String? get() = (sendStates[selectedConversationId] as? MessageSendState.Failed)?.message
+}
 
 data class MessageReportFormState(
     val messageId: MessageId,
