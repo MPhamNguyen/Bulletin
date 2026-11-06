@@ -61,17 +61,37 @@ class UserManagementTests(unittest.TestCase):
         self.assertEqual(26, query["limit"])
         self.assertFalse(self.backend.bans)
 
+    def test_empty_out_of_range_report_page_does_not_claim_history_is_empty(self):
+        self.backend.page_rows = [self.backend.report]
+        original_rows = self.backend.rows
+
+        def rows(table, **query):
+            if table == "reports" and query.get("offset") == 25:
+                return []
+            return original_rows(table, **query)
+
+        with patch.object(self.backend, "rows", side_effect=rows):
+            first_page = self.client.get(self.path)
+            self.assertIn("View report " + REPORT, first_page.get_data(as_text=True))
+            response = self.client.get(self.path + "?report_page=2")
+
+        html = response.get_data(as_text=True)
+        self.assertIn("No report tickets on this page", html)
+        self.assertIn('href="' + self.path + '?report_page=1"', html)
+        self.assertNotIn("No report tickets for this account", html)
+
     def test_empty_or_unavailable_reports_preserve_account_actions(self):
         self.backend.report = None
         response = self.client.get(self.path)
-        self.assertIn("No report tickets for this account", response.get_data(as_text=True))
+        self.assertIn("No report tickets on this page", response.get_data(as_text=True))
+        self.assertIn("No report tickets were returned on the first page", response.get_data(as_text=True))
         with patch.object(self.backend, "rows", side_effect=PortalError("Unavailable", 502)):
             response = self.client.get(self.path)
         html = response.get_data(as_text=True)
         self.assertEqual(200, response.status_code)
         self.assertIn("Report tickets could not be loaded", html)
         self.assertIn("Apply account action", html)
-        self.assertNotIn("No report tickets for this account", html)
+        self.assertNotIn("No report tickets on this page", html)
 
     def test_invalid_report_page_is_rejected(self):
         for value in ("0", "-1", "abc", "100001"):

@@ -55,6 +55,17 @@ class ConversationReviewTests(unittest.TestCase):
         self.assertIn("Reporter", html)
         self.assertIn("Reply", html)
 
+    def test_unbroken_message_text_has_a_shrinkable_wrapping_layout(self):
+        long_token = "https://example.test/" + ("a" * 500)
+        self.backend.message["body"] = long_token
+
+        html = self.client.get(self.path).get_data(as_text=True)
+
+        self.assertIn('class="grid grid-cols-1 gap-3', html)
+        self.assertIn('class="min-w-0 rounded-2xl border p-4', html)
+        self.assertIn("[overflow-wrap:anywhere]", html)
+        self.assertIn(long_token, html)
+
     def test_pagination_exposes_more_than_one_page(self):
         self.messages *= 51
         html = self.client.get(self.path + "?page=2").get_data(as_text=True)
