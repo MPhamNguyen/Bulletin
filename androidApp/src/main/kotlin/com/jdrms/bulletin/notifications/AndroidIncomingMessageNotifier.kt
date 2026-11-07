@@ -87,6 +87,7 @@ internal class AndroidIncomingMessageNotifier(context: Context) : IncomingMessag
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
         if (!permissionGranted || !manager.areNotificationsEnabled()) return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
         val channel = manager.getNotificationChannel(CHANNEL_ID)
         return channel == null || channel.importance != NotificationManagerCompat.IMPORTANCE_NONE
     }

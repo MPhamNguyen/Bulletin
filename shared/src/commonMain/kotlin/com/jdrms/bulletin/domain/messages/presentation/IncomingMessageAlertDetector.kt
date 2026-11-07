@@ -49,12 +49,8 @@ internal class IncomingMessageAlertDetector {
             if (isNewer) seen[conversation.id] = Seen(last.id, last.orderingTimestamp)
             val unread = conversation.hasUnreadIncoming(viewer, last)
             when {
-                !unread || conversation.id == suppressed -> if (alerted.remove(
-                        conversation.id
-                    )
-                ) {
-                    cleared += conversation.id
-                }
+                !unread || conversation.id == suppressed ->
+                    if (alerted.remove(conversation.id)) cleared += conversation.id
                 isNewer -> {
                     alerted += conversation.id
                     alerts += last.toAlert(viewer)

@@ -13,6 +13,7 @@ import com.jdrms.bulletin.notifications.AndroidIncomingMessageNotifier
 
 class BulletinApplication : Application() {
     private val authStorage by lazy { AndroidAuthStorage(this, BuildConfig.SUPABASE_URL) }
+    internal val messageNotifier by lazy { AndroidIncomingMessageNotifier(this) }
     val externalAuthBrowser by lazy { AndroidExternalAuthBrowser(this, authStorage) }
     val container by lazy {
         AppContainer(
@@ -28,8 +29,7 @@ class BulletinApplication : Application() {
                 microsoftSignInEnabled = BuildConfig.MICROSOFT_SSO_ENABLED,
                 browser = if (BuildConfig.MICROSOFT_SSO_ENABLED) externalAuthBrowser else null,
                 storage = if (BuildConfig.MICROSOFT_SSO_ENABLED) authStorage else null
-            ),
-            incomingMessageNotifier = AndroidIncomingMessageNotifier(this)
+            )
         )
     }
 }

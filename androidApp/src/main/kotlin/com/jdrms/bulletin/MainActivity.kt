@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         handleCallback(intent)
         if (savedInstanceState == null) handleNotificationTap(intent)
+        bulletin.container.startMessageNotifications(bulletin.messageNotifier)
         requestNotificationPermissionAfterSignIn()
         setContent { App(appContainer = bulletin.container) }
     }
