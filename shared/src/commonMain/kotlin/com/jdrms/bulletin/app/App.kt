@@ -26,7 +26,12 @@ fun App(appContainer: AppContainer? = null) {
         // Android supplies an application-owned container that survives Activity recreation.
         onDispose { if (appContainer == null) container.messages.inboxStateOwner.close() }
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { container.messages.inboxStateOwner.onForeground() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        container.messages.activeConversation.setAppForeground(true)
+        container.messages.inboxStateOwner.onForeground()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { container.messages.activeConversation.setAppForeground(false) }
+    LaunchedEffect(container) { container.startMessageNotifications() }
     val themeViewModel = remember(container) { container.createThemeViewModel() }
     val preference by themeViewModel.themePreference.collectAsState()
     val themeColor by themeViewModel.themeColor.collectAsState()

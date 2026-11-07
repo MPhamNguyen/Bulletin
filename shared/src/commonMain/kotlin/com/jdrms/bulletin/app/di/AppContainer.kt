@@ -11,8 +11,16 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPrefer
 import com.jdrms.bulletin.domain.marketplace.application.ReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryMarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryReportedListingVisibilityPreferenceStore
+import com.jdrms.bulletin.domain.messages.application.IncomingMessageNotifier
+import com.jdrms.bulletin.domain.messages.application.NoOpIncomingMessageNotifier
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
+import com.jdrms.bulletin.domain.messages.presentation.NotificationConversationRequest
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.ExternalAuthBrowser
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 class AppContainer(
     supabaseConfig: SupabaseConfig = SupabaseConfig(),
@@ -24,7 +32,8 @@ class AppContainer(
     providedSupabaseClient: SupabaseClient? = null,
     private val externalAuth: ExternalAuthConfiguration = ExternalAuthConfiguration(),
     reportedListingVisibilityPreferenceStore: ReportedListingVisibilityPreferenceStore =
-        InMemoryReportedListingVisibilityPreferenceStore()
+        InMemoryReportedListingVisibilityPreferenceStore(),
+    incomingMessageNotifier: IncomingMessageNotifier = NoOpIncomingMessageNotifier
 ) {
     val microsoftSignInEnabled: Boolean get() = externalAuth.microsoftSignInEnabled
     val externalSignInPending: Boolean get() = externalAuth.browser?.isResuming == true
@@ -54,6 +63,23 @@ class AppContainer(
     )
     internal val messages = MessagesModule(infrastructure, profile, listings, marketplace)
     internal val home = HomeModule(marketplace, messages)
+
+    private val inboxNotifications by lazy { messages.createInboxNotifications(incomingMessageNotifier) }
+
+    /** True while a user is signed in; platform code uses it to time the notification permission request. */
+    val isSignedIn: Flow<Boolean>
+        get() = messages.inboxStateOwner.state.map { it.viewerId != null }.distinctUntilChanged()
+
+    /** Idempotent. Alerts only while the process is alive; there is no push delivery yet. */
+    fun startMessageNotifications() = inboxNotifications.start()
+
+    /** Records a notification tap. It opens once [recipientId] is the signed-in user, and is dropped otherwise. */
+    fun openConversationFromNotification(conversationId: String, recipientId: String) {
+        if (conversationId.isBlank() || recipientId.isBlank()) return
+        messages.notificationRequests.submit(
+            NotificationConversationRequest(ConversationId(conversationId), SenderId(recipientId))
+        )
+    }
 
     internal fun createThemeViewModel() = ThemeViewModel(themePreferenceStore)
 }

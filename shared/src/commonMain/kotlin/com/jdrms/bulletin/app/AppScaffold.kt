@@ -76,6 +76,7 @@ fun MainAppScaffold(
     val retries = rememberSaveable(saver = HomeSaveRetryPresentation.saver) { HomeSaveRetryPresentation() }
     LaunchedEffect(navigation.currentDestination) { chrome.behavior.onDestinationChanged() }
     MainHomeEffects(navigation, models, retries)
+    MessagingNotificationEffects(container.messages, navigation, models.messages)
     MainAppLayout(MainAppContentState(container, navigation, models, profile), chrome, retries)
 }
 
