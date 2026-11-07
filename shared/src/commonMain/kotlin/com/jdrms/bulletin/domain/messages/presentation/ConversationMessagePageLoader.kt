@@ -4,7 +4,10 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
+import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -24,32 +27,50 @@ internal class ConversationMessagePageLoader(
     }
 
     suspend fun load(conversationId: ConversationId) {
-        uiState.update { it.copy(isLoadingMessages = true) }
         val oldestLoaded = uiState.value.currentMessages.firstOrNull()
         val through = oldestLoaded?.let { MessageCursor(it.orderingTimestamp, it.id) }
-        val result = getConversationMessages(conversationId, through = through)
-        if (uiState.value.selectedConversationId != conversationId) return
+        load(MessageHistoryRequest.Thread(conversationId, through))
+    }
+
+    suspend fun load(request: MessageHistoryRequest.Thread) {
+        uiState.update { it.copy(isLoadingMessages = true) }
+        val result = getConversationMessages(request.conversationId, through = request.through)
+        currentCoroutineContext().ensureActive()
+        if (uiState.value.selectedConversationId != request.conversationId) return
         when (result) {
-            is Result.Error -> showFailure(result)
+            is Result.Error -> fail(request, result)
+            is Result.Success -> acceptPage(request, result.data)
+        }
+    }
+
+    private fun acceptPage(request: MessageHistoryRequest.Thread, page: MessagePage) {
+        val conversationId = request.conversationId
+        if (inbox.state.value.conversations.none { it.id == conversationId }) {
+            uiState.update { it.clearMessageLoadingForMissingConversation(conversationId) }
+            return
+        }
+        when (val reconciled = inbox.reconcileMessages(conversationId, page.messages)) {
+            is Result.Error -> fail(request, reconciled)
             is Result.Success -> {
-                if (inbox.state.value.conversations.none { it.id == conversationId }) {
-                    uiState.update { it.clearMessageLoadingForMissingConversation(conversationId) }
-                    return
+                uiState.update { state ->
+                    state.copy(
+                        currentMessages = MessageTimeline.merge(state.currentMessages, page.messages),
+                        olderCursor = if (initialPageLoaded) state.olderCursor else page.olderCursor,
+                        isLoadingMessages = false,
+                        failedHistoryRequest = null
+                    )
                 }
-                when (val reconciled = inbox.reconcileMessages(conversationId, result.data.messages)) {
-                    is Result.Error -> showFailure(reconciled)
-                    is Result.Success -> uiState.update { state ->
-                        state.copy(
-                            currentMessages = MessageTimeline.merge(state.currentMessages, result.data.messages),
-                            olderCursor = if (initialPageLoaded) state.olderCursor else result.data.olderCursor,
-                            isLoadingMessages = false,
-                            isLoadingOlder = false
-                        )
-                    }
-                }
-                readReceiptHandler.markIfNeeded(conversationId)
                 initialPageLoaded = true
+                readReceiptHandler.markIfNeeded(conversationId)
             }
+        }
+    }
+
+    private fun fail(request: MessageHistoryRequest.Thread, error: Result.Error) {
+        if (error.isMessagingIdentityUnavailable) {
+            showFailure(error)
+        } else {
+            uiState.update { it.copy(isLoadingMessages = false, failedHistoryRequest = request) }
         }
     }
 }

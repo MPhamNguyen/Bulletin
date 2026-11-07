@@ -45,6 +45,17 @@ Students can discover listings, buy or sell items, message other students, build
 
 > Feature availability depends on backend configuration. This README does not claim production readiness.
 
+### Messaging behavior
+
+- **Drafts:** Each conversation keeps its own draft in memory while the messaging ViewModel is alive.
+  Successful sends clear the submitted draft; failed sends retain it. Signing out, switching accounts,
+  or restarting the app clears all drafts.
+- **Sending:** Progress and errors stay with their conversation, so a pending send leaves other threads'
+  composers available. Returning to a failed conversation restores its error and draft for retry.
+- **History retries:** Retry reloads the failed conversation history or older page using its original
+  paging boundary, keeping loaded messages and drafts visible. Changing conversations or accounts
+  discards obsolete history retries.
+
 ---
 
 ## 📱 App Flow
