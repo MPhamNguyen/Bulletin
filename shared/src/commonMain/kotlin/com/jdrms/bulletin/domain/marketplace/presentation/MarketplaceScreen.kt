@@ -135,6 +135,9 @@ private fun MarketplaceSellerProfileFlow(
         state.sellerProfileState.profile?.let { profile ->
             SellerAllReviewsScreen(
                 profile = profile,
+                isLoadingMoreReviews = state.sellerProfileState.isLoadingMoreReviews,
+                reviewLoadError = state.sellerProfileState.reviewLoadError,
+                onLoadMoreReviews = viewModels.sellerProfile::loadMoreReviews,
                 onBack = { onNavigate(MarketplaceDestination.SELLER_PROFILE) },
                 onListingClick = onOpenListing
             )
@@ -152,7 +155,7 @@ private fun MarketplaceSellerProfileFlow(
         ),
         onBack = onBackFromSellerProfile,
         reviewActions = SellerProfileReviewActions(
-            onOpenReviews = { onNavigate(MarketplaceDestination.ALL_REVIEWS) },
+            onViewAllReviews = { onNavigate(MarketplaceDestination.ALL_REVIEWS) },
             onListingClick = onOpenListing
         ),
         onReportUser = {

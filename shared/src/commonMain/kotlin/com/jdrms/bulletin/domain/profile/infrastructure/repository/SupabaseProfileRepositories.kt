@@ -4,16 +4,20 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewInsertDto
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewScoreDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -149,6 +153,54 @@ class SupabaseProfileRepository private constructor(
         }
     }
 
+    override suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?> = runCatching {
+        val resolvedId = resolveUserId(userId) ?: return@runCatching null
+        supabase.from(PROFILES_TABLE).select {
+            filter { eq("id", resolvedId) }
+        }.decodeSingleOrNull<ProfileDto>()?.let { ProfileMapper.toDomain(it) }
+    }.fold(
+        onSuccess = { Result.Success(it) },
+        onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+    )
+
+    override suspend fun getReputationSummary(userId: UserId): StudentReputation {
+        val resolvedId = resolveUserId(userId) ?: return StudentReputation(userId)
+        val scores = supabase.from(REVIEWS_TABLE).select(columns = Columns.raw("score")) {
+            filter { eq("reviewee_id", resolvedId) }
+        }.decodeList<ReviewScoreDto>().map { it.score.coerceIn(1, 5) }
+        return StudentReputation(
+            userId = UserId(resolvedId),
+            averageRating = scores.average().takeIf { scores.isNotEmpty() } ?: 0.0,
+            totalReviews = scores.size
+        )
+    }
+
+    override suspend fun getReviewsPage(userId: UserId, offset: Int, pageSize: Int): StudentReviewPage {
+        require(offset >= 0)
+        require(pageSize in 1..MAX_REVIEW_PAGE_SIZE)
+        val resolvedId = resolveUserId(userId) ?: return StudentReviewPage(emptyList(), null)
+        val rows = runCatching {
+            supabase.from(REVIEWS_VIEW).select {
+                filter { eq("reviewee_id", resolvedId) }
+                order("created_at", Order.DESCENDING)
+                order("id", Order.DESCENDING)
+                range(offset.toLong(), (offset + pageSize).toLong())
+            }.decodeList<ReviewDto>()
+        }.getOrElse {
+            supabase.from(REVIEWS_TABLE).select {
+                filter { eq("reviewee_id", resolvedId) }
+                order("created_at", Order.DESCENDING)
+                order("id", Order.DESCENDING)
+                range(offset.toLong(), (offset + pageSize).toLong())
+            }.decodeList<ReviewDto>()
+        }
+        val pageReviews = rows.take(pageSize).map(ProfileMapper::toDomain)
+        return StudentReviewPage(
+            reviews = pageReviews,
+            nextOffset = if (rows.size > pageSize) offset + pageSize else null
+        )
+    }
+
     private fun resolveUserId(userId: UserId): String? {
         return if (userId.value == "current_student") {
             supabase.auth.currentUserOrNull()?.id
@@ -163,6 +215,7 @@ class SupabaseProfileRepository private constructor(
         const val PROFILES_TABLE = "profiles"
         const val REVIEWS_TABLE = "reviews"
         const val REVIEWS_VIEW = "reviews_with_names"
+        const val MAX_REVIEW_PAGE_SIZE = 50
 
         private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 

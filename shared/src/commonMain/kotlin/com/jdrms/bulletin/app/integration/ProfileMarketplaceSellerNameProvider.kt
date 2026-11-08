@@ -3,6 +3,10 @@ package com.jdrms.bulletin.app.integration
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfileProvider
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReviewPage
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 
@@ -10,7 +14,12 @@ class ProfileMarketplaceSellerNameProvider(
     private val profileRepository: ProfileRepository
 ) : MarketplaceSellerProfileProvider {
     override suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile? {
-        return when (val result = profileRepository.getProfile(UserId(sellerId))) {
+        val sellerIdValue = UserId(sellerId)
+        val summary = runCatching { profileRepository.getReputationSummary(sellerIdValue) }
+            .getOrDefault(StudentReputation(sellerIdValue))
+        val firstPage = runCatching { profileRepository.getReviewsPage(sellerIdValue, 0, PROFILE_PREVIEW_REVIEW_COUNT) }
+            .getOrNull() ?: StudentReviewPage(emptyList(), null)
+        return when (val result = profileRepository.getProfileBasics(sellerIdValue)) {
             is com.jdrms.bulletin.core.common.Result.Success -> result.data?.let {
                 MarketplaceSellerProfile(
                     sellerId = it.id.value,
@@ -19,29 +28,46 @@ class ProfileMarketplaceSellerNameProvider(
                     major = it.major,
                     bio = it.bio,
                     avatarUrl = it.avatarUrl,
-                    reputationScore = it.reputation?.averageRating,
-                    reviewCount = it.reputation?.totalReviews,
-                    reviews = it.reputation?.reviews.orEmpty().map { review ->
-                        val reviewerProfile = when (
-                            val reviewer = profileRepository.getProfile(UserId(review.reviewerId))
-                        ) {
-                            is com.jdrms.bulletin.core.common.Result.Success -> reviewer.data
-                            is com.jdrms.bulletin.core.common.Result.Error -> null
-                        }
-                        MarketplaceSellerReview(
-                            id = review.id.value,
-                            reviewerName = review.reviewerName,
-                            rating = review.rating.score,
-                            comment = review.comment,
-                            createdAtMillis = review.createdAtMillis,
-                            reviewerAvatarUrl = reviewerProfile?.avatarUrl,
-                            relatedListingId = review.relatedListingId
-                        )
-                    },
+                    reputationScore = summary.averageRating,
+                    reviewCount = summary.totalReviews,
+                    reviews = mapReviews(firstPage.reviews),
+                    reviewNextOffset = firstPage.nextOffset,
                     isVerified = it.isVerified
                 )
             }
             is com.jdrms.bulletin.core.common.Result.Error -> null
         }
+    }
+
+    override suspend fun getSellerReviewsPage(
+        sellerId: String,
+        offset: Int,
+        pageSize: Int
+    ): MarketplaceSellerReviewPage {
+        val page = profileRepository.getReviewsPage(UserId(sellerId), offset, pageSize)
+        return MarketplaceSellerReviewPage(mapReviews(page.reviews), page.nextOffset)
+    }
+
+    private suspend fun mapReviews(reviews: List<StudentReview>): List<MarketplaceSellerReview> =
+        reviews.map { review ->
+            val reviewer = when (
+                val result = profileRepository.getProfileBasics(UserId(review.reviewerId))
+            ) {
+                is com.jdrms.bulletin.core.common.Result.Success -> result.data
+                is com.jdrms.bulletin.core.common.Result.Error -> null
+            }
+            MarketplaceSellerReview(
+                id = review.id.value,
+                reviewerName = review.reviewerName,
+                rating = review.rating.score,
+                comment = review.comment,
+                createdAtMillis = review.createdAtMillis,
+                reviewerAvatarUrl = reviewer?.avatarUrl,
+                relatedListingId = review.relatedListingId
+            )
+        }
+
+    private companion object {
+        const val PROFILE_PREVIEW_REVIEW_COUNT = 3
     }
 }

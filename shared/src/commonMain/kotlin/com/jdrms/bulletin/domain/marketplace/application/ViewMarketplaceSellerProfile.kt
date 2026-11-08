@@ -14,6 +14,9 @@ class ViewMarketplaceSellerProfile(
     private val listingSource: MarketplaceListingSource,
     private val sellerSalesProvider: MarketplaceSellerSalesProvider
 ) {
+    suspend fun reviewsPage(sellerId: String, offset: Int, pageSize: Int = SELLER_REVIEWS_PAGE_SIZE) =
+        profileProvider.getSellerReviewsPage(sellerId, offset, pageSize)
+
     suspend operator fun invoke(sellerId: String): MarketplaceSellerProfileDetails? {
         val profile = profileProvider.getSellerProfile(sellerId) ?: return null
         return MarketplaceSellerProfileDetails(

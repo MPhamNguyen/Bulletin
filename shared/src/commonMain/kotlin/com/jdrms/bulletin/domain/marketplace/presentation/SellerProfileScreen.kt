@@ -55,16 +55,16 @@ fun SellerProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
             ) {
                 item { SellerProfileHero(state.profile) }
-                item {
-                    SellerProfileStats(
-                        state.profile,
-                        state.soldListingsCount,
-                        reviewActions.onOpenReviews
-                    )
-                }
+                item { SellerProfileStats(state.profile, state.soldListingsCount) }
                 item { SellerProfileAbout(state.profile) }
                 item { SellerProfileVerification(state.profile) }
-                item { SellerProfileReviews(state.profile.reviews, reviewActions.onListingClick) }
+                item {
+                    SellerProfileReviews(
+                        state.profile.reviews,
+                        reviewActions.onViewAllReviews,
+                        reviewActions.onListingClick
+                    )
+                }
                 item {
                     Text(
                         text = "Marketplace listings",
@@ -126,7 +126,7 @@ data class SellerProfileListingActions(
 )
 
 data class SellerProfileReviewActions(
-    val onOpenReviews: () -> Unit = {},
+    val onViewAllReviews: () -> Unit = {},
     val onListingClick: (String) -> Unit = {}
 )
 

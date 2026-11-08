@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,8 +24,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfil
 @Composable
 internal fun SellerProfileStats(
     profile: MarketplaceSellerProfile,
-    soldListingsCount: Int,
-    onOpenReviews: () -> Unit
+    soldListingsCount: Int
 ) {
     BulletinCard {
         Row(
@@ -37,8 +35,7 @@ internal fun SellerProfileStats(
             SellerProfileStat(
                 "Reputation",
                 formatReputationScore(profile.reputationScore),
-                showStar = true,
-                onClick = onOpenReviews
+                showStar = true
             )
             SellerProfileStat("Listings sold", soldListingsCount.toString(), showStar = false)
         }
@@ -49,11 +46,9 @@ internal fun SellerProfileStats(
 private fun SellerProfileStat(
     label: String,
     value: String,
-    showStar: Boolean,
-    onClick: () -> Unit = {}
+    showStar: Boolean
 ) {
     Column(
-        modifier = if (showStar) Modifier.clickable(onClick = onClick) else Modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhotoUrl
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 
 interface ProfileRepository {
@@ -15,6 +16,9 @@ interface ProfileRepository {
     suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit>
     suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit>
     suspend fun getReputation(userId: UserId): StudentReputation
+    suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?>
+    suspend fun getReputationSummary(userId: UserId): StudentReputation
+    suspend fun getReviewsPage(userId: UserId, offset: Int, pageSize: Int): StudentReviewPage
 }
 
 interface ProfilePhotoRepository {

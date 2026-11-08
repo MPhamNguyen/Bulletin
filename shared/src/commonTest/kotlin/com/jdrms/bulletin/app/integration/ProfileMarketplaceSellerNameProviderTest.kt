@@ -31,6 +31,36 @@ class ProfileMarketplaceSellerNameProviderTest {
     }
 
     @Test
+    fun sellerProfileLoadsOnlyThreeReviewsAndReturnsNextPageOnDemand() = runTest {
+        val repository = InMemoryProfileRepository(
+            initialProfiles = mapOf("seller" to sellerProfile(), "buyer" to reviewerProfile()),
+            initialReviews = mapOf(
+                "seller" to (1..5).map { index ->
+                    sellerReview().copy(
+                        id = "review-$index",
+                        comment = "Review $index",
+                        createdAt = "2026-10-${(20 + index).toString().padStart(2, '0')}T12:00:00Z"
+                    )
+                }
+            )
+        )
+        val provider = ProfileMarketplaceSellerNameProvider(repository)
+
+        val profile = provider.getSellerProfile("seller")
+        val nextPage = provider.getSellerReviewsPage(
+            "seller",
+            profile?.reviewNextOffset ?: error("Missing page cursor"),
+            2
+        )
+
+        assertEquals(5, profile?.reviewCount)
+        assertEquals(3, profile?.reviews?.size)
+        assertEquals(3, profile?.reviewNextOffset)
+        assertEquals(listOf("Review 2", "Review 1"), nextPage.reviews.map { it.comment })
+        assertEquals(null, nextPage.nextOffset)
+    }
+
+    @Test
     fun sellerVerificationUsesConfirmedStatusRatherThanTheEmailSuffix() = runTest {
         val profiles = InMemoryProfileRepository(initialProfiles = emptyMap(), initialReviews = emptyMap())
         val provider = ProfileMarketplaceSellerNameProvider(profiles)

@@ -212,6 +212,7 @@ data class MarketplaceSellerProfile(
     val reputationScore: Double? = null,
     val reviewCount: Int? = null,
     val reviews: List<MarketplaceSellerReview> = emptyList(),
+    val reviewNextOffset: Int? = null,
     val isVerified: Boolean = true
 )
 
@@ -228,6 +229,11 @@ data class MarketplaceSellerReview(
 /** Provides seller profile details without coupling marketplace to a profile implementation. */
 fun interface MarketplaceSellerProfileProvider {
     suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile?
+    suspend fun getSellerReviewsPage(
+        sellerId: String,
+        offset: Int,
+        pageSize: Int
+    ): MarketplaceSellerReviewPage = MarketplaceSellerReviewPage(emptyList(), null)
 }
 
 object EmptyMarketplaceSellerProfileProvider : MarketplaceSellerProfileProvider {
