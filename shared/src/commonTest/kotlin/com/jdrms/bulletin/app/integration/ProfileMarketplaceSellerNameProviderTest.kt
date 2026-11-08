@@ -14,7 +14,10 @@ class ProfileMarketplaceSellerNameProviderTest {
     @Test
     fun sellerProfileIncludesReviewSnapshots() = runTest {
         val repository = InMemoryProfileRepository(
-            initialProfiles = mapOf("seller" to sellerProfile()),
+            initialProfiles = mapOf(
+                "seller" to sellerProfile(),
+                "buyer" to reviewerProfile()
+            ),
             initialReviews = mapOf("seller" to listOf(sellerReview()))
         )
 
@@ -24,6 +27,7 @@ class ProfileMarketplaceSellerNameProviderTest {
         assertEquals(5.0, profile?.reputationScore)
         assertEquals("Helpful and on time.", profile?.reviews?.single()?.comment)
         assertEquals("Campus Buyer", profile?.reviews?.single()?.reviewerName)
+        assertEquals("https://example.com/buyer.png", profile?.reviews?.single()?.reviewerAvatarUrl)
     }
 
     @Test
@@ -48,6 +52,13 @@ private fun sellerProfile() = ProfileDto(
     email = "seller@campus.edu",
     fullName = "Campus Seller",
     university = "Campus University"
+)
+
+private fun reviewerProfile() = ProfileDto(
+    id = "buyer",
+    email = "buyer@campus.edu",
+    fullName = "Campus Buyer",
+    avatarUrl = "https://example.com/buyer.png"
 )
 
 private fun sellerReview() = ReviewDto(

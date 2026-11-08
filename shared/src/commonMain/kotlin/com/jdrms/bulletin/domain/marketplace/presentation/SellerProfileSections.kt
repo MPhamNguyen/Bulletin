@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.*
@@ -102,43 +101,6 @@ private fun VerifiedBadge() {
         ) {
             Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(12.dp))
             Text("Verified", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-@Composable
-internal fun SellerProfileStats(profile: MarketplaceSellerProfile, soldListingsCount: Int) {
-    BulletinCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SellerStat("Reputation", formatReputationScore(profile.reputationScore), showStar = true)
-            SellerStat("Listings sold", soldListingsCount.toString(), showStar = false)
-        }
-    }
-}
-
-@Composable
-private fun SellerStat(label: String, value: String, showStar: Boolean) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(BulletinSpacing.xs))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (showStar) {
-                Icon(
-                    Icons.Filled.Star,
-                    contentDescription = "Reputation",
-                    tint = MaterialTheme.bulletinColors.star,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }

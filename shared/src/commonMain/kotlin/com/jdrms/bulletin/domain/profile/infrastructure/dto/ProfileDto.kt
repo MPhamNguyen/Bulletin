@@ -34,7 +34,8 @@ data class ReviewDto(
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
     @SerialName("comment") val comment: String = "",
-    @SerialName("created_at") val createdAt: String = ""
+    @SerialName("created_at") val createdAt: String = "",
+    @SerialName("listing_id") val listingId: String? = null
 )
 
 @Serializable

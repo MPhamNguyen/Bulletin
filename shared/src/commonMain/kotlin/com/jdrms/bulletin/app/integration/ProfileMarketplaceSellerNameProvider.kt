@@ -22,11 +22,20 @@ class ProfileMarketplaceSellerNameProvider(
                     reputationScore = it.reputation?.averageRating,
                     reviewCount = it.reputation?.totalReviews,
                     reviews = it.reputation?.reviews.orEmpty().map { review ->
+                        val reviewerProfile = when (
+                            val reviewer = profileRepository.getProfile(UserId(review.reviewerId))
+                        ) {
+                            is com.jdrms.bulletin.core.common.Result.Success -> reviewer.data
+                            is com.jdrms.bulletin.core.common.Result.Error -> null
+                        }
                         MarketplaceSellerReview(
                             id = review.id.value,
                             reviewerName = review.reviewerName,
                             rating = review.rating.score,
-                            comment = review.comment
+                            comment = review.comment,
+                            createdAtMillis = review.createdAtMillis,
+                            reviewerAvatarUrl = reviewerProfile?.avatarUrl,
+                            relatedListingId = review.relatedListingId
                         )
                     },
                     isVerified = it.isVerified

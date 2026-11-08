@@ -219,7 +219,10 @@ data class MarketplaceSellerReview(
     val id: String,
     val reviewerName: String,
     val rating: Int,
-    val comment: String
+    val comment: String,
+    val createdAtMillis: Long = 0L,
+    val reviewerAvatarUrl: String? = null,
+    val relatedListingId: String? = null
 )
 
 /** Provides seller profile details without coupling marketplace to a profile implementation. */
