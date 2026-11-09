@@ -106,14 +106,6 @@ internal fun MarketplaceListingSnapshot.toMarketplaceItem(): MarketplaceItem {
     )
 }
 
-class BookmarkMarketplaceListing(
-    private val repository: MarketplaceRepository
-) {
-    suspend operator fun invoke(userId: String, itemId: MarketplaceItemId): Result<Unit> {
-        return repository.bookmarkListing(userId, itemId)
-    }
-}
-
 class GetMarketplaceListingBookmarks(
     private val repository: MarketplaceRepository
 ) {

@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerPr
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -157,6 +158,30 @@ class SellerProfileViewModelTest {
             )
 
             assertEquals(listOf("used-book"), viewModel.uiState.value.filteredListings.map { it.id.value })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun sortsSellerListingsByPriceInBothDirections() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val viewModel = filteringSellerProfileViewModel()
+            viewModel.load("seller-a")
+            advanceUntilIdle()
+
+            viewModel.onFiltersApplied(MarketplaceFilterState(sortOrder = MarketplaceSortOrder.PRICE_LOW_TO_HIGH))
+            assertEquals(
+                listOf("new-book", "used-book", "new-chair"),
+                viewModel.uiState.value.filteredListings.map { it.id.value }
+            )
+
+            viewModel.onFiltersApplied(MarketplaceFilterState(sortOrder = MarketplaceSortOrder.PRICE_HIGH_TO_LOW))
+            assertEquals(
+                listOf("new-chair", "used-book", "new-book"),
+                viewModel.uiState.value.filteredListings.map { it.id.value }
+            )
         } finally {
             Dispatchers.resetMain()
         }

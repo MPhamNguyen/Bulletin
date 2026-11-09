@@ -69,16 +69,25 @@ data class MarketplaceAttributeFilters(
 
     val isEmpty: Boolean get() = allPredicates.isEmpty()
 
-    fun isValidFor(category: MarketplaceCategory?): Boolean {
-        if (category == null) return false
+    fun isValidFor(category: MarketplaceCategory?): Boolean = reconciledFor(category) == this
+
+    fun reconciledFor(category: MarketplaceCategory?): MarketplaceAttributeFilters {
+        if (category == null) return NONE
         val selectedChoices = allPredicates.mapNotNull { (key, predicate) ->
             (predicate as? MarketplaceAttributePredicate.Choice)?.let { key to it.code }
         }.toMap()
-        return allPredicates.all { (key, predicate) ->
+        val validKeys = allPredicates.filter { (key, predicate) ->
             MarketplaceAttributeCatalog.spec(category, key)?.let { spec ->
                 spec.isApplicable(selectedChoices) && spec.accepts(predicate, selectedChoices)
             } == true
-        }
+        }.keys
+        return copy(
+            deviceType = deviceType.takeIf { MarketplaceAttributeCatalog.DEVICE_TYPE in validKeys },
+            brandKey = brandKey.takeIf { MarketplaceAttributeCatalog.BRAND in validKeys },
+            ramGb = ramGb.takeIf { MarketplaceAttributeCatalog.RAM_GB in validKeys },
+            storageGb = storageGb.takeIf { MarketplaceAttributeCatalog.STORAGE_GB in validKeys },
+            predicates = predicates.filterKeys(validKeys::contains)
+        )
     }
 
     fun matches(attributes: MarketplaceAttributes): Boolean = allPredicates.all { (key, predicate) ->

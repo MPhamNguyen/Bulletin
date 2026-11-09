@@ -19,7 +19,7 @@ internal object MarketplaceAttributeReadPolicy {
                 is MarketplaceAttributeValue.Decimal -> validDecimal(key, value.plain)
                 is MarketplaceAttributeValue.Date -> validDate(value.iso)
                 is MarketplaceAttributeValue.Text -> value.value.none(Char::isISOControl)
-                is MarketplaceAttributeValue.Choice -> validChoice(category, key, value.code, attributes)
+                is MarketplaceAttributeValue.Choice -> validChoice(category, key, value.code)
             }
         }
     )
@@ -27,14 +27,11 @@ internal object MarketplaceAttributeReadPolicy {
     private fun validChoice(
         category: MarketplaceCategory,
         key: String,
-        code: String,
-        attributes: MarketplaceAttributes
+        code: String
     ): Boolean {
-        val selected = attributes.values.mapNotNull { (attributeKey, value) ->
-            (value as? MarketplaceAttributeValue.Choice)?.let { attributeKey to it.code }
-        }.toMap()
         val spec = MarketplaceAttributeCatalog.spec(category, key) ?: return false
-        return spec.isApplicable(selected) && code in spec.choicesFor(selected)
+        // Stored rows may predate controlling attributes and option groups; accept any recognized choice.
+        return code in spec.choices
     }
 
     private fun validInteger(key: String, number: Long, attributes: MarketplaceAttributes): Boolean {

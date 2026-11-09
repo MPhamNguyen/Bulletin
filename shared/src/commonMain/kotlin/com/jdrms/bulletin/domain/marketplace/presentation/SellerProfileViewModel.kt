@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
+import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceItemSortingPolicy
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -23,17 +24,21 @@ data class SellerProfileUiState(
     val errorMessage: String? = null
 ) {
     val filteredListings: List<MarketplaceItem>
-        get() = sellerProfileSearchPolicy.filterItems(
-            items = listings,
-            query = filters.query,
-            category = filters.category,
-            condition = filters.condition,
-            attributes = filters.attributes,
-            priceRange = filters.priceRange
+        get() = sellerProfileSortingPolicy.sort(
+            sellerProfileSearchPolicy.filterItems(
+                items = listings,
+                query = filters.query,
+                category = filters.category,
+                condition = filters.condition,
+                attributes = filters.attributes,
+                priceRange = filters.priceRange
+            ),
+            filters.sortOrder
         )
 }
 
 private val sellerProfileSearchPolicy = MarketplaceSearchPolicy()
+private val sellerProfileSortingPolicy = MarketplaceItemSortingPolicy()
 
 class SellerProfileViewModel(
     private val viewSellerProfile: ViewMarketplaceSellerProfile

@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributePredicate
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import kotlin.test.Test
@@ -25,5 +27,24 @@ class MarketplaceFilterStateTest {
         )
 
         assertEquals(MarketplaceCondition.LIKE_NEW, filters.normalized().condition)
+    }
+
+    @Test
+    fun removingControllingChoiceRetainsIndependentAttributeFilters() {
+        val selectedAttributes = MarketplaceAttributeFilters(
+            predicates = mapOf(
+                "clothing_type" to MarketplaceAttributePredicate.Choice("top"),
+                "size" to MarketplaceAttributePredicate.Choice("M"),
+                "brand" to MarketplaceAttributePredicate.ExactText("levis", usesMatchKey = true),
+                "color" to MarketplaceAttributePredicate.Choice("blue")
+            )
+        )
+
+        val normalized = MarketplaceFilterState(
+            category = MarketplaceCategory.CLOTHING,
+            attributes = selectedAttributes.without("clothing_type")
+        ).normalized()
+
+        assertEquals(setOf("brand", "color"), normalized.attributes.allPredicates.keys)
     }
 }

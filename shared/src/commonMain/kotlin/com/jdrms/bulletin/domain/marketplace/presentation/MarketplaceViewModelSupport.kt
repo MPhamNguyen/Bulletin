@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.OwnListingBookmarkException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -151,7 +152,12 @@ internal class MarketplaceBookmarkController(
             Result.Error(error)
         }
         if (result is Result.Error) {
-            rollbackPendingChange(itemId, "Unable to update bookmark. Please try again.")
+            val message = if (result.exception is OwnListingBookmarkException) {
+                result.exception.message.orEmpty()
+            } else {
+                "Unable to update bookmark. Please try again."
+            }
+            rollbackPendingChange(itemId, message)
             return false
         }
         change.confirmed = desired

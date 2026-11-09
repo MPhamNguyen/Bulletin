@@ -9,9 +9,11 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
+import com.jdrms.bulletin.domain.marketplace.domain.model.OwnListingBookmarkException
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingOwnerDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceReviewInsertDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.ReviewScoreDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
@@ -135,7 +137,13 @@ class SupabaseMarketplaceRepository private constructor(
     }
 
     override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
-        return runBookmarkMutation { bookmarks.bookmark(userId, itemId) }
+        return runBookmarkMutation {
+            val owner = supabase.from(LISTINGS_TABLE).select(columns = Columns.raw("user_id")) {
+                filter { eq("id", normalizeListingId(itemId.value)) }
+            }.decodeSingleOrNull<MarketplaceListingOwnerDto>()
+            if (owner?.userId == userId) throw OwnListingBookmarkException()
+            bookmarks.bookmark(userId, itemId)
+        }
     }
 
     override suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit> {

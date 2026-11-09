@@ -40,8 +40,7 @@ data class MarketplaceFilterState(
     /** Category-specific filters are cleared when they do not apply to the selected category. */
     fun normalized(): MarketplaceFilterState {
         val normalizedCondition = condition.takeIf { category?.supportsCondition != false }
-        val normalizedAttributes = attributes.takeIf { it.isEmpty || it.isValidFor(category) }
-            ?: MarketplaceAttributeFilters.NONE
+        val normalizedAttributes = attributes.reconciledFor(category)
         return copy(condition = normalizedCondition, attributes = normalizedAttributes)
     }
 }

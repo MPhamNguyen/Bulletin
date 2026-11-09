@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
+import com.jdrms.bulletin.domain.marketplace.domain.model.OwnListingBookmarkException
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
@@ -68,6 +69,9 @@ class InMemoryMarketplaceRepository(
     }
 
     override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
+        if (listings.firstOrNull { it.id == itemId }?.sellerId == userId) {
+            return Result.Error(OwnListingBookmarkException())
+        }
         val bookmarks = bookmarksByUser[userId] ?: ListingBookmarks.of(userId)
         bookmarksByUser[userId] = bookmarks.bookmark(itemId)
         return Result.Success(Unit)
