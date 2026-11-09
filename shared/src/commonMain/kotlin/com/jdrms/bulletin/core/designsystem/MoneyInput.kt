@@ -20,11 +20,14 @@ fun MoneyInput(
     digits: String,
     onDigitsChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    label: @Composable () -> Unit,
+    label: (@Composable () -> Unit)? = null,
     textStyle: TextStyle = LocalTextStyle.current,
-    error: String? = null
+    error: String? = null,
+    currencySymbolAsAdornment: Boolean = false
 ) {
-    val text = formatCurrencyDigits(digits)
+    val text = formatCurrencyDigits(digits).let { formatted ->
+        if (currencySymbolAsAdornment) formatted.removePrefix("$") else formatted
+    }
     var fieldValue by remember(text) {
         mutableStateOf(TextFieldValue(text = text, selection = TextRange(text.length)))
     }
@@ -40,7 +43,9 @@ fun MoneyInput(
                     is Result.Success -> {
                         inputError = null
                         onDigitsChange(result.data)
-                        val nextText = formatCurrencyDigits(result.data)
+                        val nextText = formatCurrencyDigits(result.data).let { formatted ->
+                            if (currencySymbolAsAdornment) formatted.removePrefix("$") else formatted
+                        }
                         fieldValue = TextFieldValue(text = nextText, selection = TextRange(nextText.length))
                     }
                     is Result.Error -> inputError = result.message
@@ -51,7 +56,8 @@ fun MoneyInput(
         isError = displayedError != null,
         decoration = BulletinFieldDecoration(
             label = label,
-            placeholder = { Text("$0.00") },
+            placeholder = { Text(if (currencySymbolAsAdornment) "0.00" else "$0.00") },
+            leadingIcon = if (currencySymbolAsAdornment) ({ Text("$") }) else null,
             supportingText = displayedError?.let { { Text(it) } }
         ),
         options = BulletinFieldOptions(

@@ -1,13 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import com.jdrms.bulletin.core.designsystem.MoneyInput
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
 
 internal data class MarketplacePriceFilterDraft(
@@ -43,22 +37,24 @@ internal fun MarketplacePriceFilterFields(
     error: String?,
     onDraftChanged: (MarketplacePriceFilterDraft) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
-    ) {
-        MoneyInput(
-            digits = draft.minimumCents,
-            onDigitsChange = { onDraftChanged(draft.copy(minimumCents = it)) },
-            modifier = Modifier.weight(1f),
-            label = { Text("Min price") }
-        )
-        MoneyInput(
-            digits = draft.maximumCents,
-            onDigitsChange = { onDraftChanged(draft.copy(maximumCents = it)) },
-            modifier = Modifier.weight(1f),
-            label = { Text("Max price") },
-            error = error
-        )
-    }
+    MarketplaceRangeFields(
+        title = "Price",
+        error = error,
+        minimumField = { modifier ->
+            MoneyInput(
+                digits = draft.minimumCents,
+                onDigitsChange = { onDraftChanged(draft.copy(minimumCents = it)) },
+                modifier = modifier,
+                currencySymbolAsAdornment = true
+            )
+        },
+        maximumField = { modifier ->
+            MoneyInput(
+                digits = draft.maximumCents,
+                onDigitsChange = { onDraftChanged(draft.copy(maximumCents = it)) },
+                modifier = modifier,
+                currencySymbolAsAdornment = true
+            )
+        }
+    )
 }

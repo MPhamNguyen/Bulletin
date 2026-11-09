@@ -4,6 +4,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -45,9 +46,10 @@ internal fun MarketplaceFilterSheet(
     var attributeErrors by remember(filters) { mutableStateOf(emptyMap<String, String>()) }
     var priceDraft by remember(filters) { mutableStateOf(MarketplacePriceFilterDraft.from(filters.priceRange)) }
     var priceError by remember(filters) { mutableStateOf<String?>(null) }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     ModalBottomSheet(
+        modifier = Modifier.fillMaxHeight(),
         sheetState = sheetState,
         onDismissRequest = onDismiss,
         shape = BulletinSheetDefaults.shape,

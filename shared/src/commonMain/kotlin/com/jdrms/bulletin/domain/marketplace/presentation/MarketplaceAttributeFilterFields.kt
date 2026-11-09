@@ -44,10 +44,10 @@ internal fun MarketplaceAttributeFilterFields(
                     onChange(draft.withExact(spec.key, it).reconciled(category))
                 }
                 MarketplaceAttributeKind.TEXT -> FilterTextField(
-                    label = "${spec.label} (exact match)",
                     value = input.exact,
                     error = errors[spec.key],
                     keyboardType = KeyboardType.Text,
+                    decoration = BulletinFieldDecoration(label = { Text("${spec.label} (exact match)") }),
                     onValueChange = { onChange(draft.withExact(spec.key, it)) }
                 )
                 MarketplaceAttributeKind.INTEGER,
@@ -91,41 +91,44 @@ private fun RangeField(
     onChange: (MarketplaceAttributeFilterDraft) -> Unit
 ) {
     val isDate = spec.kind == MarketplaceAttributeKind.DATE
-    val unit = spec.suffix.takeIf(String::isNotBlank).orEmpty()
-    val label = "${spec.label}${if (unit.isEmpty()) "" else " ($unit)"}"
     val keyboard = when (spec.kind) {
         MarketplaceAttributeKind.INTEGER -> KeyboardType.Number
         MarketplaceAttributeKind.DECIMAL -> KeyboardType.Decimal
         else -> KeyboardType.Text
     }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    MarketplaceRangeFields(
+        title = spec.label,
+        minimumLabel = if (isDate) "Earliest" else "Minimum",
+        maximumLabel = if (isDate) "Latest" else "Maximum",
+        error = error,
+        minimumField = { modifier ->
             FilterTextField(
-                "${if (isDate) "Earliest" else "Minimum"} $label",
-                input.min,
-                error?.let { "" },
-                keyboard,
-                Modifier.weight(1f)
+                value = input.min,
+                error = error?.let { "" },
+                keyboardType = keyboard,
+                modifier = modifier,
+                decoration = rangeFieldDecoration(spec, isDate)
             ) { onChange(draft.withMin(spec.key, it)) }
+        },
+        maximumField = { modifier ->
             FilterTextField(
-                "${if (isDate) "Latest" else "Maximum"} $label",
-                input.max,
-                error?.let { "" },
-                keyboard,
-                Modifier.weight(1f)
+                value = input.max,
+                error = error?.let { "" },
+                keyboardType = keyboard,
+                modifier = modifier,
+                decoration = rangeFieldDecoration(spec, isDate)
             ) { onChange(draft.withMax(spec.key, it)) }
         }
-        error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
-    }
+    )
 }
 
 @Composable
 private fun FilterTextField(
-    label: String,
     value: String,
     error: String?,
     keyboardType: KeyboardType,
     modifier: Modifier = Modifier.fillMaxWidth(),
+    decoration: BulletinFieldDecoration = BulletinFieldDecoration(),
     onValueChange: (String) -> Unit
 ) {
     BulletinTextField(
@@ -134,9 +137,18 @@ private fun FilterTextField(
         modifier = modifier,
         isError = error != null,
         decoration = BulletinFieldDecoration(
-            label = { Text(label) },
+            label = decoration.label,
+            placeholder = decoration.placeholder,
+            leadingIcon = decoration.leadingIcon,
+            trailingIcon = decoration.trailingIcon,
             supportingText = error?.takeIf(String::isNotEmpty)?.let { message -> { Text(message) } }
         ),
         options = BulletinFieldOptions(keyboardOptions = KeyboardOptions(keyboardType = keyboardType))
     )
 }
+
+private fun rangeFieldDecoration(spec: MarketplaceAttributeSpec, isDate: Boolean) = BulletinFieldDecoration(
+    placeholder = if (isDate) ({ Text("YYYY-MM-DD") }) else null,
+    leadingIcon = spec.prefix.takeIf(String::isNotBlank)?.let { text -> { Text(text.trim()) } },
+    trailingIcon = spec.suffix.takeIf(String::isNotBlank)?.let { text -> { Text(text.trim()) } }
+)
