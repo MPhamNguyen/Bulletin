@@ -5,6 +5,9 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeKeys
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeValue
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingActionCallbacks
@@ -56,6 +59,38 @@ class ListingAttributeSubmissionTest {
         advanceUntilIdle()
         assertEquals(listing.attributes["brand"], repository.getAllListings().single().attributes["brand"])
         assertEquals(ListingAttributeDraft(), state.value.newAttributes)
+    }
+
+    @Test
+    fun createPersistsASelectedClothingColor() = runTest {
+        val repository = InMemoryListingsRepository(emptyList())
+        val state = MutableStateFlow(
+            ListingsUiState(
+                newTitle = "Blue jacket",
+                newDescription = "Warm campus jacket",
+                newPriceCents = "2500",
+                newImages = listOf(ListingImageUpload(byteArrayOf(1), "image/jpeg")),
+                newCategory = ListingCategory.CLOTHING,
+                newAttributes = ListingAttributeDraft(inputs = mapOf(ListingAttributeKeys.COLOR to "blue"))
+            )
+        )
+
+        ListingCreationActions(
+            state,
+            this,
+            CreateListing(repository),
+            ManageListing(repository),
+            null,
+            seller,
+            callbacks,
+            ListingAttributeDraftActions(state)
+        ).submit()
+        advanceUntilIdle()
+
+        assertEquals(
+            ListingAttributeValue.Choice("blue"),
+            repository.getAllListings().single().attributes[ListingAttributeKeys.COLOR]
+        )
     }
 
     @Test

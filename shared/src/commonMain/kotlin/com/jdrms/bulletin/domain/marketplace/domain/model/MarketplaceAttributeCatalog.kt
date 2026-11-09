@@ -8,8 +8,30 @@ data class MarketplaceAttributeSpec(
     val kind: MarketplaceAttributeKind,
     val choices: Map<String, String> = emptyMap(),
     val prefix: String = "",
-    val suffix: String = ""
-)
+    val suffix: String = "",
+    val applicability: MarketplaceAttributeApplicability? = null,
+    val optionGroups: List<MarketplaceAttributeOptionGroup> = emptyList()
+) {
+    fun isApplicable(selectedChoices: Map<String, String>): Boolean =
+        applicability?.let { selectedChoices[it.controllingKey] in it.allowedCodes } ?: true
+
+    fun choicesFor(selectedChoices: Map<String, String>): Map<String, String> {
+        if (optionGroups.isEmpty()) return choices
+        return buildMap {
+            optionGroups.filter { it.matches(selectedChoices) }.forEach { putAll(it.choices) }
+        }
+    }
+}
+
+data class MarketplaceAttributeApplicability(val controllingKey: String, val allowedCodes: Set<String>)
+
+data class MarketplaceAttributeOptionGroup(
+    val requiredChoices: Map<String, Set<String>>,
+    val choices: Map<String, String>
+) {
+    fun matches(selectedChoices: Map<String, String>): Boolean =
+        requiredChoices.all { (key, allowed) -> selectedChoices[key] in allowed }
+}
 
 /**
  * Marketplace's own read vocabulary for item attributes: stable key, label, kind, and unit for display and
@@ -20,6 +42,20 @@ object MarketplaceAttributeCatalog {
     const val DEVICE_TYPE = "device_type"
     const val RAM_GB = "ram_gb"
     const val STORAGE_GB = "storage_gb"
+    const val ISBN = "isbn"
+    const val COURSE_CODE = "course_code"
+    const val EDITION = "edition"
+    const val FURNITURE_TYPE = "furniture_type"
+    const val MATERIAL = "material"
+    const val WIDTH_CM = "width_cm"
+    const val LENGTH_CM = "length_cm"
+    const val CLOTHING_TYPE = "clothing_type"
+    const val SHOE_SIZE_SYSTEM = "shoe_size_system"
+    const val SIZE = "size"
+    const val COLOR = "color"
+    const val MONTHLY_RENT_USD = "monthly_rent_usd"
+    const val AVAILABLE_DATE = "available_date"
+    const val HOUSING_TYPE = "housing_type"
     const val MAX_BRAND_LENGTH = 40
     const val MAX_CAPACITY_GB = 100_000L
 
@@ -44,36 +80,30 @@ object MarketplaceAttributeCatalog {
             spec(STORAGE_GB, "Storage", MarketplaceAttributeKind.INTEGER, suffix = " GB")
         ),
         MarketplaceCategory.TEXTBOOKS to listOf(
-            spec("isbn", "ISBN", MarketplaceAttributeKind.TEXT),
-            spec("course_code", "Course code", MarketplaceAttributeKind.TEXT),
-            spec("edition", "Edition", MarketplaceAttributeKind.INTEGER)
+            spec(ISBN, "ISBN", MarketplaceAttributeKind.TEXT),
+            spec(COURSE_CODE, "Course code", MarketplaceAttributeKind.TEXT),
+            spec(EDITION, "Edition", MarketplaceAttributeKind.INTEGER)
         ),
         MarketplaceCategory.FURNITURE to listOf(
             spec(
-                "furniture_type", "Furniture type", MarketplaceAttributeKind.CHOICE,
+                FURNITURE_TYPE, "Furniture type", MarketplaceAttributeKind.CHOICE,
                 choices = labels(
                     "chair", "desk", "table", "bed", "sofa", "shelf", "dresser", "lamp", "other"
                 )
             ),
             spec(
-                "material", "Material", MarketplaceAttributeKind.CHOICE,
+                MATERIAL, "Material", MarketplaceAttributeKind.CHOICE,
                 choices = labels("wood", "metal", "plastic", "glass", "fabric", "leather", "mixed", "other")
             ),
-            spec("width_cm", "Width", MarketplaceAttributeKind.DECIMAL, suffix = " cm")
+            spec(WIDTH_CM, "Width", MarketplaceAttributeKind.DECIMAL, suffix = " cm"),
+            spec(LENGTH_CM, "Length", MarketplaceAttributeKind.DECIMAL, suffix = " cm")
         ),
-        MarketplaceCategory.CLOTHING to listOf(
-            spec(
-                "clothing_type", "Clothing type", MarketplaceAttributeKind.CHOICE,
-                choices = labels("top", "bottom", "outerwear", "dress", "shoes", "accessory", "other")
-            ),
-            spec("size", "Size", MarketplaceAttributeKind.TEXT),
-            brand
-        ),
+        MarketplaceCategory.CLOTHING to MarketplaceClothingAttributeCatalog.specs,
         MarketplaceCategory.HOUSING to listOf(
-            spec("monthly_rent_usd", "Monthly rent", MarketplaceAttributeKind.DECIMAL, prefix = "$", suffix = "/mo"),
-            spec("available_date", "Available date", MarketplaceAttributeKind.DATE),
+            spec(MONTHLY_RENT_USD, "Monthly rent", MarketplaceAttributeKind.DECIMAL, prefix = "$", suffix = "/mo"),
+            spec(AVAILABLE_DATE, "Available date", MarketplaceAttributeKind.DATE),
             spec(
-                "housing_type", "Housing type", MarketplaceAttributeKind.CHOICE,
+                HOUSING_TYPE, "Housing type", MarketplaceAttributeKind.CHOICE,
                 choices = linkedMapOf(
                     "room" to "Private room", "shared_room" to "Shared room", "studio" to "Studio",
                     "apartment" to "Apartment", "house" to "House", "other" to "Other"
@@ -84,6 +114,17 @@ object MarketplaceAttributeCatalog {
     )
 
     fun specsFor(category: MarketplaceCategory): List<MarketplaceAttributeSpec> = byCategory.getValue(category)
+
+    fun spec(category: MarketplaceCategory, key: String): MarketplaceAttributeSpec? =
+        specsFor(category).firstOrNull { it.key == key }
+
+    fun applicableSpecs(
+        category: MarketplaceCategory,
+        selectedChoices: Map<String, String>
+    ): List<MarketplaceAttributeSpec> = specsFor(category).filter { spec ->
+        spec.isApplicable(selectedChoices) &&
+            (spec.optionGroups.isEmpty() || spec.choicesFor(selectedChoices).isNotEmpty())
+    }
 
     val allKeys: Set<String> = byCategory.values.flatten().map { it.key }.toSet()
 

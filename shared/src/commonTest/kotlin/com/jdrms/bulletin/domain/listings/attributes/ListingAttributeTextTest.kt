@@ -44,14 +44,6 @@ class ListingAttributeTextTest {
     }
 
     @Test
-    fun clothingSizeIsUppercasedAndRestricted() {
-        assertEquals("XL", ListingAttributeText.normalize(ListingTextFormat.CLOTHING_SIZE, "xl"))
-        assertEquals("32/30", ListingAttributeText.normalize(ListingTextFormat.CLOTHING_SIZE, "32/30"))
-        assertNull(ListingAttributeText.normalize(ListingTextFormat.CLOTHING_SIZE, "<script>"))
-        assertNull(ListingAttributeText.normalize(ListingTextFormat.CLOTHING_SIZE, "1234567890123"))
-    }
-
-    @Test
     fun decimalIsExactAndRejectsExcessPrecision() {
         assertEquals("1250.50", ListingDecimal.parse("1250.5", 2)?.toPlainString())
         assertEquals(125050L, ListingDecimal.parse("1250.50", 2)?.unscaled)

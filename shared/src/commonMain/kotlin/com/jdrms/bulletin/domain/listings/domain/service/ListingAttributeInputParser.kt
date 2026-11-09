@@ -35,7 +35,7 @@ class ListingAttributeInputParser(
         applicable.forEach { definition ->
             val raw = inputs[definition.key].orEmpty()
             if (raw.isBlank()) return@forEach
-            when (val parsed = parseValue(definition, raw)) {
+            when (val parsed = parseValue(definition, raw, inputs)) {
                 is Parsed.Value -> values[definition.key] = parsed.value
                 is Parsed.Failure -> errors[definition.key] = parsed.message
             }
@@ -56,16 +56,24 @@ class ListingAttributeInputParser(
         category: ListingCategory,
         inputs: Map<String, String>
     ): List<ListingAttributeDefinition> =
-        ListingAttributeCatalog.definitionsFor(category).filter { definition ->
-            definition.applicability?.isSatisfiedBy(inputs) ?: true
-        }
+        ListingAttributeCatalog.definitionsFor(category)
+            .filter { definition -> definition.applicability?.isSatisfiedBy(inputs) ?: true }
+            .filter { definition ->
+                definition.optionGroups.isEmpty() || definition.choiceOptions(inputs).isNotEmpty()
+            }
 
-    private fun parseValue(definition: ListingAttributeDefinition, raw: String): Parsed =
+    private fun parseValue(
+        definition: ListingAttributeDefinition,
+        raw: String,
+        inputs: Map<String, String>
+    ): Parsed =
         when (val type = definition.type) {
             is ListingAttributeType.Text -> ListingAttributeText.normalize(type.format, raw)
                 ?.let { Parsed.Value(ListingAttributeValue.Text(it)) }
                 ?: Parsed.Failure(textMessage(definition))
-            is ListingAttributeType.Choice -> raw.trim().takeIf { code -> type.options.any { it.code == code } }
+            is ListingAttributeType.Choice -> raw.trim().takeIf { code ->
+                definition.choiceOptions(inputs).any { it.code == code }
+            }
                 ?.let { Parsed.Value(ListingAttributeValue.Choice(it)) }
                 ?: Parsed.Failure("Choose a valid ${definition.label.lowercase()}.")
             is ListingAttributeType.Integer -> parseInteger(definition, raw)
@@ -95,8 +103,6 @@ class ListingAttributeInputParser(
         ListingTextFormat.ISBN -> "Enter a valid ISBN-10 or ISBN-13."
         ListingTextFormat.COURSE_CODE ->
             "Use a course code like CECS 328."
-        ListingTextFormat.CLOTHING_SIZE ->
-            "Use letters, numbers, spaces, or . / - (up to 12 characters)."
         ListingTextFormat.BRAND -> "Enter a valid brand name."
     }
 

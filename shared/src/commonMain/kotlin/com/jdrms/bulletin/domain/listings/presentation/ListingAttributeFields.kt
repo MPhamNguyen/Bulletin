@@ -23,6 +23,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeOption
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeUnit
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
@@ -53,7 +54,13 @@ internal fun ListingAttributeFields(
             val value = draft.inputs[definition.key].orEmpty()
             val error = draft.errors[definition.key]
             when (definition.type) {
-                is ListingAttributeType.Choice -> ListingChoiceAttributeField(definition, value, error, onInputChange)
+                is ListingAttributeType.Choice -> ListingChoiceAttributeField(
+                    definition,
+                    definition.choiceOptions(draft.inputs),
+                    value,
+                    error,
+                    onInputChange
+                )
                 is ListingAttributeType.Date ->
                     ListingDateAttributeField(category, definition, value, error, onInputChange)
                 is ListingAttributeType.Text -> if (definition.type.format == ListingTextFormat.ISBN) {
@@ -118,11 +125,11 @@ private fun ListingTextAttributeField(
 @Composable
 private fun ListingChoiceAttributeField(
     definition: ListingAttributeDefinition,
+    options: List<ListingAttributeOption>,
     selectedCode: String,
     error: String?,
     onInputChange: (String, String) -> Unit
 ) {
-    val options = (definition.type as ListingAttributeType.Choice).options
     val selectedLabel = options.firstOrNull { it.code == selectedCode }?.label ?: "Not selected"
     Column(modifier = Modifier.semantics { stateDescription = selectedLabel }) {
         Text(

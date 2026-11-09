@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import io.github.jan.supabase.postgrest.PropertyConversionMethod
 import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
@@ -221,6 +222,29 @@ class SupabaseMarketplaceListingSourceTest {
         builder.applyMarketplaceSearch(MarketplacePageRequest(viewerId = "viewer-42"))
 
         assertEquals(listOf("neq.viewer-42"), builder.params["user_id"])
+    }
+
+    @Test
+    fun conditionSearchAcrossAllCategoriesExcludesHousing() {
+        val builder = PostgrestFilterBuilder(PropertyConversionMethod.NONE)
+
+        builder.applyMarketplaceSearch(
+            MarketplacePageRequest(condition = MarketplaceCondition.GOOD)
+        )
+
+        assertEquals(listOf("neq.HOUSING"), builder.params["category"])
+        assertEquals(listOf("ilike.GOOD"), builder.params["condition"])
+    }
+
+    @Test
+    fun marketplaceQueryAppliesInclusivePriceBounds() {
+        val builder = PostgrestFilterBuilder(PropertyConversionMethod.NONE)
+
+        builder.applyMarketplaceSearch(
+            MarketplacePageRequest(priceRange = MarketplacePriceRange(1_025L, 9_999L))
+        )
+
+        assertEquals(listOf("gte.10.25", "lte.99.99"), builder.params["price"])
     }
 
     @Test

@@ -97,6 +97,18 @@ class ListingAttributeDraftActionsTest {
     }
 
     @Test
+    fun changingClothingTypeClearsAnIncompatibleSize() {
+        state.value = state.value.copy(newCategory = ListingCategory.CLOTHING)
+        actions.inputChanged(ListingForm.NEW, "clothing_type", "bottom")
+        actions.inputChanged(ListingForm.NEW, "size", "32")
+
+        actions.inputChanged(ListingForm.NEW, "clothing_type", "top")
+
+        assertNull(state.value.newAttributes.inputs["size"])
+        assertEquals("top", state.value.newAttributes.inputs["clothing_type"])
+    }
+
+    @Test
     fun blankOptionalFieldsAreOmittedAndBaseErrorsStillWin() {
         actions.inputChanged(ListingForm.NEW, "brand", "   ")
         assertEquals(ListingAttributes.EMPTY, validateNewListingDraft(state.value).draft?.attributes)

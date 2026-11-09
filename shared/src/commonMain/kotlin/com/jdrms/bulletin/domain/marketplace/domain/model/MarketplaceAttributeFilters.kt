@@ -12,18 +12,13 @@ data class MarketplaceCapacityRange(val min: Long? = null, val max: Long? = null
     fun contains(value: Long): Boolean = (min == null || value >= min) && (max == null || value <= max)
 }
 
-/**
- * Typed buyer filters over item attributes. Only the allowlisted fields below exist, so no raw JSON path or
- * query fragment can be expressed. A listing missing a filtered attribute does not match.
- *
- * [brandKey] is the canonical matching key (see [MarketplaceAttributeMatching.brandKey]), never display text, so
- * equal filters are equal values and share a cache entry. Build one from user text with [create].
- */
+/** Buyer filters over the same typed, category-owned attributes sellers enter when posting. */
 data class MarketplaceAttributeFilters(
     val deviceType: String? = null,
     val brandKey: String? = null,
     val ramGb: MarketplaceCapacityRange? = null,
-    val storageGb: MarketplaceCapacityRange? = null
+    val storageGb: MarketplaceCapacityRange? = null,
+    val predicates: Map<String, MarketplaceAttributePredicate> = emptyMap()
 ) {
     init {
         require(deviceType == null || deviceType in MarketplaceAttributeCatalog.deviceTypes) {
@@ -34,35 +29,73 @@ data class MarketplaceAttributeFilters(
         }
         require(
             brandKey == null ||
-                (brandKey.isNotEmpty() && brandKey.length <= MarketplaceAttributeCatalog.MAX_BRAND_LENGTH)
+                brandKey.isNotEmpty() && brandKey.length <= MarketplaceAttributeCatalog.MAX_BRAND_LENGTH
         ) {
             "Brand filter must be between 1 and ${MarketplaceAttributeCatalog.MAX_BRAND_LENGTH} characters."
         }
+        require(predicates.keys.all { it in MarketplaceAttributeCatalog.allKeys }) {
+            "Unsupported marketplace attribute filter."
+        }
     }
 
-    val isEmpty: Boolean get() = this == NONE
+    val allPredicates: Map<String, MarketplaceAttributePredicate>
+        get() = buildMap {
+            deviceType?.let {
+                put(
+                    MarketplaceAttributeCatalog.DEVICE_TYPE,
+                    MarketplaceAttributePredicate.Choice(it)
+                )
+            }
+            brandKey?.let {
+                put(
+                    MarketplaceAttributeCatalog.BRAND,
+                    MarketplaceAttributePredicate.ExactText(it, usesMatchKey = true)
+                )
+            }
+            ramGb?.let {
+                put(
+                    MarketplaceAttributeCatalog.RAM_GB,
+                    MarketplaceAttributePredicate.IntegerRange(it)
+                )
+            }
+            storageGb?.let {
+                put(
+                    MarketplaceAttributeCatalog.STORAGE_GB,
+                    MarketplaceAttributePredicate.IntegerRange(it)
+                )
+            }
+            putAll(predicates)
+        }
 
-    fun matches(attributes: MarketplaceAttributes): Boolean =
-        matchesChoice(attributes) && matchesBrand(attributes) &&
-            matchesRange(ramGb, attributes[MarketplaceAttributeCatalog.RAM_GB]) &&
-            matchesRange(storageGb, attributes[MarketplaceAttributeCatalog.STORAGE_GB])
+    val isEmpty: Boolean get() = allPredicates.isEmpty()
 
-    private fun matchesChoice(attributes: MarketplaceAttributes): Boolean =
-        deviceType == null ||
-            (attributes[MarketplaceAttributeCatalog.DEVICE_TYPE] as? MarketplaceAttributeValue.Choice)?.code ==
-            deviceType
+    fun isValidFor(category: MarketplaceCategory?): Boolean {
+        if (category == null) return false
+        val selectedChoices = allPredicates.mapNotNull { (key, predicate) ->
+            (predicate as? MarketplaceAttributePredicate.Choice)?.let { key to it.code }
+        }.toMap()
+        return allPredicates.all { (key, predicate) ->
+            MarketplaceAttributeCatalog.spec(category, key)?.let { spec ->
+                spec.isApplicable(selectedChoices) && spec.accepts(predicate, selectedChoices)
+            } == true
+        }
+    }
 
-    private fun matchesBrand(attributes: MarketplaceAttributes): Boolean =
-        brandKey == null || (attributes[MarketplaceAttributeCatalog.BRAND] as? MarketplaceAttributeValue.Text)
-            ?.let { MarketplaceAttributeMatching.brandKey(it.value) == brandKey } == true
+    fun matches(attributes: MarketplaceAttributes): Boolean = allPredicates.all { (key, predicate) ->
+        predicate.matches(attributes[key])
+    }
 
-    private fun matchesRange(range: MarketplaceCapacityRange?, value: MarketplaceAttributeValue?): Boolean =
-        range == null || (value as? MarketplaceAttributeValue.Integer)?.let { range.contains(it.value) } == true
+    fun without(key: String): MarketplaceAttributeFilters = copy(
+        deviceType = deviceType.takeUnless { key == MarketplaceAttributeCatalog.DEVICE_TYPE },
+        brandKey = brandKey.takeUnless { key == MarketplaceAttributeCatalog.BRAND },
+        ramGb = ramGb.takeUnless { key == MarketplaceAttributeCatalog.RAM_GB },
+        storageGb = storageGb.takeUnless { key == MarketplaceAttributeCatalog.STORAGE_GB },
+        predicates = predicates - key
+    )
 
     companion object {
         val NONE = MarketplaceAttributeFilters()
 
-        /** Normalizes user brand text; blank text means no brand filter. */
         fun create(
             deviceType: String? = null,
             brandText: String? = null,
@@ -77,15 +110,72 @@ data class MarketplaceAttributeFilters(
     }
 }
 
+private fun MarketplaceAttributeSpec.accepts(
+    predicate: MarketplaceAttributePredicate,
+    selectedChoices: Map<String, String>
+): Boolean = when (kind) {
+    MarketplaceAttributeKind.TEXT -> predicate is MarketplaceAttributePredicate.ExactText
+    MarketplaceAttributeKind.CHOICE ->
+        predicate is MarketplaceAttributePredicate.Choice && predicate.code in choicesFor(selectedChoices)
+    MarketplaceAttributeKind.INTEGER -> predicate is MarketplaceAttributePredicate.IntegerRange
+    MarketplaceAttributeKind.DECIMAL -> predicate is MarketplaceAttributePredicate.DecimalRange
+    MarketplaceAttributeKind.DATE -> predicate is MarketplaceAttributePredicate.DateRange
+}
+
+private fun MarketplaceAttributePredicate.matches(value: MarketplaceAttributeValue?): Boolean = when (this) {
+    is MarketplaceAttributePredicate.Choice -> (value as? MarketplaceAttributeValue.Choice)?.code == code
+    is MarketplaceAttributePredicate.ExactText -> matchesText(value)
+    is MarketplaceAttributePredicate.IntegerRange ->
+        (value as? MarketplaceAttributeValue.Integer)?.let { range.contains(it.value) } == true
+    is MarketplaceAttributePredicate.DecimalRange -> matchesDecimal(value)
+    is MarketplaceAttributePredicate.DateRange -> matchesDate(value)
+}
+
+private fun MarketplaceAttributePredicate.ExactText.matchesText(value: MarketplaceAttributeValue?): Boolean {
+    val text = (value as? MarketplaceAttributeValue.Text)?.value ?: return false
+    return if (usesMatchKey) {
+        MarketplaceAttributeMatching.brandKey(text) == this.value
+    } else {
+        text.equals(this.value, ignoreCase = true)
+    }
+}
+
+private fun MarketplaceAttributePredicate.DecimalRange.matchesDecimal(value: MarketplaceAttributeValue?): Boolean {
+    val number = (value as? MarketplaceAttributeValue.Decimal)?.plain?.toDoubleOrNull() ?: return false
+    return (min == null || number >= min) && (max == null || number <= max)
+}
+
+private fun MarketplaceAttributePredicate.DateRange.matchesDate(value: MarketplaceAttributeValue?): Boolean {
+    val date = (value as? MarketplaceAttributeValue.Date)?.iso ?: return false
+    return (minIso == null || date >= minIso) && (maxIso == null || date <= maxIso)
+}
+
 object MarketplaceAttributeMatching {
+    private val COURSE_CODE = Regex("^([A-Za-z]{2,5})[ -]?(\\d{2,4}[A-Za-z]{0,2})$")
     private val WHITESPACE = Regex("\\s+")
 
-    /** Same rules as the listings context and the SQL `listing_text_match_key` function; tests keep them equal. */
     fun brandKey(text: String): String {
         val spaced = text.lowercase()
             .replace("&", " and ")
             .replace(Regex("[-_/]"), " ")
-            .replace(Regex("['’.,]"), "")
+            .replace(Regex("['\\u2019.,]"), "")
         return spaced.filter { it.isLetterOrDigit() || it == ' ' }.trim().replace(WHITESPACE, " ")
+    }
+
+    fun exactText(key: String, text: String): String? {
+        val cleaned = text.trim().replace(WHITESPACE, " ").takeIf(String::isNotEmpty) ?: return null
+        return when (key) {
+            MarketplaceAttributeCatalog.BRAND -> brandKey(cleaned).takeIf(String::isNotEmpty)
+            MarketplaceAttributeCatalog.ISBN -> cleaned.filterNot { it == '-' || it == ' ' }.uppercase()
+            MarketplaceAttributeCatalog.COURSE_CODE -> normalizeCourseCode(cleaned)
+            MarketplaceAttributeCatalog.SIZE -> cleaned.uppercase()
+            else -> cleaned
+        }
+    }
+
+    private fun normalizeCourseCode(text: String): String? {
+        val match = COURSE_CODE.matchEntire(text) ?: return null
+        val (department, number) = match.destructured
+        return "${department.uppercase()} ${number.uppercase()}"
     }
 }

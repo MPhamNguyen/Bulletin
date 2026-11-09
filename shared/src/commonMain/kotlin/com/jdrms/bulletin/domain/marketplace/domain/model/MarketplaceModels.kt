@@ -19,6 +19,9 @@ enum class MarketplaceCategory {
     OTHER
 }
 
+val MarketplaceCategory.supportsCondition: Boolean
+    get() = this != MarketplaceCategory.HOUSING
+
 enum class MarketplaceCondition {
     NEW,
     LIKE_NEW,

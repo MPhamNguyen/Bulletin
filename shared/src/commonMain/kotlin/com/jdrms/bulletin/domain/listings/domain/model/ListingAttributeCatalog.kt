@@ -15,8 +15,11 @@ object ListingAttributeKeys {
     const val FURNITURE_TYPE = "furniture_type"
     const val MATERIAL = "material"
     const val WIDTH_CM = "width_cm"
+    const val LENGTH_CM = "length_cm"
     const val CLOTHING_TYPE = "clothing_type"
+    const val SHOE_SIZE_SYSTEM = "shoe_size_system"
     const val SIZE = "size"
+    const val COLOR = "color"
     const val MONTHLY_RENT_USD = "monthly_rent_usd"
     const val AVAILABLE_DATE = "available_date"
     const val HOUSING_TYPE = "housing_type"
@@ -24,13 +27,12 @@ object ListingAttributeKeys {
 
 object ListingAttributeCatalog {
     private const val BRAND_MAX_LENGTH = 40
-    private const val SIZE_MAX_LENGTH = 12
     private const val ISBN_MAX_LENGTH = 13
     private const val COURSE_CODE_MAX_LENGTH = 12
     private const val RAM_MAX_GB = 4_096L
     private const val STORAGE_MAX_GB = 100_000L
     private const val MAX_EDITION = 99L
-    private const val MAX_WIDTH_CM_TENTHS = 10_000L
+    private const val MAX_DIMENSION_CM_TENTHS = 10_000L
     private const val MAX_RENT_CENTS = 9_999_999L
     private const val MIN_DATE_YEAR = 2000
     private const val MAX_DATE_YEAR = 2100
@@ -128,34 +130,19 @@ object ListingAttributeCatalog {
             "Width",
             ListingAttributeType.Decimal(
                 ListingDecimal(1, 1),
-                ListingDecimal(MAX_WIDTH_CM_TENTHS, 1),
+                ListingDecimal(MAX_DIMENSION_CM_TENTHS, 1),
+                ListingAttributeUnit.CENTIMETERS
+            )
+        ),
+        ListingAttributeDefinition(
+            ListingAttributeKeys.LENGTH_CM,
+            "Length",
+            ListingAttributeType.Decimal(
+                ListingDecimal(1, 1),
+                ListingDecimal(MAX_DIMENSION_CM_TENTHS, 1),
                 ListingAttributeUnit.CENTIMETERS
             )
         )
-    )
-
-    private val clothing = listOf(
-        ListingAttributeDefinition(
-            ListingAttributeKeys.CLOTHING_TYPE,
-            "Clothing type",
-            ListingAttributeType.Choice(
-                options(
-                    "top" to "Top",
-                    "bottom" to "Bottom",
-                    "outerwear" to "Outerwear",
-                    "dress" to "Dress",
-                    "shoes" to "Shoes",
-                    "accessory" to "Accessory",
-                    "other" to "Other"
-                )
-            )
-        ),
-        ListingAttributeDefinition(
-            ListingAttributeKeys.SIZE,
-            "Size",
-            ListingAttributeType.Text(ListingTextFormat.CLOTHING_SIZE, SIZE_MAX_LENGTH)
-        ),
-        brand
     )
 
     private val housing = listOf(
@@ -193,7 +180,7 @@ object ListingAttributeCatalog {
         ListingCategory.ELECTRONICS to electronics,
         ListingCategory.TEXTBOOKS to textbooks,
         ListingCategory.FURNITURE to furniture,
-        ListingCategory.CLOTHING to clothing,
+        ListingCategory.CLOTHING to ListingClothingAttributeCatalog.definitions,
         ListingCategory.HOUSING to housing,
         ListingCategory.OTHER to emptyList()
     )

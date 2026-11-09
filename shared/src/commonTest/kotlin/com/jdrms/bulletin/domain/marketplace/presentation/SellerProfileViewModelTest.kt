@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerSalesP
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -144,6 +145,24 @@ class SellerProfileViewModelTest {
     }
 
     @Test
+    fun filtersSellerListingsByPriceRange() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val viewModel = filteringSellerProfileViewModel()
+            viewModel.load("seller-a")
+            advanceUntilIdle()
+
+            viewModel.onFiltersApplied(
+                MarketplaceFilterState(priceRange = MarketplacePriceRange(1_500L, 2_500L))
+            )
+
+            assertEquals(listOf("used-book"), viewModel.uiState.value.filteredListings.map { it.id.value })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
     fun openingAnotherSellerCancelsThePreviousRequest() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
@@ -182,9 +201,9 @@ class SellerProfileViewModelTest {
 
 private fun filteringSellerProfileViewModel(): SellerProfileViewModel {
     val listings = listOf(
-        listing("new-book", "seller-a", MarketplaceCategory.TEXTBOOKS, MarketplaceCondition.NEW),
-        listing("used-book", "seller-a", MarketplaceCategory.TEXTBOOKS, MarketplaceCondition.GOOD),
-        listing("new-chair", "seller-a", MarketplaceCategory.FURNITURE, MarketplaceCondition.NEW)
+        listing("new-book", "seller-a", MarketplaceCategory.TEXTBOOKS, MarketplaceCondition.NEW, price = 10.0),
+        listing("used-book", "seller-a", MarketplaceCategory.TEXTBOOKS, MarketplaceCondition.GOOD, price = 20.0),
+        listing("new-chair", "seller-a", MarketplaceCategory.FURNITURE, MarketplaceCondition.NEW, price = 30.0)
     )
     val query = ViewMarketplaceSellerProfile(
         profileProvider = { sellerProfile(it) },
@@ -212,14 +231,15 @@ private fun listing(
     id: String,
     sellerId: String,
     category: MarketplaceCategory = MarketplaceCategory.OTHER,
-    condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN
+    condition: MarketplaceCondition = MarketplaceCondition.UNKNOWN,
+    price: Double = 10.0
 ) = MarketplaceListingSnapshot(
     id = id,
     sellerId = sellerId,
     sellerName = "Seller",
     title = id,
     description = "Description",
-    priceAmount = 10.0,
+    priceAmount = price,
     priceCurrency = "USD",
     category = category,
     createdAtMillis = 1L,

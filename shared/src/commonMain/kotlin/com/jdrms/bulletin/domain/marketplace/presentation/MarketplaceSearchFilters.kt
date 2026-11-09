@@ -32,6 +32,8 @@ import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
 
 @Composable
 internal fun MarketplaceSearchFilters(
@@ -135,12 +137,38 @@ private fun ActiveMarketplaceFilterChips(
                 label = { Text("${condition.displayName()} ×") },
             )
         }
+        if (!filters.priceRange.isEmpty) {
+            FilterChip(
+                selected = true,
+                onClick = { onFiltersApplied(filters.copy(priceRange = MarketplacePriceRange.NONE)) },
+                label = { Text("${filters.priceRange.displayName()} ×") },
+            )
+        }
+        if (filters.sortOrder != MarketplaceSortOrder.NEWEST) {
+            FilterChip(
+                selected = true,
+                onClick = { onFiltersApplied(filters.copy(sortOrder = MarketplaceSortOrder.NEWEST)) },
+                label = { Text("${filters.sortOrder.displayName()} ×") },
+            )
+        }
         ActiveAttributeFilterChips(filters, onFiltersApplied)
     }
 }
 
 private val MarketplaceFilterState.activeFilterCount: Int
-    get() = listOfNotNull(category, condition).size + attributes.activeCount
+    get() = listOfNotNull(category, condition).size + attributes.activeCount +
+        (if (priceRange.isEmpty) 0 else 1) +
+        (if (sortOrder == MarketplaceSortOrder.NEWEST) 0 else 1)
+
+private fun MarketplacePriceRange.displayName(): String = when {
+    minimumCents != null && maximumCents != null ->
+        "${formatCents(minimumCents)}–${formatCents(maximumCents)}"
+    minimumCents != null -> "${formatCents(minimumCents)}+"
+    maximumCents != null -> "Up to ${formatCents(maximumCents)}"
+    else -> "Any price"
+}
+
+private fun formatCents(cents: Long): String = "\$${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
 
 internal fun MarketplaceCategory.displayName(): String = name.toDisplayName()
 

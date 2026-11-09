@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeCatalog
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeCategoryTransition
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
@@ -11,13 +12,37 @@ import kotlinx.coroutines.flow.update
  * warning, and surfacing inline errors. Category and visible fields always change in one state update.
  */
 internal class ListingAttributeDraftActions(private val state: MutableStateFlow<ListingsUiState>) {
+    private val parser = ListingAttributeInputParser()
+
     fun inputChanged(form: ListingForm, key: String, text: String) = state.update { current ->
         val draft = current.attributesOf(form)
+        val changedInputs = draft.inputs + (key to text)
+        val category = current.categoryOf(form)
+        val definitions = ListingAttributeCatalog.definitionsFor(category)
+        val controllerKeys = definitions.flatMap { definition ->
+            listOfNotNull(definition.applicability?.controllingKey) +
+                definition.optionGroups.flatMap { it.requiredChoices.keys }
+        }.toSet()
+        val visibleDefinitions = parser.applicableDefinitions(category, changedInputs).associateBy { it.key }
+        val inputs = if (key in controllerKeys) {
+            changedInputs.filter { (inputKey, value) ->
+                val definition = visibleDefinitions[inputKey] ?: return@filter false
+                definition.optionGroups.isEmpty() || value.isBlank() ||
+                    definition.choiceOptions(changedInputs).any { it.code == value }
+            }
+        } else {
+            changedInputs
+        }
         current.withAttributes(
             form,
             draft.copy(
-                inputs = draft.inputs + (key to text),
-                errors = draft.errors - key - ListingAttributeInputParser.GENERAL_ERROR_KEY
+                inputs = inputs,
+                errors = if (key in controllerKeys) {
+                    (draft.errors - key - ListingAttributeInputParser.GENERAL_ERROR_KEY)
+                        .filterKeys { it in visibleDefinitions }
+                } else {
+                    draft.errors - key - ListingAttributeInputParser.GENERAL_ERROR_KEY
+                }
             )
         ).copy(errorMessage = null, successMessage = null)
     }

@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import kotlin.time.Instant
 
@@ -34,10 +35,14 @@ object SupabaseMarketplaceListingMapper {
         )
     }
 
-    fun toPageCursor(dto: SupabaseMarketplaceListingDto): MarketplacePageCursor {
+    fun toPageCursor(
+        dto: SupabaseMarketplaceListingDto,
+        sortOrder: MarketplaceSortOrder = MarketplaceSortOrder.NEWEST
+    ): MarketplacePageCursor {
         return MarketplacePageCursor(
             createdAt = dto.createdAt.toInstantOrEpoch(),
-            itemId = "listing:${dto.id}"
+            itemId = "listing:${dto.id}",
+            priceAmount = dto.price?.takeUnless { sortOrder == MarketplaceSortOrder.NEWEST }
         )
     }
 

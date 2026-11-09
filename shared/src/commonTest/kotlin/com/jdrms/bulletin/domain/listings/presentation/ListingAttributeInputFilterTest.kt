@@ -51,10 +51,8 @@ class ListingAttributeInputFilterTest {
     }
 
     @Test
-    fun courseCodeAndSizeRejectOtherCharacters() {
+    fun courseCodeRejectsOtherCharacters() {
         assertEquals("CECS 328", filter(ListingCategory.TEXTBOOKS, ListingAttributeKeys.COURSE_CODE, "CECS 328!"))
-        assertEquals("XL", filter(ListingCategory.CLOTHING, ListingAttributeKeys.SIZE, "xl$"))
-        assertEquals("10.5/W", filter(ListingCategory.CLOTHING, ListingAttributeKeys.SIZE, "10.5/w"))
     }
 
     @Test

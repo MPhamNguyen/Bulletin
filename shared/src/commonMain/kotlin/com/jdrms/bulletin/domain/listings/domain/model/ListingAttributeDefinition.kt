@@ -5,8 +5,7 @@ enum class ListingTextFormat {
     /** Display spelling is kept; matching uses a separate normalized key. */
     BRAND,
     ISBN,
-    COURSE_CODE,
-    CLOTHING_SIZE
+    COURSE_CODE
 }
 
 enum class ListingAttributeUnit(val prefix: String, val suffix: String) {
@@ -16,6 +15,14 @@ enum class ListingAttributeUnit(val prefix: String, val suffix: String) {
 }
 
 data class ListingAttributeOption(val code: String, val label: String)
+
+data class ListingAttributeOptionGroup(
+    val requiredChoices: Map<String, Set<String>>,
+    val options: List<ListingAttributeOption>
+) {
+    fun matches(selectedChoices: Map<String, String>): Boolean =
+        requiredChoices.all { (key, allowed) -> selectedChoices[key] in allowed }
+}
 
 sealed interface ListingAttributeType {
     data class Text(val format: ListingTextFormat, val maxLength: Int) : ListingAttributeType
@@ -39,8 +46,27 @@ data class ListingAttributeDefinition(
     val key: String,
     val label: String,
     val type: ListingAttributeType,
-    val applicability: ListingAttributeApplicability? = null
+    val applicability: ListingAttributeApplicability? = null,
+    val optionGroups: List<ListingAttributeOptionGroup> = emptyList()
 ) {
     /** Another category's definition keeps a value only when key and type are identical. */
     fun isCompatibleWith(other: ListingAttributeDefinition): Boolean = key == other.key && type == other.type
+
+    fun choiceOptions(inputs: Map<String, String>): List<ListingAttributeOption> {
+        val choice = type as? ListingAttributeType.Choice ?: return emptyList()
+        if (optionGroups.isEmpty()) return choice.options
+        return optionGroups.filter { it.matches(inputs) }.flatMap { it.options }.distinctBy { it.code }
+    }
+
+    fun acceptsChoice(code: String, selectedChoices: Map<String, String>): Boolean {
+        val choice = type as? ListingAttributeType.Choice ?: return false
+        if (optionGroups.isEmpty()) return choice.options.any { it.code == code }
+        val requiredKeys = optionGroups.flatMap { it.requiredChoices.keys }.toSet()
+        val options = if (requiredKeys.none(selectedChoices::containsKey)) {
+            choice.options
+        } else {
+            choiceOptions(selectedChoices)
+        }
+        return options.any { it.code == code }
+    }
 }

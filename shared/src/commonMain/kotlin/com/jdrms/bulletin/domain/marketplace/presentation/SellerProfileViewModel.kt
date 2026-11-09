@@ -28,7 +28,8 @@ data class SellerProfileUiState(
             query = filters.query,
             category = filters.category,
             condition = filters.condition,
-            attributes = filters.attributes
+            attributes = filters.attributes,
+            priceRange = filters.priceRange
         )
 }
 

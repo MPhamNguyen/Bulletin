@@ -8,6 +8,9 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
+import com.jdrms.bulletin.domain.marketplace.domain.model.supportsCondition
 
 data class MarketplaceUiState(
     val items: List<MarketplaceItem> = emptyList(),
@@ -30,15 +33,17 @@ data class MarketplaceFilterState(
     val query: String = "",
     val category: MarketplaceCategory? = null,
     val condition: MarketplaceCondition? = null,
+    val priceRange: MarketplacePriceRange = MarketplacePriceRange.NONE,
+    val sortOrder: MarketplaceSortOrder = MarketplaceSortOrder.NEWEST,
     val attributes: MarketplaceAttributeFilters = MarketplaceAttributeFilters.NONE
 ) {
-    /** Attribute filters only make sense for Electronics; any other category clears them. */
-    fun normalized(): MarketplaceFilterState =
-        if (category == MarketplaceCategory.ELECTRONICS || attributes.isEmpty) {
-            this
-        } else {
-            copy(attributes = MarketplaceAttributeFilters.NONE)
-        }
+    /** Category-specific filters are cleared when they do not apply to the selected category. */
+    fun normalized(): MarketplaceFilterState {
+        val normalizedCondition = condition.takeIf { category?.supportsCondition != false }
+        val normalizedAttributes = attributes.takeIf { it.isEmpty || it.isValidFor(category) }
+            ?: MarketplaceAttributeFilters.NONE
+        return copy(condition = normalizedCondition, attributes = normalizedAttributes)
+    }
 }
 
 data class MarketplaceDetailState(

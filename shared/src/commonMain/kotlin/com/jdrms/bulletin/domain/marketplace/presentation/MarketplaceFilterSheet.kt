@@ -29,6 +29,8 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSheetDefaults
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
+import com.jdrms.bulletin.domain.marketplace.domain.model.supportsCondition
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +43,8 @@ internal fun MarketplaceFilterSheet(
     var draft by remember(filters) { mutableStateOf(filters) }
     var attributeDraft by remember(filters) { mutableStateOf(MarketplaceAttributeFilterDraft.from(filters.attributes)) }
     var attributeErrors by remember(filters) { mutableStateOf(emptyMap<String, String>()) }
+    var priceDraft by remember(filters) { mutableStateOf(MarketplacePriceFilterDraft.from(filters.priceRange)) }
+    var priceError by remember(filters) { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
     ModalBottomSheet(
@@ -62,6 +66,8 @@ internal fun MarketplaceFilterSheet(
                     draft = MarketplaceFilterState(query = draft.query)
                     attributeDraft = MarketplaceAttributeFilterDraft()
                     attributeErrors = emptyMap()
+                    priceDraft = MarketplacePriceFilterDraft()
+                    priceError = null
                 }
             )
             FilterOptionGroup(
@@ -69,31 +75,66 @@ internal fun MarketplaceFilterSheet(
                 options = listOf<MarketplaceCategory?>(null) + MarketplaceCategory.entries,
                 selected = draft.category,
                 label = { it?.displayName() ?: "All" },
-                onSelect = { draft = draft.copy(category = it).normalized() }
+                onSelect = {
+                    if (draft.category != it) {
+                        attributeDraft = MarketplaceAttributeFilterDraft()
+                        attributeErrors = emptyMap()
+                    }
+                    draft = draft.copy(
+                        category = it,
+                        attributes = MarketplaceAttributeFilters.NONE
+                    ).normalized()
+                }
+            )
+            if (draft.category?.supportsCondition != false) {
+                FilterOptionGroup(
+                    title = "Condition",
+                    options = listOf<MarketplaceCondition?>(null) + MarketplaceCondition.knownValues,
+                    selected = draft.condition,
+                    label = { it?.displayName() ?: "Any" },
+                    onSelect = { draft = draft.copy(condition = it) }
+                )
+            }
+            MarketplacePriceFilterFields(
+                draft = priceDraft,
+                error = priceError,
+                onDraftChanged = {
+                    priceDraft = it
+                    priceError = null
+                }
             )
             FilterOptionGroup(
-                title = "Condition",
-                options = listOf<MarketplaceCondition?>(null) + MarketplaceCondition.knownValues,
-                selected = draft.condition,
-                label = { it?.displayName() ?: "Any" },
-                onSelect = { draft = draft.copy(condition = it) }
+                title = "Sort by",
+                options = MarketplaceSortOrder.entries,
+                selected = draft.sortOrder,
+                label = { it?.displayName() ?: MarketplaceSortOrder.NEWEST.displayName() },
+                onSelect = { draft = draft.copy(sortOrder = it ?: MarketplaceSortOrder.NEWEST) }
             )
-            if (draft.category == MarketplaceCategory.ELECTRONICS) {
-                MarketplaceAttributeFilterFields(attributeDraft, attributeErrors) { attributeDraft = it }
+            draft.category?.takeUnless { it == MarketplaceCategory.OTHER }?.let { category ->
+                MarketplaceAttributeFilterFields(category, attributeDraft, attributeErrors) { attributeDraft = it }
             }
             ShowMarketplaceResultsButton {
-                val parsed = attributeDraft.toFilters()
-                val attributes = parsed.filters.takeIf { draft.category == MarketplaceCategory.ELECTRONICS }
-                attributeErrors = if (draft.category == MarketplaceCategory.ELECTRONICS) parsed.errors else emptyMap()
-                if (attributeErrors.isEmpty()) {
+                val parsedPrice = priceDraft.toPriceRange()
+                val parsed = draft.category?.takeUnless { it == MarketplaceCategory.OTHER }
+                    ?.let(attributeDraft::toFilters)
+                val attributes = parsed?.filters ?: MarketplaceAttributeFilters.NONE
+                attributeErrors = parsed?.errors.orEmpty()
+                priceError = parsedPrice.error
+                if (attributeErrors.isEmpty() && priceError == null) {
                     coroutineScope.launch {
                         sheetState.hide()
-                        onApply(draft.copy(attributes = attributes ?: MarketplaceAttributeFilters.NONE))
+                        onApply(draft.copy(attributes = attributes, priceRange = parsedPrice.priceRange))
                     }
                 }
             }
         }
     }
+}
+
+internal fun MarketplaceSortOrder.displayName(): String = when (this) {
+    MarketplaceSortOrder.NEWEST -> "Newest"
+    MarketplaceSortOrder.PRICE_LOW_TO_HIGH -> "Price: low to high"
+    MarketplaceSortOrder.PRICE_HIGH_TO_LOW -> "Price: high to low"
 }
 
 @Composable

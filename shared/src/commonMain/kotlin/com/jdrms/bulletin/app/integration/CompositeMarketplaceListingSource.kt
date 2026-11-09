@@ -4,7 +4,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
-import com.jdrms.bulletin.domain.marketplace.application.marketplaceListingComparator
+import com.jdrms.bulletin.domain.marketplace.application.listingComparator
 import com.jdrms.bulletin.domain.marketplace.application.toCursor
 
 class CompositeMarketplaceListingSource(
@@ -15,7 +15,7 @@ class CompositeMarketplaceListingSource(
         val merged = sourcePages
             .flatMap { it.listings }
             .distinctBy { it.id }
-            .sortedWith(marketplaceListingComparator)
+            .sortedWith(request.sortOrder.listingComparator)
         val pageListings = merged.take(request.pageSize)
         val hasMore = merged.size > request.pageSize || sourcePages.any { it.nextCursor != null }
         val sourceCursor = sourcePages.mapNotNull { it.nextCursor }
@@ -26,7 +26,11 @@ class CompositeMarketplaceListingSource(
             )
         return MarketplaceListingPage(
             listings = pageListings,
-            nextCursor = if (hasMore) pageListings.lastOrNull()?.toCursor() ?: sourceCursor else null
+            nextCursor = if (hasMore) {
+                pageListings.lastOrNull()?.toCursor(request.sortOrder) ?: sourceCursor
+            } else {
+                null
+            }
         )
     }
 }

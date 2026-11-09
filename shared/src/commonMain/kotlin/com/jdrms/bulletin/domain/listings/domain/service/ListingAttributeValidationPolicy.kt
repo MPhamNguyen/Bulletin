@@ -26,7 +26,7 @@ class ListingAttributeValidationPolicy {
             if (definition == null || ListingAttributeCatalog.isRetired(key)) {
                 issues += ListingAttributeIssue(key, "$key does not apply to this category.")
             } else {
-                issues += validateValue(definition, value)
+                issues += validateValue(definition, value, attributes)
                 definition.applicability?.let { issues += validateApplicability(definition, it, attributes) }
             }
         }
@@ -43,18 +43,19 @@ class ListingAttributeValidationPolicy {
             emptyList()
         } else {
             listOf(
-                ListingAttributeIssue(definition.key, "${definition.label} does not apply to the selected device type.")
+                ListingAttributeIssue(definition.key, "${definition.label} does not apply to the current selections.")
             )
         }
     }
 
     private fun validateValue(
         definition: ListingAttributeDefinition,
-        value: ListingAttributeValue
+        value: ListingAttributeValue,
+        attributes: ListingAttributes
     ): List<ListingAttributeIssue> {
         val message = when (val type = definition.type) {
             is ListingAttributeType.Text -> textProblem(definition, type, value)
-            is ListingAttributeType.Choice -> choiceProblem(definition, type, value)
+            is ListingAttributeType.Choice -> choiceProblem(definition, value, attributes)
             is ListingAttributeType.Integer -> integerProblem(definition, type, value)
             is ListingAttributeType.Decimal -> decimalProblem(definition, type, value)
             is ListingAttributeType.Date -> dateProblem(definition, type, value)
@@ -75,11 +76,14 @@ class ListingAttributeValidationPolicy {
 
     private fun choiceProblem(
         definition: ListingAttributeDefinition,
-        type: ListingAttributeType.Choice,
-        value: ListingAttributeValue
+        value: ListingAttributeValue,
+        attributes: ListingAttributes
     ): String? {
         val choice = value as? ListingAttributeValue.Choice ?: return wrongType(definition)
-        return if (type.options.any { it.code == choice.code }) {
+        val selectedChoices = attributes.values.mapNotNull { (key, attribute) ->
+            (attribute as? ListingAttributeValue.Choice)?.let { key to it.code }
+        }.toMap()
+        return if (definition.acceptsChoice(choice.code, selectedChoices)) {
             null
         } else {
             "Choose a valid ${definition.label.lowercase()}."
