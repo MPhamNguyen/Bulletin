@@ -9,14 +9,14 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class SupabaseMarketplaceBookmarkOwnershipTest {
     @Test
-    fun ownListingIsRejectedBeforeBookmarkInsert() = runTest {
+    fun ownListingIsRejectedBeforeBookmarkInsert() = runBlocking {
         var requestCount = 0
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
@@ -34,7 +34,11 @@ class SupabaseMarketplaceBookmarkOwnershipTest {
             val result = SupabaseMarketplaceRepository(client)
                 .bookmarkListing("seller_101", MarketplaceItemId("listing:mkt_1"))
 
-            assertIs<OwnListingBookmarkException>(assertIs<Result.Error>(result).exception)
+            val error = assertIs<Result.Error>(result).exception
+            assertIs<OwnListingBookmarkException>(
+                error,
+                "Unexpected bookmark failure: ${error.message}; cause=${error.cause?.message}"
+            )
             assertEquals(1, requestCount)
         } finally {
             client.close()
