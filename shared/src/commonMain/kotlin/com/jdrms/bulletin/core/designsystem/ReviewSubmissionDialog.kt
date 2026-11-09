@@ -79,7 +79,7 @@ fun ReviewSubmissionDialog(
                     verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
                 ) {
                     ReviewHeader()
-                    ReviewRatingPicker(score) { score = it }
+                    ReviewRatingPicker(score, onScoreChange = { score = it })
                     ReviewCommentField(comment) {
                         comment = it.take(MAX_COMMENT_LENGTH)
                     }
@@ -119,7 +119,7 @@ private fun ReviewHeader() {
 }
 
 @Composable
-private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
+fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit, enabled: Boolean = true) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
@@ -128,7 +128,7 @@ private fun ReviewRatingPicker(score: Int, onScoreChange: (Int) -> Unit) {
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)) {
             for (value in 1..5) {
-                IconButton(onClick = { onScoreChange(value) }) {
+                IconButton(onClick = { onScoreChange(value) }, enabled = enabled) {
                     Icon(
                         imageVector = if (value <= score) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = "$value star${if (value == 1) "" else "s"}",

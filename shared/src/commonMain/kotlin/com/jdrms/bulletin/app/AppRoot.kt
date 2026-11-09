@@ -45,6 +45,7 @@ internal fun AppRoot(
                 themeViewModel = theme
             ) { currentScreen = AppRootScreen.SIGN_IN }
         }
+        if (authState == AuthSessionState.AUTHENTICATED) ReviewRequestPrompt(container, session)
     }
 }
 
