@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilterMode
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeKind
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeMatching
@@ -34,7 +35,7 @@ internal data class MarketplaceAttributeFilterDraft(
             val input = input(spec.key)
             runCatching { predicate(spec, input, selectedChoices) }
                 .getOrElse {
-                    errors[spec.key] = errorMessage(spec.kind)
+                    errors[spec.key] = errorMessage(spec)
                     null
                 }
                 ?.let { spec.key to it }
@@ -68,7 +69,13 @@ internal data class MarketplaceAttributeFilterDraft(
         MarketplaceAttributeKind.CHOICE -> input.exact.takeIf(String::isNotBlank)?.also { code ->
             require(code in spec.choicesFor(selectedChoices))
         }?.let(MarketplaceAttributePredicate::Choice)
-        MarketplaceAttributeKind.INTEGER -> integerPredicate(input)
+        MarketplaceAttributeKind.INTEGER -> when (spec.filterMode) {
+            MarketplaceAttributeFilterMode.EXACT -> input.exact.takeIf(String::isNotBlank)?.let { raw ->
+                val value = requireNotNull(raw.trim().toLongOrNull())
+                MarketplaceAttributePredicate.IntegerRange(MarketplaceCapacityRange(value, value))
+            }
+            MarketplaceAttributeFilterMode.RANGE -> integerPredicate(input)
+        }
         MarketplaceAttributeKind.DECIMAL -> decimalPredicate(input)
         MarketplaceAttributeKind.DATE -> datePredicate(input)
     }
@@ -114,12 +121,16 @@ internal data class MarketplaceAttributeFilterDraft(
         )
     }
 
-    private fun errorMessage(kind: MarketplaceAttributeKind): String = when (kind) {
-        MarketplaceAttributeKind.TEXT -> "Enter a valid exact value."
-        MarketplaceAttributeKind.CHOICE -> "Choose a valid option."
-        MarketplaceAttributeKind.INTEGER -> "Use whole numbers, with the minimum no larger than the maximum."
-        MarketplaceAttributeKind.DECIMAL -> "Use positive numbers, with the minimum no larger than the maximum."
-        MarketplaceAttributeKind.DATE -> "Use YYYY-MM-DD, with the start date no later than the end date."
+    private fun errorMessage(spec: MarketplaceAttributeSpec): String = when {
+        spec.kind == MarketplaceAttributeKind.INTEGER && spec.filterMode == MarketplaceAttributeFilterMode.EXACT ->
+            "Enter a valid whole number."
+        spec.kind == MarketplaceAttributeKind.TEXT -> "Enter a valid exact value."
+        spec.kind == MarketplaceAttributeKind.CHOICE -> "Choose a valid option."
+        spec.kind == MarketplaceAttributeKind.INTEGER ->
+            "Use whole numbers, with the minimum no larger than the maximum."
+        spec.kind == MarketplaceAttributeKind.DECIMAL ->
+            "Use positive numbers, with the minimum no larger than the maximum."
+        else -> "Use YYYY-MM-DD, with the start date no later than the end date."
     }
 
     companion object {
@@ -134,6 +145,7 @@ private fun MarketplaceAttributePredicate.toInput(): MarketplaceAttributeFilterI
     is MarketplaceAttributePredicate.ExactText -> MarketplaceAttributeFilterInput(exact = value)
     is MarketplaceAttributePredicate.Choice -> MarketplaceAttributeFilterInput(exact = code)
     is MarketplaceAttributePredicate.IntegerRange -> MarketplaceAttributeFilterInput(
+        exact = range.min?.takeIf { it == range.max }?.toString().orEmpty(),
         min = range.min?.toString().orEmpty(),
         max = range.max?.toString().orEmpty()
     )

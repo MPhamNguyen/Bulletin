@@ -39,6 +39,7 @@ private fun MarketplaceAttributePredicate.describe(choices: Map<String, String>)
 internal fun MarketplaceCapacityRange.describe(): String = describeRange(min, max)
 
 private fun describeRange(min: Any?, max: Any?): String = when {
+    min != null && min == max -> min.toString()
     min != null && max != null -> "$min–$max"
     min != null -> "$min+"
     else -> "up to $max"

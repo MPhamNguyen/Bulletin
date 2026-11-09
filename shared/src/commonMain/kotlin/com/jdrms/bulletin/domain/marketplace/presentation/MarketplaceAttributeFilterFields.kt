@@ -18,6 +18,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilterMode
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeKind
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeSpec
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
@@ -35,24 +36,36 @@ internal fun MarketplaceAttributeFilterFields(
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         MarketplaceAttributeCatalog.applicableSpecs(category, selectedChoices).forEach { spec ->
             val input = draft.input(spec.key)
-            when (spec.kind) {
-                MarketplaceAttributeKind.CHOICE -> ChoiceField(
+            when {
+                spec.kind == MarketplaceAttributeKind.CHOICE -> ChoiceField(
                     spec,
                     spec.choicesFor(selectedChoices),
                     input.exact
                 ) {
                     onChange(draft.withExact(spec.key, it).reconciled(category))
                 }
-                MarketplaceAttributeKind.TEXT -> FilterTextField(
+                spec.kind == MarketplaceAttributeKind.TEXT -> MarketplaceExactFilterField(
+                    title = spec.label,
+                    subtitle = "Exact match",
                     value = input.exact,
                     error = errors[spec.key],
-                    keyboardType = KeyboardType.Text,
-                    decoration = BulletinFieldDecoration(label = { Text("${spec.label} (exact match)") }),
                     onValueChange = { onChange(draft.withExact(spec.key, it)) }
                 )
-                MarketplaceAttributeKind.INTEGER,
-                MarketplaceAttributeKind.DECIMAL,
-                MarketplaceAttributeKind.DATE -> RangeField(spec, input, errors[spec.key], draft, onChange)
+                spec.kind == MarketplaceAttributeKind.INTEGER &&
+                    spec.filterMode == MarketplaceAttributeFilterMode.EXACT -> MarketplaceExactFilterField(
+                    title = spec.label,
+                    subtitle = if (spec.key == MarketplaceAttributeCatalog.EDITION) {
+                        "Specific edition number"
+                    } else {
+                        "Specific capacity"
+                    },
+                    value = input.exact,
+                    error = errors[spec.key],
+                    keyboardType = KeyboardType.Number,
+                    suffix = spec.suffix,
+                    onValueChange = { onChange(draft.withExact(spec.key, it)) }
+                )
+                else -> RangeField(spec, input, errors[spec.key], draft, onChange)
             }
         }
     }
@@ -98,6 +111,7 @@ private fun RangeField(
     }
     MarketplaceRangeFields(
         title = spec.label,
+        subtitle = if (isDate) "Use YYYY-MM-DD" else null,
         minimumLabel = if (isDate) "Earliest" else "Minimum",
         maximumLabel = if (isDate) "Latest" else "Maximum",
         error = error,
@@ -107,7 +121,7 @@ private fun RangeField(
                 error = error?.let { "" },
                 keyboardType = keyboard,
                 modifier = modifier,
-                decoration = rangeFieldDecoration(spec, isDate)
+                decoration = rangeFieldDecoration(spec)
             ) { onChange(draft.withMin(spec.key, it)) }
         },
         maximumField = { modifier ->
@@ -116,7 +130,7 @@ private fun RangeField(
                 error = error?.let { "" },
                 keyboardType = keyboard,
                 modifier = modifier,
-                decoration = rangeFieldDecoration(spec, isDate)
+                decoration = rangeFieldDecoration(spec)
             ) { onChange(draft.withMax(spec.key, it)) }
         }
     )
@@ -147,8 +161,7 @@ private fun FilterTextField(
     )
 }
 
-private fun rangeFieldDecoration(spec: MarketplaceAttributeSpec, isDate: Boolean) = BulletinFieldDecoration(
-    placeholder = if (isDate) ({ Text("YYYY-MM-DD") }) else null,
+private fun rangeFieldDecoration(spec: MarketplaceAttributeSpec) = BulletinFieldDecoration(
     leadingIcon = spec.prefix.takeIf(String::isNotBlank)?.let { text -> { Text(text.trim()) } },
     trailingIcon = spec.suffix.takeIf(String::isNotBlank)?.let { text -> { Text(text.trim()) } }
 )

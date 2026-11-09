@@ -18,6 +18,7 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 @Composable
 internal fun MarketplaceRangeFields(
     title: String,
+    subtitle: String? = null,
     minimumLabel: String = "Minimum",
     maximumLabel: String = "Maximum",
     error: String? = null,
@@ -29,6 +30,13 @@ internal fun MarketplaceRangeFields(
         verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium)
+        subtitle?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Row(modifier = Modifier.fillMaxWidth()) {
             Text(minimumLabel, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.width(RANGE_SEPARATOR_WIDTH))

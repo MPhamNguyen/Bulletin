@@ -13,17 +13,17 @@ import kotlin.test.assertTrue
 
 class MarketplaceAttributeFilterDraftTest {
     @Test
-    fun parsesOpenRangesAndCanonicalBrandAndRoundTripsAppliedFilters() {
+    fun parsesExactCapacitiesAndCanonicalBrandAndRoundTripsAppliedFilters() {
         val parsed = MarketplaceAttributeFilterDraft()
             .withExact("brand", "Levi's")
-            .withMin("ram_gb", "16")
-            .withMax("storage_gb", "512")
+            .withExact("ram_gb", "16")
+            .withExact("storage_gb", "512")
             .toFilters(MarketplaceCategory.ELECTRONICS)
         val expected = MarketplaceAttributeFilters(
             predicates = mapOf(
                 "brand" to MarketplaceAttributePredicate.ExactText("levis", usesMatchKey = true),
-                "ram_gb" to MarketplaceAttributePredicate.IntegerRange(MarketplaceCapacityRange(min = 16)),
-                "storage_gb" to MarketplaceAttributePredicate.IntegerRange(MarketplaceCapacityRange(max = 512))
+                "ram_gb" to MarketplaceAttributePredicate.IntegerRange(MarketplaceCapacityRange(16, 16)),
+                "storage_gb" to MarketplaceAttributePredicate.IntegerRange(MarketplaceCapacityRange(512, 512))
             )
         )
         assertEquals(expected, parsed.filters)
@@ -37,9 +37,8 @@ class MarketplaceAttributeFilterDraftTest {
     fun reportsIndependentErrorsAndDoesNotApplyPartialFilters() {
         val parsed = MarketplaceAttributeFilterDraft()
             .withExact("brand", "---")
-            .withMin("ram_gb", "16")
-            .withMax("ram_gb", "8")
-            .withMin("storage_gb", "x")
+            .withExact("ram_gb", "not-a-number")
+            .withExact("storage_gb", "x")
             .toFilters(MarketplaceCategory.ELECTRONICS)
         assertNull(parsed.filters)
         assertEquals(setOf("brand", "ram_gb", "storage_gb"), parsed.errors.keys)
@@ -49,7 +48,7 @@ class MarketplaceAttributeFilterDraftTest {
     fun parsesFiltersForEverySellerAttributeKind() {
         val textbooks = MarketplaceAttributeFilterDraft()
             .withExact("course_code", "cecs-328")
-            .withMin("edition", "2")
+            .withExact("edition", "2")
             .toFilters(MarketplaceCategory.TEXTBOOKS)
         val furniture = MarketplaceAttributeFilterDraft()
             .withExact("material", "wood")
@@ -65,6 +64,10 @@ class MarketplaceAttributeFilterDraftTest {
         assertEquals(
             MarketplaceAttributePredicate.ExactText("CECS 328"),
             textbooks.filters?.predicates?.get("course_code")
+        )
+        assertEquals(
+            MarketplaceAttributePredicate.IntegerRange(MarketplaceCapacityRange(2, 2)),
+            textbooks.filters?.predicates?.get("edition")
         )
         assertTrue(furniture.errors.isEmpty())
         assertEquals(

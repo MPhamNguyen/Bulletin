@@ -2,6 +2,8 @@ package com.jdrms.bulletin.domain.marketplace.domain.model
 
 enum class MarketplaceAttributeKind { TEXT, CHOICE, INTEGER, DECIMAL, DATE }
 
+enum class MarketplaceAttributeFilterMode { EXACT, RANGE }
+
 data class MarketplaceAttributeSpec(
     val key: String,
     val label: String,
@@ -9,6 +11,7 @@ data class MarketplaceAttributeSpec(
     val choices: Map<String, String> = emptyMap(),
     val prefix: String = "",
     val suffix: String = "",
+    val filterMode: MarketplaceAttributeFilterMode = MarketplaceAttributeFilterMode.RANGE,
     val applicability: MarketplaceAttributeApplicability? = null,
     val optionGroups: List<MarketplaceAttributeOptionGroup> = emptyList()
 ) {
@@ -76,13 +79,22 @@ object MarketplaceAttributeCatalog {
         MarketplaceCategory.ELECTRONICS to listOf(
             brand,
             spec(DEVICE_TYPE, "Device type", MarketplaceAttributeKind.CHOICE, choices = deviceTypes),
-            spec(RAM_GB, "RAM", MarketplaceAttributeKind.INTEGER, suffix = " GB"),
-            spec(STORAGE_GB, "Storage", MarketplaceAttributeKind.INTEGER, suffix = " GB")
+            spec(
+                RAM_GB, "RAM", MarketplaceAttributeKind.INTEGER,
+                suffix = " GB", filterMode = MarketplaceAttributeFilterMode.EXACT
+            ),
+            spec(
+                STORAGE_GB, "Storage", MarketplaceAttributeKind.INTEGER,
+                suffix = " GB", filterMode = MarketplaceAttributeFilterMode.EXACT
+            )
         ),
         MarketplaceCategory.TEXTBOOKS to listOf(
             spec(ISBN, "ISBN", MarketplaceAttributeKind.TEXT),
             spec(COURSE_CODE, "Course code", MarketplaceAttributeKind.TEXT),
-            spec(EDITION, "Edition", MarketplaceAttributeKind.INTEGER)
+            spec(
+                EDITION, "Edition", MarketplaceAttributeKind.INTEGER,
+                filterMode = MarketplaceAttributeFilterMode.EXACT
+            )
         ),
         MarketplaceCategory.FURNITURE to listOf(
             spec(
@@ -134,8 +146,9 @@ object MarketplaceAttributeCatalog {
         kind: MarketplaceAttributeKind,
         choices: Map<String, String> = emptyMap(),
         prefix: String = "",
-        suffix: String = ""
-    ) = MarketplaceAttributeSpec(key, label, kind, choices, prefix, suffix)
+        suffix: String = "",
+        filterMode: MarketplaceAttributeFilterMode = MarketplaceAttributeFilterMode.RANGE
+    ) = MarketplaceAttributeSpec(key, label, kind, choices, prefix, suffix, filterMode)
 
     private fun labels(vararg codes: String): Map<String, String> =
         codes.associateWith { code -> code.replaceFirstChar { it.uppercase() } }
