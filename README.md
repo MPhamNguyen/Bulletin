@@ -130,7 +130,6 @@ Dependency injection is manual. `AppContainer` composes `HomeModule`, `ListingsM
 | Context | Runtime binding |
 | --- | --- |
 | Marketplace, listings, listing images (Storage), listing reports | Supabase adapters |
-| Listing review requests | Supabase adapter and `listing_review_requests` migration (apply before enabling this flow in the hosted project) |
 | Messages (including realtime thread and inbox observers) | Supabase adapters |
 | Profile, auth/session, profile photos, user reports, user blocks | Supabase adapters |
 | Home | Supabase adapters and local memory. The feed reads through `MarketplaceHomeRepository` (marketplace listing source), swipe-right saves via the marketplace bookmark adapter, and swipe-up messages via the messages adapter. Swipe decisions (which cards were saved or passed) and Home preferences are kept in memory per app process. |
