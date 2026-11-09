@@ -52,9 +52,11 @@ Students can discover listings, buy or sell items, message other students, build
   or restarting the app clears all drafts.
 - **Sending:** Progress and errors stay with their conversation, so a pending send leaves other threads'
   composers available. Returning to a failed conversation restores its error and draft for retry.
+  Identity or access errors reset messaging state. If a delivered message cannot update the inbox,
+  Retry refreshes conversations without sending the message again.
 - **History retries:** Retry reloads the failed conversation history or older page using its original
   paging boundary, keeping loaded messages and drafts visible. Changing conversations or accounts
-  discards obsolete history retries.
+  discards obsolete history retries. Failed older pages pause automatic pagination until an explicit retry succeeds.
 
 ---
 

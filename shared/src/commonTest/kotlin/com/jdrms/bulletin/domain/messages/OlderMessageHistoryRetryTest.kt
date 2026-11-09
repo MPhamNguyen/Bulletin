@@ -70,6 +70,36 @@ class OlderMessageHistoryRetryTest {
     }
 
     @Test
+    fun automaticPaginationWaitsForExplicitRetryAfterFailureAndResumesAfterRecovery() = runTest {
+        val fixture = MessageHistoryRetryFixture(dispatcher, historyMessages(65))
+        advanceUntilIdle()
+        val viewModel = fixture.viewModel
+        fixture.readPage = { historyFailure() }
+        viewModel.loadOlderMessages()
+        advanceUntilIdle()
+        val request = assertNotNull(viewModel.uiState.value.failedOlderHistoryRequest)
+        val callsAfterFailure = fixture.calls.size
+        repeat(3) {
+            viewModel.loadOlderMessages()
+            advanceUntilIdle()
+        }
+        assertEquals(callsAfterFailure, fixture.calls.size)
+        assertEquals(request, viewModel.uiState.value.failedOlderHistoryRequest)
+        fixture.readPage = fixture::storedPage
+        viewModel.retryHistory(request)
+        advanceUntilIdle()
+        assertEquals(callsAfterFailure + 1, fixture.calls.size)
+        assertEquals(fixture.calls[1], fixture.calls[2])
+        assertNull(viewModel.uiState.value.failedOlderHistoryRequest)
+        assertNotNull(viewModel.uiState.value.olderCursor)
+        viewModel.loadOlderMessages()
+        advanceUntilIdle()
+        assertEquals(callsAfterFailure + 2, fixture.calls.size)
+        assertEquals(historyMessages(65), viewModel.uiState.value.currentMessages)
+        assertNull(viewModel.uiState.value.olderCursor)
+    }
+
+    @Test
     fun anotherFailureRetainsTheSameOlderCursorForTheNextRetry() = runTest {
         val fixture = MessageHistoryRetryFixture(dispatcher, historyMessages())
         advanceUntilIdle()

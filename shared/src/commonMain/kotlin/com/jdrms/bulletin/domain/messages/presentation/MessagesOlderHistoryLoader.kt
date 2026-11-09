@@ -25,6 +25,7 @@ internal class MessagesOlderHistoryLoader(
     }
 
     fun load() {
+        if (state.value.failedOlderHistoryRequest != null) return
         val selected = state.value.selectedConversationId ?: return
         val cursor = state.value.olderCursor ?: return
         load(MessageHistoryRequest.Older(selected, cursor))

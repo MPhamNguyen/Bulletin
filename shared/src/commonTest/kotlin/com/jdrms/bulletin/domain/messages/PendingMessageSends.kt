@@ -23,7 +23,7 @@ internal class PendingMessageSends {
         completions[index].complete(Result.Success(requests[index]))
     }
 
-    fun fail(index: Int) {
-        completions[index].complete(Result.Error(IllegalStateException("Private transport detail")))
+    fun fail(index: Int, exception: Exception = IllegalStateException("Private transport detail")) {
+        completions[index].complete(Result.Error(exception))
     }
 }

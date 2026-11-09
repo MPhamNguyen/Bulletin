@@ -18,7 +18,7 @@ internal class MessageSendingActions(
     private val drafts: ConversationMessageDrafts,
     private val scope: CoroutineScope
 ) {
-    fun send() {
+    fun send(showFailure: (Result.Error) -> Unit) {
         val snapshot = state.value
         val conversationId = snapshot.selectedConversationId ?: return
         val viewerId = inbox.state.value.viewerId ?: return
@@ -38,10 +38,11 @@ internal class MessageSendingActions(
             val sent = sendMessage(conversationId, snapshot.messageInput)
             if (!synchronizeSession(viewerId, session)) return@launch
             when (sent) {
-                is Result.Error -> finish(
-                    conversationId,
-                    "Unable to send message. Check your connection and try again."
-                )
+                is Result.Error -> if (sent.isMessagingIdentityUnavailable) {
+                    showFailure(sent)
+                } else {
+                    finish(conversationId, "Unable to send message. Check your connection and try again.")
+                }
                 is Result.Success -> {
                     drafts.clearSent(conversationId, snapshot.messageInput)
                     complete(sent.data)
@@ -56,7 +57,7 @@ internal class MessageSendingActions(
     }
 
     private fun complete(message: Message) {
-        val recorded = inbox.recordMessage(message)
+        inbox.recordMessage(message)
         state.update { current ->
             current.copy(
                 currentMessages = if (current.selectedConversationId == message.conversationId) {
@@ -66,10 +67,7 @@ internal class MessageSendingActions(
                 }
             )
         }
-        finish(
-            message.conversationId,
-            if (recorded is Result.Error) "Message sent, but the conversation could not be updated." else null
-        )
+        finish(message.conversationId)
     }
 
     private fun finish(conversationId: ConversationId, errorMessage: String? = null) {
