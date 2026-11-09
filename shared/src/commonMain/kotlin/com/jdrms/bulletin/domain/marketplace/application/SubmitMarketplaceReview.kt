@@ -5,9 +5,14 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReviewId
+import com.jdrms.bulletin.domain.marketplace.domain.model.ReviewRequestStatus
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.domain.repository.ReviewRequestRepository
 
-class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
+class SubmitMarketplaceReview(
+    private val repository: MarketplaceRepository,
+    private val reviewRequests: ReviewRequestRepository? = null
+) {
     suspend fun submitForSoldListing(
         listingId: String,
         buyerId: String?,
@@ -21,6 +26,7 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
         val validationError = when {
             !isSold -> "Reviews are available after a listing is sold."
             buyerId != reviewerId -> "Only the buyer can review this seller."
+            comment.isBlank() -> "Review comment cannot be empty."
             else -> null
         }
         val error = validationError ?: when {
@@ -28,6 +34,9 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
             repository.hasReviewForListing(canonicalListingId, reviewerId) ->
                 "A review has already been submitted for this listing."
             else -> null
+        }
+        if (error == "A review has already been submitted for this listing.") {
+            completeReviewRequest(canonicalListingId.value, reviewerId)
         }
         return if (error != null) {
             val exception = if (error.startsWith("A review")) {
@@ -37,7 +46,7 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
             }
             Result.Error(exception)
         } else {
-            repository.submitReview(
+            val submission = repository.submitReview(
                 MarketplaceReview(
                     listingId = canonicalListingId,
                     reviewerId = reviewerId,
@@ -46,6 +55,8 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
                     comment = comment.trim()
                 )
             )
+            if (submission is Result.Success) completeReviewRequest(canonicalListingId.value, reviewerId)
+            submission
         }
     }
 
@@ -63,10 +74,11 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
         }
         if (eligibilityError != null) return Result.Error(IllegalArgumentException(eligibilityError))
         if (repository.hasReviewForListing(listing.id, reviewerId)) {
+            completeReviewRequest(listing.id.value.removePrefix("listing:"), reviewerId)
             return Result.Error(IllegalStateException("A review has already been submitted for this listing."))
         }
 
-        return repository.submitReview(
+        val submission = repository.submitReview(
             MarketplaceReview(
                 id = MarketplaceReviewId(""),
                 listingId = MarketplaceItemId(listing.id.value.removePrefix("listing:")),
@@ -76,5 +88,13 @@ class SubmitMarketplaceReview(private val repository: MarketplaceRepository) {
                 comment = comment.trim()
             )
         )
+        if (submission is Result.Success) {
+            completeReviewRequest(listing.id.value.removePrefix("listing:"), reviewerId)
+        }
+        return submission
+    }
+
+    private suspend fun completeReviewRequest(listingId: String, buyerId: String) {
+        reviewRequests?.updateStatus(listingId, buyerId, ReviewRequestStatus.SUBMITTED)
     }
 }

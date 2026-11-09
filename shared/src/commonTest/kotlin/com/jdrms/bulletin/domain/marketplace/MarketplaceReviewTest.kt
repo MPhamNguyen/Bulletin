@@ -6,7 +6,9 @@ import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
+import com.jdrms.bulletin.domain.marketplace.domain.model.ReviewRequest
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryReviewRequestRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,6 +52,34 @@ class MarketplaceReviewTest {
 
         assertEquals("Only the buyer can review this seller.", assertIs<Result.Error>(wrongBuyer).exception.message)
         assertEquals("Reviews are available after a listing is sold.", assertIs<Result.Error>(unsold).exception.message)
+    }
+
+    @Test
+    fun reviewRequiresAComment() = runTest {
+        val useCase = SubmitMarketplaceReview(InMemoryMarketplaceRepository())
+        val result = useCase.submitForSoldListing(
+            listingId = "listing-1",
+            buyerId = "buyer-1",
+            sellerId = "seller-1",
+            isSold = true,
+            reviewerId = "buyer-1",
+            score = 5,
+            comment = "   "
+        )
+
+        assertEquals("Review comment cannot be empty.", assertIs<Result.Error>(result).exception.message)
+    }
+
+    @Test
+    fun existingListingReviewFlowCompletesItsReviewRequest() = runTest {
+        val requests = InMemoryReviewRequestRepository()
+        requests.createIfMissing(
+            ReviewRequest(MarketplaceItemId("listing-1"), "buyer-1", "seller-1", "Sold textbook")
+        )
+        val useCase = SubmitMarketplaceReview(InMemoryMarketplaceRepository(), requests)
+
+        assertIs<Result.Success<Unit>>(useCase(soldListing("buyer-1"), "buyer-1", 5, "Smooth transaction"))
+        assertEquals(emptyList(), requests.pendingForBuyer("buyer-1"))
     }
 
     private fun soldListing(buyerId: String): Listing = Listing(

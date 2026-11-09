@@ -26,10 +26,12 @@ import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceReposi
 import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryReviewRequestRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.MarketplaceReadCache
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseReviewRequestRepository
 
 internal class MarketplaceModule(
     private val infrastructure: InfrastructureModule,
@@ -105,7 +107,15 @@ internal class MarketplaceModule(
             reportedListingProvider = marketplaceReportedListingProvider
         )
     }
-    val submitMarketplaceReview by lazy { SubmitMarketplaceReview(marketplaceRepository) }
+    internal val reviewRequestRepository by lazy {
+        infrastructure.backend(
+            supabase = ::SupabaseReviewRequestRepository,
+            inMemory = ::InMemoryReviewRequestRepository
+        )
+    }
+    val submitMarketplaceReview by lazy {
+        SubmitMarketplaceReview(marketplaceRepository, reviewRequestRepository)
+    }
     internal val viewMarketplaceSellerProfile by lazy {
         createMarketplaceSellerProfileView(
             marketplaceSellerProfileProvider,
