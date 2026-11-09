@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
 import com.jdrms.bulletin.domain.marketplace.domain.model.ReviewRequest
+import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryReviewRequestRepository
 import kotlinx.coroutines.test.runTest
@@ -56,18 +57,56 @@ class MarketplaceReviewTest {
 
     @Test
     fun reviewRequiresAComment() = runTest {
-        val useCase = SubmitMarketplaceReview(InMemoryMarketplaceRepository())
+        val useCase = SubmitMarketplaceReview(repositoryWithListing(status = "SOLD", buyerId = "buyer-1"))
         val result = useCase.submitForSoldListing(
             listingId = "listing-1",
             buyerId = "buyer-1",
             sellerId = "seller-1",
-            isSold = true,
             reviewerId = "buyer-1",
             score = 5,
             comment = "   "
         )
 
         assertEquals("Review comment cannot be empty.", assertIs<Result.Error>(result).exception.message)
+    }
+
+    @Test
+    fun reviewRequestCannotSubmitAfterListingWasRestored() = runTest {
+        val repository = repositoryWithListing(status = "AVAILABLE", buyerId = null)
+        val useCase = SubmitMarketplaceReview(repository)
+
+        val result = useCase.submitForSoldListing(
+            listingId = "listing-1",
+            buyerId = "buyer-1",
+            sellerId = "seller-1",
+            reviewerId = "buyer-1",
+            score = 5,
+            comment = "Smooth transaction"
+        )
+
+        assertEquals(
+            "Reviews are available after a listing is sold.",
+            assertIs<Result.Error>(result).exception.message
+        )
+        assertFalse(repository.hasReviewForListing(MarketplaceItemId("listing-1"), "buyer-1"))
+    }
+
+    @Test
+    fun reviewRequestCannotSubmitWhenListingNowRecordsAnotherBuyer() = runTest {
+        val repository = repositoryWithListing(status = "SOLD", buyerId = "buyer-2")
+        val useCase = SubmitMarketplaceReview(repository)
+
+        val result = useCase.submitForSoldListing(
+            listingId = "listing-1",
+            buyerId = "buyer-1",
+            sellerId = "seller-1",
+            reviewerId = "buyer-1",
+            score = 5,
+            comment = "Smooth transaction"
+        )
+
+        assertEquals("Only the buyer can review this seller.", assertIs<Result.Error>(result).exception.message)
+        assertFalse(repository.hasReviewForListing(MarketplaceItemId("listing-1"), "buyer-1"))
     }
 
     @Test
@@ -93,5 +132,21 @@ class MarketplaceReviewTest {
         category = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory.TEXTBOOKS,
         status = "SOLD",
         isSold = true
+    )
+
+    private fun repositoryWithListing(status: String, buyerId: String?) = InMemoryMarketplaceRepository(
+        initialListings = listOf(
+            MarketplaceListingDto(
+                id = "listing-1",
+                sellerId = "seller-1",
+                buyerId = buyerId,
+                sellerName = "Seller",
+                title = "Sold textbook",
+                description = "A used textbook",
+                price = 10.0,
+                category = "TEXTBOOKS",
+                status = status
+            )
+        )
     )
 }

@@ -31,7 +31,8 @@ internal data class ReviewRequestDialogState(
 internal data class ReviewRequestDialogActions(
     val onAccept: () -> Unit,
     val onDecline: () -> Unit,
-    val onSubmit: (Int, String) -> Unit
+    val onSubmit: (Int, String) -> Unit,
+    val onDefer: () -> Unit
 )
 
 @Composable
@@ -39,7 +40,7 @@ internal fun ReviewRequestDialog(state: ReviewRequestDialogState, actions: Revie
     if (state.request.status == ReviewRequestStatus.PENDING) {
         PendingReviewRequestDialog(state, actions)
     } else {
-        ReviewRequestReviewDialog(state, actions.onSubmit)
+        ReviewRequestReviewDialog(state, actions.onSubmit, actions.onDefer)
     }
 }
 

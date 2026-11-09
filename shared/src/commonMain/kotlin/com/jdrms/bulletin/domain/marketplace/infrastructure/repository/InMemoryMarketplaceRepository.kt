@@ -67,6 +67,8 @@ class InMemoryMarketplaceRepository(
         }
     }
 
+    override suspend fun getListingForReview(listingID: String): Result<Listing> = viewListing(listingID)
+
     override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
         val bookmarks = bookmarksByUser[userId] ?: ListingBookmarks.of(userId)
         bookmarksByUser[userId] = bookmarks.bookmark(itemId)

@@ -30,24 +30,27 @@ import bulletin.shared.generated.resources.Res
 import bulletin.shared.generated.resources.ic_arrow_back
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun MyListingsListView(
+internal fun MyListingsListView(
     uiState: ListingsUiState,
-    onBack: () -> Unit,
-    onEditListing: (Listing) -> Unit,
-    onDeleteListing: (Listing) -> Unit,
-    onMarkSoldListing: (Listing) -> Unit,
-    onRestoreListing: (Listing) -> Unit,
+    actions: MyListingsListActions,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        uiState.pendingReviewRequestCancellation?.let { listing ->
+            ListingReviewRequestCancellationNotice(
+                listing = listing,
+                isRetrying = uiState.isCancellingReviewRequests,
+                errorMessage = uiState.reviewRequestCancellationError,
+                onRetry = actions.onRetryReviewRequestCancellation
+            )
+        }
         MyListingsTopBar(
             activeCount = uiState.myListings.count { it.status == ListingStatus.AVAILABLE },
-            onBack = onBack
+            onBack = actions.onBack
         )
 
         uiState.errorMessage?.let { error ->
@@ -88,10 +91,10 @@ fun MyListingsListView(
                     items(uiState.myListings, key = { it.id.value }) { listing ->
                         MyListingItemCard(
                             listing = listing,
-                            onEdit = { onEditListing(listing) },
-                            onDelete = { onDeleteListing(listing) },
-                            onMarkSold = { onMarkSoldListing(listing) },
-                            onRestore = { onRestoreListing(listing) }
+                            onEdit = { actions.onEditListing(listing) },
+                            onDelete = { actions.onDeleteListing(listing) },
+                            onMarkSold = { actions.onMarkSoldListing(listing) },
+                            onRestore = { actions.onRestoreListing(listing) }
                         )
                     }
                     item {

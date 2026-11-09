@@ -81,19 +81,7 @@ internal class ListingStatusActions(
         scope.launch {
             when (val seller = sellerProvider.getCurrentSeller()) {
                 is Result.Success -> when (val result = restore(listing.id, seller.data.id)) {
-                    is Result.Success -> {
-                        val cancellation = reviewRequestUseCases.cancel?.invoke(listing.id, seller.data.id)
-                        state.update { it.copy(pendingRestoration = null, isRestoring = false) }
-                        callbacks.notify(
-                            if (cancellation is Result.Error) {
-                                "Listing restored, but its pending review request could not be cleared."
-                            } else {
-                                "Listing restored to marketplace!"
-                            }
-                        )
-                        callbacks.reload(seller.data)
-                        callbacks.listingChangedSignal?.emit()
-                    }
+                    is Result.Success -> completeRestore(listing, seller.data)
                     is Result.Error -> state.update {
                         it.copy(
                             isRestoring = false,
@@ -108,6 +96,78 @@ internal class ListingStatusActions(
                     )
                 }
             }
+        }
+    }
+
+    private suspend fun completeRestore(listing: Listing, seller: ListingSeller) {
+        val cancellation = reviewRequestUseCases.cancel?.invoke(listing.id, seller.id)
+        val cancellationFailed = cancellation is Result.Error
+        state.update {
+            it.copy(
+                pendingRestoration = null,
+                isRestoring = false,
+                pendingReviewRequestCancellation = listing.takeIf { cancellationFailed },
+                reviewRequestCancellationError = if (cancellationFailed) {
+                    "Couldn't clear this listing's review requests. Retry when connected."
+                } else {
+                    null
+                }
+            )
+        }
+        callbacks.notify(
+            if (cancellationFailed) {
+                "Listing restored. Review requests still need cleanup."
+            } else {
+                "Listing restored to marketplace!"
+            }
+        )
+        callbacks.reload(seller)
+        callbacks.listingChangedSignal?.emit()
+    }
+
+    fun retryCancelReviewRequests() {
+        val listing = claimReviewRequestCancellation() ?: return
+        scope.launch {
+            when (val seller = sellerProvider.getCurrentSeller()) {
+                is Result.Success -> {
+                    val cancellation = reviewRequestUseCases.cancel?.invoke(listing.id, seller.data.id)
+                    when (cancellation) {
+                        is Result.Success -> {
+                            state.update {
+                                it.copy(
+                                    pendingReviewRequestCancellation = null,
+                                    isCancellingReviewRequests = false,
+                                    reviewRequestCancellationError = null
+                                )
+                            }
+                            callbacks.notify("Review requests cleared.")
+                            callbacks.reload(seller.data)
+                            callbacks.listingChangedSignal?.emit()
+                        }
+                        is Result.Error, null -> state.update {
+                            it.copy(
+                                isCancellingReviewRequests = false,
+                                reviewRequestCancellationError = "Couldn't clear this listing's review requests. Retry."
+                            )
+                        }
+                    }
+                }
+                is Result.Error -> state.update {
+                    it.copy(
+                        isCancellingReviewRequests = false,
+                        reviewRequestCancellationError = CreateListingErrorMessages.toUserMessage(seller.exception)
+                    )
+                }
+            }
+        }
+    }
+
+    private fun claimReviewRequestCancellation(): Listing? {
+        while (true) {
+            val current = state.value
+            if (current.isCancellingReviewRequests) return null
+            val listing = current.pendingReviewRequestCancellation ?: return null
+            if (state.compareAndSet(current, current.copy(isCancellingReviewRequests = true))) return listing
         }
     }
 

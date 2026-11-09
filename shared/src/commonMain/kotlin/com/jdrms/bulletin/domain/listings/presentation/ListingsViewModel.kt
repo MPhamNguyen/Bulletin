@@ -157,6 +157,7 @@ class ListingsViewModel(
     fun requestRestoreListing(listing: Listing) = statusActions.requestRestore(listing)
     fun cancelRestoreListing() = statusActions.cancelRestore()
     fun confirmRestoreListing() = statusActions.confirmRestore()
+    fun retryCancelReviewRequests() = statusActions.retryCancelReviewRequests()
     fun confirmMarkListingSold() = statusActions.confirmMarkSold()
 
     fun confirmDeleteListing() {

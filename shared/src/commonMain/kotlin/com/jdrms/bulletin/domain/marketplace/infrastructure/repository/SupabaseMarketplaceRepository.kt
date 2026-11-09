@@ -90,36 +90,7 @@ class SupabaseMarketplaceRepository private constructor(
         val databaseListingId = normalizeListingId(listingID)
         val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
             runCatching {
-                readCache.detail(databaseListingId) {
-                    val listingDto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
-                        filter {
-                            eq("id", databaseListingId)
-                        }
-                    }.decodeSingleOrNull<SupabaseMarketplaceListingDto>()
-                        ?: error("Listing not found.")
-                    val reputationScore = listingDto.userId?.let { sellerId ->
-                        runCatching {
-                            val reviews = supabase.from(REVIEWS_TABLE).select {
-                                filter {
-                                    eq("reviewee_id", sellerId)
-                                }
-                            }.decodeList<ReviewScoreDto>()
-
-                            reviews.takeIf(List<ReviewScoreDto>::isNotEmpty)
-                                ?.map { it.score }
-                                ?.average()
-                        }.getOrElse { error ->
-                            error.rethrowIfCancellation()
-                            null
-                        }
-                    }
-
-                    SupabaseMarketplaceListingMapper.toListing(
-                        dto = listingDto,
-                        reputationScore = reputationScore,
-                        imageUrl = ::listingImageUrl
-                    ) ?: error("Supabase listing is missing required fields.")
-                }
+                readCache.detail(databaseListingId) { loadListing(databaseListingId) }
             }.fold(
                 onSuccess = { listing ->
                     Result.Success(listing)
@@ -132,6 +103,42 @@ class SupabaseMarketplaceRepository private constructor(
         }
 
         return timedResult ?: Result.Error(Exception("Request timed out. Unable to load listing within 2 seconds."))
+    }
+
+    override suspend fun getListingForReview(listingID: String): Result<Listing> {
+        val databaseListingId = normalizeListingId(listingID)
+        val timedResult = withTimeoutOrNull(TIMEOUT_MILLIS) {
+            runCatching { loadListing(databaseListingId, includeReputation = false) }.fold(
+                onSuccess = { Result.Success(it) },
+                onFailure = { error ->
+                    error.rethrowIfCancellation()
+                    Result.Error(Exception(mapMarketplaceErrorMessage(error), error))
+                }
+            )
+        }
+        return timedResult ?: Result.Error(Exception("Request timed out. Unable to verify listing status."))
+    }
+
+    private suspend fun loadListing(databaseListingId: String, includeReputation: Boolean = true): Listing {
+        val listingDto = supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
+            filter { eq("id", databaseListingId) }
+        }.decodeSingleOrNull<SupabaseMarketplaceListingDto>() ?: error("Listing not found.")
+        val reputationScore = listingDto.userId?.takeIf { includeReputation }?.let { sellerId ->
+            runCatching {
+                val reviews = supabase.from(REVIEWS_TABLE).select {
+                    filter { eq("reviewee_id", sellerId) }
+                }.decodeList<ReviewScoreDto>()
+                reviews.takeIf(List<ReviewScoreDto>::isNotEmpty)?.map { it.score }?.average()
+            }.getOrElse { error ->
+                error.rethrowIfCancellation()
+                null
+            }
+        }
+        return SupabaseMarketplaceListingMapper.toListing(
+            dto = listingDto,
+            reputationScore = reputationScore,
+            imageUrl = ::listingImageUrl
+        ) ?: error("Supabase listing is missing required fields.")
     }
 
     override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {

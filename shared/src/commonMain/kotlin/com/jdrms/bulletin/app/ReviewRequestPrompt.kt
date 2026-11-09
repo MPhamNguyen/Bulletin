@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.ReviewRequest
 import com.jdrms.bulletin.domain.marketplace.presentation.ReviewRequestActions
 import com.jdrms.bulletin.domain.marketplace.presentation.advanceReviewRequestQueue
+import com.jdrms.bulletin.domain.marketplace.presentation.excludingDeferredReviewRequests
 import com.jdrms.bulletin.domain.marketplace.presentation.mergeReviewRequestQueue
 import com.jdrms.bulletin.domain.marketplace.presentation.selectReviewRequestToPresent
 import com.jdrms.bulletin.domain.profile.application.SessionState
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 internal fun ReviewRequestPrompt(container: AppContainer, session: SessionState) {
     val buyerId = (session as? SessionState.Authenticated)?.profile?.id?.value ?: return
     var requests by remember(buyerId) { mutableStateOf(emptyList<ReviewRequest>()) }
+    var deferredRequestIds by remember(buyerId) { mutableStateOf(emptySet<String>()) }
     var active by remember(buyerId) { mutableStateOf<ReviewRequest?>(null) }
     var listingImageUrl by remember(active?.listingId) { mutableStateOf<String?>(null) }
     var listingSellerName by remember(active?.listingId) { mutableStateOf("Seller") }
@@ -37,7 +39,10 @@ internal fun ReviewRequestPrompt(container: AppContainer, session: SessionState)
     LaunchedEffect(buyerId) {
         while (true) {
             runCatching { repository.pendingForBuyer(buyerId) }.getOrNull()?.let { latest ->
-                requests = mergeReviewRequestQueue(requests, latest)
+                requests = mergeReviewRequestQueue(
+                    requests,
+                    latest.excludingDeferredReviewRequests(deferredRequestIds)
+                )
                 active = selectReviewRequestToPresent(active, requests)
             }
             delay(REQUEST_REFRESH_INTERVAL_MILLIS)
@@ -102,6 +107,11 @@ internal fun ReviewRequestPrompt(container: AppContainer, session: SessionState)
                     }
                     isProcessing = false
                 }
+            },
+            onDefer = {
+                deferredRequestIds = deferredRequestIds + request.listingId.value
+                requests = advanceReviewRequestQueue(request, requests)
+                active = requests.firstOrNull()
             }
         )
     )

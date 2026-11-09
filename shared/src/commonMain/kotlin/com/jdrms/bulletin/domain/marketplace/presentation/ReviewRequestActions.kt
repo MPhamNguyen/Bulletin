@@ -27,7 +27,6 @@ internal class ReviewRequestActions(
             request.listingId.value,
             request.buyerId,
             request.sellerId,
-            true,
             request.buyerId,
             score,
             comment

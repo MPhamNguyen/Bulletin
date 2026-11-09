@@ -20,13 +20,15 @@ import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.ReviewRatingPicker
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 internal fun ReviewRequestReviewDialog(
     state: ReviewRequestDialogState,
-    onSubmit: (Int, String) -> Unit
+    onSubmit: (Int, String) -> Unit,
+    onBack: () -> Unit
 ) {
     var score by remember(state.request) { mutableStateOf(0) }
     var comment by remember(state.request) { mutableStateOf("") }
@@ -77,7 +79,14 @@ internal fun ReviewRequestReviewDialog(
                     options = BulletinFieldOptions(minLines = 3, maxLines = 5)
                 )
                 state.failure?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    BulletinButton(
+                        onClick = onBack,
+                        enabled = !state.isProcessing,
+                        variant = BulletinButtonVariant.Text
+                    ) {
+                        Text("Back")
+                    }
                     BulletinButton(
                         onClick = { onSubmit(score, comment) },
                         enabled = !state.isProcessing && score in 1..5 && comment.isNotBlank()

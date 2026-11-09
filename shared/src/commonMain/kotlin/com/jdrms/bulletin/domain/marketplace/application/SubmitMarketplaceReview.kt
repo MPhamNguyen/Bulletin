@@ -17,47 +17,51 @@ class SubmitMarketplaceReview(
         listingId: String,
         buyerId: String?,
         sellerId: String,
-        isSold: Boolean,
         reviewerId: String,
         score: Int,
         comment: String
     ): Result<Unit> {
         val canonicalListingId = MarketplaceItemId(listingId.removePrefix("listing:"))
-        val validationError = when {
-            !isSold -> "Reviews are available after a listing is sold."
-            buyerId != reviewerId -> "Only the buyer can review this seller."
-            comment.isBlank() -> "Review comment cannot be empty."
-            else -> null
-        }
-        val error = validationError ?: when {
-            score !in 1..5 -> "Choose a rating from 1 to 5 stars."
-            repository.hasReviewForListing(canonicalListingId, reviewerId) ->
-                "A review has already been submitted for this listing."
-            else -> null
-        }
-        if (error == "A review has already been submitted for this listing.") {
-            completeReviewRequest(canonicalListingId.value, reviewerId)
-        }
-        return if (error != null) {
-            val exception = if (error.startsWith("A review")) {
-                IllegalStateException(error)
-            } else {
-                IllegalArgumentException(error)
-            }
-            Result.Error(exception)
-        } else {
-            val submission = repository.submitReview(
-                MarketplaceReview(
-                    listingId = canonicalListingId,
-                    reviewerId = reviewerId,
-                    revieweeId = sellerId,
-                    score = score,
-                    comment = comment.trim()
-                )
+        val currentListing = when (val result = repository.getListingForReview(canonicalListingId.value)) {
+            is Result.Success -> result.data
+            is Result.Error -> return Result.Error(
+                IllegalStateException("Couldn't verify the listing's current status.", result.exception)
             )
-            if (submission is Result.Success) completeReviewRequest(canonicalListingId.value, reviewerId)
-            submission
         }
+        reviewEligibilityError(currentListing, buyerId, sellerId, reviewerId, score, comment)?.let { error ->
+            return Result.Error(IllegalArgumentException(error))
+        }
+        if (repository.hasReviewForListing(canonicalListingId, reviewerId)) {
+            completeReviewRequest(canonicalListingId.value, reviewerId)
+            return Result.Error(IllegalStateException("A review has already been submitted for this listing."))
+        }
+        val submission = repository.submitReview(
+            MarketplaceReview(
+                listingId = canonicalListingId,
+                reviewerId = reviewerId,
+                revieweeId = sellerId,
+                score = score,
+                comment = comment.trim()
+            )
+        )
+        if (submission is Result.Success) completeReviewRequest(canonicalListingId.value, reviewerId)
+        return submission
+    }
+
+    private fun reviewEligibilityError(
+        listing: Listing,
+        buyerId: String?,
+        sellerId: String,
+        reviewerId: String,
+        score: Int,
+        comment: String
+    ): String? = when {
+        !listing.isSold -> "Reviews are available after a listing is sold."
+        buyerId != reviewerId || listing.buyerId != reviewerId -> "Only the buyer can review this seller."
+        listing.sellerId != sellerId -> "The listing's seller has changed."
+        comment.isBlank() -> "Review comment cannot be empty."
+        score !in 1..5 -> "Choose a rating from 1 to 5 stars."
+        else -> null
     }
 
     suspend operator fun invoke(

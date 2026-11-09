@@ -73,17 +73,20 @@ fun MyListingsScreen(
         } else {
             MyListingsListView(
                 uiState = uiState,
-                onBack = {
-                    viewModel.clearMessages()
-                    onBack()
-                },
-                onEditListing = { listing ->
-                    viewModel.startEditing(listing)
-                    onEditListing()
-                },
-                onDeleteListing = viewModel::requestDeleteListing,
-                onMarkSoldListing = viewModel::requestMarkListingSold,
-                onRestoreListing = viewModel::requestRestoreListing
+                actions = MyListingsListActions(
+                    onBack = {
+                        viewModel.clearMessages()
+                        onBack()
+                    },
+                    onEditListing = { listing ->
+                        viewModel.startEditing(listing)
+                        onEditListing()
+                    },
+                    onDeleteListing = viewModel::requestDeleteListing,
+                    onMarkSoldListing = viewModel::requestMarkListingSold,
+                    onRestoreListing = viewModel::requestRestoreListing,
+                    onRetryReviewRequestCancellation = viewModel::retryCancelReviewRequests
+                )
             )
         }
 
