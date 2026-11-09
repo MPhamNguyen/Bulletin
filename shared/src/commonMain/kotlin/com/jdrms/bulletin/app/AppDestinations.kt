@@ -16,7 +16,6 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
-import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
@@ -30,7 +29,6 @@ import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
 import com.jdrms.bulletin.domain.profile.presentation.ReportedListingVisibilitySetting
 import kotlinx.coroutines.cancel
@@ -138,6 +136,10 @@ private fun ProfileDestinationContent(
         PublicProfilePreviewDestination(
             profilePresentation.viewModel,
             sellerProfileViewModel,
+            onListingClick = { listingId ->
+                marketplaceViewModel.onListingClicked(listingId)
+                navigation.openListing(listingId)
+            },
             onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
         )
     } else {
@@ -219,45 +221,5 @@ private fun StudentProfileDestination(
                 }
             }
         )
-    )
-}
-
-private fun profileCallbacks(
-    container: AppContainer,
-    navigation: MutableMainNavigationState,
-    listingsViewModel: ListingsViewModel,
-    marketplaceViewModel: MarketplaceViewModel,
-    messagesViewModel: MessagesViewModel,
-    onSignOut: () -> Unit
-): ProfileScreenCallbacks {
-    val conversationActions = ListingConversationActions(container.messages, navigation, messagesViewModel)
-    return ProfileScreenCallbacks(
-        onNavigate = { destination ->
-            if (destination == ProfileDestination.EDIT_ACCOUNT) {
-                navigation.editReturnDestination = navigation.profileDestination
-            }
-            navigation.profileDestination = destination
-        },
-        onBack = {
-            navigation.profileDestination = backFromProfileDestination(
-                navigation.profileDestination,
-                navigation.editReturnDestination
-            )
-        },
-        onSignOut = onSignOut,
-        onMyListingsClick = {
-            listingsViewModel.clearMessages()
-            navigation.profileDestination = ProfileDestination.MY_LISTINGS
-        },
-        onOpenListing = { listingId ->
-            marketplaceViewModel.onListingClicked(listingId)
-            navigation.openListing(listingId)
-        },
-        onMessageSeller = conversationActions::messageSeller,
-        onMessageSent = {
-            navigation.apply(navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))
-        },
-        onSeeChat = conversationActions::seeChat,
-        hasExistingConversation = conversationActions::hasExistingConversation
     )
 }
