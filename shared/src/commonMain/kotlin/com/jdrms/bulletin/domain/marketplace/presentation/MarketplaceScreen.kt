@@ -156,6 +156,7 @@ private fun MarketplaceSellerProfileFlow(
         onBack = onBackFromSellerProfile,
         reviewActions = SellerProfileReviewActions(
             onViewAllReviews = { onNavigate(MarketplaceDestination.ALL_REVIEWS) },
+            onRetryReviews = viewModels.sellerProfile::loadMoreReviews,
             onListingClick = onOpenListing
         ),
         onReportUser = {

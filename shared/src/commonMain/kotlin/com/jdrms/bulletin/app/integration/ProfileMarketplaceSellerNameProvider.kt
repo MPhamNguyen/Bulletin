@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import kotlinx.coroutines.CancellationException
 
 class ProfileMarketplaceSellerNameProvider(
     private val profileRepository: ProfileRepository
@@ -17,8 +18,15 @@ class ProfileMarketplaceSellerNameProvider(
         val sellerIdValue = UserId(sellerId)
         val summary = runCatching { profileRepository.getReputationSummary(sellerIdValue) }
             .getOrDefault(StudentReputation(sellerIdValue))
-        val firstPage = runCatching { profileRepository.getReviewsPage(sellerIdValue, 0, PROFILE_PREVIEW_REVIEW_COUNT) }
-            .getOrNull() ?: StudentReviewPage(emptyList(), null)
+        val firstPage = try {
+            profileRepository.getReviewsPage(sellerIdValue, 0, PROFILE_PREVIEW_REVIEW_COUNT)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            null
+        }
+        val reviewPageLoadFailed = firstPage == null
+        val resolvedFirstPage = firstPage ?: StudentReviewPage(emptyList(), null)
         return when (val result = profileRepository.getProfileBasics(sellerIdValue)) {
             is com.jdrms.bulletin.core.common.Result.Success -> result.data?.let {
                 MarketplaceSellerProfile(
@@ -30,8 +38,9 @@ class ProfileMarketplaceSellerNameProvider(
                     avatarUrl = it.avatarUrl,
                     reputationScore = summary.averageRating,
                     reviewCount = summary.totalReviews,
-                    reviews = mapReviews(firstPage.reviews),
-                    reviewNextOffset = firstPage.nextOffset,
+                    reviews = mapReviews(resolvedFirstPage.reviews),
+                    reviewNextOffset = if (reviewPageLoadFailed) 0 else resolvedFirstPage.nextOffset,
+                    reviewPageLoadFailed = reviewPageLoadFailed,
                     isVerified = it.isVerified
                 )
             }

@@ -213,6 +213,7 @@ data class MarketplaceSellerProfile(
     val reviewCount: Int? = null,
     val reviews: List<MarketplaceSellerReview> = emptyList(),
     val reviewNextOffset: Int? = null,
+    val reviewPageLoadFailed: Boolean = false,
     val isVerified: Boolean = true
 )
 

@@ -58,7 +58,12 @@ class SellerProfileViewModel(
                         SellerProfileUiState(
                             profile = details.profile,
                             listings = details.listings,
-                            soldListingsCount = details.soldListingsCount
+                            soldListingsCount = details.soldListingsCount,
+                            reviewLoadError = if (details.profile.reviewPageLoadFailed) {
+                                REVIEW_LOAD_ERROR
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -77,7 +82,7 @@ class SellerProfileViewModel(
         val profile = current.profile ?: return
         val offset = profile.reviewNextOffset ?: return
         if (current.isLoadingMoreReviews) return
-        _uiState.update { it.copy(isLoadingMoreReviews = true, reviewLoadError = null) }
+        _uiState.update { it.copy(isLoadingMoreReviews = true) }
         reviewsJob = viewModelScope.launch {
             try {
                 val page = viewSellerProfile.reviewsPage(profile.sellerId, offset)
@@ -86,7 +91,8 @@ class SellerProfileViewModel(
                     state.copy(
                         profile = currentProfile.copy(
                             reviews = (currentProfile.reviews + page.reviews).distinctBy { it.id },
-                            reviewNextOffset = page.nextOffset
+                            reviewNextOffset = page.nextOffset,
+                            reviewPageLoadFailed = false
                         ),
                         isLoadingMoreReviews = false,
                         reviewLoadError = null
@@ -96,7 +102,7 @@ class SellerProfileViewModel(
                 throw error
             } catch (_: Exception) {
                 _uiState.update {
-                    it.copy(isLoadingMoreReviews = false, reviewLoadError = "Unable to load more reviews.")
+                    it.copy(isLoadingMoreReviews = false, reviewLoadError = REVIEW_LOAD_ERROR)
                 }
             }
         }
@@ -110,3 +116,5 @@ class SellerProfileViewModel(
         _uiState.update { it.copy(filters = filters.normalized()) }
     }
 }
+
+private const val REVIEW_LOAD_ERROR = "Unable to load reviews. Check your connection and try again."

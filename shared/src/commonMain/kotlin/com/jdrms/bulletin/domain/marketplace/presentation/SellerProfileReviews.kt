@@ -18,13 +18,29 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 @Composable
 internal fun SellerProfileReviews(
     reviews: List<MarketplaceSellerReview>,
+    reviewLoadError: String?,
+    isLoadingReviews: Boolean,
+    onRetryReviews: () -> Unit,
     onViewAllReviews: () -> Unit,
     onListingClick: (String) -> Unit
 ) {
     BulletinCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
             Text("Recent reviews", style = MaterialTheme.typography.titleMedium)
-            if (reviews.isEmpty()) {
+            if (reviewLoadError != null) {
+                Text(
+                    reviewLoadError,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                BulletinButton(
+                    onClick = onRetryReviews,
+                    enabled = !isLoadingReviews,
+                    variant = BulletinButtonVariant.Text
+                ) {
+                    Text(if (isLoadingReviews) "Loading reviews…" else "Try again")
+                }
+            } else if (reviews.isEmpty()) {
                 Text(
                     "This seller has no reviews yet.",
                     style = MaterialTheme.typography.bodyMedium,

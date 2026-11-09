@@ -70,7 +70,20 @@ internal fun SellerAllReviewsScreen(
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            if (profile.reviews.isEmpty()) {
+            if (profile.reviews.isEmpty() && reviewLoadError != null) {
+                item {
+                    BulletinCard {
+                        Text(reviewLoadError, style = MaterialTheme.typography.bodyMedium)
+                        BulletinButton(
+                            onClick = onLoadMoreReviews,
+                            enabled = !isLoadingMoreReviews,
+                            variant = BulletinButtonVariant.Text
+                        ) {
+                            Text(if (isLoadingMoreReviews) "Loading reviews…" else "Try again")
+                        }
+                    }
+                }
+            } else if (profile.reviews.isEmpty()) {
                 item {
                     BulletinCard {
                         Text(

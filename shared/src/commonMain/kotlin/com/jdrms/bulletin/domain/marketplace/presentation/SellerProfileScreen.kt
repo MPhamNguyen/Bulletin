@@ -60,9 +60,12 @@ fun SellerProfileScreen(
                 item { SellerProfileVerification(state.profile) }
                 item {
                     SellerProfileReviews(
-                        state.profile.reviews,
-                        reviewActions.onViewAllReviews,
-                        reviewActions.onListingClick
+                        reviews = state.profile.reviews,
+                        reviewLoadError = state.reviewLoadError,
+                        isLoadingReviews = state.isLoadingMoreReviews,
+                        onRetryReviews = reviewActions.onRetryReviews,
+                        onViewAllReviews = reviewActions.onViewAllReviews,
+                        onListingClick = reviewActions.onListingClick
                     )
                 }
                 item {
@@ -127,6 +130,7 @@ data class SellerProfileListingActions(
 
 data class SellerProfileReviewActions(
     val onViewAllReviews: () -> Unit = {},
+    val onRetryReviews: () -> Unit = {},
     val onListingClick: (String) -> Unit = {}
 )
 
