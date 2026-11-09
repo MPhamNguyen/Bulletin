@@ -30,7 +30,7 @@ data class ProfileUpdateDto(
 data class ReviewDto(
     @SerialName("id") val id: String = "",
     @SerialName("reviewer_id") val reviewerId: String,
-    @SerialName("reviewer_name") val reviewerName: String? = "Student",
+    @SerialName("reviewer_name") val reviewerName: String? = null,
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
     @SerialName("comment") val comment: String = "",

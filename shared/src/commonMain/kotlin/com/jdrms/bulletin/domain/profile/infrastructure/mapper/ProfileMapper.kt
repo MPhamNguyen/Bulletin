@@ -57,7 +57,7 @@ object ProfileMapper {
         return StudentReview(
             id = ReviewId(dto.id),
             reviewerId = dto.reviewerId,
-            reviewerName = dto.reviewerName ?: "Student",
+            reviewerName = dto.reviewerName.orEmpty(),
             revieweeId = UserId(dto.revieweeId),
             rating = Rating(clampedScore),
             comment = dto.comment,

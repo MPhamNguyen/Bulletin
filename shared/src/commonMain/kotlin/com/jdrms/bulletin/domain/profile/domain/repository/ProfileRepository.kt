@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.profile.domain.repository
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhoto
 import com.jdrms.bulletin.domain.profile.domain.model.ProfilePhotoUrl
+import com.jdrms.bulletin.domain.profile.domain.model.PublicProfileIdentity
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
@@ -17,6 +18,7 @@ interface ProfileRepository {
     suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit>
     suspend fun getReputation(userId: UserId): StudentReputation
     suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?>
+    suspend fun getPublicIdentity(userId: UserId): Result<PublicProfileIdentity?>
     suspend fun getReputationSummary(userId: UserId): StudentReputation
     suspend fun getReviewsPage(userId: UserId, offset: Int, pageSize: Int): StudentReviewPage
 }

@@ -31,6 +31,75 @@ class ProfileMarketplaceSellerNameProviderTest {
     }
 
     @Test
+    fun sellerProfileUsesReviewersProfileNameWhenReviewHasFallbackName() = runTest {
+        val repository = InMemoryProfileRepository(
+            initialProfiles = mapOf(
+                "seller" to sellerProfile(),
+                "buyer" to reviewerProfile()
+            ),
+            initialReviews = mapOf("seller" to listOf(sellerReview().copy(reviewerName = "Student")))
+        )
+
+        val profile = ProfileMarketplaceSellerNameProvider(repository).getSellerProfile("seller")
+
+        assertEquals("Campus Buyer", profile?.reviews?.single()?.reviewerName)
+    }
+
+    @Test
+    fun sellerProfileUsesFullNameForReviewerUuid() = runTest {
+        val reviewerId = "aa12c776-d77c-4c2d-84a4-71e787baf6f8"
+        val repository = InMemoryProfileRepository(
+            initialProfiles = mapOf(
+                "seller" to sellerProfile(),
+                reviewerId to reviewerProfile().copy(id = reviewerId)
+            ),
+            initialReviews = mapOf(
+                "seller" to listOf(
+                    sellerReview().copy(reviewerId = reviewerId, reviewerName = "Reviewer")
+                )
+            )
+        )
+
+        val profile = ProfileMarketplaceSellerNameProvider(repository).getSellerProfile("seller")
+
+        assertEquals("Campus Buyer", profile?.reviews?.single()?.reviewerName)
+    }
+
+    @Test
+    fun sellerProfileUsesReviewNameWhenProfileNameIsMissing() = runTest {
+        val repository = InMemoryProfileRepository(
+            initialProfiles = mapOf(
+                "seller" to sellerProfile(),
+                "buyer" to reviewerProfile().copy(fullName = null)
+            ),
+            initialReviews = mapOf("seller" to listOf(sellerReview().copy(reviewerName = "Actual Buyer Name")))
+        )
+
+        val profile = ProfileMarketplaceSellerNameProvider(repository).getSellerProfile("seller")
+
+        assertEquals("Actual Buyer Name", profile?.reviews?.single()?.reviewerName)
+    }
+
+    @Test
+    fun sellerProfileResolvesLegacyEmailReviewerIdentityToItsProfileName() = runTest {
+        val repository = InMemoryProfileRepository(
+            initialProfiles = mapOf(
+                "seller" to sellerProfile(),
+                "buyer" to reviewerProfile()
+            ),
+            initialReviews = mapOf(
+                "seller" to listOf(
+                    sellerReview().copy(reviewerId = "buyer@campus.edu", reviewerName = "Student")
+                )
+            )
+        )
+
+        val profile = ProfileMarketplaceSellerNameProvider(repository).getSellerProfile("seller")
+
+        assertEquals("Campus Buyer", profile?.reviews?.single()?.reviewerName)
+    }
+
+    @Test
     fun sellerProfileLoadsOnlyThreeReviewsAndReturnsNextPageOnDemand() = runTest {
         val repository = InMemoryProfileRepository(
             initialProfiles = mapOf("seller" to sellerProfile(), "buyer" to reviewerProfile()),

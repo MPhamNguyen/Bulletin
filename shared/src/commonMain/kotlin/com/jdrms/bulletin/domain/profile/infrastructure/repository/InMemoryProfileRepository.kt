@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.PublicProfileIdentity
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
@@ -51,11 +52,17 @@ class InMemoryProfileRepository(
         return policy.calculateReputation(userId, userReviews)
     }
 
-    override suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?> =
-        when (val result = getProfile(userId)) {
-            is Result.Success -> Result.Success(result.data?.copy(reputation = null))
-            is Result.Error -> result
-        }
+    override suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?> {
+        val profile = profiles[userId.value]
+            ?: profiles.values.firstOrNull { it.email.value == userId.value.lowercase() }
+        return Result.Success(profile?.copy(reputation = null))
+    }
+
+    override suspend fun getPublicIdentity(userId: UserId): Result<PublicProfileIdentity?> {
+        val profile = profiles[userId.value]
+            ?: profiles.values.firstOrNull { it.email.value == userId.value.lowercase() }
+        return Result.Success(profile?.let { PublicProfileIdentity(it.id, it.fullName, it.avatarUrl) })
+    }
 
     override suspend fun getReputationSummary(userId: UserId): StudentReputation =
         getReputation(userId).copy(reviews = emptyList())

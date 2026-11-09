@@ -1,6 +1,8 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.PublicProfileIdentity
+import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
@@ -9,10 +11,12 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewInsertDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewScoreDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
+import com.jdrms.bulletin.domain.profile.infrastructure.mapper.PublicProfileIdentityMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
@@ -154,10 +158,32 @@ class SupabaseProfileRepository private constructor(
     }
 
     override suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?> = runCatching {
-        val resolvedId = resolveUserId(userId) ?: return@runCatching null
+        val resolvedId = resolveUserId(userId)
+        val (identityColumn, identityValue) = if (resolvedId != null) {
+            "id" to resolvedId
+        } else {
+            val email = userId.value.lowercase().takeIf(StudentEmail::isValid) ?: return@runCatching null
+            "email" to email
+        }
         supabase.from(PROFILES_TABLE).select {
-            filter { eq("id", resolvedId) }
+            filter { eq(identityColumn, identityValue) }
         }.decodeSingleOrNull<ProfileDto>()?.let { ProfileMapper.toDomain(it) }
+    }.fold(
+        onSuccess = { Result.Success(it) },
+        onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+    )
+
+    override suspend fun getPublicIdentity(userId: UserId): Result<PublicProfileIdentity?> = runCatching {
+        val resolvedId = resolveUserId(userId)
+        val (identityColumn, identityValue) = if (resolvedId != null) {
+            "id" to resolvedId
+        } else {
+            val email = userId.value.lowercase().takeIf(StudentEmail::isValid) ?: return@runCatching null
+            "email" to email
+        }
+        supabase.from(PROFILES_TABLE).select(columns = Columns.raw("id,full_name,avatar_url")) {
+            filter { eq(identityColumn, identityValue) }
+        }.decodeSingleOrNull<PublicProfileIdentityDto>()?.let(PublicProfileIdentityMapper::toDomain)
     }.fold(
         onSuccess = { Result.Success(it) },
         onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
