@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.app.di
 
+import com.jdrms.bulletin.app.integration.ListingMarketplaceReviewRequestCreator
 import com.jdrms.bulletin.app.theme.InMemoryThemePreferenceStore
 import com.jdrms.bulletin.app.theme.ThemePreferenceStores
 import com.jdrms.bulletin.app.theme.ThemeViewModel
@@ -44,7 +45,12 @@ class AppContainer(
     // The application container owns the OAuth job across Activity/composition recreation.
     internal val signInViewModel by lazy { profile.createSignInViewModel() }
 
-    internal val listings: ListingsModule = ListingsModule(infrastructure, profile) { marketplace.invalidateReads() }
+    internal val listings: ListingsModule = ListingsModule(
+        infrastructure,
+        profile,
+        { marketplace.invalidateReads() },
+        ListingMarketplaceReviewRequestCreator { marketplace.reviewRequestRepository }
+    )
     internal val marketplace: MarketplaceModule = MarketplaceModule(
         infrastructure,
         profile,

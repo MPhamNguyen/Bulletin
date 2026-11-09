@@ -29,7 +29,8 @@ import kotlinx.coroutines.launch
 data class ListingsViewModelSessionDependencies(
     val currentSellerProvider: CurrentListingSellerProvider,
     val listingChangedSignal: RefreshSignal? = null,
-    val manageListingImages: ManageListingImages? = null
+    val manageListingImages: ManageListingImages? = null,
+    val reviewRequestUseCases: ListingReviewRequestUseCases = ListingReviewRequestUseCases(null, null)
 )
 
 class ListingsViewModel(
@@ -57,6 +58,7 @@ class ListingsViewModel(
             sellerProvider = currentSellerProvider,
             markListingSold = markListingSold,
             recentBuyers = recentListingBuyersProvider,
+            reviewRequestUseCases = session.reviewRequestUseCases,
             restoreListing = restoreListingToMarketplace,
             callbacks = listingActionCallbacks
         )

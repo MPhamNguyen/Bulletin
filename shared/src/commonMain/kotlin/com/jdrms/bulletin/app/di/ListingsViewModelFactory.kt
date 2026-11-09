@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
+import com.jdrms.bulletin.domain.listings.presentation.ListingReviewRequestUseCases
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModelSessionDependencies
 
@@ -19,6 +20,7 @@ internal fun ListingsModule.createListingsViewModel(
     ListingsViewModelSessionDependencies(
         currentListingSellerProvider,
         listingChangedSignal,
-        manageListingImages
+        manageListingImages,
+        ListingReviewRequestUseCases(createReviewRequest, cancelReviewRequests)
     )
 )
