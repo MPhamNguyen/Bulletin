@@ -21,10 +21,18 @@ internal data class AlertDetection(
  * Deduplication is per conversation by latest message ID, so refresh bursts, read-watermark changes, and
  * edits of an already-seen message cannot alert twice. The inbox exposes only each conversation's latest
  * message, so several messages arriving within one refresh collapse into one alert for the newest.
+ *
+ * A message is new when its ordering timestamp advances, or when it ties the stored timestamp but has a different
+ * ID (two messages can share a timestamp). A strictly older timestamp is an inbox regression and is ignored.
+ *
+ * Notifications can outlive the process and the previous account's message text may still be visible, so the
+ * first snapshot after construction and every viewer identity change (including signed out to signed in)
+ * report [AlertDetection.clearAll], independent of what this instance has recorded.
  */
 internal class IncomingMessageAlertDetector {
     private data class Seen(val id: MessageId, val at: Instant)
 
+    private var started = false
     private var viewerId: SenderId? = null
     private var seeded = false
     private val seen = mutableMapOf<ConversationId, Seen>()
@@ -32,7 +40,8 @@ internal class IncomingMessageAlertDetector {
 
     fun detect(state: InboxState, suppressed: ConversationId?): AlertDetection {
         val viewer = state.viewerId
-        if (viewer != viewerId) {
+        if (!started || viewer != viewerId) {
+            started = true
             return resetForViewer(state, viewer)
         }
         if (viewer == null) return AlertDetection()
@@ -44,9 +53,7 @@ internal class IncomingMessageAlertDetector {
         val cleared = mutableListOf<ConversationId>()
         for (conversation in state.conversations) {
             val last = conversation.lastMessage ?: continue
-            val previous = seen[conversation.id]
-            val isNewer = previous == null || last.orderingTimestamp > previous.at
-            if (isNewer) seen[conversation.id] = Seen(last.id, last.orderingTimestamp)
+            val isNewer = recordIfNewer(conversation.id, last)
             val unread = conversation.hasUnreadIncoming(viewer, last)
             when {
                 !unread || conversation.id == suppressed ->
@@ -60,14 +67,23 @@ internal class IncomingMessageAlertDetector {
         return AlertDetection(alerts, cleared)
     }
 
+    /** Records [last] as the latest seen message and reports whether it is new (see class docs). */
+    private fun recordIfNewer(id: ConversationId, last: Message): Boolean {
+        val previous = seen[id]
+        val isNewer = previous == null ||
+            last.orderingTimestamp > previous.at ||
+            (last.orderingTimestamp == previous.at && last.id != previous.id)
+        if (isNewer) seen[id] = Seen(last.id, last.orderingTimestamp)
+        return isNewer
+    }
+
     private fun resetForViewer(state: InboxState, viewer: SenderId?): AlertDetection {
-        val hadAlerts = alerted.isNotEmpty()
         viewerId = viewer
         seeded = false
         seen.clear()
         alerted.clear()
         if (viewer != null) seedIfReady(state, viewer)
-        return AlertDetection(clearAll = hadAlerts)
+        return AlertDetection(clearAll = true)
     }
 
     private fun seedIfReady(state: InboxState, viewer: SenderId) {

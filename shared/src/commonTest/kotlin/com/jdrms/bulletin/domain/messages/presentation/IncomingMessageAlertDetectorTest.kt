@@ -87,6 +87,32 @@ class IncomingMessageAlertDetectorTest {
     }
 
     @Test
+    fun `a different message with the same timestamp alerts`() {
+        val detector = IncomingMessageAlertDetector()
+        detector.detect(inbox(conversation(message("m1", at = 1_000), readAt = 500)), null)
+        detector.detect(inbox(conversation(message("m2", at = 2_000), readAt = 500)), null)
+        val tied = detector.detect(inbox(conversation(message("m3", at = 2_000), readAt = 500)), null)
+        assertEquals(listOf(MessageId("m3")), tied.alerts.map { it.messageId })
+        val repeat = detector.detect(inbox(conversation(message("m3", at = 2_000), readAt = 500)), null)
+        assertTrue(repeat.alerts.isEmpty())
+    }
+
+    @Test
+    fun `first snapshot clears notifications left by a previous process`() {
+        val detector = IncomingMessageAlertDetector()
+        assertTrue(detector.detect(inbox(viewer = null), null).clearAll)
+        assertTrue(detector.detect(inbox(viewer = null), null).clearAll.not())
+    }
+
+    @Test
+    fun `signing in from signed out clears notifications`() {
+        val detector = IncomingMessageAlertDetector()
+        detector.detect(inbox(viewer = null), null)
+        assertTrue(detector.detect(inbox(loading = true), null).clearAll)
+        assertTrue(detector.detect(inbox(conversation(message("m1", at = 1_000))), null).clearAll.not())
+    }
+
+    @Test
     fun `account switch rebaselines and clears alerts`() {
         val detector = IncomingMessageAlertDetector()
         detector.detect(inbox(conversation(message("m1", at = 1_000), readAt = 1_000)), null)

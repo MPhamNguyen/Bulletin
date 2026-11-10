@@ -69,14 +69,14 @@ internal class AndroidIncomingMessageNotifier(context: Context) : IncomingMessag
         val intent = Intent(context, MainActivity::class.java).apply {
             action = MessageNotificationIntents.ACTION_OPEN_CONVERSATION
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(MessageNotificationIntents.EXTRA_CONVERSATION_ID, alert.conversationId.value)
-            putExtra(MessageNotificationIntents.EXTRA_RECIPIENT_ID, alert.recipientId.value)
+            data = MessageNotificationIntents.uriFor(alert.conversationId.value, alert.recipientId.value)
         }
-        // Extras do not distinguish PendingIntents, so the request code is derived from the conversation.
-        // Intent.data is unavailable: MainActivity treats it as an auth callback.
+        // PendingIntent identity ignores extras, so the target lives in the intent's data URI. That identity is
+        // exact per recipient and conversation; a 32-bit hash request code could collide and let
+        // FLAG_UPDATE_CURRENT retarget another conversation's notification, so a constant is used instead.
         return PendingIntent.getActivity(
             context,
-            alert.conversationId.value.hashCode(),
+            0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

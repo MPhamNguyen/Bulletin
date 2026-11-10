@@ -31,8 +31,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        handleCallback(intent)
         if (savedInstanceState == null) handleNotificationTap(intent)
+        handleCallback(intent)
         bulletin.container.startMessageNotifications(bulletin.messageNotifier)
         requestNotificationPermissionAfterSignIn()
         setContent { App(appContainer = bulletin.container) }
@@ -41,8 +41,8 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleCallback(intent)
         handleNotificationTap(intent)
+        handleCallback(intent)
     }
 
     override fun onPause() {
@@ -78,6 +78,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleCallback(intent: Intent) {
+        // Notification intents carry their target in data; it is not an auth callback.
+        if (MessageNotificationIntents.isNotificationIntent(intent)) return
         if (BuildConfig.MICROSOFT_SSO_ENABLED) bulletin.externalAuthBrowser.deliver(intent.data)
         intent.data = null
     }
