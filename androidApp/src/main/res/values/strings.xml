@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Bulletin</string>
+    <string name="notification_channel_messages">Messages</string>
+    <string name="notification_channel_messages_description">New direct messages about listings</string>
+    <string name="notification_new_message">New message</string>
+    <string name="notification_unknown_sender">New message</string>
 </resources>
