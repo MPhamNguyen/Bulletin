@@ -13,6 +13,14 @@ STATUSES = {
     "dismissed": "Dismissed",
 }
 ALIASES = {"under_review": "in_review", "closed": "resolved", "action_taken": "resolved"}
+# Completed outcomes are terminal. Reports may move between the two active
+# states, and either active state may be given a final outcome.
+ALLOWED_STATUS_TRANSITIONS = {
+    "open": frozenset({"in_review", "resolved", "dismissed"}),
+    "in_review": frozenset({"open", "resolved", "dismissed"}),
+    "resolved": frozenset(),
+    "dismissed": frozenset(),
+}
 ACCOUNT_ACTIONS = {
     "suspend": "Suspend account",
     "restore": "Restore account access",
@@ -95,7 +103,8 @@ def update_status(backend, report, status, version):
         raise PortalError("Choose a valid report status.")
     if version != snapshot(report):
         raise PortalError("Another reviewer changed this report. Reload before saving.", 409)
-    if status == report.get("status"):
+    validate_status_transition(report.get("status"), status)
+    if canonical_status(status) == canonical_status(report.get("status")):
         return False
     query = {"id": "eq." + identifier(report["id"]), "select": "id,status,modified_at"}
     for field in ("status", "modified_at"):
@@ -112,6 +121,23 @@ def update_status(backend, report, status, version):
             or not rows[0].get("modified_at")):
         raise PortalError("The saved report could not be confirmed. Reload before retrying.", 502)
     return True
+
+
+def validate_status_transition(current_status, new_status):
+    current = canonical_status(current_status)
+    target = canonical_status(new_status)
+    if current not in STATUSES or target not in STATUSES:
+        raise PortalError("Choose a valid report status.")
+    if current == target:
+        return
+    if target not in ALLOWED_STATUS_TRANSITIONS[current]:
+        raise PortalError(
+            f"A report marked {STATUSES[current]} cannot be changed to {STATUSES[target]}."
+        )
+
+
+def canonical_status(status):
+    return ALIASES.get(status, status)
 
 
 def snapshot(report):
