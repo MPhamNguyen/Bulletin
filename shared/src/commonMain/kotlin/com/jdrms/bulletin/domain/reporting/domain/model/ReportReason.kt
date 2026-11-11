@@ -11,7 +11,6 @@ enum class ReportStatus(val isOpen: Boolean) {
     UNDER_REVIEW(true),
     ACTION_TAKEN(false),
     DISMISSED(false),
-    DUPLICATE(false),
     UNKNOWN(true);
 
     companion object {
@@ -20,7 +19,6 @@ enum class ReportStatus(val isOpen: Boolean) {
             "under_review", "in_review" -> UNDER_REVIEW
             "action_taken", "closed", "resolved" -> ACTION_TAKEN
             "dismissed" -> DISMISSED
-            "duplicate" -> DUPLICATE
             else -> UNKNOWN
         }
     }

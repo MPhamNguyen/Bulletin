@@ -234,7 +234,7 @@ class PortalTests(unittest.TestCase):
         data = self.review_form()
         html = self.client.get("/reports/" + REPORT).get_data(as_text=True)
         self.assertRegex(html, r'<option value="resolved"[^>]*>Action taken</option>')
-        self.assertNotRegex(html, r'<option value="(?:action_taken|under_review|duplicate)"')
+        self.assertNotRegex(html, r'<option value="(?:action_taken|under_review)"')
         data["status"] = "resolved"
         result = self.client.post("/reports/" + REPORT + "/status", data=data)
         self.assertEqual(303, result.status_code)

@@ -12,6 +12,21 @@ STATUSES = {
     "resolved": "Action taken",
     "dismissed": "Dismissed",
 }
+# Cross-language status contract. None means the Kotlin fallback has no portal
+# representation; unknown stored values are not converted into another outcome.
+KOTLIN_TO_PORTAL_STATUS = {
+    "OPEN": "open",
+    "UNDER_REVIEW": "in_review",
+    "ACTION_TAKEN": "resolved",
+    "DISMISSED": "dismissed",
+    "UNKNOWN": None,
+}
+PORTAL_TO_KOTLIN_STATUS = {
+    "open": "OPEN",
+    "in_review": "UNDER_REVIEW",
+    "resolved": "ACTION_TAKEN",
+    "dismissed": "DISMISSED",
+}
 ALIASES = {"under_review": "in_review", "closed": "resolved", "action_taken": "resolved"}
 # Completed outcomes are terminal. Reports may move between the two active
 # states, and either active state may be given a final outcome.
