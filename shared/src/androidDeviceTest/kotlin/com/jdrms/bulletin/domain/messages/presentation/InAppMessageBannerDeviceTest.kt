@@ -4,8 +4,11 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -14,10 +17,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.messages.application.IncomingMessageAlert
@@ -40,7 +39,10 @@ class InAppMessageBannerDeviceTest {
             BulletinTheme {
                 InAppMessageBannerHost(
                     alert = alert,
-                    onOpen = { opened += it.messageId; alert = null },
+                    onOpen = {
+                        opened += it.messageId
+                        alert = null
+                    },
                     onDismiss = { id -> if (alert?.messageId == id) alert = null }
                 )
             }

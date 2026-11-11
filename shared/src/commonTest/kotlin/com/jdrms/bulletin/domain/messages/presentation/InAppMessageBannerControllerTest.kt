@@ -68,7 +68,9 @@ class InAppMessageBannerControllerTest {
     }
 
     @Test
-    fun `account switch clears the banner and rejects the old account's alerts`() = runTest(UnconfinedTestDispatcher()) {
+    fun `account switch clears the banner and rejects the old account's alerts`() = runTest(
+        UnconfinedTestDispatcher()
+    ) {
         val controller = controller()
         alerts.emit(bannerAlert("m1"))
         inbox.value = InboxState(viewerId = SenderId("someone-else"), isLoading = false)

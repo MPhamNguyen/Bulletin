@@ -46,7 +46,12 @@ internal fun InAppMessageBanner(
             .clickable(onClickLabel = "Open conversation", role = Role.Button, onClick = onOpen)
             .semantics(mergeDescendants = true) {
                 liveRegion = LiveRegionMode.Polite
-                customActions = listOf(CustomAccessibilityAction("Dismiss") { onDismiss(); true })
+                customActions = listOf(
+                    CustomAccessibilityAction("Dismiss") {
+                        onDismiss()
+                        true
+                    }
+                )
             },
         shape = BulletinShapes.cardCompact,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
