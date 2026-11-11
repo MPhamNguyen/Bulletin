@@ -17,10 +17,12 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 @Composable
 internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
+    interestNotificationCount: Int = 0,
     onRefresh: () -> Unit,
     onSettingsClick: () -> Unit,
     onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit
+    onBookmarkedListingsClick: () -> Unit,
+    onInterestsClick: () -> Unit
 ) {
     val profile = uiState.profile
     val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
@@ -76,8 +78,10 @@ internal fun MarketplaceProfileView(
 
                 ProfileMarketplaceCard(
                     activeListings = activeListingsDisplay,
+                    interestNotificationCount = interestNotificationCount,
                     onMyListingsClick = onMyListingsClick,
-                    onBookmarkedListingsClick = onBookmarkedListingsClick
+                    onBookmarkedListingsClick = onBookmarkedListingsClick,
+                    onInterestsClick = onInterestsClick
                 )
                 Spacer(modifier = Modifier.height(BulletinSpacing.l))
             }

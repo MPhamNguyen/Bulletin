@@ -9,26 +9,28 @@ import com.jdrms.bulletin.app.integration.PreferenceAwareReportedListingProvider
 import com.jdrms.bulletin.app.integration.ProfileMarketplaceSellerNameProvider
 import com.jdrms.bulletin.domain.marketplace.application.BlockMarketplaceUser
 import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.application.EmptyMarketplaceListingInsertObserver
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceReportedListings
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingInsertObserver
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceRepositoryListingSource
 import com.jdrms.bulletin.domain.marketplace.application.RemoveMarketplaceListingBookmark
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.application.ReportMarketplaceUser
-import com.jdrms.bulletin.domain.marketplace.application.ReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.application.SubmitMarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
 import com.jdrms.bulletin.domain.marketplace.domain.repository.ListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
-import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryReviewRequestRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.MarketplaceReadCache
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseListingReportRepository
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceInterestPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingInsertObserver
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseReviewRequestRepository
@@ -37,10 +39,16 @@ internal class MarketplaceModule(
     private val infrastructure: InfrastructureModule,
     private val profile: ProfileModule,
     private val listings: ListingsModule,
-    internal val marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore,
-    internal val reportedListingVisibilityPreferenceStore: ReportedListingVisibilityPreferenceStore =
-        InMemoryReportedListingVisibilityPreferenceStore()
+    private val preferences: MarketplacePreferenceStores
 ) {
+    internal val marketplaceLayoutPreferenceStore get() = preferences.layout
+    internal val marketplaceInterestPreferenceStore: MarketplaceInterestPreferenceStore by lazy {
+        infrastructure.backend(
+            supabase = ::SupabaseMarketplaceInterestPreferenceStore,
+            inMemory = { preferences.interests }
+        )
+    }
+    internal val reportedListingVisibilityPreferenceStore get() = preferences.reportedListingVisibility
     val getVisibleMarketplaceListings by lazy {
         GetVisibleMarketplaceListings(
             listingSource = marketplaceListingSource,
@@ -63,6 +71,12 @@ internal class MarketplaceModule(
                     MarketplaceRepositoryListingSource(marketplaceRepository)
                 )
             }
+        )
+    }
+    internal val marketplaceListingInsertObserver: MarketplaceListingInsertObserver by lazy {
+        infrastructure.backend(
+            supabase = ::SupabaseMarketplaceListingInsertObserver,
+            inMemory = { EmptyMarketplaceListingInsertObserver }
         )
     }
     private val marketplaceBlockedUserProvider get() = profile.marketplaceBlockedUserProvider

@@ -20,7 +20,9 @@ import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceInterestOwnerId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
@@ -128,6 +130,13 @@ private fun ProfileDestinationContent(
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
 ) {
+    val profileState by profilePresentation.viewModel.uiState.collectAsState()
+    val interestState by profilePresentation.marketplaceInterestsViewModel.uiState.collectAsState()
+    LaunchedEffect(profileState.profile?.id) {
+        profilePresentation.marketplaceInterestsViewModel.setOwner(
+            profileState.profile?.id?.value?.let(::MarketplaceInterestOwnerId)
+        )
+    }
     if (navigation.profileDestination == ProfileDestination.MY_LISTINGS ||
         navigation.profileDestination == ProfileDestination.EDIT_LISTING
     ) {
@@ -142,6 +151,15 @@ private fun ProfileDestinationContent(
             },
             onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
         )
+    } else if (navigation.profileDestination == ProfileDestination.INTERESTS) {
+        MarketplaceInterestsScreen(
+            viewModel = profilePresentation.marketplaceInterestsViewModel,
+            onBack = { navigation.profileDestination = ProfileDestination.PROFILE },
+            onListingClick = { listingId ->
+                marketplaceViewModel.onListingClicked(listingId)
+                navigation.openListing(listingId)
+            }
+        )
     } else {
         StudentProfileDestination(
             container,
@@ -149,7 +167,8 @@ private fun ProfileDestinationContent(
             listingsViewModel,
             marketplaceViewModel,
             profilePresentation,
-            messagesViewModel
+            messagesViewModel,
+            interestState.unreadMatchCount
         )
     }
 }
@@ -174,7 +193,8 @@ private fun StudentProfileDestination(
     listingsViewModel: ListingsViewModel,
     marketplaceViewModel: MarketplaceViewModel,
     profilePresentation: ProfilePresentation,
-    messagesViewModel: MessagesViewModel
+    messagesViewModel: MessagesViewModel,
+    interestNotificationCount: Int
 ) {
     val resolvedProfileViewModel = profilePresentation.viewModel
     val profileState by resolvedProfileViewModel.uiState.collectAsState()
@@ -212,6 +232,7 @@ private fun StudentProfileDestination(
             messagesViewModel,
             profilePresentation.onSignOut
         ),
+        interestNotificationCount = interestNotificationCount,
         themeViewModel = profilePresentation.themeViewModel,
         reportedListingVisibilitySetting = ReportedListingVisibilitySetting(
             hideReportedListings = hideReportedListings,

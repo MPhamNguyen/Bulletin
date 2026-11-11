@@ -8,10 +8,6 @@ import com.jdrms.bulletin.core.common.FlowUserMessenger
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseAuthStorage
 import com.jdrms.bulletin.core.network.SupabaseConfig
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
-import com.jdrms.bulletin.domain.marketplace.application.ReportedListingVisibilityPreferenceStore
-import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryMarketplaceLayoutPreferenceStore
-import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.ExternalAuthBrowser
 import io.github.jan.supabase.SupabaseClient
 
@@ -20,12 +16,9 @@ class AppContainer(
     isInspectionMode: Boolean = false,
     allowInMemoryFallback: Boolean = false,
     private val themePreferenceStore: ThemePreferenceStores = InMemoryThemePreferenceStore(),
-    marketplaceLayoutPreferenceStore: MarketplaceLayoutPreferenceStore =
-        InMemoryMarketplaceLayoutPreferenceStore(),
+    marketplacePreferences: MarketplacePreferenceStores = MarketplacePreferenceStores(),
     providedSupabaseClient: SupabaseClient? = null,
-    private val externalAuth: ExternalAuthConfiguration = ExternalAuthConfiguration(),
-    reportedListingVisibilityPreferenceStore: ReportedListingVisibilityPreferenceStore =
-        InMemoryReportedListingVisibilityPreferenceStore()
+    private val externalAuth: ExternalAuthConfiguration = ExternalAuthConfiguration()
 ) {
     val microsoftSignInEnabled: Boolean get() = externalAuth.microsoftSignInEnabled
     val externalSignInPending: Boolean get() = externalAuth.browser?.isResuming == true
@@ -55,8 +48,7 @@ class AppContainer(
         infrastructure,
         profile,
         listings,
-        marketplaceLayoutPreferenceStore,
-        reportedListingVisibilityPreferenceStore
+        marketplacePreferences
     )
     internal val messages = MessagesModule(infrastructure, profile, listings, marketplace)
     internal val home = HomeModule(marketplace, messages)
