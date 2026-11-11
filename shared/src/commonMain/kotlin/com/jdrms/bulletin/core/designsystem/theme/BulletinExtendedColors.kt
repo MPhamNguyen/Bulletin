@@ -26,7 +26,8 @@ data class BulletinExtendedColors(
     val star: Color,
     val unreadGradientStart: Color,
     val unreadGradientEnd: Color,
-    val unreadBorder: Color
+    val unreadBorder: Color,
+    val ring: Color
 )
 
 internal val LightExtendedColors = BulletinExtendedColors(
@@ -37,7 +38,8 @@ internal val LightExtendedColors = BulletinExtendedColors(
     star = StarLight,
     unreadGradientStart = Color(0xFFDCEBFF),
     unreadGradientEnd = Color(0xFFDDF3F0),
-    unreadBorder = Color(0xFF3E5C76)
+    unreadBorder = LightColors.primary,
+    ring = Color.hsl(208f, 0.60f, 0.46f)
 )
 
 internal val DarkExtendedColors = BulletinExtendedColors(
@@ -48,7 +50,8 @@ internal val DarkExtendedColors = BulletinExtendedColors(
     star = StarDark,
     unreadGradientStart = Color(0xFF193A67),
     unreadGradientEnd = Color(0xFF22495D),
-    unreadBorder = Color(0xFF77A7F7)
+    unreadBorder = DarkColors.primary,
+    ring = Color.hsl(208f, 0.65f, 0.64f)
 )
 
 internal val LocalBulletinExtendedColors = staticCompositionLocalOf { LightExtendedColors }
