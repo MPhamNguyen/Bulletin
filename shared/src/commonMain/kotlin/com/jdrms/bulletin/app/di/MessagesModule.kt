@@ -24,6 +24,7 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseInbo
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.ActiveConversationTracker
+import com.jdrms.bulletin.domain.messages.presentation.InAppMessageBannerController
 import com.jdrms.bulletin.domain.messages.presentation.InboxNotificationCoordinator
 import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
 import com.jdrms.bulletin.domain.messages.presentation.NotificationConversationRequests
@@ -75,6 +76,7 @@ internal class MessagesModule(
     }
     val activeConversation by lazy { ActiveConversationTracker() }
     val notificationRequests by lazy { NotificationConversationRequests() }
+    val inAppBanner by lazy { InAppMessageBannerController(inboxStateOwner.state) }
     fun createInboxNotifications(notifier: IncomingMessageNotifier) =
         InboxNotificationCoordinator(inboxStateOwner.state, activeConversation, notifier)
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
