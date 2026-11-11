@@ -22,7 +22,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
 import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.domain.messages.application.ConversationListingPreviewProvider
 import com.jdrms.bulletin.domain.messages.application.IncomingMessageAlert
+import com.jdrms.bulletin.domain.messages.application.MessageSenderPhotoProvider
 
 private const val PREVIEW_MAX_LINES = 2
 private val WHITESPACE_RUN = Regex("\\s+")
@@ -31,14 +33,16 @@ internal fun bannerSenderName(senderName: String): String = senderName.trim().if
 
 internal fun bannerPreview(content: String): String = content.trim().replace(WHITESPACE_RUN, " ")
 
-/** The banner card. [avatar] is optional; without it only the text shows. */
+/** Message preview framed by the sender photo and the associated listing. */
 @Composable
 internal fun InAppMessageBanner(
     alert: IncomingMessageAlert,
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    avatar: (@Composable () -> Unit)? = null
+    avatar: (@Composable () -> Unit)? = null,
+    senderPhotos: MessageSenderPhotoProvider? = null,
+    listingPreviews: ConversationListingPreviewProvider? = null
 ) {
     Surface(
         modifier = modifier
@@ -63,7 +67,7 @@ internal fun InAppMessageBanner(
             horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            avatar?.invoke()
+            if (avatar != null) avatar() else BannerSenderPhoto(alert, senderPhotos)
             Column(Modifier.weight(1f)) {
                 Text(
                     text = bannerSenderName(alert.senderName),
@@ -74,10 +78,12 @@ internal fun InAppMessageBanner(
                 Text(
                     text = bannerPreview(alert.content),
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = PREVIEW_MAX_LINES,
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            BannerListingImage(alert, listingPreviews)
         }
     }
 }

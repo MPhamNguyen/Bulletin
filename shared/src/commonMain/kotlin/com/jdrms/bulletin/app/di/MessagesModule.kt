@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app.di
 import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.MarketplaceConversationListingPreviewProvider
+import com.jdrms.bulletin.app.integration.ProfileMessageSenderPhotoProvider
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
 import com.jdrms.bulletin.domain.messages.application.EditMessage
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
@@ -76,6 +77,9 @@ internal class MessagesModule(
     }
     val activeConversation by lazy { ActiveConversationTracker() }
     val notificationRequests by lazy { NotificationConversationRequests() }
+    val messageSenderPhotoProvider by lazy {
+        ProfileMessageSenderPhotoProvider(profile.profileRepository)
+    }
     val inAppBanner by lazy { InAppMessageBannerController(inboxStateOwner.state) }
     fun createInboxNotifications(notifier: IncomingMessageNotifier) =
         InboxNotificationCoordinator(inboxStateOwner.state, activeConversation, notifier)

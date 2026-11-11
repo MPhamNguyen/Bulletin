@@ -23,6 +23,8 @@ internal fun InAppMessageBannerRoute(container: AppContainer, isEligible: Boolea
             banner.dismiss(it.messageId)
         },
         onDismiss = banner::dismiss,
-        modifier = modifier
+        modifier = modifier,
+        senderPhotos = container.messages.messageSenderPhotoProvider,
+        listingPreviews = container.messages.conversationListingPreviewProvider
     )
 }

@@ -29,7 +29,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.domain.messages.application.ConversationListingPreviewProvider
 import com.jdrms.bulletin.domain.messages.application.IncomingMessageAlert
+import com.jdrms.bulletin.domain.messages.application.MessageSenderPhotoProvider
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -48,7 +50,9 @@ internal fun InAppMessageBannerHost(
     onOpen: (IncomingMessageAlert) -> Unit,
     onDismiss: (MessageId) -> Unit,
     modifier: Modifier = Modifier,
-    avatar: (@Composable () -> Unit)? = null
+    avatar: (@Composable () -> Unit)? = null,
+    senderPhotos: MessageSenderPhotoProvider? = null,
+    listingPreviews: ConversationListingPreviewProvider? = null
 ) {
     LaunchedEffect(alert?.messageId) {
         val current = alert ?: return@LaunchedEffect
@@ -65,7 +69,7 @@ internal fun InAppMessageBannerHost(
         contentKey = { it?.messageId },
         label = "inAppMessageBanner"
     ) { shown ->
-        if (shown != null) SwipeUpBanner(shown, onOpen, onDismiss, avatar)
+        if (shown != null) SwipeUpBanner(shown, onOpen, onDismiss, avatar, senderPhotos, listingPreviews)
     }
 }
 
@@ -74,7 +78,9 @@ private fun SwipeUpBanner(
     alert: IncomingMessageAlert,
     onOpen: (IncomingMessageAlert) -> Unit,
     onDismiss: (MessageId) -> Unit,
-    avatar: (@Composable () -> Unit)?
+    avatar: (@Composable () -> Unit)?,
+    senderPhotos: MessageSenderPhotoProvider?,
+    listingPreviews: ConversationListingPreviewProvider?
 ) {
     var offsetY by remember(alert.messageId) { mutableFloatStateOf(0f) }
     val dismissDistance = with(LocalDensity.current) { SWIPE_DISMISS_DISTANCE.toPx() }
@@ -94,6 +100,8 @@ private fun SwipeUpBanner(
                     if (offsetY <= -dismissDistance) onDismiss(alert.messageId) else offsetY = 0f
                 }
             ),
-        avatar = avatar
+        avatar = avatar,
+        senderPhotos = senderPhotos,
+        listingPreviews = listingPreviews
     )
 }
