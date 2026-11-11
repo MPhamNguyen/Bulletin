@@ -187,6 +187,21 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(303, self.client.post("/reports/" + REPORT + "/status", data=data).status_code)
         self.assertFalse(self.backend.patches)
 
+    def test_legacy_status_aliases_are_semantic_no_ops(self):
+        for legacy, canonical in (("closed", "resolved"), ("action_taken", "resolved"),
+                                  ("under_review", "in_review")):
+            with self.subTest(legacy=legacy):
+                self.backend.report.update(status=legacy, modified_at=None)
+                data = self.review_form()
+                data["status"] = canonical
+                result = self.client.post("/reports/" + REPORT + "/status", data=data)
+                self.assertEqual(303, result.status_code)
+                self.assertFalse(self.backend.patches)
+                self.assertFalse(any(
+                    event["event_type"].startswith("status_change_attempted_to_")
+                    for event in self.backend.events
+                ))
+
     def test_allowed_status_transitions_cover_active_and_final_outcomes(self):
         for current, target in (("open", "in_review"), ("open", "resolved"),
                                 ("open", "dismissed"), ("in_review", "open"),
