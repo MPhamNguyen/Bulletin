@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,8 +46,11 @@ fun MarketplaceInterestsScreen(
     val state by viewModel.uiState.collectAsState()
     var editingCategory by remember { mutableStateOf<MarketplaceCategory?>(null) }
     LaunchedEffect(Unit) {
-        viewModel.markMatchesViewed()
         viewModel.refreshMatches()
+    }
+    DisposableEffect(viewModel) {
+        viewModel.setInterestsVisible(true)
+        onDispose { viewModel.setInterestsVisible(false) }
     }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         MarketplaceInterestsTopBar(onBack)

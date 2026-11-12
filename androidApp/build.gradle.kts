@@ -16,6 +16,7 @@ dependencies {
     implementation(libs.supabase.auth)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)

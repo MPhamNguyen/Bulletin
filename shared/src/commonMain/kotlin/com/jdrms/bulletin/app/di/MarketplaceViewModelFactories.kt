@@ -42,6 +42,7 @@ internal fun MarketplaceModule.createMarketplaceInterestsViewModel() =
     MarketplaceInterestsViewModel(
         marketplaceInterestPreferenceStore,
         searchMarketplace,
-        marketplaceListingInsertObserver,
-        ::invalidateReads
+        interestListingEvents,
+        ::invalidateReads,
+        interestNotifier
     )

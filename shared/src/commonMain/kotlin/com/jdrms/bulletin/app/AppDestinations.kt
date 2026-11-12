@@ -20,7 +20,6 @@ import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceInterestOwnerId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
@@ -130,13 +129,7 @@ private fun ProfileDestinationContent(
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
 ) {
-    val profileState by profilePresentation.viewModel.uiState.collectAsState()
     val interestState by profilePresentation.marketplaceInterestsViewModel.uiState.collectAsState()
-    LaunchedEffect(profileState.profile?.id) {
-        profilePresentation.marketplaceInterestsViewModel.setOwner(
-            profileState.profile?.id?.value?.let(::MarketplaceInterestOwnerId)
-        )
-    }
     if (navigation.profileDestination == ProfileDestination.MY_LISTINGS ||
         navigation.profileDestination == ProfileDestination.EDIT_LISTING
     ) {

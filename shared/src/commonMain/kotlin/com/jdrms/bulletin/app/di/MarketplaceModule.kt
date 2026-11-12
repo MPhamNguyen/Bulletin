@@ -12,6 +12,7 @@ import com.jdrms.bulletin.domain.marketplace.application.BookmarkMarketplaceList
 import com.jdrms.bulletin.domain.marketplace.application.EmptyMarketplaceListingInsertObserver
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceListingBookmarks
 import com.jdrms.bulletin.domain.marketplace.application.GetMarketplaceReportedListings
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestNotifier
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingInsertObserver
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
@@ -28,19 +29,26 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryL
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryReviewRequestRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.MarketplaceReadCache
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.PollingMarketplaceListingInsertObserver
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseListingReportRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceInterestPreferenceStore
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingIdSnapshotSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingInsertObserver
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceRepository
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseReviewRequestRepository
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestListingEvents
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestNotificationRequests
 
 internal class MarketplaceModule(
     private val infrastructure: InfrastructureModule,
     private val profile: ProfileModule,
     private val listings: ListingsModule,
-    private val preferences: MarketplacePreferenceStores
+    private val preferences: MarketplacePreferenceStores,
+    internal val interestNotifier: MarketplaceInterestNotifier
 ) {
+    internal val notificationRequests by lazy { MarketplaceInterestNotificationRequests() }
+    internal val interestListingEvents by lazy { MarketplaceInterestListingEvents() }
     internal val marketplaceLayoutPreferenceStore get() = preferences.layout
     internal val marketplaceInterestPreferenceStore: MarketplaceInterestPreferenceStore by lazy {
         infrastructure.backend(
@@ -75,7 +83,12 @@ internal class MarketplaceModule(
     }
     internal val marketplaceListingInsertObserver: MarketplaceListingInsertObserver by lazy {
         infrastructure.backend(
-            supabase = ::SupabaseMarketplaceListingInsertObserver,
+            supabase = { client ->
+                PollingMarketplaceListingInsertObserver(
+                    realtime = SupabaseMarketplaceListingInsertObserver(client),
+                    snapshots = SupabaseMarketplaceListingIdSnapshotSource(client)
+                )
+            },
             inMemory = { EmptyMarketplaceListingInsertObserver }
         )
     }

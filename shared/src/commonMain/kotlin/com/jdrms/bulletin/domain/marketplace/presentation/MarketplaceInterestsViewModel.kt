@@ -2,15 +2,15 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jdrms.bulletin.domain.marketplace.application.EmptyMarketplaceListingInsertObserver
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestNotifier
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestPreferenceStore
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingInsertObserver
-import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
+import com.jdrms.bulletin.domain.marketplace.application.NoOpMarketplaceInterestNotifier
 import com.jdrms.bulletin.domain.marketplace.application.SearchMarketplace
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceInterest
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceInterestOwnerId
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -21,8 +21,9 @@ import kotlinx.coroutines.sync.withLock
 class MarketplaceInterestsViewModel(
     private val preferenceStore: MarketplaceInterestPreferenceStore,
     private val searchMarketplace: SearchMarketplace? = null,
-    listingInsertObserver: MarketplaceListingInsertObserver = EmptyMarketplaceListingInsertObserver,
-    private val invalidateListingReads: suspend () -> Unit = {}
+    private val listingEvents: MarketplaceInterestListingEvents = MarketplaceInterestListingEvents(),
+    private val invalidateListingReads: suspend () -> Unit = {},
+    private val notifier: MarketplaceInterestNotifier = NoOpMarketplaceInterestNotifier
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(MarketplaceInterestsUiState())
     val uiState = mutableUiState.asStateFlow()
@@ -31,11 +32,16 @@ class MarketplaceInterestsViewModel(
     private var ownerGeneration = 0
     private var preferenceGeneration = 0
     private var persistedInterests = emptyMap<MarketplaceCategory, MarketplaceInterest>()
+    private var interestsVisible = false
+    private var listingObservationJob: Job? = null
+    private val matchLoader = MarketplaceInterestMatchLoader(searchMarketplace, invalidateListingReads)
 
-    init {
-        viewModelScope.launch {
-            listingInsertObserver.observe().collect {
-                invalidateListingReads()
+    private fun startListingObservation(owner: MarketplaceInterestOwnerId) {
+        listingObservationJob?.cancel()
+        listingObservationJob = viewModelScope.launch {
+            listingEvents.events.collect { event ->
+                if (event.ownerId != owner) return@collect
+                matchLoader.invalidate()
                 loadMatches(notifyNewMatches = true)
             }
         }
@@ -43,12 +49,18 @@ class MarketplaceInterestsViewModel(
 
     fun setOwner(id: MarketplaceInterestOwnerId?) {
         if (ownerId == id) return
+        notifier.clearAll()
+        listingObservationJob?.cancel()
+        listingObservationJob = null
         ownerId = id
         ownerGeneration++
         preferenceGeneration++
         persistedInterests = emptyMap()
         mutableUiState.value = MarketplaceInterestsUiState(isLoading = id != null)
-        id?.let(::load)
+        id?.let {
+            startListingObservation(it)
+            load(it)
+        }
     }
 
     fun toggle(category: MarketplaceCategory) {
@@ -106,12 +118,18 @@ class MarketplaceInterestsViewModel(
     }
 
     fun markMatchesViewed() {
+        notifier.clearAll()
         mutableUiState.update { it.copy(unreadMatchCount = 0) }
+    }
+
+    fun setInterestsVisible(visible: Boolean) {
+        interestsVisible = visible
+        if (visible) markMatchesViewed()
     }
 
     fun refreshMatches() {
         viewModelScope.launch {
-            invalidateListingReads()
+            matchLoader.invalidate()
             loadMatches(notifyNewMatches = false)
         }
     }
@@ -148,7 +166,6 @@ class MarketplaceInterestsViewModel(
 
     private fun loadMatches(notifyNewMatches: Boolean) {
         val owner = ownerId ?: return
-        val search = searchMarketplace ?: return
         val interests = mutableUiState.value.interests.values.toList()
         if (interests.isEmpty()) {
             mutableUiState.update { it.copy(matchingListings = emptyList(), unreadMatchCount = 0) }
@@ -156,22 +173,15 @@ class MarketplaceInterestsViewModel(
         }
         viewModelScope.launch {
             mutableUiState.update { it.copy(isLoadingMatches = true) }
-            runCatching {
-                interests.flatMap { interest ->
-                    search.getPage(
-                        MarketplacePageRequest(
-                            category = interest.category,
-                            condition = interest.condition,
-                            priceRange = interest.priceRange,
-                            attributeFilters = interest.attributes,
-                            viewerId = owner.value,
-                            pageSize = MATCH_PAGE_SIZE
-                        )
-                    ).items
-                }.distinctBy { it.id }.sortedByDescending { it.createdAtMillis }
-            }.onSuccess { matches ->
+            runCatching { matchLoader.load(owner, interests) }.onSuccess { loaded ->
+                val matches = loaded ?: return@onSuccess
                 val previousIds = mutableUiState.value.matchingListings.mapTo(mutableSetOf()) { it.id }
-                val newCount = if (notifyNewMatches) matches.count { it.id !in previousIds } else 0
+                val newMatches = matches.filter { it.id !in previousIds }
+                val newCount = if (notifyNewMatches && !interestsVisible) {
+                    newMatches.size
+                } else {
+                    0
+                }
                 mutableUiState.update {
                     it.copy(
                         matchingListings = matches,
@@ -185,8 +195,6 @@ class MarketplaceInterestsViewModel(
         }
     }
 }
-
-private const val MATCH_PAGE_SIZE = 20
 
 private fun Map<MarketplaceCategory, MarketplaceInterest>.toggle(
     category: MarketplaceCategory

@@ -146,7 +146,7 @@ Dependency injection is manual. `AppContainer` composes `HomeModule`, `ListingsM
 | Messages (including realtime thread and inbox observers) | Supabase adapters |
 | Profile, auth/session, profile photos, user reports, user blocks | Supabase adapters |
 | Home | Supabase adapters and local memory. The feed reads through `MarketplaceHomeRepository` (marketplace listing source), swipe-right saves via the marketplace bookmark adapter, and swipe-up messages via the messages adapter. Swipe decisions (which cards were saved or passed) and Home preferences are kept in memory per app process. |
-| Marketplace interests | Supabase `marketplace_interests` adapter; in-memory fake for tests and inspection |
+| Marketplace interests | Supabase interests with session-wide Realtime alerts while the Android app process is running |
 | Theme, marketplace layout, and reported-listing visibility preferences | Android local preference stores |
 
 If Supabase is not configured, the normal Android runtime **fails to initialize** backend-backed contexts: in-memory fallback is disabled by default. In-memory implementations exist for tests, previews, and explicitly enabled local use.

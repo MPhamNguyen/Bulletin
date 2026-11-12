@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestAlert
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestNotifier
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSnapshot
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
@@ -9,10 +11,10 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceInterest
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceInterestOwnerId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -90,39 +92,62 @@ class MarketplaceInterestsViewModelTest {
     }
 
     @Test
-    fun newMatchingListingPopulatesInterestsAndCreatesUnreadNotification() = runTest {
+    fun newMatchingListingPopulatesInterestsAndCreatesUnreadIndicator() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
-            val store = TestInterestStore(
-                mutableMapOf(ownerId to setOf(MarketplaceInterest(MarketplaceCategory.ELECTRONICS)))
-            )
-            val listingEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-            val listings = mutableListOf(snapshot("first", MarketplaceCategory.ELECTRONICS))
-            val source = MarketplaceListingSource { request -> listings.pageFor(request) }
-            val search = SearchMarketplace(
-                repository = InMemoryMarketplaceRepository(initialListings = emptyList()),
-                listingSource = source
-            )
-            val viewModel = MarketplaceInterestsViewModel(store, search, { listingEvents })
+            val fixture = matchFixture()
+            val viewModel = fixture.viewModel
 
             viewModel.setOwner(ownerId)
             advanceUntilIdle()
             assertEquals(listOf("first"), viewModel.uiState.value.matchingListings.map { it.id.value })
             assertEquals(0, viewModel.uiState.value.unreadMatchCount)
 
-            listings += snapshot("second", MarketplaceCategory.ELECTRONICS)
-            listings += snapshot("ignored", MarketplaceCategory.CLOTHING)
-            listingEvents.emit(Unit)
+            fixture.listings += snapshot("second", MarketplaceCategory.ELECTRONICS)
+            fixture.listings += snapshot("ignored", MarketplaceCategory.CLOTHING)
+            fixture.events.publish(MarketplaceInterestListingEvent(ownerId, MarketplaceItemId("second")))
             advanceUntilIdle()
 
             assertEquals(setOf("first", "second"), viewModel.uiState.value.matchingListings.map { it.id.value }.toSet())
             assertEquals(1, viewModel.uiState.value.unreadMatchCount)
-            viewModel.markMatchesViewed()
+
+            viewModel.setInterestsVisible(true)
+            assertEquals(0, viewModel.uiState.value.unreadMatchCount)
+            fixture.listings += snapshot("third", MarketplaceCategory.ELECTRONICS)
+            fixture.events.publish(MarketplaceInterestListingEvent(ownerId, MarketplaceItemId("third")))
+            advanceUntilIdle()
             assertEquals(0, viewModel.uiState.value.unreadMatchCount)
         } finally {
             Dispatchers.resetMain()
         }
     }
+
+    private fun matchFixture(): MatchFixture {
+        val store = TestInterestStore(
+            mutableMapOf(ownerId to setOf(MarketplaceInterest(MarketplaceCategory.ELECTRONICS)))
+        )
+        val events = MarketplaceInterestListingEvents()
+        val listings = mutableListOf(snapshot("first", MarketplaceCategory.ELECTRONICS))
+        val notifier = RecordingInterestNotifier()
+        val source = MarketplaceListingSource { request -> listings.pageFor(request) }
+        val search = SearchMarketplace(
+            InMemoryMarketplaceRepository(initialListings = emptyList()),
+            source
+        )
+        return MatchFixture(
+            MarketplaceInterestsViewModel(store, search, events, notifier = notifier),
+            events,
+            listings,
+            notifier
+        )
+    }
+
+    private data class MatchFixture(
+        val viewModel: MarketplaceInterestsViewModel,
+        val events: MarketplaceInterestListingEvents,
+        val listings: MutableList<MarketplaceListingSnapshot>,
+        val notifier: RecordingInterestNotifier
+    )
 
     private class TestInterestStore(
         val values: MutableMap<MarketplaceInterestOwnerId, Set<MarketplaceInterest>> = mutableMapOf()
@@ -139,6 +164,16 @@ class MarketplaceInterestsViewModelTest {
             writeFailure?.let { throw it }
             values[ownerId] = interests
         }
+    }
+
+    private class RecordingInterestNotifier : MarketplaceInterestNotifier {
+        val alerts = mutableListOf<MarketplaceInterestAlert>()
+
+        override fun show(alert: MarketplaceInterestAlert) {
+            alerts += alert
+        }
+
+        override fun clearAll() = Unit
     }
 
     private companion object {

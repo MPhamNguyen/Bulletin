@@ -10,10 +10,12 @@ import com.jdrms.bulletin.domain.marketplace.infrastructure.AndroidMarketplaceLa
 import com.jdrms.bulletin.domain.marketplace.infrastructure.AndroidReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.profile.infrastructure.AndroidAuthStorage
 import com.jdrms.bulletin.domain.profile.infrastructure.AndroidExternalAuthBrowser
+import com.jdrms.bulletin.notifications.AndroidMarketplaceInterestNotifier
 
 class BulletinApplication : Application() {
     private val authStorage by lazy { AndroidAuthStorage(this, BuildConfig.SUPABASE_URL) }
     val externalAuthBrowser by lazy { AndroidExternalAuthBrowser(this, authStorage) }
+    internal val interestNotifier by lazy { AndroidMarketplaceInterestNotifier(this) }
     val container by lazy {
         AppContainer(
             supabaseConfig = SupabaseConfig(
@@ -30,7 +32,13 @@ class BulletinApplication : Application() {
                 microsoftSignInEnabled = BuildConfig.MICROSOFT_SSO_ENABLED,
                 browser = if (BuildConfig.MICROSOFT_SSO_ENABLED) externalAuthBrowser else null,
                 storage = if (BuildConfig.MICROSOFT_SSO_ENABLED) authStorage else null
-            )
+            ),
+            marketplaceInterestNotifier = interestNotifier
         )
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        interestNotifier.initializeChannel()
     }
 }
