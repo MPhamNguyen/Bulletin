@@ -1,10 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -12,7 +9,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFieldStyle
 
 @Composable
 internal fun MarketplaceExactFilterField(
@@ -24,16 +21,7 @@ internal fun MarketplaceExactFilterField(
     keyboardType: KeyboardType = KeyboardType.Text,
     suffix: String = ""
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
-    ) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(
-            subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    MarketplaceFilterSection(title = title, hint = subtitle) {
         BulletinTextField(
             value = value,
             onValueChange = onValueChange,
@@ -45,7 +33,8 @@ internal fun MarketplaceExactFilterField(
             ),
             options = BulletinFieldOptions(
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
-            )
+            ),
+            style = BulletinFieldStyle.Inset
         )
     }
 }

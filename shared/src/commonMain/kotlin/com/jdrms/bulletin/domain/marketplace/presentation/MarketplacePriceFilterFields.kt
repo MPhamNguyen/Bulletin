@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.runtime.Composable
 import com.jdrms.bulletin.core.designsystem.MoneyInput
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFieldStyle
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
 
 internal data class MarketplacePriceFilterDraft(
@@ -40,20 +41,24 @@ internal fun MarketplacePriceFilterFields(
     MarketplaceRangeFields(
         title = "Price",
         error = error,
-        minimumField = { modifier ->
+        minimumField = { modifier, placeholder ->
             MoneyInput(
                 digits = draft.minimumCents,
                 onDigitsChange = { onDraftChanged(draft.copy(minimumCents = it)) },
                 modifier = modifier,
-                currencySymbolAsAdornment = true
+                currencySymbolAsAdornment = true,
+                placeholder = placeholder,
+                style = BulletinFieldStyle.Inset
             )
         },
-        maximumField = { modifier ->
+        maximumField = { modifier, placeholder ->
             MoneyInput(
                 digits = draft.maximumCents,
                 onDigitsChange = { onDraftChanged(draft.copy(maximumCents = it)) },
                 modifier = modifier,
-                currencySymbolAsAdornment = true
+                currencySymbolAsAdornment = true,
+                placeholder = placeholder,
+                style = BulletinFieldStyle.Inset
             )
         }
     )

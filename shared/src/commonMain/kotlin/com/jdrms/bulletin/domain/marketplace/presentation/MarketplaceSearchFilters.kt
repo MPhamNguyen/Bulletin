@@ -1,18 +1,16 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,39 +21,43 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFieldStyle
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
 
+/**
+ * Search field, filter button, optional [externalControls] (category chips and sort), and applied-filter chips.
+ * When [externalControls] is supplied it owns category and sort, so the filter sheet and badge leave them out.
+ */
 @Composable
 internal fun MarketplaceSearchFilters(
     filters: MarketplaceFilterState,
     onQueryChanged: (String) -> Unit,
     onFiltersApplied: (MarketplaceFilterState) -> Unit,
-    onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
+    onSearchPositioned: (LayoutCoordinates) -> Unit,
+    externalControls: (@Composable () -> Unit)? = null
 ) {
     var isFilterSheetOpen by remember { mutableStateOf(false) }
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
+    val sheetOwnsCategoryAndSort = externalControls == null
+    Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)) {
         MarketplaceSearchBar(
             filters = filters,
+            activeCount = filters.activeFilterCount(sheetOwnsCategoryAndSort),
             onQueryChanged = onQueryChanged,
-            isFilterSheetOpen = isFilterSheetOpen,
-            onToggleFilters = { isFilterSheetOpen = true },
+            onOpenFilters = { isFilterSheetOpen = true },
             onSearchPositioned = onSearchPositioned
         )
+        externalControls?.invoke()
         if (isFilterSheetOpen) {
             MarketplaceFilterSheet(
                 filters = filters,
+                ownsCategoryAndSort = sheetOwnsCategoryAndSort,
                 onApply = {
                     onFiltersApplied(it)
                     isFilterSheetOpen = false
@@ -63,19 +65,22 @@ internal fun MarketplaceSearchFilters(
                 onDismiss = { isFilterSheetOpen = false }
             )
         }
-        ActiveMarketplaceFilterChips(filters, onFiltersApplied)
+        ActiveMarketplaceFilterChips(filters, sheetOwnsCategoryAndSort, onFiltersApplied)
     }
 }
 
 @Composable
 private fun MarketplaceSearchBar(
     filters: MarketplaceFilterState,
+    activeCount: Int,
     onQueryChanged: (String) -> Unit,
-    isFilterSheetOpen: Boolean,
-    onToggleFilters: () -> Unit,
-    onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
+    onOpenFilters: () -> Unit,
+    onSearchPositioned: (LayoutCoordinates) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         BulletinTextField(
             value = filters.query,
             onValueChange = onQueryChanged,
@@ -86,94 +91,35 @@ private fun MarketplaceSearchBar(
             decoration = BulletinFieldDecoration(
                 placeholder = { Text("Search textbooks, furniture, etc.") },
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) }
-            )
+            ),
+            style = BulletinFieldStyle.Search
         )
-        FilterButton(filters.activeFilterCount, isFilterSheetOpen, onToggleFilters)
+        FilterButton(activeCount, onOpenFilters)
     }
 }
 
 @Composable
-private fun FilterButton(activeCount: Int, isExpanded: Boolean, onClick: () -> Unit) {
-    BadgedBox(
-        badge = { if (activeCount > 0) Badge { Text(activeCount.toString()) } }
-    ) {
+private fun FilterButton(activeCount: Int, onClick: () -> Unit) {
+    val description = if (activeCount == 0) "Show filters" else "Show filters, $activeCount active"
+    Box {
         FilledIconButton(
             onClick = onClick,
-            modifier = Modifier.semantics {
-                contentDescription = when {
-                    isExpanded -> "Hide filters"
-                    activeCount == 0 -> "Show filters"
-                    else -> "Show filters, $activeCount active"
-                }
-            },
-            shape = MaterialTheme.shapes.large
+            modifier = Modifier.semantics { contentDescription = description },
+            shape = MaterialTheme.shapes.small
         ) {
             Icon(Icons.Outlined.Tune, contentDescription = null)
         }
+        if (activeCount > 0) {
+            Badge(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .heightIn(min = 20.dp),
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background
+            ) {
+                Text(activeCount.toString(), style = MaterialTheme.typography.labelMedium)
+            }
+        }
     }
 }
-
-@Composable
-private fun ActiveMarketplaceFilterChips(
-    filters: MarketplaceFilterState,
-    onFiltersApplied: (MarketplaceFilterState) -> Unit
-) {
-    if (filters.activeFilterCount == 0) return
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
-    ) {
-        filters.category?.let { category ->
-            FilterChip(
-                selected = true,
-                onClick = { onFiltersApplied(filters.copy(category = null)) },
-                label = { Text("${category.displayName()} ×") },
-            )
-        }
-        filters.condition?.let { condition ->
-            FilterChip(
-                selected = true,
-                onClick = { onFiltersApplied(filters.copy(condition = null)) },
-                label = { Text("${condition.displayName()} ×") },
-            )
-        }
-        if (!filters.priceRange.isEmpty) {
-            FilterChip(
-                selected = true,
-                onClick = { onFiltersApplied(filters.copy(priceRange = MarketplacePriceRange.NONE)) },
-                label = { Text("${filters.priceRange.displayName()} ×") },
-            )
-        }
-        if (filters.sortOrder != MarketplaceSortOrder.NEWEST) {
-            FilterChip(
-                selected = true,
-                onClick = { onFiltersApplied(filters.copy(sortOrder = MarketplaceSortOrder.NEWEST)) },
-                label = { Text("${filters.sortOrder.displayName()} ×") },
-            )
-        }
-        ActiveAttributeFilterChips(filters, onFiltersApplied)
-    }
-}
-
-private val MarketplaceFilterState.activeFilterCount: Int
-    get() = listOfNotNull(category, condition).size + attributes.activeCount +
-        (if (priceRange.isEmpty) 0 else 1) +
-        (if (sortOrder == MarketplaceSortOrder.NEWEST) 0 else 1)
-
-private fun MarketplacePriceRange.displayName(): String = when {
-    minimumCents != null && maximumCents != null ->
-        "${formatCents(minimumCents)}–${formatCents(maximumCents)}"
-    minimumCents != null -> "${formatCents(minimumCents)}+"
-    maximumCents != null -> "Up to ${formatCents(maximumCents)}"
-    else -> "Any price"
-}
-
-private fun formatCents(cents: Long): String = "\$${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
-
-internal fun MarketplaceCategory.displayName(): String = name.toDisplayName()
-
-internal fun MarketplaceCondition.displayName(): String = name.toDisplayName()
-
-private fun String.toDisplayName(): String = lowercase()
-    .replace('_', ' ')
-    .replaceFirstChar { it.uppercase() }

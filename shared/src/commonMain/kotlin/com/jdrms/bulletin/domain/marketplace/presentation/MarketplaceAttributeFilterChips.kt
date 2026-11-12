@@ -1,7 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
@@ -17,15 +15,10 @@ internal fun ActiveAttributeFilterChips(
     attributes.allPredicates.forEach { (key, predicate) ->
         val spec = filters.category?.let { MarketplaceAttributeCatalog.spec(it, key) }
         val text = listOfNotNull(spec?.label, predicate.describe(spec?.choices.orEmpty())).joinToString(": ")
-        AttributeChip(text) {
+        RemovableFilterChip(text) {
             onFiltersApplied(filters.copy(attributes = attributes.without(key)))
         }
     }
-}
-
-@Composable
-private fun AttributeChip(text: String, onClear: () -> Unit) {
-    FilterChip(selected = true, onClick = onClear, label = { Text("$text ×") })
 }
 
 private fun MarketplaceAttributePredicate.describe(choices: Map<String, String>): String = when (this) {
