@@ -16,8 +16,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.jdrms.bulletin.app.App
-import com.jdrms.bulletin.notifications.MessageNotificationIntents
 import com.jdrms.bulletin.notifications.MarketplaceInterestNotificationIntents
+import com.jdrms.bulletin.notifications.MessageNotificationIntents
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 

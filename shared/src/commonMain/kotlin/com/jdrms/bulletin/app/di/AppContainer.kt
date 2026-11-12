@@ -10,13 +10,9 @@ import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.core.network.SupabaseAuthStorage
 import com.jdrms.bulletin.core.network.SupabaseConfig
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestNotifier
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.NoOpMarketplaceInterestNotifier
-import com.jdrms.bulletin.domain.marketplace.application.ReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceInterestOwnerId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
-import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryMarketplaceLayoutPreferenceStore
-import com.jdrms.bulletin.domain.marketplace.infrastructure.InMemoryReportedListingVisibilityPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestNotificationRequest
 import com.jdrms.bulletin.domain.messages.application.IncomingMessageNotifier
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
