@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
@@ -10,12 +12,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
 
 private const val ISBN_FORMAT_HINT = "ISBN-10: 10 digits or 9 digits + X · ISBN-13: 978/979 + 10 digits"
@@ -33,23 +38,24 @@ internal fun ListingIsbnAttributeField(
     }
     val formatError = isbnInputError(field.text)
     val message = error ?: formatError
-    BulletinTextField(
-        value = field,
-        onValueChange = { input ->
-            val formatted = formatIsbnInput(input.text)
-            val cursor = formattedIsbnCursorOffset(input.text.take(input.selection.end))
-            field = TextFieldValue(formatted, TextRange(cursor))
-            if (formatted != value) onInputChange(definition.key, formatted)
-        },
-        modifier = Modifier.fillMaxWidth(),
-        isError = message != null,
-        decoration = BulletinFieldDecoration(
-            label = { Text(ListingAttributeDisplay.fieldLabel(definition)) },
-            supportingText = { Text(message ?: ISBN_FORMAT_HINT) }
-        ),
-        options = BulletinFieldOptions(
-
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+    Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
+        FieldLabel(ListingAttributeDisplay.fieldLabel(definition))
+        BulletinTextField(
+            value = field,
+            onValueChange = { input ->
+                val formatted = formatIsbnInput(input.text)
+                val cursor = formattedIsbnCursorOffset(input.text.take(input.selection.end))
+                field = TextFieldValue(formatted, TextRange(cursor))
+                if (formatted != value) onInputChange(definition.key, formatted)
+            },
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = definition.label },
+            isError = message != null,
+            decoration = BulletinFieldDecoration(
+                supportingText = { Text(message ?: ISBN_FORMAT_HINT) }
+            ),
+            options = BulletinFieldOptions(
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+            )
         )
-    )
+    }
 }

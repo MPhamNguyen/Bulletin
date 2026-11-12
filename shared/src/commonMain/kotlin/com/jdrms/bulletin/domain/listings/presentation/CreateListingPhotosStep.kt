@@ -16,11 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.ImageCropSettings
-import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 
@@ -39,11 +41,6 @@ internal fun CreateListingPhotosStep(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionTitle(CreateListingStep.PHOTOS.title)
-        Text(
-            text = "Fields marked * are required.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
         ListingRequiredLabel("Listing photos", style = MaterialTheme.typography.titleSmall)
         ListingImageSelectionField(
             photos = state.newImages.map { ListingPhotoDraft.Pending(it) },
@@ -54,15 +51,14 @@ internal fun CreateListingPhotosStep(
             hint = "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} " +
                 "photos, 5 MB each. Adjust each photo to fit the square. The first is the cover."
         )
-        BulletinTextField(
-            value = state.newTitle,
-            onValueChange = actions.onTitleChange,
-            modifier = Modifier.fillMaxWidth(),
-            decoration = BulletinFieldDecoration(
-                label = { ListingRequiredLabel("Title") },
-                placeholder = { Text("e.g. Calculus textbook, 8th edition") }
+        Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
+            ListingRequiredLabel("Title", style = MaterialTheme.typography.titleSmall)
+            BulletinTextField(
+                value = state.newTitle,
+                onValueChange = actions.onTitleChange,
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Title" }
             )
-        )
+        }
         ListingRequiredLabel("Category", style = MaterialTheme.typography.titleSmall)
         CategoryGrid(selected = state.newCategory, onSelected = actions.onCategorySelected)
     }
