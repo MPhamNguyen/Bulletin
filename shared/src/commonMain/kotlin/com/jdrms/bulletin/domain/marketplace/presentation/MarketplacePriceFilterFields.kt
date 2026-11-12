@@ -1,7 +1,12 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.jdrms.bulletin.core.designsystem.MoneyInput
+import com.jdrms.bulletin.core.designsystem.MoneyInputAppearance
 import com.jdrms.bulletin.core.designsystem.theme.BulletinFieldStyle
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePriceRange
 
@@ -38,17 +43,22 @@ internal fun MarketplacePriceFilterFields(
     error: String?,
     onDraftChanged: (MarketplacePriceFilterDraft) -> Unit
 ) {
+    var minimumError by remember { mutableStateOf<String?>(null) }
+    var maximumError by remember { mutableStateOf<String?>(null) }
     MarketplaceRangeFields(
         title = "Price",
-        error = error,
+        error = minimumError ?: maximumError ?: error,
         minimumField = { modifier, placeholder ->
             MoneyInput(
                 digits = draft.minimumCents,
                 onDigitsChange = { onDraftChanged(draft.copy(minimumCents = it)) },
                 modifier = modifier,
-                currencySymbolAsAdornment = true,
-                placeholder = placeholder,
-                style = BulletinFieldStyle.Inset
+                appearance = MoneyInputAppearance(
+                    currencySymbolAsAdornment = true,
+                    placeholder = placeholder,
+                    style = BulletinFieldStyle.Inset
+                ),
+                onInputError = { minimumError = it }
             )
         },
         maximumField = { modifier, placeholder ->
@@ -56,9 +66,12 @@ internal fun MarketplacePriceFilterFields(
                 digits = draft.maximumCents,
                 onDigitsChange = { onDraftChanged(draft.copy(maximumCents = it)) },
                 modifier = modifier,
-                currencySymbolAsAdornment = true,
-                placeholder = placeholder,
-                style = BulletinFieldStyle.Inset
+                appearance = MoneyInputAppearance(
+                    currencySymbolAsAdornment = true,
+                    placeholder = placeholder,
+                    style = BulletinFieldStyle.Inset
+                ),
+                onInputError = { maximumError = it }
             )
         }
     )

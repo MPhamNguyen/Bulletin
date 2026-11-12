@@ -47,6 +47,34 @@ class MoneyInputDeviceTest {
         compose.runOnIdle { assertEquals("125", digits.value) }
     }
 
+    @Test
+    fun delegatedErrorsAreReportedWithoutInlineTextAndClearAfterValidInput() {
+        val digits = MutableStateFlow("125")
+        var reportedError: String? = null
+        compose.setContent {
+            val current by digits.collectAsState()
+            BulletinTheme {
+                MoneyInput(
+                    digits = current,
+                    onDigitsChange = { digits.value = it },
+                    label = { Text("Price") },
+                    onInputError = { reportedError = it }
+                )
+            }
+        }
+        compose.onNodeWithText("Price").performTextInput("-1.00")
+        compose.onNodeWithText("Amount cannot be negative.").assertDoesNotExist()
+        compose.runOnIdle {
+            assertEquals("Amount cannot be negative.", reportedError)
+            assertEquals("125", digits.value)
+        }
+        compose.onNodeWithText("Price").performTextInput("9")
+        compose.runOnIdle {
+            assertEquals(null, reportedError)
+            assertEquals("1259", digits.value)
+        }
+    }
+
     private fun showInput(): MutableStateFlow<String> {
         val digits = MutableStateFlow("125")
         compose.setContent {

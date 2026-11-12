@@ -14,8 +14,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.designsystem.theme.BulletinFieldStyle
 
+/** When [onInputError] is supplied, the caller renders input errors; null reports a valid edit. */
 @Composable
 fun MoneyInput(
     digits: String,
@@ -24,12 +24,11 @@ fun MoneyInput(
     label: (@Composable () -> Unit)? = null,
     textStyle: TextStyle = LocalTextStyle.current,
     error: String? = null,
-    currencySymbolAsAdornment: Boolean = false,
-    placeholder: String? = null,
-    style: BulletinFieldStyle = BulletinFieldStyle.Standard
+    appearance: MoneyInputAppearance = MoneyInputAppearance(),
+    onInputError: ((String?) -> Unit)? = null
 ) {
     val text = formatCurrencyDigits(digits).let { formatted ->
-        if (currencySymbolAsAdornment) formatted.removePrefix("$") else formatted
+        if (appearance.currencySymbolAsAdornment) formatted.removePrefix("$") else formatted
     }
     var fieldValue by remember(text) {
         mutableStateOf(TextFieldValue(text = text, selection = TextRange(text.length)))
@@ -45,13 +44,17 @@ fun MoneyInput(
                 when (val result = normalizeCurrencyTextChange(it, fieldValue)) {
                     is Result.Success -> {
                         inputError = null
+                        onInputError?.invoke(null)
                         onDigitsChange(result.data)
                         val nextText = formatCurrencyDigits(result.data).let { formatted ->
-                            if (currencySymbolAsAdornment) formatted.removePrefix("$") else formatted
+                            if (appearance.currencySymbolAsAdornment) formatted.removePrefix("$") else formatted
                         }
                         fieldValue = TextFieldValue(text = nextText, selection = TextRange(nextText.length))
                     }
-                    is Result.Error -> inputError = result.message
+                    is Result.Error -> {
+                        inputError = result.message
+                        onInputError?.invoke(result.message)
+                    }
                 }
             }
         },
@@ -59,14 +62,14 @@ fun MoneyInput(
         isError = displayedError != null,
         decoration = BulletinFieldDecoration(
             label = label,
-            placeholder = { Text(placeholder ?: if (currencySymbolAsAdornment) "0.00" else "$0.00") },
-            leadingIcon = if (currencySymbolAsAdornment) ({ Text("$") }) else null,
-            supportingText = displayedError?.let { { Text(it) } }
+            placeholder = { Text(appearance.placeholder ?: if (appearance.currencySymbolAsAdornment) "0.00" else "$0.00") },
+            leadingIcon = if (appearance.currencySymbolAsAdornment) ({ Text("$") }) else null,
+            supportingText = if (onInputError == null) displayedError?.let { { Text(it) } } else null
         ),
         options = BulletinFieldOptions(
             textStyle = textStyle,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         ),
-        style = style
+        style = appearance.style
     )
 }
