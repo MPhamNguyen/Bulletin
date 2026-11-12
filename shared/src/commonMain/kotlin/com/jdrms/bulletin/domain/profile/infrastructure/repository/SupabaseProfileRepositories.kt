@@ -12,16 +12,18 @@ import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReputationSummaryDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewInsertDto
-import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewScoreDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.PublicProfileIdentityMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -191,13 +193,14 @@ class SupabaseProfileRepository private constructor(
 
     override suspend fun getReputationSummary(userId: UserId): StudentReputation {
         val resolvedId = resolveUserId(userId) ?: return StudentReputation(userId)
-        val scores = supabase.from(REVIEWS_TABLE).select(columns = Columns.raw("score")) {
-            filter { eq("reviewee_id", resolvedId) }
-        }.decodeList<ReviewScoreDto>().map { it.score.coerceIn(1, 5) }
+        val summary = supabase.postgrest.rpc(
+            GET_REPUTATION_SUMMARY_FUNCTION,
+            parameters = buildJsonObject { put("p_reviewee_id", resolvedId) }
+        ).decodeList<ReputationSummaryDto>().single()
         return StudentReputation(
             userId = UserId(resolvedId),
-            averageRating = scores.average().takeIf { scores.isNotEmpty() } ?: 0.0,
-            totalReviews = scores.size
+            averageRating = summary.averageRating.coerceIn(0.0, 5.0),
+            totalReviews = summary.totalReviews.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         )
     }
 
@@ -241,6 +244,7 @@ class SupabaseProfileRepository private constructor(
         const val PROFILES_TABLE = "profiles"
         const val REVIEWS_TABLE = "reviews"
         const val REVIEWS_VIEW = "reviews_with_names"
+        const val GET_REPUTATION_SUMMARY_FUNCTION = "get_reputation_summary"
         const val MAX_REVIEW_PAGE_SIZE = 50
 
         private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
