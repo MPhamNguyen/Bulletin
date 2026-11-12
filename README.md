@@ -33,7 +33,7 @@ Students can discover listings, buy or sell items, message other students, build
 | --- | --- |
 | 🎓 **Student Verification** | Sign up with a `.edu` email and confirm it before logging in (Supabase Auth). Password recovery is supported. |
 | 🏠 **Home Discovery** | Swipe-style feed of listings. Swipe right to save, left to pass, or up to message the seller; buttons and accessibility actions do the same. |
-| 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details. |
+| 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details. Clothing color filters match any selected color, while other filters still apply together. |
 | ➕ **Listings** | Create, edit, and manage your own listings, upload images, and mark items as sold. |
 | 🔖 **Saved Listings** | Bookmark listings and revisit them from your profile. |
 | 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. New messages show an in-app banner while the app is open on a signed-in screen, and an Android system notification while it is in the background; both work only while the app process is alive, and push delivery is not implemented. |
