@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -10,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import com.jdrms.bulletin.core.designsystem.BulletinColorSwatch
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
 import com.jdrms.bulletin.domain.listings.domain.service.ListingMultiChoiceInput
@@ -26,12 +28,11 @@ internal fun ListingSwatchAttributeField(
     val options = (definition.type as ListingAttributeType.MultiChoice).options
     val selected = ListingMultiChoiceInput.decode(value).toSet()
     val summary = options.filter { it.code in selected }.joinToString { it.label }.ifEmpty { "Not selected" }
-    Column(modifier = Modifier.semantics { stateDescription = summary }) {
-        Text(
-            text = "${definition.label} (choose any)",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    Column(
+        modifier = Modifier.semantics { stateDescription = summary },
+        verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
+    ) {
+        FieldLabel("${definition.label} (choose any)")
         FlowRow {
             options.forEach { option ->
                 BulletinColorSwatch(

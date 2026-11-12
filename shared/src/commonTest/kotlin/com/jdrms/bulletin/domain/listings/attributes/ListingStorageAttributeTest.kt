@@ -2,8 +2,8 @@ package com.jdrms.bulletin.domain.listings.attributes
 
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeKeys
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeValue
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCapacityOptions
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
-import com.jdrms.bulletin.domain.listings.domain.model.ListingStorageOptions
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,7 +20,7 @@ class ListingStorageAttributeTest {
 
     @Test
     fun everyPredefinedStorageSizeIsAccepted() {
-        ListingStorageOptions.gigabytes.forEach { size ->
+        ListingCapacityOptions.storage.forEach { size ->
             assertEquals(ListingAttributeValue.Integer(size), parse(size.toString()).attributes?.get(key))
         }
     }
@@ -45,7 +45,7 @@ class ListingStorageAttributeTest {
     fun labelsUseTerabytesFromOneTerabyte() {
         assertEquals(
             listOf("128 GB", "256 GB", "512 GB", "1 TB", "2 TB"),
-            ListingStorageOptions.gigabytes.map(ListingStorageOptions::label)
+            ListingCapacityOptions.storage.map(ListingCapacityOptions::label)
         )
     }
 }

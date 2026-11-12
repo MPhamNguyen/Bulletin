@@ -47,6 +47,15 @@ class ListingAttributeInputParserTest {
     }
 
     @Test
+    fun selectingAMonitorOmitsDisabledCapacityValues() {
+        val result = parser.parse(
+            ListingCategory.ELECTRONICS,
+            mapOf("device_type" to "monitor", "ram_gb" to "16", "storage_gb" to "512")
+        )
+        assertEquals(setOf("device_type"), result.attributes?.values?.keys)
+    }
+
+    @Test
     fun preservedValuesAreCarriedUnlessReplacedByTheSeller() {
         val preserved = mapOf("future_key" to "\"kept\"", "brand" to "\"bad shape\"")
         val result = parser.parse(ListingCategory.ELECTRONICS, mapOf("brand" to "Dell"), preserved)

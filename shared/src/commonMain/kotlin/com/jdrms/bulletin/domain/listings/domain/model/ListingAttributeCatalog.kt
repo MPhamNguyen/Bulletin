@@ -26,11 +26,8 @@ object ListingAttributeKeys {
 }
 
 object ListingAttributeCatalog {
-    private const val BRAND_MAX_LENGTH = 40
     private const val ISBN_MAX_LENGTH = 13
     private const val COURSE_CODE_MAX_LENGTH = 12
-    private const val RAM_MAX_GB = 4_096L
-    private const val STORAGE_MAX_GB = 100_000L
     private const val MAX_EDITION = 99L
     private const val MAX_DIMENSION_CM_TENTHS = 10_000L
     private const val MAX_RENT_CENTS = 9_999_999L
@@ -48,41 +45,6 @@ object ListingAttributeCatalog {
         "console" to "Game console",
         "accessory" to "Accessory",
         "other" to "Other"
-    )
-
-    private val ramDeviceTypes = setOf("laptop", "desktop", "tablet", "phone")
-    private val storageDeviceTypes = ramDeviceTypes + "console"
-
-    private val brand = ListingAttributeDefinition(
-        ListingAttributeKeys.BRAND,
-        "Brand",
-        ListingAttributeType.Text(ListingTextFormat.BRAND, BRAND_MAX_LENGTH)
-    )
-
-    private val electronics = listOf(
-        brand,
-        ListingAttributeDefinition(
-            ListingAttributeKeys.DEVICE_TYPE,
-            "Device type",
-            ListingAttributeType.Choice(deviceTypes)
-        ),
-        ListingAttributeDefinition(
-            ListingAttributeKeys.RAM_GB,
-            "RAM",
-            ListingAttributeType.Integer(1, RAM_MAX_GB, ListingAttributeUnit.GIGABYTES),
-            ListingAttributeApplicability(ListingAttributeKeys.DEVICE_TYPE, ramDeviceTypes)
-        ),
-        ListingAttributeDefinition(
-            ListingAttributeKeys.STORAGE_GB,
-            "Storage",
-            ListingAttributeType.Integer(
-                1,
-                STORAGE_MAX_GB,
-                ListingAttributeUnit.GIGABYTES,
-                ListingStorageOptions.gigabytes.toSet()
-            ),
-            ListingAttributeApplicability(ListingAttributeKeys.DEVICE_TYPE, storageDeviceTypes)
-        )
     )
 
     private val textbooks = listOf(
@@ -182,7 +144,7 @@ object ListingAttributeCatalog {
     )
 
     private val byCategory: Map<ListingCategory, List<ListingAttributeDefinition>> = mapOf(
-        ListingCategory.ELECTRONICS to electronics,
+        ListingCategory.ELECTRONICS to ListingElectronicsAttributeCatalog.definitions,
         ListingCategory.TEXTBOOKS to textbooks,
         ListingCategory.FURNITURE to furniture,
         ListingCategory.CLOTHING to ListingClothingAttributeCatalog.definitions,

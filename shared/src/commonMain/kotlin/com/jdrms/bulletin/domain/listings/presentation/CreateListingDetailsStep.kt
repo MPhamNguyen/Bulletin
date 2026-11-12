@@ -2,15 +2,11 @@ package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
+import com.jdrms.bulletin.core.designsystem.BulletinOptionChip
+import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 
@@ -24,11 +20,13 @@ internal fun CreateListingDetailsStep(
     state: ListingsUiState,
     actions: CreateListingDetailsActions
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xl)) {
         SectionTitle(CreateListingStep.DETAILS.title)
         if (state.newCategory != ListingCategory.HOUSING) {
-            FieldLabel("Condition")
-            ConditionChips(state.newCondition, actions.onConditionSelected)
+            Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
+                FieldLabel("Condition")
+                ConditionChips(state.newCondition, actions.onConditionSelected)
+            }
         }
         ListingAttributeFields(
             category = state.newCategory,
@@ -38,28 +36,18 @@ internal fun CreateListingDetailsStep(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ConditionChips(selected: ListingCondition, onSelected: (ListingCondition) -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(ListingCondition.entries.toList()) { condition ->
-            FilterChip(
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
+        verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
+    ) {
+        ListingCondition.entries.forEach { condition ->
+            BulletinOptionChip(
+                label = condition.displayLabel(),
                 selected = condition == selected,
-                onClick = { onSelected(condition) },
-                label = { Text(condition.displayLabel(), style = MaterialTheme.typography.bodyMedium) },
-                shape = BulletinShapes.pill,
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = scheme.surfaceVariant,
-                    selectedContainerColor = scheme.primaryContainer
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = condition == selected,
-                    borderColor = scheme.surfaceVariant,
-                    selectedBorderColor = scheme.primary,
-                    borderWidth = 1.5.dp,
-                    selectedBorderWidth = 1.5.dp
-                )
+                onClick = { onSelected(condition) }
             )
         }
     }

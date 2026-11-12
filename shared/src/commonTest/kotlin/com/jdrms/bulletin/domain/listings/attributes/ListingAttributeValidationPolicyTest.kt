@@ -39,17 +39,17 @@ class ListingAttributeValidationPolicyTest {
     }
 
     @Test
-    fun numericBoundariesAreInclusive() {
+    fun predefinedRamBoundariesAreInclusive() {
         fun ram(value: Long) = ListingAttributes(
             mapOf(
                 "device_type" to ListingAttributeValue.Choice("laptop"),
                 "ram_gb" to ListingAttributeValue.Integer(value)
             )
         )
-        assertTrue(policy.validate(ListingCategory.ELECTRONICS, ram(1)).isEmpty())
-        assertTrue(policy.validate(ListingCategory.ELECTRONICS, ram(4096)).isEmpty())
-        assertEquals(1, policy.validate(ListingCategory.ELECTRONICS, ram(0)).size)
-        assertEquals(1, policy.validate(ListingCategory.ELECTRONICS, ram(4097)).size)
+        assertTrue(policy.validate(ListingCategory.ELECTRONICS, ram(4)).isEmpty())
+        assertTrue(policy.validate(ListingCategory.ELECTRONICS, ram(128)).isEmpty())
+        assertEquals(1, policy.validate(ListingCategory.ELECTRONICS, ram(3)).size)
+        assertEquals(1, policy.validate(ListingCategory.ELECTRONICS, ram(129)).size)
     }
 
     @Test

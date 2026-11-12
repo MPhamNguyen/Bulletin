@@ -1,8 +1,9 @@
 package com.jdrms.bulletin.domain.listings.domain.model
 
-/** The storage sizes a seller may pick, in GB. Mirrors the buyer-facing storage filter buckets. */
-object ListingStorageOptions {
-    val gigabytes = listOf(128L, 256L, 512L, 1024L, 2048L)
+/** The capacity sizes a seller may pick, in GB. Mirrors the buyer-facing storage filter buckets. */
+object ListingCapacityOptions {
+    val ram = listOf(4L, 8L, 16L, 32L, 64L, 128L)
+    val storage = listOf(128L, 256L, 512L, 1024L, 2048L)
 
     fun label(gigabytes: Long): String =
         if (gigabytes >= GB_PER_TB && gigabytes % GB_PER_TB == 0L) "${gigabytes / GB_PER_TB} TB" else "$gigabytes GB"
