@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.reporting.domain.model.ReportStatus
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ReportReasonTest {
     @Test
@@ -42,6 +43,14 @@ class ReportReasonTest {
         assertEquals(ReportStatus.ACTION_TAKEN, ReportStatus.fromDatabaseValue("resolved"))
         assertEquals(ReportStatus.DISMISSED, ReportStatus.fromDatabaseValue("dismissed"))
         assertEquals(ReportStatus.UNKNOWN, ReportStatus.fromDatabaseValue("future_status"))
+    }
+
+    @Test
+    fun retiredDuplicateValueUsesTheUnknownOpenFallback() {
+        val status = ReportStatus.fromDatabaseValue("duplicate")
+
+        assertEquals(ReportStatus.UNKNOWN, status)
+        assertTrue(status.isOpen)
     }
 
     @Test
