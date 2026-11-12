@@ -171,9 +171,14 @@ class MarketplaceInterestsViewModel(
             mutableUiState.update { it.copy(matchingListings = emptyList(), unreadMatchCount = 0) }
             return
         }
+        val loadOwnerGeneration = ownerGeneration
+        val loadPreferenceGeneration = preferenceGeneration
         viewModelScope.launch {
             mutableUiState.update { it.copy(isLoadingMatches = true) }
             runCatching { matchLoader.load(owner, interests) }.onSuccess { loaded ->
+                if (ownerGeneration != loadOwnerGeneration || preferenceGeneration != loadPreferenceGeneration) {
+                    return@onSuccess
+                }
                 val matches = loaded ?: return@onSuccess
                 val previousIds = mutableUiState.value.matchingListings.mapTo(mutableSetOf()) { it.id }
                 val newMatches = matches.filter { it.id !in previousIds }
@@ -190,6 +195,9 @@ class MarketplaceInterestsViewModel(
                     )
                 }
             }.onFailure {
+                if (ownerGeneration != loadOwnerGeneration || preferenceGeneration != loadPreferenceGeneration) {
+                    return@onFailure
+                }
                 mutableUiState.update { it.copy(isLoadingMatches = false) }
             }
         }
