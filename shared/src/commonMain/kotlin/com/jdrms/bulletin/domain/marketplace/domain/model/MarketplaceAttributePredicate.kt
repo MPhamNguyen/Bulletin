@@ -9,6 +9,11 @@ sealed interface MarketplaceAttributePredicate {
         init { require(code.isNotBlank()) { "Choice filters cannot be blank." } }
     }
 
+    /** Matches any selected choice within one attribute. */
+    data class ChoiceOptions(val codes: Set<String>) : MarketplaceAttributePredicate {
+        init { require(codes.isNotEmpty() && codes.all(String::isNotBlank)) { "Select at least one choice." } }
+    }
+
     data class IntegerRange(val range: MarketplaceCapacityRange) : MarketplaceAttributePredicate
 
     /** Matches any selected capacity, including an optional open-ended top bucket. */

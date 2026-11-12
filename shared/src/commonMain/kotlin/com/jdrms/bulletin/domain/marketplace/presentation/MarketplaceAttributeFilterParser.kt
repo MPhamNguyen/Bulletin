@@ -22,9 +22,7 @@ internal object MarketplaceAttributeFilterParser {
         }
         return when (spec.kind) {
             MarketplaceAttributeKind.TEXT -> textPredicate(spec.key, input.exact)
-            MarketplaceAttributeKind.CHOICE -> input.exact.takeIf(String::isNotBlank)?.also { code ->
-                require(code in spec.choicesFor(selectedChoices))
-            }?.let(MarketplaceAttributePredicate::Choice)
+            MarketplaceAttributeKind.CHOICE -> choicePredicate(spec, input, selectedChoices)
             MarketplaceAttributeKind.INTEGER -> when (spec.filterMode) {
                 MarketplaceAttributeFilterMode.EXACT -> input.exact.takeIf(String::isNotBlank)?.let { raw ->
                     val value = requireNotNull(raw.trim().toLongOrNull())
@@ -35,6 +33,21 @@ internal object MarketplaceAttributeFilterParser {
             MarketplaceAttributeKind.DECIMAL -> decimalPredicate(input)
             MarketplaceAttributeKind.DATE -> datePredicate(input)
         }
+    }
+
+    private fun choicePredicate(
+        spec: MarketplaceAttributeSpec,
+        input: MarketplaceAttributeFilterInput,
+        selectedChoices: Map<String, String>
+    ): MarketplaceAttributePredicate? {
+        if (input.choices.isNotEmpty()) {
+            require(spec.key == MarketplaceAttributeCatalog.COLOR)
+            require(input.choices.all { it in spec.choicesFor(selectedChoices) })
+            return MarketplaceAttributePredicate.ChoiceOptions(input.choices)
+        }
+        return input.exact.takeIf(String::isNotBlank)?.also { code ->
+            require(code in spec.choicesFor(selectedChoices))
+        }?.let(MarketplaceAttributePredicate::Choice)
     }
 
     private fun textPredicate(key: String, raw: String): MarketplaceAttributePredicate? {

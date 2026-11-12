@@ -125,7 +125,9 @@ private fun MarketplaceAttributeSpec.accepts(
 ): Boolean = when (kind) {
     MarketplaceAttributeKind.TEXT -> predicate is MarketplaceAttributePredicate.ExactText
     MarketplaceAttributeKind.CHOICE ->
-        predicate is MarketplaceAttributePredicate.Choice && predicate.code in choicesFor(selectedChoices)
+        predicate is MarketplaceAttributePredicate.Choice && predicate.code in choicesFor(selectedChoices) ||
+            key == MarketplaceAttributeCatalog.COLOR && predicate is MarketplaceAttributePredicate.ChoiceOptions &&
+            predicate.codes.all { it in choicesFor(selectedChoices) }
     MarketplaceAttributeKind.INTEGER ->
         predicate is MarketplaceAttributePredicate.IntegerRange ||
             predicate is MarketplaceAttributePredicate.IntegerOptions &&
@@ -136,6 +138,7 @@ private fun MarketplaceAttributeSpec.accepts(
 
 private fun MarketplaceAttributePredicate.matches(value: MarketplaceAttributeValue?): Boolean = when (this) {
     is MarketplaceAttributePredicate.Choice -> (value as? MarketplaceAttributeValue.Choice)?.code == code
+    is MarketplaceAttributePredicate.ChoiceOptions -> (value as? MarketplaceAttributeValue.Choice)?.code in codes
     is MarketplaceAttributePredicate.ExactText -> matchesText(value)
     is MarketplaceAttributePredicate.IntegerRange ->
         (value as? MarketplaceAttributeValue.Integer)?.let { range.contains(it.value) } == true

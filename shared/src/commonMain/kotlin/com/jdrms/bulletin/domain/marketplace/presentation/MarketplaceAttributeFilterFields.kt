@@ -2,8 +2,6 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
@@ -11,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinColorSwatch
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
@@ -41,6 +38,11 @@ internal fun MarketplaceAttributeFilterFields(
                     spec = spec,
                     input = input,
                     onToggle = { onChange(draft.toggleCapacity(spec.key, it)) }
+                )
+                spec.key == MarketplaceAttributeCatalog.COLOR -> MarketplaceColorFilterField(
+                    spec = spec,
+                    input = input,
+                    onToggle = { onChange(draft.toggleColor(it)) }
                 )
                 spec.kind == MarketplaceAttributeKind.CHOICE -> ChoiceField(
                     spec,
@@ -76,7 +78,6 @@ internal fun MarketplaceAttributeFilterFields(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChoiceField(
     spec: MarketplaceAttributeSpec,
@@ -85,25 +86,12 @@ private fun ChoiceField(
     onSelect: (String) -> Unit
 ) {
     MarketplaceFilterSection(title = spec.label) {
-        if (spec.key == MarketplaceAttributeCatalog.COLOR) {
-            FlowRow {
-                choices.forEach { (code, label) ->
-                    BulletinColorSwatch(
-                        code = code,
-                        label = label,
-                        selected = selected == code,
-                        onClick = { onSelect(if (selected == code) "" else code) }
-                    )
-                }
-            }
-        } else {
-            MarketplacePillGroup(
-                options = choices.keys.toList(),
-                isSelected = { it == selected },
-                label = { code -> choices.getValue(code) },
-                onToggle = { code -> onSelect(if (selected == code) "" else code) }
-            )
-        }
+        MarketplacePillGroup(
+            options = choices.keys.toList(),
+            isSelected = { it == selected },
+            label = { code -> choices.getValue(code) },
+            onToggle = { code -> onSelect(if (selected == code) "" else code) }
+        )
     }
 }
 

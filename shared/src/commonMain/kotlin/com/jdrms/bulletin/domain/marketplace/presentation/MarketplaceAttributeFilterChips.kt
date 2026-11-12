@@ -24,6 +24,7 @@ internal fun ActiveAttributeFilterChips(
 
 private fun MarketplaceAttributePredicate.describe(choices: Map<String, String>): String = when (this) {
     is MarketplaceAttributePredicate.ExactText -> value
+    is MarketplaceAttributePredicate.ChoiceOptions -> codes.sorted().joinToString(" or ") { choices[it] ?: it }
     is MarketplaceAttributePredicate.Choice -> choices[code] ?: code
     is MarketplaceAttributePredicate.IntegerRange -> range.describe()
     is MarketplaceAttributePredicate.IntegerOptions -> ranges.sortedBy { it.min }.joinToString(", ") {

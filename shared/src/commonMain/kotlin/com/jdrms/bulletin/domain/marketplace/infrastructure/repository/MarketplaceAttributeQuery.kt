@@ -40,6 +40,7 @@ private fun PostgrestFilterBuilder.applyAttributePredicate(
 ) {
     val textColumn = MarketplaceAttributeColumns.textColumn(key, predicate)
     when (predicate) {
+        is MarketplaceAttributePredicate.ChoiceOptions -> isIn(textColumn, predicate.codes.sorted())
         is MarketplaceAttributePredicate.Choice -> eq(textColumn, predicate.code)
         is MarketplaceAttributePredicate.ExactText -> {
             eq(textColumn, predicate.value)

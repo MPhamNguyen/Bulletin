@@ -11,7 +11,8 @@ internal data class MarketplaceAttributeFilterInput(
     val exact: String = "",
     val min: String = "",
     val max: String = "",
-    val capacities: Set<MarketplaceCapacityRange> = emptySet()
+    val capacities: Set<MarketplaceCapacityRange> = emptySet(),
+    val choices: Set<String> = emptySet()
 )
 
 /** Category-driven form text for typed marketplace attribute filters. */
@@ -25,6 +26,14 @@ internal data class MarketplaceAttributeFilterDraft(
     fun withExact(key: String, value: String) = withInput(key, input(key).copy(exact = value))
     fun withMin(key: String, value: String) = withInput(key, input(key).copy(min = value))
     fun withMax(key: String, value: String) = withInput(key, input(key).copy(max = value))
+
+    fun toggleColor(code: String): MarketplaceAttributeFilterDraft {
+        val key = MarketplaceAttributeCatalog.COLOR
+        val input = input(key)
+        val current = input.choices + setOfNotNull(input.exact.takeIf(String::isNotBlank))
+        val selected = if (code in current) current - code else current + code
+        return withInput(key, MarketplaceAttributeFilterInput(choices = selected))
+    }
 
     fun toggleCapacity(key: String, range: MarketplaceCapacityRange): MarketplaceAttributeFilterDraft {
         val current = input(key).selectedCapacities(key)
@@ -56,6 +65,10 @@ internal data class MarketplaceAttributeFilterDraft(
         val visible = MarketplaceAttributeCatalog.applicableSpecs(category, selectedChoices).associateBy { it.key }
         val reconciled = inputs.filter { (key, input) ->
             val spec = visible[key] ?: return@filter false
+            if (input.choices.isNotEmpty()) {
+                return@filter spec.key == MarketplaceAttributeCatalog.COLOR &&
+                    input.choices.all { it in spec.choicesFor(selectedChoices) }
+            }
             if (spec.kind != MarketplaceAttributeKind.CHOICE || input.exact.isBlank()) return@filter true
             input.exact in spec.choicesFor(selectedChoices)
         }
@@ -78,6 +91,7 @@ internal data class MarketplaceAttributeFilterDraft(
 
 private fun MarketplaceAttributePredicate.toInput(): MarketplaceAttributeFilterInput = when (this) {
     is MarketplaceAttributePredicate.ExactText -> MarketplaceAttributeFilterInput(exact = value)
+    is MarketplaceAttributePredicate.ChoiceOptions -> MarketplaceAttributeFilterInput(choices = codes)
     is MarketplaceAttributePredicate.Choice -> MarketplaceAttributeFilterInput(exact = code)
     is MarketplaceAttributePredicate.IntegerRange -> MarketplaceAttributeFilterInput(
         exact = range.min?.takeIf { it == range.max }?.toString().orEmpty(),
