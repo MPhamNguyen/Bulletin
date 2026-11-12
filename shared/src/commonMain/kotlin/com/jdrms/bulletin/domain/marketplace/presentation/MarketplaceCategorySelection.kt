@@ -20,6 +20,7 @@ internal fun MarketplaceFilterState.selectCategory(next: MarketplaceCategory?): 
     val updated = copy(
         category = next,
         attributes = MarketplaceAttributeFilters.NONE,
+        condition = if (crossesHousing) null else condition,
         priceRange = if (crossesHousing) MarketplacePriceRange.NONE else priceRange
     ).normalized()
     val cleared = updated.copy(category = null) != copy(category = null)

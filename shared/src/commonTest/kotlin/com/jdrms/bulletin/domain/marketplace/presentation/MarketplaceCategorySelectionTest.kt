@@ -69,11 +69,16 @@ class MarketplaceCategorySelectionTest {
     }
 
     @Test
-    fun leavingHousingDropsThePriceRange() {
-        val filters = MarketplaceFilterState(category = MarketplaceCategory.HOUSING, priceRange = priced)
+    fun leavingHousingDropsPriceAndCondition() {
+        val filters = MarketplaceFilterState(
+            category = MarketplaceCategory.HOUSING,
+            condition = MarketplaceCondition.GOOD,
+            priceRange = priced
+        )
 
         val change = filters.selectCategory(null)
 
+        assertNull(change.filters.condition)
         assertTrue(change.filters.priceRange.isEmpty)
         assertTrue(change.clearedOtherFilters)
     }

@@ -47,9 +47,14 @@ internal class MarketplaceFilterSheetState(
 
     fun selectCategory(category: MarketplaceCategory?) {
         if (draft.category == category) return
+        val crossesHousing = draft.category == MarketplaceCategory.HOUSING || category == MarketplaceCategory.HOUSING
+        draft = draft.selectCategory(category).filters
         attributeDraft = MarketplaceAttributeFilterDraft()
         attributeErrors = emptyMap()
-        draft = draft.copy(category = category, attributes = MarketplaceAttributeFilters.NONE).normalized()
+        if (crossesHousing) {
+            priceDraft = MarketplacePriceFilterDraft.from(draft.priceRange)
+            priceError = null
+        }
     }
 
     fun updateAttributes(next: MarketplaceAttributeFilterDraft) {
