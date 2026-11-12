@@ -75,7 +75,12 @@ object ListingAttributeCatalog {
         ListingAttributeDefinition(
             ListingAttributeKeys.STORAGE_GB,
             "Storage",
-            ListingAttributeType.Integer(1, STORAGE_MAX_GB, ListingAttributeUnit.GIGABYTES),
+            ListingAttributeType.Integer(
+                1,
+                STORAGE_MAX_GB,
+                ListingAttributeUnit.GIGABYTES,
+                ListingStorageOptions.gigabytes.toSet()
+            ),
             ListingAttributeApplicability(ListingAttributeKeys.DEVICE_TYPE, storageDeviceTypes)
         )
     )

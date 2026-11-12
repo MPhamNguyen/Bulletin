@@ -61,6 +61,13 @@ internal fun ListingAttributeFields(
                     error,
                     onInputChange
                 )
+                is ListingAttributeType.MultiChoice ->
+                    ListingSwatchAttributeField(definition, value, error, onInputChange)
+                is ListingAttributeType.Integer -> if (definition.type.allowedValues.isNotEmpty()) {
+                    ListingStorageAttributeField(definition, value, error, onInputChange)
+                } else {
+                    ListingTextAttributeField(category, definition, value, error, onInputChange)
+                }
                 is ListingAttributeType.Date ->
                     ListingDateAttributeField(category, definition, value, error, onInputChange)
                 is ListingAttributeType.Text -> if (definition.type.format == ListingTextFormat.ISBN) {

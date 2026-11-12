@@ -32,7 +32,7 @@ class ListingAttributeValidationPolicyTest {
         val console = ListingAttributes(
             mapOf(
                 "device_type" to ListingAttributeValue.Choice("console"),
-                "storage_gb" to ListingAttributeValue.Integer(825)
+                "storage_gb" to ListingAttributeValue.Integer(1024)
             )
         )
         assertTrue(policy.validate(ListingCategory.ELECTRONICS, console).isEmpty())

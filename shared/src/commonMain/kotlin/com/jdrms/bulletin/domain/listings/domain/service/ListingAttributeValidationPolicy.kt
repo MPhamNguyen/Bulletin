@@ -56,6 +56,7 @@ class ListingAttributeValidationPolicy {
         val message = when (val type = definition.type) {
             is ListingAttributeType.Text -> textProblem(definition, type, value)
             is ListingAttributeType.Choice -> choiceProblem(definition, value, attributes)
+            is ListingAttributeType.MultiChoice -> multiChoiceProblem(definition, type, value)
             is ListingAttributeType.Integer -> integerProblem(definition, type, value)
             is ListingAttributeType.Decimal -> decimalProblem(definition, type, value)
             is ListingAttributeType.Date -> dateProblem(definition, type, value)
@@ -90,12 +91,26 @@ class ListingAttributeValidationPolicy {
         }
     }
 
+    private fun multiChoiceProblem(
+        definition: ListingAttributeDefinition,
+        type: ListingAttributeType.MultiChoice,
+        value: ListingAttributeValue
+    ): String? {
+        val choices = value as? ListingAttributeValue.MultiChoice ?: return wrongType(definition)
+        val valid = choices.codes.isNotEmpty() && choices.codes.all { code -> type.options.any { it.code == code } }
+        return if (valid) null else "Choose valid ${definition.label.lowercase()} options."
+    }
+
     private fun integerProblem(
         definition: ListingAttributeDefinition,
         type: ListingAttributeType.Integer,
         value: ListingAttributeValue
     ): String? {
         val number = value as? ListingAttributeValue.Integer ?: return wrongType(definition)
+        if (type.allowedValues.isNotEmpty()) {
+            val label = definition.label.lowercase()
+            return if (number.value in type.allowedValues) null else "Choose a valid $label size."
+        }
         return if (number.value in type.min..type.max) {
             null
         } else {
@@ -144,6 +159,7 @@ class ListingAttributeValidationPolicy {
             it == '"' || it == '\\'
         } + QUOTES
         is ListingAttributeValue.Choice -> value.code.length + QUOTES
+        is ListingAttributeValue.MultiChoice -> value.codes.sumOf { it.length + QUOTES + 1 } + QUOTES
         is ListingAttributeValue.Integer -> value.value.toString().length
         is ListingAttributeValue.Decimal -> value.value.toPlainString().length
         is ListingAttributeValue.Date -> value.value.toString().length + QUOTES

@@ -88,7 +88,7 @@ class ListingAttributeSubmissionTest {
         advanceUntilIdle()
 
         assertEquals(
-            ListingAttributeValue.Choice("blue"),
+            ListingAttributeValue.MultiChoice(setOf("blue")),
             repository.getAllListings().single().attributes[ListingAttributeKeys.COLOR]
         )
     }

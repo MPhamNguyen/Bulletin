@@ -16,7 +16,7 @@ class ListingClothingColorAttributeTest {
     @Test
     fun clothingOffersTheSupportedColorChoices() {
         val definition = ListingAttributeCatalog.definition(ListingCategory.CLOTHING, ListingAttributeKeys.COLOR)
-        val type = definition?.type as? ListingAttributeType.Choice
+        val type = definition?.type as? ListingAttributeType.MultiChoice
 
         assertEquals(
             listOf(
@@ -28,12 +28,15 @@ class ListingClothingColorAttributeTest {
     }
 
     @Test
-    fun clothingColorParsesAsAChoiceAndRejectsUnknownValues() {
+    fun clothingColorParsesAsAMultiChoiceAndRejectsUnknownValues() {
         val parsed = parser.parse(ListingCategory.CLOTHING, mapOf(ListingAttributeKeys.COLOR to "blue"))
         val invalid = parser.parse(ListingCategory.CLOTHING, mapOf(ListingAttributeKeys.COLOR to "teal"))
 
-        assertEquals(ListingAttributeValue.Choice("blue"), parsed.attributes?.get(ListingAttributeKeys.COLOR))
+        assertEquals(
+            ListingAttributeValue.MultiChoice(setOf("blue")),
+            parsed.attributes?.get(ListingAttributeKeys.COLOR)
+        )
         assertNull(invalid.attributes)
-        assertEquals("Choose a valid color.", invalid.errors[ListingAttributeKeys.COLOR])
+        assertEquals("Choose valid color options.", invalid.errors[ListingAttributeKeys.COLOR])
     }
 }

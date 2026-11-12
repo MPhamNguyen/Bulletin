@@ -27,7 +27,15 @@ data class ListingAttributeOptionGroup(
 sealed interface ListingAttributeType {
     data class Text(val format: ListingTextFormat, val maxLength: Int) : ListingAttributeType
     data class Choice(val options: List<ListingAttributeOption>) : ListingAttributeType
-    data class Integer(val min: Long, val max: Long, val unit: ListingAttributeUnit? = null) : ListingAttributeType
+    data class MultiChoice(val options: List<ListingAttributeOption>) : ListingAttributeType
+
+    /** A whole number; a nonempty [allowedValues] restricts it to exactly those values (a single selection). */
+    data class Integer(
+        val min: Long,
+        val max: Long,
+        val unit: ListingAttributeUnit? = null,
+        val allowedValues: Set<Long> = emptySet()
+    ) : ListingAttributeType
     data class Decimal(
         val min: ListingDecimal,
         val max: ListingDecimal,

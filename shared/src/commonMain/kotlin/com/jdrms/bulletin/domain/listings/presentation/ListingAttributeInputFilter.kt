@@ -14,7 +14,7 @@ internal fun ListingAttributeDefinition.filterInput(raw: String): String = when 
         filterDecimal(raw, wholeDigits, type.scale)
     }
     is ListingAttributeType.Text -> filterText(type.format, raw, type.maxLength)
-    is ListingAttributeType.Choice, is ListingAttributeType.Date -> raw
+    is ListingAttributeType.Choice, is ListingAttributeType.MultiChoice, is ListingAttributeType.Date -> raw
 }
 
 private fun Char.isAsciiDigit() = this in '0'..'9'

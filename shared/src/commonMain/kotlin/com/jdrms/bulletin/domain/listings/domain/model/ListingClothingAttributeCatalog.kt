@@ -66,7 +66,7 @@ internal object ListingClothingAttributeCatalog {
         ListingAttributeDefinition(
             ListingAttributeKeys.COLOR,
             "Color",
-            ListingAttributeType.Choice(colorOptions)
+            ListingAttributeType.MultiChoice(colorOptions)
         ),
         ListingAttributeDefinition(
             ListingAttributeKeys.BRAND,
