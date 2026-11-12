@@ -21,7 +21,9 @@ internal fun CreateListingDetailsStep(
     actions: CreateListingDetailsActions
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xl)) {
-        SectionTitle(CreateListingStep.DETAILS.title)
+        SectionTitle(
+            if (state.newCategory == ListingCategory.HOUSING) "Housing details" else CreateListingStep.DETAILS.title
+        )
         if (state.newCategory != ListingCategory.HOUSING) {
             Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
                 FieldLabel("Condition")

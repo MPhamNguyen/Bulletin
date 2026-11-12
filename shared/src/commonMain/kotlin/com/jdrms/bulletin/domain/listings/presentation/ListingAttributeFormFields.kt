@@ -18,16 +18,22 @@ internal fun listingAttributeFormFields(
     inputs: Map<String, String>
 ): List<ListingAttributeFormField> {
     val applicable = ListingAttributeInputParser().applicableDefinitions(category, inputs).map { it.key }.toSet()
-    return ListingAttributeCatalog.definitionsFor(category).mapNotNull { definition ->
-        val enabled = definition.key in applicable
-        val capacity = definition.key == ListingAttributeKeys.RAM_GB ||
-            definition.key == ListingAttributeKeys.STORAGE_GB
-        if (enabled || capacity) {
-            ListingAttributeFormField(definition, enabled, if (enabled) null else unavailableReason(definition, inputs))
-        } else {
-            null
+    return ListingAttributeCatalog.definitionsFor(category)
+        .filterNot { it.key == ListingAttributeKeys.MONTHLY_RENT_USD }
+        .mapNotNull { definition ->
+            val enabled = definition.key in applicable
+            val capacity = definition.key == ListingAttributeKeys.RAM_GB ||
+                definition.key == ListingAttributeKeys.STORAGE_GB
+            if (enabled || capacity) {
+                ListingAttributeFormField(
+                    definition,
+                    enabled,
+                    if (enabled) null else unavailableReason(definition, inputs)
+                )
+            } else {
+                null
+            }
         }
-    }
 }
 
 private fun unavailableReason(definition: ListingAttributeDefinition, inputs: Map<String, String>): String {

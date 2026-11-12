@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
-import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeUnit
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingTextFormat
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
@@ -60,11 +59,8 @@ internal fun ListingAttributeFields(
                 } else {
                     ListingTextAttributeField(category, definition, value, error, onInputChange)
                 }
-                is ListingAttributeType.Decimal -> if (definition.type.unit == ListingAttributeUnit.USD_PER_MONTH) {
-                    ListingRentAttributeField(definition, value, error, onInputChange)
-                } else {
+                is ListingAttributeType.Decimal ->
                     ListingTextAttributeField(category, definition, value, error, onInputChange)
-                }
             }
         }
         draft.errors[ListingAttributeInputParser.GENERAL_ERROR_KEY]?.let { message ->

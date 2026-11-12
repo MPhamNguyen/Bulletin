@@ -47,7 +47,7 @@ fun DateInput(
         decoration = BulletinFieldDecoration(
             label = label?.let { { Text(it) } },
             placeholder = placeholder?.let { { Text(it) } },
-            supportingText = { Text(error ?: "Format: $DATE_FORMAT_HINT") },
+            supportingText = error?.let { { Text(it) } },
             trailingIcon = {
                 IconButton(onClick = onOpenCalendar) {
                     Icon(Icons.Outlined.CalendarMonth, contentDescription = "Choose date from calendar")

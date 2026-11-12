@@ -38,7 +38,7 @@ internal fun ListingDateAttributeField(
             value = value,
             onValueChange = { onInputChange(definition.key, it) },
             label = null,
-            placeholder = null,
+            placeholder = "e.g., YYYY-MM-DD",
             onOpenCalendar = openCalendar,
             error = message,
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = definition.label }

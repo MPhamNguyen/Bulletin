@@ -76,6 +76,9 @@ Sign Up / Sign In  →  Create Profile  →  Main
                   profiles)
 ```
 
+Housing listings use one **Monthly rent** amount in the pricing step and edit form. Saving also derives the
+housing rent metadata from that amount for filtering. Housing details collects availability and housing type.
+
 ---
 
 ## 🏗️ Tech Stack

@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeKeys
 import com.jdrms.bulletin.domain.listings.domain.model.ListingDetails
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputFormatter
@@ -54,7 +55,8 @@ internal class ListingEditActions(
                 editCondition = listing.condition,
                 editPhotos = listing.images.map { image -> ListingPhotoDraft.Existing(image) },
                 editAttributes = ListingAttributeDraft(
-                    inputs = ListingAttributeInputFormatter.inputsFor(listing.attributes),
+                    inputs = ListingAttributeInputFormatter.inputsFor(listing.attributes)
+                        .minus(ListingAttributeKeys.MONTHLY_RENT_USD),
                     preserved = listing.attributes.preserved
                 ),
                 pendingCategoryChange = null,

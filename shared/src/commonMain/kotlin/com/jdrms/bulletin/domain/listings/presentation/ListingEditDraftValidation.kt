@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import com.jdrms.bulletin.core.designsystem.currencyDigitsToAmount
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
 
 internal data class EditListingDraftValidation(
@@ -14,9 +15,19 @@ internal fun validateEditListingDraft(
     parser: ListingAttributeInputParser = ListingAttributeInputParser()
 ): EditListingDraftValidation {
     val currentListing = state.editingListing ?: return EditListingDraftValidation(null, null)
-    val attributes = parser.parse(state.editCategory, state.editAttributes.inputs, state.editAttributes.preserved)
+    val attributes = parseListingFormAttributes(
+        state.editCategory,
+        state.editAttributes,
+        state.editPriceCents,
+        parser
+    )
     val baseError = when {
-        state.editPriceCents.isEmpty() -> "Please enter a price"
+        state.editPriceCents.isEmpty() -> if (state.editCategory == ListingCategory.HOUSING) {
+            "Please enter the monthly rent"
+        } else {
+            "Please enter a price"
+        }
+        attributes.rentError != null -> attributes.rentError
         state.editTitle.trim().length < 3 -> "Title must be at least 3 characters"
         state.editDescription.trim().isBlank() -> "Description cannot be empty"
         else -> null

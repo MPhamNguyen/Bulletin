@@ -18,8 +18,8 @@ import com.jdrms.bulletin.core.designsystem.BulletinOptionChip
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeDefinition
+import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeKeys
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeType
-import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeUnit
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -31,7 +31,20 @@ internal fun ListingTextAttributeField(
     error: String?,
     onInputChange: (String, String) -> Unit
 ) {
-    val helper = error ?: helperTextFor(definition)
+    val placeholder = when (category) {
+        ListingCategory.FURNITURE -> when (definition.key) {
+            ListingAttributeKeys.WIDTH_CM -> "e.g., 80.0"
+            ListingAttributeKeys.LENGTH_CM -> "e.g., 120.5"
+            else -> null
+        }
+        ListingCategory.TEXTBOOKS -> when (definition.key) {
+            ListingAttributeKeys.COURSE_CODE -> "e.g., CECS 329"
+            ListingAttributeKeys.EDITION -> "e.g., 8th edition"
+            else -> null
+        }
+        else -> null
+    }
+    val helper = error
     Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
         FieldLabel(ListingAttributeDisplay.fieldLabel(definition))
         BulletinTextField(
@@ -40,6 +53,7 @@ internal fun ListingTextAttributeField(
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = definition.label },
             isError = error != null,
             decoration = BulletinFieldDecoration(
+                placeholder = placeholder?.let { { Text(it) } },
                 supportingText = if (helper != null) {
                     { Text(helper) }
                 } else {
@@ -72,9 +86,4 @@ private fun keyboardTypeFor(definition: ListingAttributeDefinition): KeyboardTyp
     is ListingAttributeType.Integer -> KeyboardType.Number
     is ListingAttributeType.Decimal -> KeyboardType.Decimal
     else -> KeyboardType.Text
-}
-
-private fun helperTextFor(definition: ListingAttributeDefinition): String? {
-    val unit = (definition.type as? ListingAttributeType.Decimal)?.unit
-    return if (unit == ListingAttributeUnit.USD_PER_MONTH) "Rent per month, separate from the listing price." else null
 }

@@ -51,6 +51,7 @@ internal fun ListingIsbnAttributeField(
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = definition.label },
             isError = message != null,
             decoration = BulletinFieldDecoration(
+                placeholder = { Text("e.g., 9780131103627") },
                 supportingText = { Text(message ?: ISBN_FORMAT_HINT) }
             ),
             options = BulletinFieldOptions(
