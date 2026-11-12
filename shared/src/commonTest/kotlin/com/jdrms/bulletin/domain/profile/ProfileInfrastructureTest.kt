@@ -111,6 +111,16 @@ class ProfileInfrastructureTestPart1 {
     }
 
     @Test
+    fun missingReviewerNameDoesNotDefaultToStudent() {
+        val dto = Json.decodeFromString<ReviewDto>(
+            """{"id":"review-1","reviewer_id":"reviewer-id","reviewee_id":"seller-id","score":5,"comment":"Great"}"""
+        )
+
+        assertNull(dto.reviewerName)
+        assertEquals("", ProfileMapper.toDomain(dto).reviewerName)
+    }
+
+    @Test
     fun testProfileMapperPreservesMajor() {
         val profile = StudentProfile(
             id = UserId("student_1"),

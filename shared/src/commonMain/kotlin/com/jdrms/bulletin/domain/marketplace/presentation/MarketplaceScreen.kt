@@ -131,6 +131,19 @@ private fun MarketplaceSellerProfileFlow(
         )
         return true
     }
+    if (state.destination == MarketplaceDestination.ALL_REVIEWS) {
+        state.sellerProfileState.profile?.let { profile ->
+            SellerAllReviewsScreen(
+                profile = profile,
+                isLoadingMoreReviews = state.sellerProfileState.isLoadingMoreReviews,
+                reviewLoadError = state.sellerProfileState.reviewLoadError,
+                onLoadMoreReviews = viewModels.sellerProfile::loadMoreReviews,
+                onBack = { onNavigate(MarketplaceDestination.SELLER_PROFILE) },
+                onListingClick = onOpenListing
+            )
+        }
+        return true
+    }
     if (!state.destination.showsSellerProfile) return false
 
     SellerProfileScreen(
@@ -141,6 +154,11 @@ private fun MarketplaceSellerProfileFlow(
             onFiltersApplied = viewModels.sellerProfile::onFiltersApplied
         ),
         onBack = onBackFromSellerProfile,
+        reviewActions = SellerProfileReviewActions(
+            onViewAllReviews = { onNavigate(MarketplaceDestination.ALL_REVIEWS) },
+            onRetryReviews = viewModels.sellerProfile::loadMoreReviews,
+            onListingClick = onOpenListing
+        ),
         onReportUser = {
             state.sellerProfileState.profile?.sellerId?.let(viewModels.report::begin)
             if (state.sellerProfileState.profile != null) onNavigate(MarketplaceDestination.REPORT_USER)
@@ -204,6 +222,7 @@ internal enum class MarketplaceDestination {
     CATALOG,
     SELLER_PROFILE,
     SELLER_LISTING,
+    ALL_REVIEWS,
     REPORT_USER
 }
 

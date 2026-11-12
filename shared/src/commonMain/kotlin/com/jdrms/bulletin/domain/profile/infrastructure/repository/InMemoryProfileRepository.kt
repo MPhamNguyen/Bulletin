@@ -1,9 +1,11 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.PublicProfileIdentity
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.PublicProfilePhotoRepository
@@ -52,6 +54,35 @@ class InMemoryProfileRepository(
     override suspend fun getReputation(userId: UserId): StudentReputation {
         val userReviews = reviewsByUser[userId.value] ?: emptyList()
         return policy.calculateReputation(userId, userReviews)
+    }
+
+    override suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?> {
+        val profile = profiles[userId.value]
+            ?: profiles.values.firstOrNull { it.email.value == userId.value.lowercase() }
+        return Result.Success(profile?.copy(reputation = null))
+    }
+
+    override suspend fun getPublicIdentity(userId: UserId): Result<PublicProfileIdentity?> {
+        val profile = profiles[userId.value]
+            ?: profiles.values.firstOrNull { it.email.value == userId.value.lowercase() }
+        return Result.Success(profile?.let { PublicProfileIdentity(it.id, it.fullName, it.avatarUrl) })
+    }
+
+    override suspend fun getReputationSummary(userId: UserId): StudentReputation =
+        getReputation(userId).copy(reviews = emptyList())
+
+    override suspend fun getReviewsPage(userId: UserId, offset: Int, pageSize: Int): StudentReviewPage {
+        require(offset >= 0)
+        require(pageSize in 1..MAX_REVIEW_PAGE_SIZE)
+        val reviews = (reviewsByUser[userId.value] ?: emptyList())
+            .sortedByDescending { it.createdAtMillis }
+            .drop(offset)
+            .take(pageSize + 1)
+        val pageReviews = reviews.take(pageSize)
+        return StudentReviewPage(
+            reviews = pageReviews,
+            nextOffset = if (reviews.size > pageSize) offset + pageSize else null
+        )
     }
 
     companion object {
@@ -183,3 +214,5 @@ class InMemoryProfileRepository(
         )
     }
 }
+
+private const val MAX_REVIEW_PAGE_SIZE = 50
