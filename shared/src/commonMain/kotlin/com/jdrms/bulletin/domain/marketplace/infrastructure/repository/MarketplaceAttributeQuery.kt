@@ -27,7 +27,11 @@ internal fun PostgrestFilterBuilder.applyAttributeFilters(
     // Exact category match lets partial indexes apply and keeps
     // stale attributes left behind by an older client's category change out of the results.
     eq("category", requireNotNull(category).name)
-    filters.allPredicates.forEach { (key, predicate) -> applyAttributePredicate(key, predicate) }
+    val (options, other) = filters.allPredicates.entries.partition {
+        it.value is MarketplaceAttributePredicate.IntegerOptions
+    }
+    other.forEach { (key, predicate) -> applyAttributePredicate(key, predicate) }
+    and { options.forEach { (key, predicate) -> applyAttributePredicate(key, predicate) } }
 }
 
 private fun PostgrestFilterBuilder.applyAttributePredicate(
@@ -36,6 +40,7 @@ private fun PostgrestFilterBuilder.applyAttributePredicate(
 ) {
     val textColumn = MarketplaceAttributeColumns.textColumn(key, predicate)
     when (predicate) {
+        is MarketplaceAttributePredicate.ChoiceOptions -> isIn(textColumn, predicate.codes.sorted())
         is MarketplaceAttributePredicate.Choice -> eq(textColumn, predicate.code)
         is MarketplaceAttributePredicate.ExactText -> {
             eq(textColumn, predicate.value)
@@ -44,6 +49,18 @@ private fun PostgrestFilterBuilder.applyAttributePredicate(
             MarketplaceAttributeColumns.numberColumn(key),
             predicate.range
         )
+        is MarketplaceAttributePredicate.IntegerOptions -> {
+            val column = MarketplaceAttributeColumns.numberColumn(key)
+            or {
+                predicate.ranges.sortedBy { it.min }.forEach { range ->
+                    if (range.min == range.max) {
+                        eq(column, requireNotNull(range.min))
+                    } else {
+                        and { applyRange(column, range) }
+                    }
+                }
+            }
+        }
         is MarketplaceAttributePredicate.DecimalRange -> {
             val column = MarketplaceAttributeColumns.numberColumn(key)
             predicate.min?.let { gte(column, it) }

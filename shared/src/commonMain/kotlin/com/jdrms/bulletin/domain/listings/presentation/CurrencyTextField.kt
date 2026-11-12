@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import com.jdrms.bulletin.core.designsystem.MoneyInput
+import com.jdrms.bulletin.core.designsystem.MoneyInputAppearance
 
 @Composable
 internal fun CurrencyTextField(
@@ -20,6 +21,6 @@ internal fun CurrencyTextField(
         onDigitsChange = onDigitsChange,
         label = { if (required) ListingRequiredLabel("Price (USD)") else Text("Price (USD)") },
         modifier = modifier,
-        textStyle = textStyle
+        appearance = MoneyInputAppearance(textStyle = textStyle)
     )
 }

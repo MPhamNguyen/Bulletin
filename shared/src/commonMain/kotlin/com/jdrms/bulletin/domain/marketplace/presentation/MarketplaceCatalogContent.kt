@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,7 +38,6 @@ import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinPullToRefreshBox
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
-import com.jdrms.bulletin.core.designsystem.SectionHeader
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -58,6 +56,21 @@ internal fun MarketplaceCatalogContent(
     val focusManager = LocalFocusManager.current
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
+    var filtersBeforeCategoryReset by remember { mutableStateOf<MarketplaceFilterState?>(null) }
+    val headerActions = MarketplaceCatalogHeaderActions(
+        onQueryChanged = viewModel::onSearchQueryChanged,
+        onFiltersApplied = viewModel::onFiltersApplied,
+        onCategorySelected = { category ->
+            val change = state.filters.selectCategory(category)
+            viewModel.onFiltersApplied(change.filters)
+            filtersBeforeCategoryReset = state.filters.takeIf { change.clearedOtherFilters }
+        },
+        onLayoutChanged = viewModel::onLayoutPreferenceChanged,
+        onSortSelected = { viewModel.onFiltersApplied(state.filters.copy(sortOrder = it)) },
+        onSearchPositioned = { coordinates ->
+            searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
+        }
+    )
     LaunchedEffect(gridState.canScrollForward) {
         if (!gridState.canScrollForward) onContentNoLongerScrollable()
     }
@@ -101,19 +114,31 @@ internal fun MarketplaceCatalogContent(
             state = gridState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = BulletinSpacing.l),
+                .padding(horizontal = CATALOG_GUTTER),
             contentPadding = PaddingValues(bottom = LocalNavbarHeight.current),
-            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
-            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
+            verticalArrangement = Arrangement.spacedBy(CATALOG_GAP),
+            horizontalArrangement = Arrangement.spacedBy(CATALOG_GAP)
         ) {
-            marketplaceCatalogHeader(state, viewModel) { coordinates ->
-                searchBounds = Rect(coordinates.positionInRoot(), coordinates.size.toSize())
-            }
+            marketplaceCatalogHeader(state, headerActions)
             marketplaceLoadingItem(state.isLoading && !state.isRefreshing)
             marketplaceEmptyResultsItem(state)
             marketplaceListingItems(state, viewModel)
             marketplacePaginationItem(state)
             marketplaceErrorItems(state, viewModel)
+        }
+        filtersBeforeCategoryReset?.let { previous ->
+            MarketplaceFilterResetNotice(
+                restartKey = previous,
+                onUndo = {
+                    viewModel.onFiltersApplied(previous)
+                    filtersBeforeCategoryReset = null
+                },
+                onExpired = { filtersBeforeCategoryReset = null },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = CATALOG_GUTTER)
+                    .padding(bottom = LocalNavbarHeight.current + BulletinSpacing.m)
+            )
         }
         MarketplaceDetailFlow(
             state,
@@ -127,35 +152,6 @@ internal fun MarketplaceCatalogContent(
                 actions.onListingClosed()
             }
         )
-    }
-}
-
-private fun LazyGridScope.marketplaceCatalogHeader(
-    state: MarketplaceUiState,
-    viewModel: MarketplaceViewModel,
-    onSearchPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit
-) {
-    fullWidthItem {
-        SectionHeader(
-            title = "Marketplace"
-        )
-    }
-    fullWidthItem {
-        MarketplaceSearchFilters(
-            filters = state.filters,
-            onQueryChanged = viewModel::onSearchQueryChanged,
-            onFiltersApplied = viewModel::onFiltersApplied,
-            onSearchPositioned = onSearchPositioned
-        )
-    }
-    fullWidthItem {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            MarketplaceLayoutToggle(state.layoutPreference, viewModel::onLayoutPreferenceChanged)
-        }
     }
 }
 
@@ -229,3 +225,5 @@ private fun LazyGridScope.fullWidthItem(
 ) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
 
 private const val PREFETCH_ITEM_THRESHOLD = 6
+private val CATALOG_GUTTER = 20.dp
+private val CATALOG_GAP = 14.dp

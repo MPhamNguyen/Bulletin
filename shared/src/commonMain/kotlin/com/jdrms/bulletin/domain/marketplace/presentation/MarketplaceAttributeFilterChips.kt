@@ -1,11 +1,10 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributePredicate
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCapacityOptions
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCapacityRange
 
 @Composable
@@ -17,21 +16,20 @@ internal fun ActiveAttributeFilterChips(
     attributes.allPredicates.forEach { (key, predicate) ->
         val spec = filters.category?.let { MarketplaceAttributeCatalog.spec(it, key) }
         val text = listOfNotNull(spec?.label, predicate.describe(spec?.choices.orEmpty())).joinToString(": ")
-        AttributeChip(text) {
+        RemovableFilterChip(text) {
             onFiltersApplied(filters.copy(attributes = attributes.without(key)))
         }
     }
 }
 
-@Composable
-private fun AttributeChip(text: String, onClear: () -> Unit) {
-    FilterChip(selected = true, onClick = onClear, label = { Text("$text ×") })
-}
-
 private fun MarketplaceAttributePredicate.describe(choices: Map<String, String>): String = when (this) {
     is MarketplaceAttributePredicate.ExactText -> value
+    is MarketplaceAttributePredicate.ChoiceOptions -> codes.sorted().joinToString(" or ") { choices[it] ?: it }
     is MarketplaceAttributePredicate.Choice -> choices[code] ?: code
     is MarketplaceAttributePredicate.IntegerRange -> range.describe()
+    is MarketplaceAttributePredicate.IntegerOptions -> ranges.sortedBy { it.min }.joinToString(", ") {
+        MarketplaceCapacityOptions.label(it)
+    }
     is MarketplaceAttributePredicate.DecimalRange -> describeRange(min, max)
     is MarketplaceAttributePredicate.DateRange -> describeRange(minIso, maxIso)
 }
