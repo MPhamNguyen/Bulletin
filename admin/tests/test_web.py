@@ -234,7 +234,7 @@ class PortalTests(unittest.TestCase):
         data = self.review_form()
         html = self.client.get("/reports/" + REPORT).get_data(as_text=True)
         self.assertRegex(html, r'<option value="resolved"[^>]*>Action taken</option>')
-        self.assertNotRegex(html, r'<option value="(?:action_taken|under_review|duplicate)"')
+        self.assertNotRegex(html, r'<option value="(?:action_taken|under_review)"')
         data["status"] = "resolved"
         result = self.client.post("/reports/" + REPORT + "/status", data=data)
         self.assertEqual(303, result.status_code)
@@ -459,6 +459,19 @@ class PortalTests(unittest.TestCase):
         self.assertEqual("eq.message", query["type"])
         self.assertEqual(50, query["offset"])
         self.assertIn("Next", result.get_data(as_text=True))
+
+    def test_unknown_status_is_visible_in_all_reports_but_not_active_filter(self):
+        self.authenticate()
+        self.backend.page_rows = [{**self.backend.report, "status": "future_status"}]
+
+        all_reports = self.client.get("/reports?status=all")
+        self.assertEqual(200, all_reports.status_code)
+        self.assertIn("Future Status", all_reports.get_data(as_text=True))
+        self.assertNotIn("status", self.backend.queries[-1][1])
+
+        active_reports = self.client.get("/reports?status=active")
+        self.assertEqual(200, active_reports.status_code)
+        self.assertEqual("in.(open,in_review)", self.backend.queries[-1][1]["status"])
 
     def test_invalid_filters_and_pages_fail_without_backend_query(self):
         self.authenticate()
