@@ -27,6 +27,7 @@ import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.PublicProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserBlockRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.AuthSessionRepository
@@ -40,6 +41,7 @@ import com.jdrms.bulletin.domain.profile.infrastructure.repository.ProfileReadCa
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseAuthRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseProfileRepository
+import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabasePublicProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserBlockRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabaseUserReportRepository
 
@@ -47,11 +49,18 @@ internal class ProfileModule(
     private val infrastructure: InfrastructureModule,
     private val externalAuthBrowser: ExternalAuthBrowser? = null
 ) {
+    private val inMemoryProfiles by lazy { InMemoryProfileRepository() }
+    internal val publicProfilePhotos: PublicProfilePhotoRepository by lazy {
+        infrastructure.backend(
+            supabase = ::SupabasePublicProfilePhotoRepository,
+            inMemory = { inMemoryProfiles }
+        )
+    }
     private val profileReadCache by lazy { ProfileReadCache() }
     internal val profileRepository: ProfileRepository by lazy {
         infrastructure.backend(
             supabase = { SupabaseProfileRepository(it, readCache = profileReadCache) },
-            inMemory = { InMemoryProfileRepository() }
+            inMemory = { inMemoryProfiles }
         )
     }
     private val userReportRepository: UserReportRepository by lazy {

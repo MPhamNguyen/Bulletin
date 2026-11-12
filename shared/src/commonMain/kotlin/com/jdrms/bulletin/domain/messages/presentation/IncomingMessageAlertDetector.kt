@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages.presentation
 import com.jdrms.bulletin.domain.messages.application.IncomingMessageAlert
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -60,7 +61,7 @@ internal class IncomingMessageAlertDetector {
                     if (alerted.remove(conversation.id)) cleared += conversation.id
                 isNewer -> {
                     alerted += conversation.id
-                    alerts += last.toAlert(viewer)
+                    alerts += last.toAlert(viewer, conversation.listingId)
                 }
             }
         }
@@ -100,12 +101,17 @@ internal class IncomingMessageAlertDetector {
         return readAt == null || readAt < last.orderingTimestamp
     }
 
-    private fun Message.toAlert(recipient: SenderId) = IncomingMessageAlert(
+    private fun Message.toAlert(
+        recipient: SenderId,
+        listing: ListingReferenceId?
+    ) = IncomingMessageAlert(
         messageId = id,
         conversationId = conversationId,
         recipientId = recipient,
         senderName = senderName,
         content = content,
-        createdAt = orderingTimestamp
+        createdAt = orderingTimestamp,
+        senderId = senderId,
+        listingId = listing
     )
 }

@@ -36,7 +36,7 @@ Students can discover listings, buy or sell items, message other students, build
 | 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details. |
 | ➕ **Listings** | Create, edit, and manage your own listings, upload images, and mark items as sold. |
 | 🔖 **Saved Listings** | Bookmark listings and revisit them from your profile. |
-| 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. Android message alerts work while the app process is alive; push delivery is not implemented. |
+| 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. New messages show an in-app banner while the app is open on a signed-in screen, and an Android system notification while it is in the background; both work only while the app process is alive, and push delivery is not implemented. |
 | ⭐ **Ratings & Reviews** | Leave and view reviews tied to sold listings. |
 | 👤 **Profiles** | View and edit student profiles, upload or replace profile photos, and remove a photo to restore the default initials avatar. |
 | 🚩 **Reporting & Blocking** | Report users, listings, or messages, and block or unblock users. |

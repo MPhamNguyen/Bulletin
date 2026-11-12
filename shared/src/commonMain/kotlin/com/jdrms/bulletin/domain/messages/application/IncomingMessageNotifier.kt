@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.application
 
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import kotlin.time.Instant
@@ -12,7 +13,9 @@ data class IncomingMessageAlert(
     val recipientId: SenderId,
     val senderName: String,
     val content: String,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val senderId: SenderId? = null,
+    val listingId: ListingReferenceId? = null
 )
 
 /** Platform port for surfacing alerts outside the app UI. Implementations must tolerate repeated calls. */

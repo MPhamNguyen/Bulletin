@@ -77,11 +77,13 @@ class AppContainer(
 
     /**
      * Idempotent: the first call binds [notifier]; later calls are ignored.
-     * Alerts only while the process is alive; there is no push delivery yet.
+     * Alerts only while the process is alive; there is no push delivery yet. Foreground alerts feed the in-app
+     * banner and background alerts go to [notifier].
      */
     fun startMessageNotifications(notifier: IncomingMessageNotifier) {
         val coordinator = inboxNotifications ?: messages.createInboxNotifications(notifier)
             .also { inboxNotifications = it }
+        messages.inAppBanner.start(coordinator.alerts)
         coordinator.start()
     }
 

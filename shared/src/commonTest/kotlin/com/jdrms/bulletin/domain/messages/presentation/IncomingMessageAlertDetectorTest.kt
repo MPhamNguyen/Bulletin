@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages.presentation
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -22,7 +23,8 @@ class IncomingMessageAlertDetectorTest {
             ConversationParticipant(me, "Me", readAt?.let(Instant::fromEpochMilliseconds)),
             ConversationParticipant(other, "Other")
         ),
-        lastMessage = last
+        lastMessage = last,
+        listingId = ListingReferenceId("listing")
     )
 
     private fun message(id: String, from: SenderId = other, at: Long) =
@@ -56,6 +58,8 @@ class IncomingMessageAlertDetectorTest {
         val repeat = detector.detect(snapshot, null)
         assertEquals(listOf(MessageId("m2")), first.alerts.map { it.messageId })
         assertEquals(me, first.alerts.single().recipientId)
+        assertEquals(other, first.alerts.single().senderId)
+        assertEquals(ListingReferenceId("listing"), first.alerts.single().listingId)
         assertTrue(repeat.alerts.isEmpty())
     }
 

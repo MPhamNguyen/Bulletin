@@ -14,6 +14,7 @@ import com.jdrms.bulletin.app.di.createRegistrationViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
+import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
 import com.jdrms.bulletin.domain.profile.presentation.SignUpScreen
 import kotlinx.coroutines.cancel
@@ -27,6 +28,7 @@ internal fun AppRoot(
     var currentScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
     val session by container.profile.sessionRepository.state.collectAsState()
     val authState = session.toAuthSessionState()
+    val recoveryState by recovery.uiState.collectAsState()
     LaunchedEffect(container) { container.profile.sessionRepository.restore() }
     LaunchedEffect(authState) { currentScreen = resolveRootScreen(currentScreen, authState) }
     if (authState == AuthSessionState.CHECKING) {
@@ -37,7 +39,8 @@ internal fun AppRoot(
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
     } else {
-        when (resolveRootScreen(currentScreen, authState)) {
+        val screen = resolveRootScreen(currentScreen, authState)
+        when (screen) {
             AppRootScreen.SIGN_IN -> SignInRoute(container, recovery) { currentScreen = AppRootScreen.CREATE_PROFILE }
             AppRootScreen.CREATE_PROFILE -> RegistrationRoute(container) { currentScreen = it }
             AppRootScreen.MAIN -> MainAppScaffold(
@@ -46,6 +49,11 @@ internal fun AppRoot(
             ) { currentScreen = AppRootScreen.SIGN_IN }
         }
         if (authState == AuthSessionState.AUTHENTICATED) ReviewRequestPrompt(container, session)
+        val showsBanners = authState == AuthSessionState.AUTHENTICATED &&
+            InAppBannerScreenPolicy.allows(screen, recoveryState.stage != PasswordRecoveryStage.NONE)
+        Box(Modifier.fillMaxSize()) {
+            InAppMessageBannerRoute(container, showsBanners, Modifier.align(Alignment.TopCenter))
+        }
     }
 }
 
