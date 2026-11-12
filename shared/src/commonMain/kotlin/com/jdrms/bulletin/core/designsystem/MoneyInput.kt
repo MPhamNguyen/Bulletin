@@ -14,6 +14,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFieldStyle
 
 @Composable
 fun MoneyInput(
@@ -23,7 +24,9 @@ fun MoneyInput(
     label: (@Composable () -> Unit)? = null,
     textStyle: TextStyle = LocalTextStyle.current,
     error: String? = null,
-    currencySymbolAsAdornment: Boolean = false
+    currencySymbolAsAdornment: Boolean = false,
+    placeholder: String? = null,
+    style: BulletinFieldStyle = BulletinFieldStyle.Standard
 ) {
     val text = formatCurrencyDigits(digits).let { formatted ->
         if (currencySymbolAsAdornment) formatted.removePrefix("$") else formatted
@@ -56,13 +59,14 @@ fun MoneyInput(
         isError = displayedError != null,
         decoration = BulletinFieldDecoration(
             label = label,
-            placeholder = { Text(if (currencySymbolAsAdornment) "0.00" else "$0.00") },
+            placeholder = { Text(placeholder ?: if (currencySymbolAsAdornment) "0.00" else "$0.00") },
             leadingIcon = if (currencySymbolAsAdornment) ({ Text("$") }) else null,
             supportingText = displayedError?.let { { Text(it) } }
         ),
         options = BulletinFieldOptions(
             textStyle = textStyle,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
+        ),
+        style = style
     )
 }

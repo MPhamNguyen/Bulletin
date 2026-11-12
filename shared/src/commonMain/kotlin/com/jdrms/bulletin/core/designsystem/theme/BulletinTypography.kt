@@ -72,6 +72,12 @@ internal val BulletinTypography = Typography(
 
 /** Styles beyond the Material typography scale. */
 object BulletinTextStyles {
+    /** Filter and category chips. */
+    val chip = TextStyle(fontWeight = FontWeight.Medium, fontSize = 15.sp, lineHeight = 20.sp)
+
+    /** Removable chips that summarize an applied filter. */
+    val chipCompact = TextStyle(fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp)
+
     val otpInput = TextStyle(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.SemiBold,
