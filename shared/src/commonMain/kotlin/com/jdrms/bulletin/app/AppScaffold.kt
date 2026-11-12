@@ -87,6 +87,7 @@ fun MainAppScaffold(
     }
     LaunchedEffect(navigation.currentDestination) { chrome.behavior.onDestinationChanged() }
     MainHomeEffects(navigation, models, retries)
+    MessagingNotificationEffects(container.messages, navigation, models.messages)
     MarketplaceInterestNotificationEffects(
         container.marketplace,
         navigation,

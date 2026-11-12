@@ -12,7 +12,30 @@ STATUSES = {
     "resolved": "Action taken",
     "dismissed": "Dismissed",
 }
+# Cross-language status contract for known values. UNKNOWN is a Kotlin-only
+# fallback and has no portal equivalent; these constants document the contract.
+KOTLIN_TO_PORTAL_STATUS = {
+    "OPEN": "open",
+    "UNDER_REVIEW": "in_review",
+    "ACTION_TAKEN": "resolved",
+    "DISMISSED": "dismissed",
+    "UNKNOWN": None,
+}
+PORTAL_TO_KOTLIN_STATUS = {
+    "open": "OPEN",
+    "in_review": "UNDER_REVIEW",
+    "resolved": "ACTION_TAKEN",
+    "dismissed": "DISMISSED",
+}
 ALIASES = {"under_review": "in_review", "closed": "resolved", "action_taken": "resolved"}
+# Completed outcomes are terminal. Reports may move between the two active
+# states, and either active state may be given a final outcome.
+ALLOWED_STATUS_TRANSITIONS = {
+    "open": frozenset({"in_review", "resolved", "dismissed"}),
+    "in_review": frozenset({"open", "resolved", "dismissed"}),
+    "resolved": frozenset(),
+    "dismissed": frozenset(),
+}
 ACCOUNT_ACTIONS = {
     "suspend": "Suspend account",
     "restore": "Restore account access",
@@ -53,6 +76,9 @@ def reports_page(backend, status, report_type, page):
     query = dict(select=REPORT_COLUMNS, order="created_at.desc,id.desc",
                  offset=page * PAGE_SIZE, limit=PAGE_SIZE + 1)
     if status == "active":
+        # Kotlin treats unrecognized stored values as open for client-side
+        # checks. The portal does not project that fallback: All sends no status
+        # filter and displays raw statuses; Active includes only these known values.
         query["status"] = "in.(open,in_review)"
     elif status in STATUSES:
         query["status"] = "eq." + status
@@ -95,7 +121,8 @@ def update_status(backend, report, status, version):
         raise PortalError("Choose a valid report status.")
     if version != snapshot(report):
         raise PortalError("Another reviewer changed this report. Reload before saving.", 409)
-    if status == report.get("status"):
+    validate_status_transition(report.get("status"), status)
+    if canonical_status(status) == canonical_status(report.get("status")):
         return False
     query = {"id": "eq." + identifier(report["id"]), "select": "id,status,modified_at"}
     for field in ("status", "modified_at"):
@@ -112,6 +139,25 @@ def update_status(backend, report, status, version):
             or not rows[0].get("modified_at")):
         raise PortalError("The saved report could not be confirmed. Reload before retrying.", 502)
     return True
+
+
+def validate_status_transition(current_status, new_status):
+    current = canonical_status(current_status)
+    target = canonical_status(new_status)
+    # Unknown current values remain visible in All, but need schema/data repair
+    # before moderators can transition them through the supported status set.
+    if current not in STATUSES or target not in STATUSES:
+        raise PortalError("Choose a valid report status.")
+    if current == target:
+        return
+    if target not in ALLOWED_STATUS_TRANSITIONS[current]:
+        raise PortalError(
+            f"A report marked {STATUSES[current]} cannot be changed to {STATUSES[target]}."
+        )
+
+
+def canonical_status(status):
+    return ALIASES.get(status, status)
 
 
 def snapshot(report):

@@ -1,5 +1,9 @@
 <resources>
     <string name="app_name">Bulletin</string>
+    <string name="notification_channel_messages">Messages</string>
+    <string name="notification_channel_messages_description">New direct messages about listings</string>
+    <string name="notification_new_message">New message</string>
+    <string name="notification_unknown_sender">New message</string>
     <string name="notification_channel_interests">Interest matches</string>
     <string name="notification_channel_interests_description">New marketplace listings matching your interests</string>
     <string name="notification_interest_title">New listing: %1$s</string>

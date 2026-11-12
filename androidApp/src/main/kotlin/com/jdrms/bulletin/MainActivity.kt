@@ -16,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.jdrms.bulletin.app.App
+import com.jdrms.bulletin.notifications.MessageNotificationIntents
 import com.jdrms.bulletin.notifications.MarketplaceInterestNotificationIntents
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -23,15 +24,17 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val bulletin get() = application as BulletinApplication
     private var leftForBrowser = false
-    private val notificationPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { /* Interest alerts remain off if permission is denied. */ }
+    private val notificationPermission =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { /* Alerts simply stay off if denied. */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) handleNotificationTap(intent)
         handleCallback(intent)
+        bulletin.container.startMessageNotifications(bulletin.messageNotifier)
         bulletin.container.startMarketplaceInterestNotifications()
         requestNotificationPermissionAfterSignIn()
         setContent { App(appContainer = bulletin.container) }
@@ -55,18 +58,31 @@ class MainActivity : ComponentActivity() {
         leftForBrowser = false
     }
 
+    private fun handleNotificationTap(intent: Intent) {
+        // Try message notification first
+        val messageTarget = MessageNotificationIntents.parse(intent)
+        if (messageTarget != null) {
+            MessageNotificationIntents.consume(intent)
+            bulletin.container.openConversationFromNotification(messageTarget.conversationId, messageTarget.recipientId)
+            return
+        }
+        // Try interest notification
+        val interestTarget = MarketplaceInterestNotificationIntents.parse(intent)
+        if (interestTarget != null) {
+            MarketplaceInterestNotificationIntents.consume(intent)
+            bulletin.container.openInterestListingFromNotification(interestTarget.listingId, interestTarget.recipientId)
+        }
+    }
+
     private fun handleCallback(intent: Intent) {
+        // Notification intents carry their target in data; it is not an auth callback.
+        if (MessageNotificationIntents.isNotificationIntent(intent)) return
         if (MarketplaceInterestNotificationIntents.isNotificationIntent(intent)) return
         if (BuildConfig.MICROSOFT_SSO_ENABLED) bulletin.externalAuthBrowser.deliver(intent.data)
         intent.data = null
     }
 
-    private fun handleNotificationTap(intent: Intent) {
-        val target = MarketplaceInterestNotificationIntents.parse(intent) ?: return
-        MarketplaceInterestNotificationIntents.consume(intent)
-        bulletin.container.openInterestListingFromNotification(target.listingId, target.recipientId)
-    }
-
+    /** Asks once the user is signed in, when alerts are meaningful, rather than at first launch. */
     private fun requestNotificationPermissionAfterSignIn() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         lifecycleScope.launch {

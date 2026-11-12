@@ -187,11 +187,54 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(303, self.client.post("/reports/" + REPORT + "/status", data=data).status_code)
         self.assertFalse(self.backend.patches)
 
+    def test_legacy_status_aliases_are_semantic_no_ops(self):
+        for legacy, canonical in (("closed", "resolved"), ("action_taken", "resolved"),
+                                  ("under_review", "in_review")):
+            with self.subTest(legacy=legacy):
+                self.backend.report.update(status=legacy, modified_at=None)
+                data = self.review_form()
+                data["status"] = canonical
+                result = self.client.post("/reports/" + REPORT + "/status", data=data)
+                self.assertEqual(303, result.status_code)
+                self.assertFalse(self.backend.patches)
+                self.assertFalse(any(
+                    event["event_type"].startswith("status_change_attempted_to_")
+                    for event in self.backend.events
+                ))
+
+    def test_allowed_status_transitions_cover_active_and_final_outcomes(self):
+        for current, target in (("open", "in_review"), ("open", "resolved"),
+                                ("open", "dismissed"), ("in_review", "open"),
+                                ("in_review", "resolved"), ("in_review", "dismissed")):
+            with self.subTest(current=current, target=target):
+                self.backend.report.update(status=current, modified_at=None)
+                data = self.review_form()
+                data["status"] = target
+                result = self.client.post("/reports/" + REPORT + "/status", data=data)
+                self.assertEqual(303, result.status_code)
+                self.assertEqual(target, self.backend.report["status"])
+
+    def test_final_statuses_cannot_be_reopened_or_changed(self):
+        for current, target in (("dismissed", "open"), ("dismissed", "in_review"),
+                                ("dismissed", "resolved"), ("resolved", "open"),
+                                ("resolved", "in_review"), ("resolved", "dismissed")):
+            with self.subTest(current=current, target=target):
+                self.backend.report.update(status=current, modified_at=None)
+                data = self.review_form()
+                data["status"] = target
+                result = self.client.post("/reports/" + REPORT + "/status", data=data)
+                self.assertEqual(400, result.status_code)
+                current_label = "Action taken" if current == "resolved" else "Dismissed"
+                self.assertIn(f"marked {current_label}", result.get_data(as_text=True))
+                self.assertEqual([], self.backend.patches)
+                self.assertEqual([], [event for event in self.backend.events
+                                     if event["event_type"].startswith("status_change_attempted_to_")])
+
     def test_action_taken_form_sends_resolved_and_updates_modified_at(self):
         data = self.review_form()
         html = self.client.get("/reports/" + REPORT).get_data(as_text=True)
         self.assertRegex(html, r'<option value="resolved"[^>]*>Action taken</option>')
-        self.assertNotRegex(html, r'<option value="(?:action_taken|under_review|duplicate)"')
+        self.assertNotRegex(html, r'<option value="(?:action_taken|under_review)"')
         data["status"] = "resolved"
         result = self.client.post("/reports/" + REPORT + "/status", data=data)
         self.assertEqual(303, result.status_code)
@@ -416,6 +459,19 @@ class PortalTests(unittest.TestCase):
         self.assertEqual("eq.message", query["type"])
         self.assertEqual(50, query["offset"])
         self.assertIn("Next", result.get_data(as_text=True))
+
+    def test_unknown_status_is_visible_in_all_reports_but_not_active_filter(self):
+        self.authenticate()
+        self.backend.page_rows = [{**self.backend.report, "status": "future_status"}]
+
+        all_reports = self.client.get("/reports?status=all")
+        self.assertEqual(200, all_reports.status_code)
+        self.assertIn("Future Status", all_reports.get_data(as_text=True))
+        self.assertNotIn("status", self.backend.queries[-1][1])
+
+        active_reports = self.client.get("/reports?status=active")
+        self.assertEqual(200, active_reports.status_code)
+        self.assertEqual("in.(open,in_review)", self.backend.queries[-1][1]["status"])
 
     def test_invalid_filters_and_pages_fail_without_backend_query(self):
         self.authenticate()

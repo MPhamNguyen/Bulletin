@@ -14,20 +14,19 @@ object BulletinTextFieldDefaults {
     @Composable
     fun colors(): TextFieldColors {
         val scheme = MaterialTheme.colorScheme
-        val placeholder = scheme.onSurfaceVariant.copy(alpha = PLACEHOLDER_ALPHA)
+        val placeholder = scheme.onSurfaceVariant
         return OutlinedTextFieldDefaults.colors(
             focusedContainerColor = scheme.surfaceVariant,
             unfocusedContainerColor = scheme.surfaceVariant,
             disabledContainerColor = scheme.surfaceVariant,
             errorContainerColor = scheme.surfaceVariant,
-            focusedBorderColor = scheme.primary,
-            unfocusedBorderColor = scheme.outlineVariant,
+            focusedBorderColor = MaterialTheme.bulletinColors.ring,
+            cursorColor = MaterialTheme.bulletinColors.ring,
+            unfocusedBorderColor = scheme.outline,
             errorBorderColor = scheme.error,
             focusedPlaceholderColor = placeholder,
             unfocusedPlaceholderColor = placeholder,
             errorPlaceholderColor = placeholder
         )
     }
-
-    private const val PLACEHOLDER_ALPHA = 0.75f
 }

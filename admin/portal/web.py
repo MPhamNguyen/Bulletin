@@ -19,7 +19,8 @@ from .account_access import account_snapshot
 from .listing_review import delete_reported_listing, listing_images, listing_snapshot
 from .moderation import (
     ACCOUNT_ACTIONS, ALIASES, PROFILE_COLUMNS, STATUSES, act_on_account,
-    admin_profile, identifier, report_by_id, reports_page, snapshot, update_status,
+    admin_profile, canonical_status, identifier, report_by_id, reports_page, snapshot, update_status,
+    validate_status_transition,
     target_context,
 )
 from .moderation_history import (
@@ -300,7 +301,8 @@ def save_status(report_id):
         raise PortalError("Choose a valid report status.")
     if version != snapshot(report):
         raise PortalError("Another reviewer changed this report. Reload before saving.", 409)
-    changed = status != report.get("status")
+    validate_status_transition(report.get("status"), status)
+    changed = canonical_status(status) != canonical_status(report.get("status"))
     if changed:
         add_report_event(
             g.backend, report_id, g.admin["id"],
