@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributePredicate
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCapacityOptions
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCapacityRange
 
 @Composable
@@ -25,6 +26,9 @@ private fun MarketplaceAttributePredicate.describe(choices: Map<String, String>)
     is MarketplaceAttributePredicate.ExactText -> value
     is MarketplaceAttributePredicate.Choice -> choices[code] ?: code
     is MarketplaceAttributePredicate.IntegerRange -> range.describe()
+    is MarketplaceAttributePredicate.IntegerOptions -> ranges.sortedBy { it.min }.joinToString(", ") {
+        MarketplaceCapacityOptions.label(it)
+    }
     is MarketplaceAttributePredicate.DecimalRange -> describeRange(min, max)
     is MarketplaceAttributePredicate.DateRange -> describeRange(minIso, maxIso)
 }

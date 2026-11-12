@@ -126,7 +126,10 @@ private fun MarketplaceAttributeSpec.accepts(
     MarketplaceAttributeKind.TEXT -> predicate is MarketplaceAttributePredicate.ExactText
     MarketplaceAttributeKind.CHOICE ->
         predicate is MarketplaceAttributePredicate.Choice && predicate.code in choicesFor(selectedChoices)
-    MarketplaceAttributeKind.INTEGER -> predicate is MarketplaceAttributePredicate.IntegerRange
+    MarketplaceAttributeKind.INTEGER ->
+        predicate is MarketplaceAttributePredicate.IntegerRange ||
+            predicate is MarketplaceAttributePredicate.IntegerOptions &&
+            predicate.ranges.all { it in MarketplaceCapacityOptions.forKey(key) }
     MarketplaceAttributeKind.DECIMAL -> predicate is MarketplaceAttributePredicate.DecimalRange
     MarketplaceAttributeKind.DATE -> predicate is MarketplaceAttributePredicate.DateRange
 }
@@ -136,6 +139,10 @@ private fun MarketplaceAttributePredicate.matches(value: MarketplaceAttributeVal
     is MarketplaceAttributePredicate.ExactText -> matchesText(value)
     is MarketplaceAttributePredicate.IntegerRange ->
         (value as? MarketplaceAttributeValue.Integer)?.let { range.contains(it.value) } == true
+    is MarketplaceAttributePredicate.IntegerOptions ->
+        (value as? MarketplaceAttributeValue.Integer)?.let { number ->
+            ranges.any { it.contains(number.value) }
+        } == true
     is MarketplaceAttributePredicate.DecimalRange -> matchesDecimal(value)
     is MarketplaceAttributePredicate.DateRange -> matchesDate(value)
 }

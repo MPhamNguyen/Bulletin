@@ -59,7 +59,9 @@ internal fun MarketplaceChip(
             .height(style.height)
             .semantics { description?.let { contentDescription = it } },
         trailingIcon = trailingIcon?.let { icon ->
-            { Icon(icon, contentDescription = null, modifier = Modifier.size(style.iconSize)) }
+            {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(style.iconSize))
+            }
         },
         shape = style.shape(),
         colors = FilterChipDefaults.filterChipColors(

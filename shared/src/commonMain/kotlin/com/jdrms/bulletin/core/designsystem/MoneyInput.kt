@@ -10,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import com.jdrms.bulletin.core.common.Result
@@ -22,7 +21,6 @@ fun MoneyInput(
     onDigitsChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     label: (@Composable () -> Unit)? = null,
-    textStyle: TextStyle = LocalTextStyle.current,
     error: String? = null,
     appearance: MoneyInputAppearance = MoneyInputAppearance(),
     onInputError: ((String?) -> Unit)? = null
@@ -62,12 +60,14 @@ fun MoneyInput(
         isError = displayedError != null,
         decoration = BulletinFieldDecoration(
             label = label,
-            placeholder = { Text(appearance.placeholder ?: if (appearance.currencySymbolAsAdornment) "0.00" else "$0.00") },
+            placeholder = {
+                Text(appearance.placeholderText)
+            },
             leadingIcon = if (appearance.currencySymbolAsAdornment) ({ Text("$") }) else null,
             supportingText = if (onInputError == null) displayedError?.let { { Text(it) } } else null
         ),
         options = BulletinFieldOptions(
-            textStyle = textStyle,
+            textStyle = appearance.textStyle ?: LocalTextStyle.current,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         ),
         style = appearance.style

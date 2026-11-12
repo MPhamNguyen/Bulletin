@@ -17,6 +17,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCa
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilterMode
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeKind
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeSpec
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCapacityOptions
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 
 @Composable
@@ -33,6 +34,11 @@ internal fun MarketplaceAttributeFilterFields(
         MarketplaceAttributeCatalog.applicableSpecs(category, selectedChoices).forEach { spec ->
             val input = draft.input(spec.key)
             when {
+                MarketplaceCapacityOptions.forKey(spec.key).isNotEmpty() -> MarketplaceCapacityFilterField(
+                    spec = spec,
+                    input = input,
+                    onToggle = { onChange(draft.toggleCapacity(spec.key, it)) }
+                )
                 spec.kind == MarketplaceAttributeKind.CHOICE -> ChoiceField(
                     spec,
                     spec.choicesFor(selectedChoices),
