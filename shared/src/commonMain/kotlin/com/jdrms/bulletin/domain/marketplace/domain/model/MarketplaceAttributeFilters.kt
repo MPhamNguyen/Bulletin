@@ -126,7 +126,8 @@ private fun MarketplaceAttributeSpec.accepts(
     MarketplaceAttributeKind.TEXT -> predicate is MarketplaceAttributePredicate.ExactText
     MarketplaceAttributeKind.CHOICE ->
         predicate is MarketplaceAttributePredicate.Choice && predicate.code in choicesFor(selectedChoices) ||
-            key == MarketplaceAttributeCatalog.COLOR && predicate is MarketplaceAttributePredicate.ChoiceOptions &&
+            key in setOf(MarketplaceAttributeCatalog.COLOR, MarketplaceAttributeCatalog.SIZE) &&
+            predicate is MarketplaceAttributePredicate.ChoiceOptions &&
             predicate.codes.all { it in choicesFor(selectedChoices) }
     MarketplaceAttributeKind.INTEGER ->
         predicate is MarketplaceAttributePredicate.IntegerRange ||

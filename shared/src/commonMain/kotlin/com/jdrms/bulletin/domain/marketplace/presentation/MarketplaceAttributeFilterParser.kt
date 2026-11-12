@@ -41,7 +41,7 @@ internal object MarketplaceAttributeFilterParser {
         selectedChoices: Map<String, String>
     ): MarketplaceAttributePredicate? {
         if (input.choices.isNotEmpty()) {
-            require(spec.key == MarketplaceAttributeCatalog.COLOR)
+            require(spec.key in setOf(MarketplaceAttributeCatalog.COLOR, MarketplaceAttributeCatalog.SIZE))
             require(input.choices.all { it in spec.choicesFor(selectedChoices) })
             return MarketplaceAttributePredicate.ChoiceOptions(input.choices)
         }

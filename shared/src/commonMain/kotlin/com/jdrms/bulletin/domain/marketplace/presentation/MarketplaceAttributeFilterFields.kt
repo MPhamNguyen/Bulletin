@@ -44,6 +44,11 @@ internal fun MarketplaceAttributeFilterFields(
                     input = input,
                     onToggle = { onChange(draft.toggleColor(it)) }
                 )
+                spec.key == MarketplaceAttributeCatalog.SIZE -> MarketplaceSizeFilterField(
+                    choices = spec.choicesFor(selectedChoices),
+                    input = input,
+                    onToggle = { onChange(draft.toggleChoice(spec.key, it)) }
+                )
                 spec.kind == MarketplaceAttributeKind.CHOICE -> ChoiceField(
                     spec,
                     spec.choicesFor(selectedChoices),

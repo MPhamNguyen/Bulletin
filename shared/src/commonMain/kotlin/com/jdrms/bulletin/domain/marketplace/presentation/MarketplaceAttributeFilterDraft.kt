@@ -28,7 +28,10 @@ internal data class MarketplaceAttributeFilterDraft(
     fun withMax(key: String, value: String) = withInput(key, input(key).copy(max = value))
 
     fun toggleColor(code: String): MarketplaceAttributeFilterDraft {
-        val key = MarketplaceAttributeCatalog.COLOR
+        return toggleChoice(MarketplaceAttributeCatalog.COLOR, code)
+    }
+
+    fun toggleChoice(key: String, code: String): MarketplaceAttributeFilterDraft {
         val input = input(key)
         val current = input.choices + setOfNotNull(input.exact.takeIf(String::isNotBlank))
         val selected = if (code in current) current - code else current + code
@@ -66,7 +69,7 @@ internal data class MarketplaceAttributeFilterDraft(
         val reconciled = inputs.filter { (key, input) ->
             val spec = visible[key] ?: return@filter false
             if (input.choices.isNotEmpty()) {
-                return@filter spec.key == MarketplaceAttributeCatalog.COLOR &&
+                return@filter spec.key in setOf(MarketplaceAttributeCatalog.COLOR, MarketplaceAttributeCatalog.SIZE) &&
                     input.choices.all { it in spec.choicesFor(selectedChoices) }
             }
             if (spec.kind != MarketplaceAttributeKind.CHOICE || input.exact.isBlank()) return@filter true
