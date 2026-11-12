@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app.di
 import com.jdrms.bulletin.core.common.RefreshSignal
 import com.jdrms.bulletin.domain.marketplace.presentation.ListingReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceBookmarkDependencies
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestsViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserBlockViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceUserReportViewModel
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceViewModel
@@ -36,3 +37,12 @@ internal fun MarketplaceModule.createListingReportViewModel() =
 
 internal fun MarketplaceModule.createReportedListingVisibilityPreferenceViewModel() =
     ReportedListingVisibilityPreferenceViewModel(reportedListingVisibilityPreferenceStore)
+
+internal fun MarketplaceModule.createMarketplaceInterestsViewModel() =
+    MarketplaceInterestsViewModel(
+        marketplaceInterestPreferenceStore,
+        searchMarketplace,
+        interestListingEvents,
+        ::invalidateReads,
+        interestNotifier
+    )
