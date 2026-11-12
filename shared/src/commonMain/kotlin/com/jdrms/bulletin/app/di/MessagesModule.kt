@@ -78,7 +78,7 @@ internal class MessagesModule(
     val activeConversation by lazy { ActiveConversationTracker() }
     val notificationRequests by lazy { NotificationConversationRequests() }
     val messageSenderPhotoProvider by lazy {
-        ProfileMessageSenderPhotoProvider(profile.profileRepository)
+        ProfileMessageSenderPhotoProvider(profile.publicProfilePhotos)
     }
     val inAppBanner by lazy { InAppMessageBannerController(inboxStateOwner.state) }
     fun createInboxNotifications(notifier: IncomingMessageNotifier) =

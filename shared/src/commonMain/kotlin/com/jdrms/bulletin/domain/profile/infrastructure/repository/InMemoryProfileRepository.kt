@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.PublicProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
@@ -15,12 +16,15 @@ class InMemoryProfileRepository(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     initialProfiles: Map<String, ProfileDto> = defaultSeedProfiles,
     initialReviews: Map<String, List<ReviewDto>> = defaultSeedReviews
-) : ProfileRepository {
+) : ProfileRepository, PublicProfilePhotoRepository {
 
     private val profiles = initialProfiles.mapValues { ProfileMapper.toDomain(it.value) }.toMutableMap()
     private val reviewsByUser = initialReviews.mapValues { entry ->
         entry.value.map { ProfileMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
+
+    override suspend fun getAvatarUrl(userId: UserId): Result<String?> =
+        Result.Success(profiles[userId.value]?.avatarUrl)
 
     override suspend fun getProfile(userId: UserId): Result<StudentProfile?> {
         val baseProfile = profiles[userId.value] ?: return Result.Success(null)
