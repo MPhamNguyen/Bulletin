@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.listings.presentation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -33,7 +34,14 @@ internal fun ListingDateAttributeField(
     )
     val message = error ?: dateInputError(parser, category, definition, value)
     Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
-        FieldLabel(ListingAttributeDisplay.fieldLabel(definition))
+        if (definition.required) {
+            ListingRequiredLabel(
+                ListingAttributeDisplay.fieldLabel(definition),
+                style = MaterialTheme.typography.titleSmall
+            )
+        } else {
+            FieldLabel(ListingAttributeDisplay.fieldLabel(definition))
+        }
         DateInput(
             value = value,
             onValueChange = { onInputChange(definition.key, it) },

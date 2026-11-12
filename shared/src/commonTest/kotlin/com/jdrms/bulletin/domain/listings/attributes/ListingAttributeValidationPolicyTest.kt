@@ -12,8 +12,10 @@ class ListingAttributeValidationPolicyTest {
     private val policy = ListingAttributeValidationPolicy()
 
     @Test
-    fun emptyAttributesAreValidForEveryCategory() {
-        ListingCategory.entries.forEach { assertTrue(policy.validate(it, ListingAttributes.EMPTY).isEmpty()) }
+    fun emptyAttributesAreValidForCategoriesWithoutRequiredAttributes() {
+        ListingCategory.entries.filterNot { it == ListingCategory.HOUSING }.forEach {
+            assertTrue(policy.validate(it, ListingAttributes.EMPTY).isEmpty())
+        }
     }
 
     @Test

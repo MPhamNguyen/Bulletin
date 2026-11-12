@@ -55,7 +55,8 @@ data class ListingAttributeDefinition(
     val label: String,
     val type: ListingAttributeType,
     val applicability: ListingAttributeApplicability? = null,
-    val optionGroups: List<ListingAttributeOptionGroup> = emptyList()
+    val optionGroups: List<ListingAttributeOptionGroup> = emptyList(),
+    val required: Boolean = false
 ) {
     /** Another category's definition keeps a value only when key and type are identical. */
     fun isCompatibleWith(other: ListingAttributeDefinition): Boolean = key == other.key && type == other.type

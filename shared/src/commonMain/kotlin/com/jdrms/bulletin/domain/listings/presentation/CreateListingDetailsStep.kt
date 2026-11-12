@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import com.jdrms.bulletin.core.designsystem.BulletinOptionChip
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
@@ -26,7 +27,7 @@ internal fun CreateListingDetailsStep(
         )
         if (state.newCategory != ListingCategory.HOUSING) {
             Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
-                FieldLabel("Condition")
+                ListingRequiredLabel("Condition", style = MaterialTheme.typography.titleSmall)
                 ConditionChips(state.newCondition, actions.onConditionSelected)
             }
         }

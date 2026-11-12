@@ -13,7 +13,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingTextFormat
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
 
 /**
- * Optional item-detail fields for [category], shared by the create and edit forms. Shows nothing, and leaves no
+ * Item-detail fields for [category], shared by the create and edit forms. Shows nothing, and leaves no
  * gap, for categories without attributes. Choice fields are chips; tapping the selected chip clears it.
  */
 @Composable

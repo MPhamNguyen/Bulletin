@@ -8,10 +8,10 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeValue
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributes
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 
-/** Validates typed attributes against the catalog. Only supplied optional values are checked. */
+/** Validates required values and any supplied optional values against the catalog. */
 class ListingAttributeValidationPolicy {
     fun validate(category: ListingCategory, attributes: ListingAttributes): List<ListingAttributeIssue> {
-        val issues = mutableListOf<ListingAttributeIssue>()
+        val issues = missingRequiredValues(category, attributes).toMutableList()
         if (attributes.size > ListingAttributeLimits.MAX_ATTRIBUTE_COUNT) {
             issues += ListingAttributeIssue(
                 null,
@@ -32,6 +32,13 @@ class ListingAttributeValidationPolicy {
         }
         return issues
     }
+
+    private fun missingRequiredValues(
+        category: ListingCategory,
+        attributes: ListingAttributes
+    ): List<ListingAttributeIssue> = ListingAttributeCatalog.definitionsFor(category)
+        .filter { it.required && it.key !in attributes.values }
+        .map { ListingAttributeIssue(it.key, "${it.label} is required.") }
 
     private fun validateApplicability(
         definition: ListingAttributeDefinition,

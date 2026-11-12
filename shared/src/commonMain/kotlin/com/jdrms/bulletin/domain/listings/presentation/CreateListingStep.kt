@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.service.ListingPhotoPolicy
 
 internal enum class CreateListingStep(val title: String) {
@@ -15,6 +16,8 @@ internal enum class CreateListingStep(val title: String) {
 internal fun CreateListingStep.canContinue(state: ListingsUiState): Boolean = when (this) {
     CreateListingStep.PHOTOS -> state.newTitle.trim().length >= MIN_LISTING_TITLE_LENGTH &&
         ListingPhotoPolicy.hasRequiredPhoto(state.newImages.size)
-    CreateListingStep.DETAILS -> true
+    CreateListingStep.DETAILS -> state.newCategory != ListingCategory.HOUSING || parseListingFormAttributes(
+        state.newCategory, state.newAttributes, state.newPriceCents
+    ).errors.isEmpty()
     CreateListingStep.PRICE -> validateNewListingDraft(state).draft != null
 }

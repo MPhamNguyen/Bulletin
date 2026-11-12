@@ -20,7 +20,9 @@ import kotlin.test.assertTrue
 
 class ListingHousingRentDraftTest {
     private val rent = ListingAttributeKeys.MONTHLY_RENT_USD
-    private val stale = ListingAttributeDraft(inputs = mapOf(rent to "900", "housing_type" to "room"))
+    private val stale = ListingAttributeDraft(
+        inputs = mapOf(rent to "900", "housing_type" to "room", "available_date" to "2026-09-01")
+    )
 
     @Test
     fun housingDetailsDoNotExposeASecondRentInput() {

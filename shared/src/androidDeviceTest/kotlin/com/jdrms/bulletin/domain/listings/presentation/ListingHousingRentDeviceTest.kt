@@ -44,6 +44,7 @@ class ListingHousingRentDeviceTest {
         render(state)
         compose.onAllNodesWithContentDescription("Monthly rent").assertCountEquals(1)
         compose.onNodeWithText("Monthly rent (USD per month)").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Available date").performScrollTo().performTextInput("20260901")
         compose.onNodeWithContentDescription("Monthly rent").performScrollTo().performTextInput("125000")
         compose.runOnIdle {
             val draft = assertNotNull(validateNewListingDraft(state.value).draft)

@@ -125,7 +125,8 @@ object ListingAttributeCatalog {
         ListingAttributeDefinition(
             ListingAttributeKeys.AVAILABLE_DATE,
             "Available date",
-            ListingAttributeType.Date(MIN_DATE_YEAR, MAX_DATE_YEAR)
+            ListingAttributeType.Date(MIN_DATE_YEAR, MAX_DATE_YEAR),
+            required = true
         ),
         ListingAttributeDefinition(
             ListingAttributeKeys.HOUSING_TYPE,
