@@ -48,6 +48,10 @@ object ListingAttributeDisplay {
         is ListingAttributeValue.Choice ->
             (definition.type as? ListingAttributeType.Choice)?.options?.firstOrNull { it.code == value.code }?.label
                 ?: value.code
+        is ListingAttributeValue.MultiChoice -> {
+            val options = (definition.type as? ListingAttributeType.MultiChoice)?.options.orEmpty()
+            value.codes.joinToString(", ") { code -> options.firstOrNull { it.code == code }?.label ?: code }
+        }
         is ListingAttributeValue.Integer -> withUnit(value.value.toString(), unitOf(definition))
         is ListingAttributeValue.Decimal -> withUnit(formatDecimal(value.value, unitOf(definition)), unitOf(definition))
         is ListingAttributeValue.Date -> formatDate(value.value)

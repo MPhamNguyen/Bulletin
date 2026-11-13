@@ -27,7 +27,15 @@ data class ListingAttributeOptionGroup(
 sealed interface ListingAttributeType {
     data class Text(val format: ListingTextFormat, val maxLength: Int) : ListingAttributeType
     data class Choice(val options: List<ListingAttributeOption>) : ListingAttributeType
-    data class Integer(val min: Long, val max: Long, val unit: ListingAttributeUnit? = null) : ListingAttributeType
+    data class MultiChoice(val options: List<ListingAttributeOption>) : ListingAttributeType
+
+    /** A whole number; a nonempty [allowedValues] restricts it to exactly those values (a single selection). */
+    data class Integer(
+        val min: Long,
+        val max: Long,
+        val unit: ListingAttributeUnit? = null,
+        val allowedValues: Set<Long> = emptySet()
+    ) : ListingAttributeType
     data class Decimal(
         val min: ListingDecimal,
         val max: ListingDecimal,
@@ -47,7 +55,8 @@ data class ListingAttributeDefinition(
     val label: String,
     val type: ListingAttributeType,
     val applicability: ListingAttributeApplicability? = null,
-    val optionGroups: List<ListingAttributeOptionGroup> = emptyList()
+    val optionGroups: List<ListingAttributeOptionGroup> = emptyList(),
+    val required: Boolean = false
 ) {
     /** Another category's definition keeps a value only when key and type are identical. */
     fun isCompatibleWith(other: ListingAttributeDefinition): Boolean = key == other.key && type == other.type

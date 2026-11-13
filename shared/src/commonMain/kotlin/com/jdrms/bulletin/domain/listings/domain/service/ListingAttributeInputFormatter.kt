@@ -11,6 +11,7 @@ object ListingAttributeInputFormatter {
     fun inputFor(value: ListingAttributeValue): String = when (value) {
         is ListingAttributeValue.Text -> value.value
         is ListingAttributeValue.Choice -> value.code
+        is ListingAttributeValue.MultiChoice -> ListingMultiChoiceInput.encode(value.codes)
         is ListingAttributeValue.Integer -> value.value.toString()
         is ListingAttributeValue.Decimal -> value.value.toPlainString()
         is ListingAttributeValue.Date -> value.value.toString()

@@ -71,11 +71,8 @@ class ListingAttributeInputParser(
             is ListingAttributeType.Text -> ListingAttributeText.normalize(type.format, raw)
                 ?.let { Parsed.Value(ListingAttributeValue.Text(it)) }
                 ?: Parsed.Failure(textMessage(definition))
-            is ListingAttributeType.Choice -> raw.trim().takeIf { code ->
-                definition.choiceOptions(inputs).any { it.code == code }
-            }
-                ?.let { Parsed.Value(ListingAttributeValue.Choice(it)) }
-                ?: Parsed.Failure("Choose a valid ${definition.label.lowercase()}.")
+            is ListingAttributeType.Choice -> parseChoice(definition, raw, inputs)
+            is ListingAttributeType.MultiChoice -> parseMultiChoice(definition, type, raw)
             is ListingAttributeType.Integer -> parseInteger(definition, raw)
             is ListingAttributeType.Decimal -> ListingDecimal.parse(raw, type.scale)
                 ?.let { Parsed.Value(ListingAttributeValue.Decimal(it)) }
@@ -91,6 +88,28 @@ class ListingAttributeInputParser(
         } else {
             "Use the date format YYYY-MM-DD."
         }
+
+    private fun parseChoice(
+        definition: ListingAttributeDefinition,
+        raw: String,
+        inputs: Map<String, String>
+    ): Parsed = raw.trim().takeIf { code -> definition.choiceOptions(inputs).any { it.code == code } }
+        ?.let { Parsed.Value(ListingAttributeValue.Choice(it)) }
+        ?: Parsed.Failure("Choose a valid ${definition.label.lowercase()}.")
+
+    private fun parseMultiChoice(
+        definition: ListingAttributeDefinition,
+        type: ListingAttributeType.MultiChoice,
+        raw: String
+    ): Parsed {
+        val selected = ListingMultiChoiceInput.decode(raw).toSet()
+        val ordered = type.options.map { it.code }.filter { it in selected }
+        return if (ordered.isNotEmpty() && ordered.size == selected.size) {
+            Parsed.Value(ListingAttributeValue.MultiChoice(ordered.toSet()))
+        } else {
+            Parsed.Failure("Choose valid ${definition.label.lowercase()} options.")
+        }
+    }
 
     private fun parseInteger(definition: ListingAttributeDefinition, raw: String): Parsed =
         raw.trim().takeIf { WHOLE_NUMBER.matches(it) }

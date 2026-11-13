@@ -93,11 +93,7 @@ internal fun ListingConditionSelectionRow(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = "Condition",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        ListingRequiredLabel("Condition", style = MaterialTheme.typography.titleSmall)
         Spacer(modifier = Modifier.height(4.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(ListingCondition.entries.toTypedArray()) { condition ->

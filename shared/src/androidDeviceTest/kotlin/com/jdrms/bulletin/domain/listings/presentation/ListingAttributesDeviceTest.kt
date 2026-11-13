@@ -10,8 +10,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -52,17 +54,17 @@ class ListingAttributesDeviceTest {
                 }
             }
         }
-        compose.onNodeWithText("Brand").performTextInput("Framework")
+        compose.onNodeWithContentDescription("Brand").performTextInput("Framework")
         compose.onNodeWithText("Laptop").performScrollTo().performClick()
-        compose.onNodeWithText("RAM (GB)").performScrollTo().performTextInput("16")
+        compose.onNodeWithText("16 GB").performScrollTo().performClick()
         compose.onNodeWithText("Switch to clothing").performScrollTo().performClick()
         compose.onNodeWithText("Change category?").assertIsDisplayed()
         compose.onNodeWithText("Keep category").performClick()
-        compose.onNodeWithText("RAM (GB)").assertTextContains("16")
+        compose.onNodeWithText("16 GB").assertIsSelected()
         compose.onNodeWithText("Switch to clothing").performScrollTo().performClick()
         compose.onNodeWithText("Change category", substring = false).performClick()
-        compose.onNodeWithText("RAM (GB)").assertDoesNotExist()
-        compose.onNodeWithText("Brand").assertTextContains("Framework")
+        compose.onNodeWithText("16 GB").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Brand").assertTextContains("Framework")
         compose.runOnIdle { assertEquals(ListingCategory.CLOTHING, state.value.newCategory) }
     }
 }

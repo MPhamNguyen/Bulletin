@@ -3,11 +3,14 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.mapper
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributePredicate
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCapacityRange
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -33,6 +36,16 @@ internal object MarketplaceInterestFilterJsonMapper {
                 put(TYPE, CHOICE)
                 put(CODE, predicate.code)
             }
+            is MarketplaceAttributePredicate.ChoiceOptions -> {
+                put(TYPE, CHOICE_OPTIONS)
+                put(VALUES, JsonArray(predicate.codes.sorted().map(::JsonPrimitive)))
+            }
+            is MarketplaceAttributePredicate.IntegerOptions -> {
+                put(TYPE, INTEGER_OPTIONS)
+                val ranges = predicate.ranges.sortedWith(compareBy({ it.min }, { it.max }))
+                val values = ranges.map { encodePredicate(MarketplaceAttributePredicate.IntegerRange(it)) }
+                put(VALUES, JsonArray(values))
+            }
             is MarketplaceAttributePredicate.IntegerRange -> {
                 put(TYPE, INTEGER_RANGE)
                 predicate.range.min?.let { put(MIN, it) }
@@ -57,6 +70,14 @@ internal object MarketplaceInterestFilterJsonMapper {
             usesMatchKey = json[USES_MATCH_KEY]?.jsonPrimitive?.booleanOrNull ?: false
         )
         CHOICE -> MarketplaceAttributePredicate.Choice(json.requiredString(CODE))
+        CHOICE_OPTIONS -> MarketplaceAttributePredicate.ChoiceOptions(
+            json.getValue(VALUES).jsonArray.map { it.jsonPrimitive.content }.toSet()
+        )
+        INTEGER_OPTIONS -> MarketplaceAttributePredicate.IntegerOptions(
+            json.getValue(VALUES).jsonArray.map {
+                MarketplaceCapacityRange(it.jsonObject.long(MIN), it.jsonObject.long(MAX))
+            }.toSet()
+        )
         INTEGER_RANGE -> MarketplaceAttributePredicate.IntegerRange(
             MarketplaceCapacityRange(json.long(MIN), json.long(MAX))
         )
@@ -72,6 +93,9 @@ internal object MarketplaceInterestFilterJsonMapper {
     private fun JsonObject.long(key: String): Long? = get(key)?.jsonPrimitive?.longOrNull
     private fun JsonObject.double(key: String): Double? = get(key)?.jsonPrimitive?.doubleOrNull
 
+    private const val VALUES = "values"
+    private const val CHOICE_OPTIONS = "choice_options"
+    private const val INTEGER_OPTIONS = "integer_options"
     private const val TYPE = "type"
     private const val VALUE = "value"
     private const val CODE = "code"
