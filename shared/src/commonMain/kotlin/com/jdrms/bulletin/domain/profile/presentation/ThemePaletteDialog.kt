@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +33,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinSlider
@@ -59,105 +59,114 @@ internal fun ThemePaletteDialog(
     var selectedTab by remember { mutableStateOf(0) }
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = BulletinSpacing.m),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         title = { Text("Choose a color") },
         text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxDialogContentHeight)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TabRow(selectedTabIndex = selectedTab) {
-                    listOf("Base", "Accents").forEachIndexed { index, label ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = {
-                                selectedTab = index
-                                val color = if (index == 0) workingBaseColor else workingAccentColor
-                                hexValue = color.toHexRgbDigits()
+            // Size the wheel from the height the dialog actually has, so the content fits without
+            // scrolling; the scroll container below remains only as a fallback for very short windows.
+            BoxWithConstraints {
+                val wheelSize = (maxHeight - nonWheelContentHeight)
+                    .coerceIn(minWheelDiameter, maxWheelDiameter)
+                val availableWheelWidth = maxWidth - wheelTouchPadding
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TabRow(selectedTabIndex = selectedTab) {
+                        listOf("Base", "Accents").forEachIndexed { index, label ->
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = {
+                                    selectedTab = index
+                                    val color = if (index == 0) workingBaseColor else workingAccentColor
+                                    hexValue = color.toHexRgbDigits()
+                                },
+                                text = { Text(label) }
+                            )
+                        }
+                    }
+                    val workingColor = if (selectedTab == 0) workingBaseColor else workingAccentColor
+                    val (selectedHue, selectedSaturation, brightness) =
+                        themeWheelHueSaturationAndBrightness(workingColor)
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        ThemeColorWheel(
+                            color = workingColor,
+                            onColorSelected = {
+                                if (selectedTab == 0) workingBaseColor = it else workingAccentColor = it
+                                hexValue = it.toHexRgbDigits()
                             },
-                            text = { Text(label) }
+                            wheelDiameter = minOf(wheelSize, availableWheelWidth)
                         )
                     }
-                }
-                val workingColor = if (selectedTab == 0) workingBaseColor else workingAccentColor
-                val (selectedHue, selectedSaturation, brightness) =
-                    themeWheelHueSaturationAndBrightness(workingColor)
-                BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    val wheelSize = (maxWidth - 48.dp).coerceIn(180.dp, 260.dp)
-                    ThemeColorWheel(
-                        color = workingColor,
-                        onColorSelected = {
-                            if (selectedTab == 0) workingBaseColor = it else workingAccentColor = it
-                            hexValue = it.toHexRgbDigits()
-                        },
-                        wheelDiameter = wheelSize
-                    )
-                }
-                Column(Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Brightness", style = MaterialTheme.typography.labelLarge)
-                        Text("${(brightness * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
-                    }
-                    BulletinSlider(
-                        label = "Brightness",
-                        value = brightness,
-                        onValueChange = { value ->
-                            val updated = themeWheelColorAt(selectedHue, selectedSaturation, value)
-                            if (selectedTab == 0) workingBaseColor = updated else workingAccentColor = updated
-                            hexValue = updated.toHexRgbDigits()
-                        },
-                        valueRange = 0f..1f
-                    )
-                }
-                ThemeHexField(
-                    value = hexValue,
-                    onValueChange = { input ->
-                        hexValue = input
-                        workingColor.withHexRgb(input)?.let { updated ->
-                            if (selectedTab == 0) workingBaseColor = updated else workingAccentColor = updated
+                    Column(Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Brightness", style = MaterialTheme.typography.labelLarge)
+                            Text("${(brightness * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
                         }
+                        BulletinSlider(
+                            label = "Brightness",
+                            value = brightness,
+                            onValueChange = { value ->
+                                val updated = themeWheelColorAt(selectedHue, selectedSaturation, value)
+                                if (selectedTab == 0) workingBaseColor = updated else workingAccentColor = updated
+                                hexValue = updated.toHexRgbDigits()
+                            },
+                            valueRange = 0f..1f
+                        )
                     }
-                )
-                if (selectedTab == 1) {
-                    Text("Accent presets", style = MaterialTheme.typography.labelLarge)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        BulletinPalette.entries.forEach { palette ->
-                            PresetOption(
-                                label = palette.label,
-                                color = palette.color,
-                                selected = workingAccentColor == palette.color,
-                                onClick = {
-                                    workingAccentColor = palette.color
-                                    hexValue = palette.color.toHexRgbDigits()
-                                }
-                            )
+                    ThemeHexField(
+                        value = hexValue,
+                        onValueChange = { input ->
+                            hexValue = input
+                            workingColor.withHexRgb(input)?.let { updated ->
+                                if (selectedTab == 0) workingBaseColor = updated else workingAccentColor = updated
+                            }
                         }
-                    }
-                } else {
-                    Text("Base presets", style = MaterialTheme.typography.labelLarge)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        BulletinBasePalette.entries.forEach { palette ->
-                            PresetOption(
-                                label = palette.label,
-                                color = palette.color,
-                                selected = workingBaseColor == palette.color,
-                                onClick = {
-                                    workingBaseColor = palette.color
-                                    hexValue = palette.color.toHexRgbDigits()
-                                }
-                            )
+                    )
+                    if (selectedTab == 1) {
+                        Text("Accent presets", style = MaterialTheme.typography.labelLarge)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            BulletinPalette.entries.forEach { palette ->
+                                PresetOption(
+                                    label = palette.label,
+                                    color = palette.color,
+                                    selected = workingAccentColor == palette.color,
+                                    onClick = {
+                                        workingAccentColor = palette.color
+                                        hexValue = palette.color.toHexRgbDigits()
+                                    }
+                                )
+                            }
+                        }
+                    } else {
+                        Text("Base presets", style = MaterialTheme.typography.labelLarge)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            BulletinBasePalette.entries.forEach { palette ->
+                                PresetOption(
+                                    label = palette.label,
+                                    color = palette.color,
+                                    selected = workingBaseColor == palette.color,
+                                    onClick = {
+                                        workingBaseColor = palette.color
+                                        hexValue = palette.color.toHexRgbDigits()
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -186,7 +195,13 @@ internal fun ThemePaletteDialog(
     )
 }
 
-private val maxDialogContentHeight = 420.dp
+private val minWheelDiameter = 120.dp
+private val maxWheelDiameter = 260.dp
+private val wheelTouchPadding = 48.dp
+
+// Approximate height of the tabs, slider, hex field, presets, and spacing around the wheel,
+// plus the wheel's own touch padding.
+private val nonWheelContentHeight = 368.dp
 
 @Composable
 private fun PresetOption(label: String, color: Color, selected: Boolean, onClick: () -> Unit) {
