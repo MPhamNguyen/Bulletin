@@ -127,7 +127,8 @@ data class StudentReview(
     val revieweeId: UserId,
     val rating: Rating,
     val comment: String,
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val relatedListingId: String? = null
 ) {
     init {
         require(comment.isNotBlank()) { "Review comment cannot be blank." }

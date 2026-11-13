@@ -20,6 +20,8 @@ data class SellerProfileUiState(
     val listings: List<MarketplaceItem> = emptyList(),
     val filters: MarketplaceFilterState = MarketplaceFilterState(),
     val soldListingsCount: Int = 0,
+    val isLoadingMoreReviews: Boolean = false,
+    val reviewLoadError: String? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 ) {
@@ -46,9 +48,11 @@ class SellerProfileViewModel(
     private val _uiState = MutableStateFlow(SellerProfileUiState())
     val uiState: StateFlow<SellerProfileUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
+    private var reviewsJob: Job? = null
 
     fun load(sellerId: String) {
         loadJob?.cancel()
+        reviewsJob?.cancel()
         _uiState.value = SellerProfileUiState(isLoading = true)
         loadJob = viewModelScope.launch {
             try {
@@ -60,7 +64,12 @@ class SellerProfileViewModel(
                         SellerProfileUiState(
                             profile = details.profile,
                             listings = details.listings,
-                            soldListingsCount = details.soldListingsCount
+                            soldListingsCount = details.soldListingsCount,
+                            reviewLoadError = if (details.profile.reviewPageLoadFailed) {
+                                REVIEW_LOAD_ERROR
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -74,6 +83,37 @@ class SellerProfileViewModel(
         }
     }
 
+    fun loadMoreReviews() {
+        val current = _uiState.value
+        val profile = current.profile ?: return
+        val offset = profile.reviewNextOffset ?: return
+        if (current.isLoadingMoreReviews) return
+        _uiState.update { it.copy(isLoadingMoreReviews = true) }
+        reviewsJob = viewModelScope.launch {
+            try {
+                val page = viewSellerProfile.reviewsPage(profile.sellerId, offset)
+                _uiState.update { state ->
+                    val currentProfile = state.profile ?: return@update state
+                    state.copy(
+                        profile = currentProfile.copy(
+                            reviews = (currentProfile.reviews + page.reviews).distinctBy { it.id },
+                            reviewNextOffset = page.nextOffset,
+                            reviewPageLoadFailed = false
+                        ),
+                        isLoadingMoreReviews = false,
+                        reviewLoadError = null
+                    )
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(isLoadingMoreReviews = false, reviewLoadError = REVIEW_LOAD_ERROR)
+                }
+            }
+        }
+    }
+
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(filters = it.filters.copy(query = query)) }
     }
@@ -82,3 +122,5 @@ class SellerProfileViewModel(
         _uiState.update { it.copy(filters = filters.normalized()) }
     }
 }
+
+private const val REVIEW_LOAD_ERROR = "Unable to load reviews. Check your connection and try again."

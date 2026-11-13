@@ -36,7 +36,7 @@ Students can discover listings, buy or sell items, message other students, build
 | 🛍️ **Marketplace** | Browse, search, filter, and sort listings; view listing and seller details. |
 | ➕ **Listings** | Create, edit, and manage your own listings, upload images, and mark items as sold. |
 | 🔖 **Saved Listings** | Bookmark listings and revisit them from your profile. |
-| 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. Android message alerts work while the app process is alive; push delivery is not implemented. |
+| 💬 **Messaging** | Start conversations from a listing, view the inbox and thread history, edit messages, and see read status. Inbox updates arrive in real time. New messages show an in-app banner while the app is open on a signed-in screen, and an Android system notification while it is in the background; both work only while the app process is alive, and push delivery is not implemented. |
 | ⭐ **Ratings & Reviews** | Leave and view reviews tied to sold listings. |
 | 👤 **Profiles** | View and edit student profiles, upload or replace profile photos, and remove a photo to restore the default initials avatar. |
 | 🚩 **Reporting & Blocking** | Report users, listings, or messages, and block or unblock users. |
@@ -146,7 +146,8 @@ Dependency injection is manual. `AppContainer` composes `HomeModule`, `ListingsM
 | Messages (including realtime thread and inbox observers) | Supabase adapters |
 | Profile, auth/session, profile photos, user reports, user blocks | Supabase adapters |
 | Home | Supabase adapters and local memory. The feed reads through `MarketplaceHomeRepository` (marketplace listing source), swipe-right saves via the marketplace bookmark adapter, and swipe-up messages via the messages adapter. Swipe decisions (which cards were saved or passed) and Home preferences are kept in memory per app process. |
-| Theme and marketplace layout preferences | Android local preference stores |
+| Marketplace interests | Supabase interests with session-wide Realtime alerts while the Android app process is running |
+| Theme, marketplace layout, and reported-listing visibility preferences | Android local preference stores |
 
 If Supabase is not configured, the normal Android runtime **fails to initialize** backend-backed contexts: in-memory fallback is disabled by default. In-memory implementations exist for tests, previews, and explicitly enabled local use.
 
@@ -176,7 +177,7 @@ SUPABASE_IS_CONNECTED=true
 
 - Use **only** the anon/public key in the app. Never commit a service-role key, credentials, or real user data. `.env` is git-ignored.
 - `SUPABASE_IS_CONNECTED` defaults to `false`, which leaves backend-backed features unavailable.
-- This checkout has no `supabase/migrations/` folder and **cannot provision a fresh Bulletin database by itself**. Point the app at an already provisioned Supabase project. See [Database (Supabase)](#%EF%B8%8F-database-supabase) below.
+- This checkout contains an incremental marketplace-interests migration, but no complete baseline and therefore **cannot provision a fresh Bulletin database by itself**. Point the app at an already provisioned Supabase project. See [Database (Supabase)](#%EF%B8%8F-database-supabase) below.
 
 ### 2. Build and run
 
@@ -202,13 +203,13 @@ Microsoft sign-in is a build-time feature flag, **on in debug builds and off in 
 
 ### Provisioning
 
-The schema, functions, RLS policies, storage buckets and Auth settings live in the hosted Supabase project, not in this repository. The linked project's migration history holds six migrations (including `bulletin_baseline` and `microsoft_identity_boundary`), but the migration files are not checked in. `supabase/config.toml` is local development configuration only and does not describe the hosted project. Before connecting a different project, its schema, functions, RLS, storage buckets and policies, and Auth settings must be reconciled with the hosted one.
+The baseline schema, functions, RLS policies, storage buckets and Auth settings live in the hosted Supabase project and are not fully represented in this repository. `supabase/migrations/` contains incremental changes made after that gap was identified, beginning with marketplace interests. `supabase/config.toml` is local development configuration only and does not describe the hosted project. Before connecting a different project, its schema, functions, RLS, storage buckets and policies, and Auth settings must be reconciled with the hosted one.
 
 Restoring a reproducible schema (recover history with `supabase migration fetch --linked`, compare against the live schema, replay on a disposable local stack, then version future changes in `supabase/migrations/`) is still open work; see the roadmap.
 
 ### Overview
 
-The inspected project (PostgreSQL 17) has ten public tables, all with RLS enabled:
+The inspected project uses PostgreSQL 17. Its public tables include:
 
 | Table | Purpose |
 | --- | --- |
@@ -216,6 +217,7 @@ The inspected project (PostgreSQL 17) has ten public tables, all with RLS enable
 | `listings` | Seller inventory, with sold state and optional buyer |
 | `listing_images` | Image metadata and crop settings (up to five per listing) |
 | `listing_bookmarks` | Saved listings |
+| `marketplace_interests` | Account-owned marketplace category preferences |
 | `conversations`, `conversation_participants` | Message threads, membership, read and hidden state |
 | `messages` | Thread messages (1 to 1000 characters; edits go through an RPC) |
 | `reviews` | Ratings (1 to 5) between students, optionally tied to a listing |

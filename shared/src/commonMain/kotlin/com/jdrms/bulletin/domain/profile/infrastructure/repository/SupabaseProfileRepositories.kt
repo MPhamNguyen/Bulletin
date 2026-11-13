@@ -1,19 +1,29 @@
 package com.jdrms.bulletin.domain.profile.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.domain.model.PublicProfileIdentity
+import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReputation
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
+import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
+import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReputationSummaryDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewInsertDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
+import com.jdrms.bulletin.domain.profile.infrastructure.mapper.PublicProfileIdentityMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -149,6 +159,77 @@ class SupabaseProfileRepository private constructor(
         }
     }
 
+    override suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?> = runCatching {
+        val resolvedId = resolveUserId(userId)
+        val (identityColumn, identityValue) = if (resolvedId != null) {
+            "id" to resolvedId
+        } else {
+            val email = userId.value.lowercase().takeIf(StudentEmail::isValid) ?: return@runCatching null
+            "email" to email
+        }
+        supabase.from(PROFILES_TABLE).select {
+            filter { eq(identityColumn, identityValue) }
+        }.decodeSingleOrNull<ProfileDto>()?.let { ProfileMapper.toDomain(it) }
+    }.fold(
+        onSuccess = { Result.Success(it) },
+        onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+    )
+
+    override suspend fun getPublicIdentity(userId: UserId): Result<PublicProfileIdentity?> = runCatching {
+        val resolvedId = resolveUserId(userId)
+        val (identityColumn, identityValue) = if (resolvedId != null) {
+            "id" to resolvedId
+        } else {
+            val email = userId.value.lowercase().takeIf(StudentEmail::isValid) ?: return@runCatching null
+            "email" to email
+        }
+        supabase.from(PROFILES_TABLE).select(columns = Columns.raw("id,full_name,avatar_url")) {
+            filter { eq(identityColumn, identityValue) }
+        }.decodeSingleOrNull<PublicProfileIdentityDto>()?.let(PublicProfileIdentityMapper::toDomain)
+    }.fold(
+        onSuccess = { Result.Success(it) },
+        onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+    )
+
+    override suspend fun getReputationSummary(userId: UserId): StudentReputation {
+        val resolvedId = resolveUserId(userId) ?: return StudentReputation(userId)
+        val summary = supabase.postgrest.rpc(
+            GET_REPUTATION_SUMMARY_FUNCTION,
+            parameters = buildJsonObject { put("p_reviewee_id", resolvedId) }
+        ).decodeList<ReputationSummaryDto>().single()
+        return StudentReputation(
+            userId = UserId(resolvedId),
+            averageRating = summary.averageRating.coerceIn(0.0, 5.0),
+            totalReviews = summary.totalReviews.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        )
+    }
+
+    override suspend fun getReviewsPage(userId: UserId, offset: Int, pageSize: Int): StudentReviewPage {
+        require(offset >= 0)
+        require(pageSize in 1..MAX_REVIEW_PAGE_SIZE)
+        val resolvedId = resolveUserId(userId) ?: return StudentReviewPage(emptyList(), null)
+        val rows = runCatching {
+            supabase.from(REVIEWS_VIEW).select {
+                filter { eq("reviewee_id", resolvedId) }
+                order("created_at", Order.DESCENDING)
+                order("id", Order.DESCENDING)
+                range(offset.toLong(), (offset + pageSize).toLong())
+            }.decodeList<ReviewDto>()
+        }.getOrElse {
+            supabase.from(REVIEWS_TABLE).select {
+                filter { eq("reviewee_id", resolvedId) }
+                order("created_at", Order.DESCENDING)
+                order("id", Order.DESCENDING)
+                range(offset.toLong(), (offset + pageSize).toLong())
+            }.decodeList<ReviewDto>()
+        }
+        val pageReviews = rows.take(pageSize).map(ProfileMapper::toDomain)
+        return StudentReviewPage(
+            reviews = pageReviews,
+            nextOffset = if (rows.size > pageSize) offset + pageSize else null
+        )
+    }
+
     private fun resolveUserId(userId: UserId): String? {
         return if (userId.value == "current_student") {
             supabase.auth.currentUserOrNull()?.id
@@ -163,6 +244,8 @@ class SupabaseProfileRepository private constructor(
         const val PROFILES_TABLE = "profiles"
         const val REVIEWS_TABLE = "reviews"
         const val REVIEWS_VIEW = "reviews_with_names"
+        const val GET_REPUTATION_SUMMARY_FUNCTION = "get_reputation_summary"
+        const val MAX_REVIEW_PAGE_SIZE = 50
 
         private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 

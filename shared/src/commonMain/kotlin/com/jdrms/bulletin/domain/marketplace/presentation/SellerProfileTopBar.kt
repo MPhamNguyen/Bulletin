@@ -32,7 +32,9 @@ internal fun SellerProfileTopBar(
     onBack: () -> Unit,
     onReportUser: () -> Unit,
     onBlockUser: () -> Unit,
-    showUserActions: Boolean = true
+    showUserActions: Boolean = true,
+    title: String = "Seller Profile",
+    backContentDescription: String = "Back to listing"
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Row(
@@ -40,11 +42,11 @@ internal fun SellerProfileTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to listing")
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, backContentDescription)
         }
         Spacer(Modifier.width(BulletinSpacing.s))
         Text(
-            "Seller Profile",
+            title,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground

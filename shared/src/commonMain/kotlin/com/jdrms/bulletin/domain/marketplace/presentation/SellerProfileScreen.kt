@@ -31,6 +31,7 @@ fun SellerProfileScreen(
     onBack: () -> Unit,
     onReportUser: () -> Unit,
     onBlockUser: () -> Unit,
+    reviewActions: SellerProfileReviewActions = SellerProfileReviewActions(),
     options: SellerProfileScreenOptions = SellerProfileScreenOptions()
 ) {
     var showBlockConfirmation by remember { mutableStateOf(false) }
@@ -57,7 +58,16 @@ fun SellerProfileScreen(
                 item { SellerProfileStats(state.profile, state.soldListingsCount) }
                 item { SellerProfileAbout(state.profile) }
                 item { SellerProfileVerification(state.profile) }
-                item { SellerProfileReviews(state.profile.reviews) }
+                item {
+                    SellerProfileReviews(
+                        reviews = state.profile.reviews,
+                        reviewLoadError = state.reviewLoadError,
+                        isLoadingReviews = state.isLoadingMoreReviews,
+                        onRetryReviews = reviewActions.onRetryReviews,
+                        onViewAllReviews = reviewActions.onViewAllReviews,
+                        onListingClick = reviewActions.onListingClick
+                    )
+                }
                 item {
                     Text(
                         text = "Marketplace listings",
@@ -116,6 +126,12 @@ data class SellerProfileListingActions(
     val onListingClick: (String) -> Unit,
     val onQueryChanged: (String) -> Unit,
     val onFiltersApplied: (MarketplaceFilterState) -> Unit
+)
+
+data class SellerProfileReviewActions(
+    val onViewAllReviews: () -> Unit = {},
+    val onRetryReviews: () -> Unit = {},
+    val onListingClick: (String) -> Unit = {}
 )
 
 @Composable

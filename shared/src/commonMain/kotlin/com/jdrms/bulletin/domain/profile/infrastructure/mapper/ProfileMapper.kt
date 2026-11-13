@@ -57,11 +57,12 @@ object ProfileMapper {
         return StudentReview(
             id = ReviewId(dto.id),
             reviewerId = dto.reviewerId,
-            reviewerName = dto.reviewerName ?: "Student",
+            reviewerName = dto.reviewerName.orEmpty(),
             revieweeId = UserId(dto.revieweeId),
             rating = Rating(clampedScore),
             comment = dto.comment,
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero()
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
+            relatedListingId = dto.listingId
         )
     }
 
@@ -73,7 +74,8 @@ object ProfileMapper {
             revieweeId = domain.revieweeId.value,
             score = domain.rating.score,
             comment = domain.comment,
-            createdAt = Instant.fromEpochMilliseconds(domain.createdAtMillis).toString()
+            createdAt = Instant.fromEpochMilliseconds(domain.createdAtMillis).toString(),
+            listingId = domain.relatedListingId
         )
     }
 

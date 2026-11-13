@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.core.network.SupabaseConfig
+import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.SupabaseMarketplaceInterestPreferenceStore
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
@@ -31,6 +32,9 @@ class AppContainerTest {
 
         assertIs<SupabaseMessagesRepository>(container.messages.messagesRepository)
         assertIs<SupabaseMessagesObserver>(container.messages.messagesObserver)
+        assertIs<SupabaseMarketplaceInterestPreferenceStore>(
+            container.marketplace.marketplaceInterestPreferenceStore
+        )
     }
 
     @Test
@@ -96,6 +100,7 @@ class AppContainerTest {
         { container.listings.listingImagesRepository },
         { container.marketplace.marketplaceRepository },
         { container.marketplace.marketplaceListingSource },
+        { container.marketplace.marketplaceInterestPreferenceStore },
         { container.marketplace.reportMarketplaceListing },
         { container.marketplace.reportMarketplaceUser },
         { container.marketplace.blockMarketplaceUser }
