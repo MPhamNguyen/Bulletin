@@ -219,6 +219,7 @@ class PortalTests(unittest.TestCase):
         for kind in ("user", "message", "listing"):
             with self.subTest(kind=kind):
                 self.backend.report.update(type=kind, message_id=MESSAGE, listing_id=LISTING)
+                self.backend.auth_account["banned_until"] = None
                 data = self.review_form()
                 data.update(action="suspend", duration="7", duration_unit="days", confirm="yes", target_id=ADMIN)
                 result = self.client.post("/reports/" + REPORT + "/account", data=data)
@@ -228,6 +229,7 @@ class PortalTests(unittest.TestCase):
         self.assertFalse(self.backend.patches)
 
     def test_restoring_access_uses_supabase_unban_operation(self):
+        self.backend.auth_account["banned_until"] = "2099-01-01T00:00:00Z"
         data = self.review_form()
         data.update(action="restore", confirm="yes")
         self.assertEqual(303, self.client.post("/reports/" + REPORT + "/account", data=data).status_code)
@@ -239,6 +241,7 @@ class PortalTests(unittest.TestCase):
                                        ("15", "minutes", "15m"),
                                        ("525600", "minutes", "525600m")):
             with self.subTest(amount=amount, unit=unit):
+                self.backend.auth_account["banned_until"] = None
                 data = self.review_form()
                 data.update(action="suspend", duration=amount, duration_unit=unit, confirm="yes")
                 result = self.client.post("/reports/" + REPORT + "/account", data=data)
@@ -263,6 +266,7 @@ class PortalTests(unittest.TestCase):
         self.assertFalse(self.backend.patches)
 
     def test_restore_ignores_unused_duration_fields(self):
+        self.backend.auth_account["banned_until"] = "2099-01-01T00:00:00Z"
         data = self.review_form()
         data.update(action="restore", duration="invalid", duration_unit="invalid", confirm="yes")
         result = self.client.post("/reports/" + REPORT + "/account", data=data)
