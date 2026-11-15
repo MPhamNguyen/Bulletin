@@ -125,8 +125,8 @@ class MarketplaceAttributeFiltersTest {
     }
 
     @Test
-    fun attributeTextDoesNotContributeToFreeTextSearch() {
-        val request = MarketplacePageRequest(query = "framework", category = MarketplaceCategory.ELECTRONICS)
+    fun nonBrandAttributeTextDoesNotContributeToFreeTextSearch() {
+        val request = MarketplacePageRequest(query = "laptop", category = MarketplaceCategory.ELECTRONICS)
         assertEquals(emptyList(), catalog.pageFor(request).listings)
     }
 

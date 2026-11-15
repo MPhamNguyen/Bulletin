@@ -44,5 +44,8 @@ data class ListingsUiState(
     val soldOnAnotherPlatform: Boolean = false,
     val isMarkingSold: Boolean = false,
     val pendingRestoration: Listing? = null,
-    val isRestoring: Boolean = false
+    val isRestoring: Boolean = false,
+    val pendingReviewRequestCancellation: Listing? = null,
+    val isCancellingReviewRequests: Boolean = false,
+    val reviewRequestCancellationError: String? = null
 )

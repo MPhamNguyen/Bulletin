@@ -209,6 +209,7 @@ fun ListingDetailsPage(
                             onToggleBookmark = onToggleBookmark,
                             onDismiss = onDismiss,
                             onReportListing = actions.onReportListing,
+                            canBookmarkListing = state.currentUserId != listing.sellerId,
                             canReportListing = state.currentUserId != listing.sellerId
                         )
                     }

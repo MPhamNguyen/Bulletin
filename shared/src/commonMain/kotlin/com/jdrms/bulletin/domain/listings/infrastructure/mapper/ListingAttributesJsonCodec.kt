@@ -11,6 +11,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingDecimal
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeValidationPolicy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -71,6 +72,7 @@ class ListingAttributesJsonCodec(
             entries[key] = when (value) {
                 is ListingAttributeValue.Text -> JsonPrimitive(value.value)
                 is ListingAttributeValue.Choice -> JsonPrimitive(value.code)
+                is ListingAttributeValue.MultiChoice -> JsonArray(value.codes.map(::JsonPrimitive))
                 is ListingAttributeValue.Integer -> JsonPrimitive(value.value)
                 is ListingAttributeValue.Decimal -> JsonUnquotedLiteral(value.value.toPlainString())
                 is ListingAttributeValue.Date -> JsonPrimitive(value.value.toString())
@@ -80,6 +82,7 @@ class ListingAttributesJsonCodec(
     }
 
     private fun decodeValue(definition: ListingAttributeDefinition, json: JsonElement): ListingAttributeValue? {
+        if (definition.type is ListingAttributeType.MultiChoice) return decodeMultiChoice(json)
         val primitive = json as? JsonPrimitive ?: return null
         if (primitive is JsonNull) return null
         return when (val type = definition.type) {
@@ -87,6 +90,7 @@ class ListingAttributesJsonCodec(
                 ?.let(ListingAttributeValue::Text)
             is ListingAttributeType.Choice -> primitive.takeIf { it.isString }?.content
                 ?.let(ListingAttributeValue::Choice)
+            is ListingAttributeType.MultiChoice -> null
             is ListingAttributeType.Integer -> primitive.takeUnless { it.isString }?.content
                 ?.takeIf { WHOLE_NUMBER.matches(it) }
                 ?.let { ListingAttributeValue.Integer(it.toLong()) }
@@ -97,6 +101,18 @@ class ListingAttributesJsonCodec(
                 ?.let(ListingAttributeDate::parse)
                 ?.let(ListingAttributeValue::Date)
         }
+    }
+
+    /** Reads a JSON array of codes; a legacy single string is read as a one-code selection. */
+    private fun decodeMultiChoice(json: JsonElement): ListingAttributeValue? {
+        val codes = when (json) {
+            is JsonArray -> json.map { element ->
+                (element as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return null
+            }
+            is JsonPrimitive -> listOf(json.takeIf { it.isString }?.content ?: return null)
+            else -> return null
+        }
+        return codes.takeIf { it.isNotEmpty() }?.let { ListingAttributeValue.MultiChoice(it.toSet()) }
     }
 
     private companion object {

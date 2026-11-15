@@ -12,9 +12,12 @@ object BulletinShapes {
     val pill: Shape = CircleShape
     val card = RoundedCornerShape(24.dp)
     val cardCompact = RoundedCornerShape(20.dp)
+    val listingCard = RoundedCornerShape(22.dp)
+    val searchField = RoundedCornerShape(18.dp)
     val dialog = RoundedCornerShape(28.dp)
     val inset = RoundedCornerShape(14.dp)
     val sheet = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    val sheetLarge = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     val segment = RoundedCornerShape(2.dp)
     val swatch = RoundedCornerShape(1.dp)
 

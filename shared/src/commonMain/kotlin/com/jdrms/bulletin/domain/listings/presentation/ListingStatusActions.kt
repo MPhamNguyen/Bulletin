@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.listings.presentation
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
+import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
 import com.jdrms.bulletin.domain.listings.application.RestoreListingToMarketplace
@@ -19,6 +20,7 @@ internal class ListingStatusActions(
     private val sellerProvider: CurrentListingSellerProvider,
     private val markListingSold: MarkListingSold?,
     private val recentBuyers: RecentListingBuyersProvider,
+    private val reviewRequestUseCases: ListingReviewRequestUseCases,
     private val restoreListing: RestoreListingToMarketplace?,
     private val callbacks: ListingActionCallbacks
 ) {
@@ -79,12 +81,7 @@ internal class ListingStatusActions(
         scope.launch {
             when (val seller = sellerProvider.getCurrentSeller()) {
                 is Result.Success -> when (val result = restore(listing.id, seller.data.id)) {
-                    is Result.Success -> {
-                        state.update { it.copy(pendingRestoration = null, isRestoring = false) }
-                        callbacks.notify("Listing restored to marketplace!")
-                        callbacks.reload(seller.data)
-                        callbacks.listingChangedSignal?.emit()
-                    }
+                    is Result.Success -> completeRestore(listing, seller.data)
                     is Result.Error -> state.update {
                         it.copy(
                             isRestoring = false,
@@ -99,6 +96,78 @@ internal class ListingStatusActions(
                     )
                 }
             }
+        }
+    }
+
+    private suspend fun completeRestore(listing: Listing, seller: ListingSeller) {
+        val cancellation = reviewRequestUseCases.cancel?.invoke(listing.id, seller.id)
+        val cancellationFailed = cancellation is Result.Error
+        state.update {
+            it.copy(
+                pendingRestoration = null,
+                isRestoring = false,
+                pendingReviewRequestCancellation = listing.takeIf { cancellationFailed },
+                reviewRequestCancellationError = if (cancellationFailed) {
+                    "Couldn't clear this listing's review requests. Retry when connected."
+                } else {
+                    null
+                }
+            )
+        }
+        callbacks.notify(
+            if (cancellationFailed) {
+                "Listing restored. Review requests still need cleanup."
+            } else {
+                "Listing restored to marketplace!"
+            }
+        )
+        callbacks.reload(seller)
+        callbacks.listingChangedSignal?.emit()
+    }
+
+    fun retryCancelReviewRequests() {
+        val listing = claimReviewRequestCancellation() ?: return
+        scope.launch {
+            when (val seller = sellerProvider.getCurrentSeller()) {
+                is Result.Success -> {
+                    val cancellation = reviewRequestUseCases.cancel?.invoke(listing.id, seller.data.id)
+                    when (cancellation) {
+                        is Result.Success -> {
+                            state.update {
+                                it.copy(
+                                    pendingReviewRequestCancellation = null,
+                                    isCancellingReviewRequests = false,
+                                    reviewRequestCancellationError = null
+                                )
+                            }
+                            callbacks.notify("Review requests cleared.")
+                            callbacks.reload(seller.data)
+                            callbacks.listingChangedSignal?.emit()
+                        }
+                        is Result.Error, null -> state.update {
+                            it.copy(
+                                isCancellingReviewRequests = false,
+                                reviewRequestCancellationError = "Couldn't clear this listing's review requests. Retry."
+                            )
+                        }
+                    }
+                }
+                is Result.Error -> state.update {
+                    it.copy(
+                        isCancellingReviewRequests = false,
+                        reviewRequestCancellationError = CreateListingErrorMessages.toUserMessage(seller.exception)
+                    )
+                }
+            }
+        }
+    }
+
+    private fun claimReviewRequestCancellation(): Listing? {
+        while (true) {
+            val current = state.value
+            if (current.isCancellingReviewRequests) return null
+            val listing = current.pendingReviewRequestCancellation ?: return null
+            if (state.compareAndSet(current, current.copy(isCancellingReviewRequests = true))) return listing
         }
     }
 
@@ -119,19 +188,7 @@ internal class ListingStatusActions(
                     return
                 }
                 when (val result = useCase(listing.id, seller.data.id, buyerId)) {
-                    is Result.Success -> {
-                        state.update {
-                            it.copy(
-                                pendingSold = null,
-                                recentSoldBuyers = emptyList(),
-                                selectedBuyerId = null,
-                                isMarkingSold = false
-                            )
-                        }
-                        callbacks.notify("Listing marked as sold!")
-                        callbacks.reload(seller.data)
-                        callbacks.listingChangedSignal?.emit()
-                    }
+                    is Result.Success -> completeSale(result.data, seller.data)
                     is Result.Error -> state.update {
                         it.copy(
                             isMarkingSold = false,
@@ -147,6 +204,29 @@ internal class ListingStatusActions(
                 )
             }
         }
+    }
+
+    private suspend fun completeSale(listing: Listing, seller: ListingSeller) {
+        val reviewRequestResult = listing.buyerId?.let { buyerId ->
+            reviewRequestUseCases.create?.invoke(listing, buyerId)
+        }
+        state.update {
+            it.copy(
+                pendingSold = null,
+                recentSoldBuyers = emptyList(),
+                selectedBuyerId = null,
+                isMarkingSold = false
+            )
+        }
+        callbacks.notify(
+            if (reviewRequestResult is Result.Error) {
+                "Listing sold, but the review request could not be saved."
+            } else {
+                "Listing marked as sold!"
+            }
+        )
+        callbacks.reload(seller)
+        callbacks.listingChangedSignal?.emit()
     }
 
     private fun claimPending(

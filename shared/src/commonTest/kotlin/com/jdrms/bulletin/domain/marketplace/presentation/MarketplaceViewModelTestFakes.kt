@@ -90,6 +90,8 @@ internal class CountingMarketplaceRepository(
             is Result.Error -> result
         }
     }
+    override suspend fun getListingForReview(listingID: String): Result<Listing> =
+        delegate.getListingForReview(listingID)
     override suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit> {
         bookmarkMutationCount += 1
         return delegate.bookmarkListing(userId, itemId)

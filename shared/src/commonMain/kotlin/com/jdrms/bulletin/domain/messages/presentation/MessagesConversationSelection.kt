@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.update
 
 internal class MessagesConversationSelection(
     private val state: MutableStateFlow<MessagesUiState>,
+    private val drafts: ConversationMessageDrafts,
     private val cancelCurrentLoads: () -> Unit,
     private val resetPage: () -> Unit,
     private val isDestinationActive: () -> Boolean,
@@ -15,12 +16,13 @@ internal class MessagesConversationSelection(
     fun select(conversationId: ConversationId?) {
         cancelCurrentLoads()
         resetPage()
+        val draft = drafts.restore(conversationId)
         state.update { current ->
             current.copy(
                 selectedConversationId = conversationId,
                 editState = MessageEditState.Composing,
                 editError = null,
-                messageInput = if (current.selectedConversationId == conversationId) current.unsentInput else "",
+                messageInput = draft,
                 currentMessages = emptyList(),
                 messageReportForm = if (current.selectedConversationId == conversationId) {
                     current.messageReportForm
@@ -31,6 +33,8 @@ internal class MessagesConversationSelection(
                 olderCursor = null,
                 isLoadingMessages = conversationId != null,
                 isLoadingOlder = false,
+                failedHistoryRequest = null,
+                failedOlderHistoryRequest = null,
                 errorMessage = null,
                 statusMessage = null
             )

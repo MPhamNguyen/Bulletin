@@ -24,10 +24,11 @@ private const val DATE_FORMAT_HINT = "YYYY-MM-DD"
 fun DateInput(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String,
+    label: String?,
     onOpenCalendar: () -> Unit,
     modifier: Modifier = Modifier,
-    error: String? = null
+    error: String? = null,
+    placeholder: String? = DATE_FORMAT_HINT
 ) {
     var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
     LaunchedEffect(value) {
@@ -44,9 +45,9 @@ fun DateInput(
         modifier = modifier,
         isError = error != null,
         decoration = BulletinFieldDecoration(
-            label = { Text(label) },
-            placeholder = { Text(DATE_FORMAT_HINT) },
-            supportingText = { Text(error ?: "Format: $DATE_FORMAT_HINT") },
+            label = label?.let { { Text(it) } },
+            placeholder = placeholder?.let { { Text(it) } },
+            supportingText = error?.let { { Text(it) } },
             trailingIcon = {
                 IconButton(onClick = onOpenCalendar) {
                     Icon(Icons.Outlined.CalendarMonth, contentDescription = "Choose date from calendar")

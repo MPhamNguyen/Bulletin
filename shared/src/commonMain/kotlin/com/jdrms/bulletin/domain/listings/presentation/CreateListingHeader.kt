@@ -31,7 +31,7 @@ internal fun CreateListingHeader(step: CreateListingStep, onClose: () -> Unit, m
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Post Listing",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )

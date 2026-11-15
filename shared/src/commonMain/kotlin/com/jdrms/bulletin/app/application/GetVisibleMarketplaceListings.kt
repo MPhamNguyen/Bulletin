@@ -42,7 +42,7 @@ class GetVisibleMarketplaceListings(
                 val lastAdded = visible.last()
                 val moreAllowedInFetchedPage = allowed.size > remaining
                 val nextCursor = if (moreAllowedInFetchedPage) {
-                    lastAdded.toCursor()
+                    lastAdded.toCursor(request.sortOrder)
                 } else {
                     sourceCursor
                 }

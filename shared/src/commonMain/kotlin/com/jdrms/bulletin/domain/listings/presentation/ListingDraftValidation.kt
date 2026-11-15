@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import com.jdrms.bulletin.core.designsystem.currencyDigitsToAmount
+import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputParser
 import com.jdrms.bulletin.domain.listings.domain.service.ListingPhotoPolicy
 
@@ -18,11 +19,21 @@ internal fun validateNewListingDraft(
     state: ListingsUiState,
     parser: ListingAttributeInputParser = ListingAttributeInputParser()
 ): NewListingDraftValidation {
-    val attributes = parser.parse(state.newCategory, state.newAttributes.inputs, state.newAttributes.preserved)
+    val attributes = parseListingFormAttributes(
+        state.newCategory,
+        state.newAttributes,
+        state.newPriceCents,
+        parser
+    )
     val title = state.newTitle.trim()
     val description = state.newDescription.trim()
     val baseError = when {
-        state.newPriceCents.isEmpty() -> "Please enter a price"
+        state.newPriceCents.isEmpty() -> if (state.newCategory == ListingCategory.HOUSING) {
+            "Please enter the monthly rent"
+        } else {
+            "Please enter a price"
+        }
+        attributes.rentError != null -> attributes.rentError
         title.length < MIN_LISTING_TITLE_LENGTH -> "Title must be at least $MIN_LISTING_TITLE_LENGTH characters"
         description.isBlank() -> "Description cannot be empty"
         !ListingPhotoPolicy.hasRequiredPhoto(state.newImages.size) -> ListingPhotoPolicy.REQUIRED_PHOTO_MESSAGE

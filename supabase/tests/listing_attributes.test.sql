@@ -72,13 +72,17 @@ select pg_temp.expect_error($q$insert into public.listings(name,user_id,category
 select pg_temp.expect_error($q$update public.listings set attributes = attributes || '{"device_type":"monitor"}'
  where id = '11111111-1111-1111-1111-111111111111'$q$, 'requires');
 
--- Valid textbook, housing and furniture values (ISBN text with leading zero preserved, exact decimals).
+-- Valid textbook, housing, furniture and clothing values (ISBN text with leading zero preserved, exact decimals).
 insert into public.listings(id, name, user_id, category, attributes) values
   ('33333333-3333-3333-3333-333333333333','Book','00000000-0000-0000-0000-0000000000a1','TEXTBOOKS','{"isbn":"0306406152","course_code":"CECS 328","edition":3}'),
-  ('44444444-4444-4444-4444-444444444444','Room','00000000-0000-0000-0000-0000000000a1','HOUSING','{"monthly_rent_usd":1250.50,"available_date":"2026-09-01","housing_type":"room"}');
+  ('44444444-4444-4444-4444-444444444444','Room','00000000-0000-0000-0000-0000000000a1','HOUSING','{"monthly_rent_usd":1250.50,"available_date":"2026-09-01","housing_type":"room"}'),
+  ('55555555-5555-5555-5555-555555555555','Desk','00000000-0000-0000-0000-0000000000a1','FURNITURE','{"furniture_type":"desk","width_cm":60.5,"length_cm":120.0}'),
+  ('66666666-6666-6666-6666-666666666666','Jacket','00000000-0000-0000-0000-0000000000a1','CLOTHING','{"clothing_type":"outerwear","size":"M","color":"blue","brand":"Levi''s"}');
 do $$ begin
   assert (select attributes->>'isbn' from public.listings where id='33333333-3333-3333-3333-333333333333') = '0306406152';
   assert (select (attributes->>'monthly_rent_usd')::numeric from public.listings where id='44444444-4444-4444-4444-444444444444') = 1250.50;
+  assert (select (attributes->>'length_cm')::numeric from public.listings where id='55555555-5555-5555-5555-555555555555') = 120.0;
+  assert (select attr_brand_key from public.listings where id='66666666-6666-6666-6666-666666666666') = 'levis';
 end $$;
 
 -- A category-only update (older client) leaves attributes untouched and is not rejected.

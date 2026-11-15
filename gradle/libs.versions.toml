@@ -5,7 +5,8 @@ android-minSdk = "24"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.7.1"
-androidx-core = "1.19.0"
+# 1.19.0 requires compileSdk 37 and AGP 9.1; keep Core compatible with this toolchain.
+androidx-core = "1.18.0"
 androidx-datastore = "1.2.1"
 androidx-espresso = "3.7.0"
 # 2.11.0 is newer but requires AGP 9.1+/compileSdk 37; 2.10.0 is the newest stable that

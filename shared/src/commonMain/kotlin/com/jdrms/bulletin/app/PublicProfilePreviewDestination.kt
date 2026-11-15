@@ -14,6 +14,7 @@ import com.jdrms.bulletin.domain.profile.presentation.ProfileViewModel
 internal fun PublicProfilePreviewDestination(
     profileViewModel: ProfileViewModel,
     sellerProfileViewModel: SellerProfileViewModel,
+    onListingClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val profileState by profileViewModel.uiState.collectAsState()
@@ -25,7 +26,7 @@ internal fun PublicProfilePreviewDestination(
     SellerProfileScreen(
         state = sellerProfileState,
         listingActions = SellerProfileListingActions(
-            onListingClick = {},
+            onListingClick = onListingClick,
             onQueryChanged = sellerProfileViewModel::onSearchQueryChanged,
             onFiltersApplied = sellerProfileViewModel::onFiltersApplied
         ),

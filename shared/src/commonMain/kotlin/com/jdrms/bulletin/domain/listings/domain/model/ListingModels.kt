@@ -98,7 +98,7 @@ data class Listing(
     fun restoreToMarketplace(sellerId: SellerId): Listing {
         require(isOwnedBy(sellerId)) { "Only the owner can restore this listing." }
         require(status == ListingStatus.SOLD) { "Only sold listings can be restored to the marketplace." }
-        return copy(status = ListingStatus.AVAILABLE)
+        return copy(status = ListingStatus.AVAILABLE, buyerId = null)
     }
 
     fun updateDetails(

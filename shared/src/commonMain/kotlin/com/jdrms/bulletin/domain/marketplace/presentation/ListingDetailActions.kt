@@ -26,27 +26,30 @@ internal fun ListingDetailActions(
     onToggleBookmark: () -> Unit,
     onDismiss: () -> Unit,
     onReportListing: () -> Unit,
+    canBookmarkListing: Boolean,
     canReportListing: Boolean
 ) {
-    bookmarkErrorMessage?.let { message ->
+    bookmarkErrorMessage?.takeIf { canBookmarkListing }?.let { message ->
         Text(text = message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
-        BulletinButton(
-            onClick = onToggleBookmark,
-            modifier = Modifier.weight(1f),
-            variant = BulletinButtonVariant.Outlined
-        ) {
-            Icon(
-                imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(if (isBookmarked) "Bookmarked" else "Bookmark")
+        if (canBookmarkListing) {
+            BulletinButton(
+                onClick = onToggleBookmark,
+                modifier = Modifier.weight(1f),
+                variant = BulletinButtonVariant.Outlined
+            ) {
+                Icon(
+                    imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (isBookmarked) "Bookmarked" else "Bookmark")
+            }
         }
         BulletinButton(
             onClick = onDismiss,

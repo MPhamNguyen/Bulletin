@@ -10,6 +10,13 @@ value class MarketplaceItemId(val value: String)
 @JvmInline
 value class MarketplaceSellerId(val value: String)
 
+@JvmInline
+value class MarketplaceInterestOwnerId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Marketplace interest owner ID cannot be blank." }
+    }
+}
+
 enum class MarketplaceCategory {
     TEXTBOOKS,
     ELECTRONICS,
@@ -18,6 +25,9 @@ enum class MarketplaceCategory {
     HOUSING,
     OTHER
 }
+
+val MarketplaceCategory.supportsCondition: Boolean
+    get() = this != MarketplaceCategory.HOUSING
 
 enum class MarketplaceCondition {
     NEW,

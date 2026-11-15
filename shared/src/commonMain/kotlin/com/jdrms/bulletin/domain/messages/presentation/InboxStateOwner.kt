@@ -89,8 +89,14 @@ class InboxStateOwner(
         }
     }
 
-    fun recordMessage(message: Message): Result<Unit> = updateConversation(message.conversationId) { conversation ->
-        conversation.recordMessage(message)
+    fun recordMessage(message: Message): Result<Unit> {
+        val result = updateConversation(message.conversationId) { conversation -> conversation.recordMessage(message) }
+        if (result is Result.Error) {
+            mutableState.update {
+                it.copy(errorMessage = "Message sent, but the conversation could not be updated.")
+            }
+        }
+        return result
     }
 
     fun reconcileMessages(conversationId: ConversationId, messages: List<Message>): Result<Unit> =

@@ -1,23 +1,38 @@
 package com.jdrms.bulletin.domain.marketplace.domain.service
 
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeValue
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributes
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 
 /** Rejects stale capacities and invalid numeric or calendar facts at the marketplace read boundary. */
 internal object MarketplaceAttributeReadPolicy {
     private val ramDevices = setOf("laptop", "desktop", "tablet", "phone")
 
-    fun recognized(attributes: MarketplaceAttributes): MarketplaceAttributes = MarketplaceAttributes(
+    fun recognized(
+        attributes: MarketplaceAttributes,
+        category: MarketplaceCategory
+    ): MarketplaceAttributes = MarketplaceAttributes(
         attributes.values.filter { (key, value) ->
             when (value) {
                 is MarketplaceAttributeValue.Integer -> validInteger(key, value.value, attributes)
                 is MarketplaceAttributeValue.Decimal -> validDecimal(key, value.plain)
                 is MarketplaceAttributeValue.Date -> validDate(value.iso)
                 is MarketplaceAttributeValue.Text -> value.value.none(Char::isISOControl)
-                is MarketplaceAttributeValue.Choice -> true
+                is MarketplaceAttributeValue.Choice -> validChoice(category, key, value.code)
             }
         }
     )
+
+    private fun validChoice(
+        category: MarketplaceCategory,
+        key: String,
+        code: String
+    ): Boolean {
+        val spec = MarketplaceAttributeCatalog.spec(category, key) ?: return false
+        // Stored rows may predate controlling attributes and option groups; accept any recognized choice.
+        return code in spec.choices
+    }
 
     private fun validInteger(key: String, number: Long, attributes: MarketplaceAttributes): Boolean {
         val device = (attributes["device_type"] as? MarketplaceAttributeValue.Choice)?.code
@@ -33,7 +48,7 @@ internal object MarketplaceAttributeReadPolicy {
         val fraction = plain.substringAfter('.', "").trimEnd('0')
         val number = plain.toDoubleOrNull() ?: return false
         return when (key) {
-            "width_cm" -> fraction.length <= 1 && number in 0.1..1000.0
+            "width_cm", "length_cm" -> fraction.length <= 1 && number in 0.1..1000.0
             "monthly_rent_usd" -> fraction.length <= 2 && number in 0.01..99999.99
             else -> false
         }

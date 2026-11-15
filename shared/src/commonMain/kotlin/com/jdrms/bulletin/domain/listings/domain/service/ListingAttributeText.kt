@@ -5,12 +5,11 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingTextFormat
 /**
  * Normalization for free-text attribute values.
  *
- * Identifiers (ISBN, course code, size) are stored in one canonical spelling. Brands keep the seller's display
+ * Identifiers (ISBN and course code) are stored in one canonical spelling. Brands keep the seller's display
  * spelling; [matchKey] is the separate, deterministic key used for equality filters.
  */
 object ListingAttributeText {
     private val COURSE_CODE = Regex("^([A-Za-z]{2,5})[ -]?(\\d{2,4}[A-Za-z]{0,2})$")
-    private val SIZE = Regex("^[A-Z0-9][A-Z0-9 ./-]{0,11}$")
     private val WHITESPACE = Regex("\\s+")
     private const val ISBN10_LENGTH = 10
     private const val ISBN13_LENGTH = 13
@@ -43,7 +42,6 @@ object ListingAttributeText {
             ListingTextFormat.BRAND -> cleaned.takeIf { text -> text.any(Char::isLetterOrDigit) }
             ListingTextFormat.ISBN -> normalizeIsbn(cleaned)
             ListingTextFormat.COURSE_CODE -> normalizeCourseCode(cleaned)
-            ListingTextFormat.CLOTHING_SIZE -> cleaned.uppercase().takeIf { SIZE.matches(it) }
         }
     }
 

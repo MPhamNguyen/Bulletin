@@ -16,12 +16,12 @@ import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
-import com.jdrms.bulletin.app.navigation.backFromProfileDestination
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReporterId
+import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestsScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
@@ -30,7 +30,6 @@ import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 import com.jdrms.bulletin.domain.messages.presentation.MessagesViewModel
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreen
-import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenCallbacks
 import com.jdrms.bulletin.domain.profile.presentation.ProfileScreenFlows
 import com.jdrms.bulletin.domain.profile.presentation.ReportedListingVisibilitySetting
 import kotlinx.coroutines.cancel
@@ -130,6 +129,7 @@ private fun ProfileDestinationContent(
     profilePresentation: ProfilePresentation,
     messagesViewModel: MessagesViewModel
 ) {
+    val interestState by profilePresentation.marketplaceInterestsViewModel.uiState.collectAsState()
     if (navigation.profileDestination == ProfileDestination.MY_LISTINGS ||
         navigation.profileDestination == ProfileDestination.EDIT_LISTING
     ) {
@@ -138,7 +138,20 @@ private fun ProfileDestinationContent(
         PublicProfilePreviewDestination(
             profilePresentation.viewModel,
             sellerProfileViewModel,
+            onListingClick = { listingId ->
+                marketplaceViewModel.onListingClicked(listingId)
+                navigation.openListing(listingId)
+            },
             onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
+        )
+    } else if (navigation.profileDestination == ProfileDestination.INTERESTS) {
+        MarketplaceInterestsScreen(
+            viewModel = profilePresentation.marketplaceInterestsViewModel,
+            onBack = { navigation.profileDestination = ProfileDestination.PROFILE },
+            onListingClick = { listingId ->
+                marketplaceViewModel.onListingClicked(listingId)
+                navigation.openListing(listingId)
+            }
         )
     } else {
         StudentProfileDestination(
@@ -147,7 +160,8 @@ private fun ProfileDestinationContent(
             listingsViewModel,
             marketplaceViewModel,
             profilePresentation,
-            messagesViewModel
+            messagesViewModel,
+            interestState.unreadMatchCount
         )
     }
 }
@@ -172,7 +186,8 @@ private fun StudentProfileDestination(
     listingsViewModel: ListingsViewModel,
     marketplaceViewModel: MarketplaceViewModel,
     profilePresentation: ProfilePresentation,
-    messagesViewModel: MessagesViewModel
+    messagesViewModel: MessagesViewModel,
+    interestNotificationCount: Int
 ) {
     val resolvedProfileViewModel = profilePresentation.viewModel
     val profileState by resolvedProfileViewModel.uiState.collectAsState()
@@ -210,6 +225,7 @@ private fun StudentProfileDestination(
             messagesViewModel,
             profilePresentation.onSignOut
         ),
+        interestNotificationCount = interestNotificationCount,
         themeViewModel = profilePresentation.themeViewModel,
         reportedListingVisibilitySetting = ReportedListingVisibilitySetting(
             hideReportedListings = hideReportedListings,
@@ -219,45 +235,5 @@ private fun StudentProfileDestination(
                 }
             }
         )
-    )
-}
-
-private fun profileCallbacks(
-    container: AppContainer,
-    navigation: MutableMainNavigationState,
-    listingsViewModel: ListingsViewModel,
-    marketplaceViewModel: MarketplaceViewModel,
-    messagesViewModel: MessagesViewModel,
-    onSignOut: () -> Unit
-): ProfileScreenCallbacks {
-    val conversationActions = ListingConversationActions(container.messages, navigation, messagesViewModel)
-    return ProfileScreenCallbacks(
-        onNavigate = { destination ->
-            if (destination == ProfileDestination.EDIT_ACCOUNT) {
-                navigation.editReturnDestination = navigation.profileDestination
-            }
-            navigation.profileDestination = destination
-        },
-        onBack = {
-            navigation.profileDestination = backFromProfileDestination(
-                navigation.profileDestination,
-                navigation.editReturnDestination
-            )
-        },
-        onSignOut = onSignOut,
-        onMyListingsClick = {
-            listingsViewModel.clearMessages()
-            navigation.profileDestination = ProfileDestination.MY_LISTINGS
-        },
-        onOpenListing = { listingId ->
-            marketplaceViewModel.onListingClicked(listingId)
-            navigation.openListing(listingId)
-        },
-        onMessageSeller = conversationActions::messageSeller,
-        onMessageSent = {
-            navigation.apply(navigation.snapshot().selectBottomNavigationDestination(AppDestination.MESSAGES))
-        },
-        onSeeChat = conversationActions::seeChat,
-        hasExistingConversation = conversationActions::hasExistingConversation
     )
 }

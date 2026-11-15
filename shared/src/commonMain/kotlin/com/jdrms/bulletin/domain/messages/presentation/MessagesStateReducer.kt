@@ -9,8 +9,9 @@ internal fun MessagesUiState.withSentMessage(
     conversationId: ConversationId,
     message: Message
 ): Result<MessagesUiState> {
+    val completedSends = sendStates - conversationId
     val conversation = conversations.firstOrNull { it.id == conversationId }
-        ?: return Result.Success(copy(isSending = false))
+        ?: return Result.Success(copy(sendStates = completedSends))
     return when (val updated = conversation.recordMessage(message)) {
         is Result.Error -> updated
         is Result.Success -> Result.Success(
@@ -24,7 +25,7 @@ internal fun MessagesUiState.withSentMessage(
                     currentMessages
                 },
                 messageInput = if (selectedConversationId == conversationId) "" else messageInput,
-                isSending = false
+                sendStates = completedSends
             )
         )
     }

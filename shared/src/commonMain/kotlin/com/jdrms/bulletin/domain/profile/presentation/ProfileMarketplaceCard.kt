@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Interests
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,8 +35,10 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 @Composable
 internal fun ProfileMarketplaceCard(
     activeListings: String,
+    interestNotificationCount: Int,
     onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit
+    onBookmarkedListingsClick: () -> Unit,
+    onInterestsClick: () -> Unit
 ) {
     BulletinCard {
         Text(
@@ -55,6 +58,13 @@ internal fun ProfileMarketplaceCard(
             icon = Icons.Outlined.BookmarkBorder,
             title = "Bookmarked listings",
             onClick = onBookmarkedListingsClick
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        MarketplaceActionRow(
+            icon = Icons.Outlined.Interests,
+            title = "Interests",
+            badge = interestNotificationCount.takeIf { it > 0 }?.coerceAtMost(99)?.toString(),
+            onClick = onInterestsClick
         )
     }
 }

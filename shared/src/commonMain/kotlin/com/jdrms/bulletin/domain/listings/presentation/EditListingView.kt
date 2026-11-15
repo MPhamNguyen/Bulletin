@@ -22,7 +22,6 @@ import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinCard
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
-import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
@@ -84,11 +83,15 @@ fun EditListingView(
 
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
-                CurrencyTextField(
-                    digits = uiState.editPriceCents,
-                    onDigitsChange = actions.onPriceChange,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (uiState.editCategory == ListingCategory.HOUSING) {
+                    ListingHousingRentField(uiState.editPriceCents, actions.onPriceChange, Modifier.fillMaxWidth())
+                } else {
+                    CurrencyTextField(
+                        digits = uiState.editPriceCents,
+                        onDigitsChange = actions.onPriceChange,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
@@ -113,18 +116,11 @@ fun EditListingView(
 
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
-                BulletinTextField(
-                    value = uiState.editDescription,
-                    onValueChange = actions.onDescriptionChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    decoration = BulletinFieldDecoration(
-                        label = { Text("Description & Campus Pick-Up Details") }
-                    ),
-                    options = BulletinFieldOptions(
-                        minLines = 3,
-                        maxLines = 6
-                    )
-                )
+                if (uiState.editCategory == ListingCategory.HOUSING) {
+                    ListingHousingDescriptionField(uiState.editDescription, actions.onDescriptionChange)
+                } else {
+                    ListingItemDescriptionField(uiState.editDescription, actions.onDescriptionChange)
+                }
             }
 
             ListingImageSelectionField(

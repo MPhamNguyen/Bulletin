@@ -62,7 +62,7 @@ class ManageListingAttributesTest {
     fun invalidAttributesAreRejectedAndNothingIsSaved() = runTest {
         val repository = repositoryWith(attributeListing(attributes = ListingAttributes.EMPTY))
         val invalid =
-            attributeListing(attributes = ListingAttributes(mapOf("ram_gb" to ListingAttributeValue.Integer(8))))
+            attributeListing(attributes = ListingAttributes(mapOf("ram_gb" to ListingAttributeValue.Integer(12))))
 
         val result = ManageListing(repository).updateListing(invalid, seller)
 

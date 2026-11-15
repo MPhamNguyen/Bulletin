@@ -107,7 +107,7 @@ class MarketplaceViewModel(
     }
 
     fun onConditionSelected(condition: MarketplaceCondition?) {
-        _uiState.update { it.copy(filters = it.filters.copy(condition = condition)) }
+        _uiState.update { it.copy(filters = it.filters.copy(condition = condition).normalized()) }
         loadFirstPage(userId = null, debounceMillis = 0L)
     }
 
@@ -131,6 +131,8 @@ class MarketplaceViewModel(
                         query = filters.query,
                         category = filters.category,
                         condition = filters.condition,
+                        priceRange = filters.priceRange,
+                        sortOrder = filters.sortOrder,
                         attributeFilters = filters.attributes,
                         viewerId = currentUserIdProvider(),
                         cursor = cursor

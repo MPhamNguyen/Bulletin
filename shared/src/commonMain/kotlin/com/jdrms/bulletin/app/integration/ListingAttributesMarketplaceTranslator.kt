@@ -11,13 +11,15 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributes
  */
 internal fun ListingAttributes.toMarketplaceAttributes(): MarketplaceAttributes =
     MarketplaceAttributes(
-        values.mapValues { (_, value) ->
-            when (value) {
-                is ListingAttributeValue.Text -> MarketplaceAttributeValue.Text(value.value)
-                is ListingAttributeValue.Choice -> MarketplaceAttributeValue.Choice(value.code)
-                is ListingAttributeValue.Integer -> MarketplaceAttributeValue.Integer(value.value)
-                is ListingAttributeValue.Decimal -> MarketplaceAttributeValue.Decimal(value.value.toPlainString())
-                is ListingAttributeValue.Date -> MarketplaceAttributeValue.Date(value.value.toString())
-            }
-        }
+        values.mapNotNull { (key, value) -> toMarketplaceValue(value)?.let { key to it } }.toMap()
     )
+
+/** Marketplace has no multi-value vocabulary yet, so a multi-select does not cross the boundary. */
+private fun toMarketplaceValue(value: ListingAttributeValue): MarketplaceAttributeValue? = when (value) {
+    is ListingAttributeValue.Text -> MarketplaceAttributeValue.Text(value.value)
+    is ListingAttributeValue.Choice -> MarketplaceAttributeValue.Choice(value.code)
+    is ListingAttributeValue.MultiChoice -> null
+    is ListingAttributeValue.Integer -> MarketplaceAttributeValue.Integer(value.value)
+    is ListingAttributeValue.Decimal -> MarketplaceAttributeValue.Decimal(value.value.toPlainString())
+    is ListingAttributeValue.Date -> MarketplaceAttributeValue.Date(value.value.toString())
+}

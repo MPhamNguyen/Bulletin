@@ -10,10 +10,12 @@ internal data class PresentedMessagesFailure(
     val identityUnavailable: Boolean
 )
 
+internal val Result.Error.isMessagingIdentityUnavailable: Boolean
+    get() = exception is MessagingAuthenticationRequiredException || exception is MessageSenderLookupException ||
+        exception is ConversationAccessException
+
 internal fun MessagesUiState.withFailure(error: Result.Error): PresentedMessagesFailure {
-    val identityUnavailable = error.exception is MessagingAuthenticationRequiredException ||
-        error.exception is MessageSenderLookupException ||
-        error.exception is ConversationAccessException
+    val identityUnavailable = error.isMessagingIdentityUnavailable
     val message = if (error.exception is MessagingAuthenticationRequiredException) {
         "Sign in to access your messages."
     } else {
@@ -26,7 +28,6 @@ internal fun MessagesUiState.withFailure(error: Result.Error): PresentedMessages
             isLoading = false,
             isLoadingMessages = false,
             isLoadingOlder = false,
-            isSending = false,
             isReporting = false,
             errorMessage = message,
             statusMessage = null

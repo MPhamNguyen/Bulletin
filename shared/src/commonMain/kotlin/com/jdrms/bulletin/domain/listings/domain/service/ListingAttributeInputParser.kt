@@ -35,7 +35,7 @@ class ListingAttributeInputParser(
         applicable.forEach { definition ->
             val raw = inputs[definition.key].orEmpty()
             if (raw.isBlank()) return@forEach
-            when (val parsed = parseValue(definition, raw)) {
+            when (val parsed = parseValue(definition, raw, inputs)) {
                 is Parsed.Value -> values[definition.key] = parsed.value
                 is Parsed.Failure -> errors[definition.key] = parsed.message
             }
@@ -56,18 +56,23 @@ class ListingAttributeInputParser(
         category: ListingCategory,
         inputs: Map<String, String>
     ): List<ListingAttributeDefinition> =
-        ListingAttributeCatalog.definitionsFor(category).filter { definition ->
-            definition.applicability?.isSatisfiedBy(inputs) ?: true
-        }
+        ListingAttributeCatalog.definitionsFor(category)
+            .filter { definition -> definition.applicability?.isSatisfiedBy(inputs) ?: true }
+            .filter { definition ->
+                definition.optionGroups.isEmpty() || definition.choiceOptions(inputs).isNotEmpty()
+            }
 
-    private fun parseValue(definition: ListingAttributeDefinition, raw: String): Parsed =
+    private fun parseValue(
+        definition: ListingAttributeDefinition,
+        raw: String,
+        inputs: Map<String, String>
+    ): Parsed =
         when (val type = definition.type) {
             is ListingAttributeType.Text -> ListingAttributeText.normalize(type.format, raw)
                 ?.let { Parsed.Value(ListingAttributeValue.Text(it)) }
                 ?: Parsed.Failure(textMessage(definition))
-            is ListingAttributeType.Choice -> raw.trim().takeIf { code -> type.options.any { it.code == code } }
-                ?.let { Parsed.Value(ListingAttributeValue.Choice(it)) }
-                ?: Parsed.Failure("Choose a valid ${definition.label.lowercase()}.")
+            is ListingAttributeType.Choice -> parseChoice(definition, raw, inputs)
+            is ListingAttributeType.MultiChoice -> parseMultiChoice(definition, type, raw)
             is ListingAttributeType.Integer -> parseInteger(definition, raw)
             is ListingAttributeType.Decimal -> ListingDecimal.parse(raw, type.scale)
                 ?.let { Parsed.Value(ListingAttributeValue.Decimal(it)) }
@@ -84,6 +89,28 @@ class ListingAttributeInputParser(
             "Use the date format YYYY-MM-DD."
         }
 
+    private fun parseChoice(
+        definition: ListingAttributeDefinition,
+        raw: String,
+        inputs: Map<String, String>
+    ): Parsed = raw.trim().takeIf { code -> definition.choiceOptions(inputs).any { it.code == code } }
+        ?.let { Parsed.Value(ListingAttributeValue.Choice(it)) }
+        ?: Parsed.Failure("Choose a valid ${definition.label.lowercase()}.")
+
+    private fun parseMultiChoice(
+        definition: ListingAttributeDefinition,
+        type: ListingAttributeType.MultiChoice,
+        raw: String
+    ): Parsed {
+        val selected = ListingMultiChoiceInput.decode(raw).toSet()
+        val ordered = type.options.map { it.code }.filter { it in selected }
+        return if (ordered.isNotEmpty() && ordered.size == selected.size) {
+            Parsed.Value(ListingAttributeValue.MultiChoice(ordered.toSet()))
+        } else {
+            Parsed.Failure("Choose valid ${definition.label.lowercase()} options.")
+        }
+    }
+
     private fun parseInteger(definition: ListingAttributeDefinition, raw: String): Parsed =
         raw.trim().takeIf { WHOLE_NUMBER.matches(it) }
             ?.let { Parsed.Value(ListingAttributeValue.Integer(it.toLong())) }
@@ -95,8 +122,6 @@ class ListingAttributeInputParser(
         ListingTextFormat.ISBN -> "Enter a valid ISBN-10 or ISBN-13."
         ListingTextFormat.COURSE_CODE ->
             "Use a course code like CECS 328."
-        ListingTextFormat.CLOTHING_SIZE ->
-            "Use letters, numbers, spaces, or . / - (up to 12 characters)."
         ListingTextFormat.BRAND -> "Enter a valid brand name."
     }
 

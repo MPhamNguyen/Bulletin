@@ -1,9 +1,12 @@
 package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.integration.AuthListingSellerProvider
+import com.jdrms.bulletin.domain.listings.application.CancelListingReviewRequests
 import com.jdrms.bulletin.domain.listings.application.CreateListing
+import com.jdrms.bulletin.domain.listings.application.CreateListingReviewRequest
 import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
+import com.jdrms.bulletin.domain.listings.application.ListingReviewRequestCreator
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
@@ -18,7 +21,8 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseList
 internal class ListingsModule(
     private val infrastructure: InfrastructureModule,
     private val profile: ProfileModule,
-    private val afterSuccessfulMutation: suspend () -> Unit
+    private val afterSuccessfulMutation: suspend () -> Unit,
+    private val reviewRequestCreator: ListingReviewRequestCreator
 ) {
     internal val listingsRepository: ListingsRepository by lazy {
         infrastructure.backend(
@@ -36,6 +40,8 @@ internal class ListingsModule(
     val manageListing by lazy { ManageListing(listingsRepository) }
     val manageListingImages by lazy { ManageListingImages(listingImagesRepository) }
     val markListingSold by lazy { MarkListingSold(listingsRepository) }
+    val createReviewRequest by lazy { CreateListingReviewRequest(reviewRequestCreator) }
+    val cancelReviewRequests by lazy { CancelListingReviewRequests(reviewRequestCreator) }
     val restoreListingToMarketplace by lazy { RestoreListingToMarketplace(listingsRepository) }
     val deleteListing by lazy { DeleteListing(listingsRepository) }
     val getSellerListings by lazy { GetSellerListings(listingsRepository) }

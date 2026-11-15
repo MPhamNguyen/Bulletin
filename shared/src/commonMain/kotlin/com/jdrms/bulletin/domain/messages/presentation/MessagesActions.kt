@@ -8,7 +8,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,42 +17,16 @@ import kotlinx.coroutines.launch
 internal class MessagesActions(
     private val inbox: InboxStateOwner,
     private val state: MutableStateFlow<MessagesUiState>,
-    private val sendMessage: SendMessage,
+    sendMessage: SendMessage,
     private val reportMessage: ReportMessage,
     private val hideConversation: HideConversation,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    drafts: ConversationMessageDrafts
 ) {
     private var hideJob: kotlinx.coroutines.Job? = null
+    private val sending = MessageSendingActions(inbox, state, sendMessage, drafts, scope)
 
-    fun send(showFailure: (Result.Error) -> Unit) {
-        val snapshot = state.value
-        val conversationId = snapshot.selectedConversationId ?: return
-        val busy = snapshot.isSending || inbox.state.value.isLoading || snapshot.isLoadingMessages
-        if (busy || snapshot.editState != MessageEditState.Composing) {
-            return
-        }
-        if (snapshot.messageInput.isBlank()) return
-        state.update { it.copy(isSending = true, errorMessage = null, statusMessage = null) }
-        scope.launch {
-            when (val sent = sendMessage(conversationId, snapshot.messageInput)) {
-                is Result.Error -> showFailure(sent)
-                is Result.Success -> when (val recorded = inbox.recordMessage(sent.data)) {
-                    is Result.Error -> showFailure(recorded)
-                    is Result.Success -> state.update { current ->
-                        current.copy(
-                            currentMessages = MessageTimeline.merge(current.currentMessages, listOf(sent.data)),
-                            messageInput = if (current.selectedConversationId == conversationId) {
-                                ""
-                            } else {
-                                current.messageInput
-                            },
-                            isSending = false
-                        )
-                    }
-                }
-            }
-        }
-    }
+    fun send(showFailure: (Result.Error) -> Unit) = sending.send(showFailure)
 
     fun report(
         messageId: MessageId,

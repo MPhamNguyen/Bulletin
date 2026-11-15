@@ -3,6 +3,9 @@ package com.jdrms.bulletin.domain.marketplace.infrastructure.repository
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingPage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSource
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeMatching
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
 import io.github.jan.supabase.SupabaseClient
@@ -48,7 +51,7 @@ class SupabaseMarketplaceListingSource private constructor(
         }
         return MarketplaceListingPage(
             listings = pageRows.map { it.second },
-            nextCursor = cursorRow?.let(SupabaseMarketplaceListingMapper::toPageCursor)
+            nextCursor = cursorRow?.let { SupabaseMarketplaceListingMapper.toPageCursor(it, request.sortOrder) }
         )
     }
 
@@ -74,21 +77,21 @@ private class PostgrestMarketplaceListingTable(
                 applyMarketplaceSearch(request)
                 eq("is_sold", false)
 
-                request.cursor?.let { cursor ->
-                    val cursorTimestamp = cursor.createdAt.toString()
-                    or {
-                        lt("created_at", cursorTimestamp)
-                        if (cursor.itemId.startsWith(LISTING_ID_PREFIX)) {
-                            and {
-                                eq("created_at", cursorTimestamp)
-                                lt("id", cursor.itemId.removePrefix(LISTING_ID_PREFIX))
-                            }
-                        }
-                    }
-                }
+                applyMarketplaceCursor(request)
             }
-            order("created_at", Order.DESCENDING)
-            order("id", Order.DESCENDING)
+            when (request.sortOrder) {
+                MarketplaceSortOrder.NEWEST -> order("created_at", Order.DESCENDING)
+                MarketplaceSortOrder.PRICE_LOW_TO_HIGH -> order("price", Order.ASCENDING)
+                MarketplaceSortOrder.PRICE_HIGH_TO_LOW -> order("price", Order.DESCENDING)
+            }
+            order(
+                "id",
+                if (request.sortOrder == MarketplaceSortOrder.PRICE_LOW_TO_HIGH) {
+                    Order.ASCENDING
+                } else {
+                    Order.DESCENDING
+                }
+            )
             limit((request.pageSize + 1).toLong())
         }.decodeList()
     }
@@ -100,6 +103,38 @@ private class PostgrestMarketplaceListingTable(
             "*, seller_profile:profiles!listings_user_id_fkey ( full_name ), " +
                 "listing_images ( object_path, position, crop_scale, crop_offset_x, crop_offset_y )"
         )
+    }
+}
+
+private fun PostgrestFilterBuilder.applyMarketplaceCursor(request: MarketplacePageRequest) {
+    val cursor = request.cursor ?: return
+    val rawId = cursor.itemId.removePrefix("listing:")
+    val price = cursor.priceAmount
+    if (request.sortOrder != MarketplaceSortOrder.NEWEST && price != null) {
+        or {
+            if (request.sortOrder == MarketplaceSortOrder.PRICE_LOW_TO_HIGH) {
+                gt("price", price)
+            } else {
+                lt("price", price)
+            }
+            and {
+                eq("price", price)
+                if (request.sortOrder == MarketplaceSortOrder.PRICE_LOW_TO_HIGH) {
+                    gt("id", rawId)
+                } else {
+                    lt("id", rawId)
+                }
+            }
+        }
+        return
+    }
+    val timestamp = cursor.createdAt.toString()
+    or {
+        lt("created_at", timestamp)
+        and {
+            eq("created_at", timestamp)
+            lt("id", rawId)
+        }
     }
 }
 
@@ -119,13 +154,33 @@ internal fun PostgrestFilterBuilder.applyMarketplaceSearch(request: MarketplaceP
         ilike("category", category.name)
     }
     request.condition?.let { condition ->
+        if (request.category == null) neq("category", MarketplaceCategory.HOUSING.name)
         ilike("condition", condition.name)
     }
-    request.query.toSafePrefixSearchQuery()?.let { query ->
-        textSearch("name", query, TextSearchType.NONE)
+    request.priceRange.minimumAmount?.let { minimum ->
+        gte("price", minimum)
     }
-    applyAttributeFilters(request.attributeFilters)
+    request.priceRange.maximumAmount?.let { maximum ->
+        lte("price", maximum)
+    }
+    request.query.toSafePrefixSearchQuery()?.let { query ->
+        if (request.category.supportsBrandSearch()) {
+            or {
+                textSearch("name", query, TextSearchType.NONE)
+                eq(
+                    MarketplaceAttributeColumns.BRAND_KEY,
+                    MarketplaceAttributeMatching.brandKey(request.query)
+                )
+            }
+        } else {
+            textSearch("name", query, TextSearchType.NONE)
+        }
+    }
+    applyAttributeFilters(request.attributeFilters, request.category)
 }
+
+private fun MarketplaceCategory?.supportsBrandSearch(): Boolean =
+    this == null || this == MarketplaceCategory.CLOTHING || this == MarketplaceCategory.ELECTRONICS
 
 internal fun String.toSafePrefixSearchQuery(): String? {
     return SEARCH_TERM_REGEX.findAll(lowercase())

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinFieldStyle
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTextFieldDefaults
 
 /** Optional slots drawn around the input text. */
@@ -40,7 +41,8 @@ fun BulletinTextField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     decoration: BulletinFieldDecoration = BulletinFieldDecoration(),
-    options: BulletinFieldOptions = BulletinFieldOptions()
+    options: BulletinFieldOptions = BulletinFieldOptions(),
+    style: BulletinFieldStyle = BulletinFieldStyle.Standard
 ) {
     OutlinedTextField(
         value = value,
@@ -61,8 +63,8 @@ fun BulletinTextField(
         singleLine = options.maxLines == 1,
         maxLines = options.maxLines,
         minLines = options.minLines,
-        shape = BulletinTextFieldDefaults.shape,
-        colors = BulletinTextFieldDefaults.colors()
+        shape = BulletinTextFieldDefaults.shape(style),
+        colors = BulletinTextFieldDefaults.colors(style)
     )
 }
 
@@ -74,7 +76,8 @@ fun BulletinTextField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     decoration: BulletinFieldDecoration = BulletinFieldDecoration(),
-    options: BulletinFieldOptions = BulletinFieldOptions()
+    options: BulletinFieldOptions = BulletinFieldOptions(),
+    style: BulletinFieldStyle = BulletinFieldStyle.Standard
 ) {
     OutlinedTextField(
         value = value,
@@ -95,7 +98,7 @@ fun BulletinTextField(
         singleLine = options.maxLines == 1,
         maxLines = options.maxLines,
         minLines = options.minLines,
-        shape = BulletinTextFieldDefaults.shape,
-        colors = BulletinTextFieldDefaults.colors()
+        shape = BulletinTextFieldDefaults.shape(style),
+        colors = BulletinTextFieldDefaults.colors(style)
     )
 }

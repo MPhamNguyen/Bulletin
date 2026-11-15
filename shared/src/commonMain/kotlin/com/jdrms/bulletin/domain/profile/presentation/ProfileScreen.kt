@@ -50,6 +50,7 @@ fun ProfileScreen(
     flows: ProfileScreenFlows,
     destination: ProfileDestination,
     callbacks: ProfileScreenCallbacks,
+    interestNotificationCount: Int = 0,
     themeViewModel: ThemeViewModel? = null,
     reportedListingVisibilitySetting: ReportedListingVisibilitySetting? = null
 ) {
@@ -75,6 +76,7 @@ fun ProfileScreen(
             ProfileDestinationStates(profileState, editState, viewModel),
             flows,
             callbacks,
+            interestNotificationCount,
             themeViewModel,
             reportedListingVisibilitySetting
         )
@@ -88,11 +90,12 @@ private fun ProfileDestinationContent(
     states: ProfileDestinationStates,
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
+    interestNotificationCount: Int,
     themeViewModel: ThemeViewModel?,
     reportedListingVisibilitySetting: ReportedListingVisibilitySetting?
 ) {
     when (destination) {
-        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks) {
+        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks, interestNotificationCount) {
             states.viewModel.refreshProfile()
         }
         ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
@@ -134,6 +137,7 @@ private fun ProfileDestinationContent(
             onBack = callbacks.onBack
         )
         ProfileDestination.NOTIFICATIONS -> NotificationsView(callbacks.onBack)
+        ProfileDestination.INTERESTS -> Unit
         ProfileDestination.PUBLIC_PROFILE -> Unit
         ProfileDestination.MY_LISTINGS, ProfileDestination.EDIT_LISTING -> Unit
     }
@@ -143,14 +147,17 @@ private fun ProfileDestinationContent(
 private fun ProfileLandingDestination(
     state: ProfileUiState,
     callbacks: ProfileScreenCallbacks,
+    interestNotificationCount: Int,
     onRefresh: () -> Unit
 ) {
     MarketplaceProfileView(
         uiState = state,
+        interestNotificationCount = interestNotificationCount,
         onRefresh = onRefresh,
         onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
         onMyListingsClick = callbacks.onMyListingsClick,
-        onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) }
+        onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) },
+        onInterestsClick = { callbacks.onNavigate(ProfileDestination.INTERESTS) }
     )
 }
 

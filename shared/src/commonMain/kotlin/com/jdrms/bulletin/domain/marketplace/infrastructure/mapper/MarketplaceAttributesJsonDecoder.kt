@@ -29,7 +29,7 @@ object MarketplaceAttributesJsonDecoder {
             (obj[spec.key] as? JsonPrimitive)?.takeUnless { it is JsonNull }
                 ?.let { primitive -> decodeValue(spec, primitive)?.let { spec.key to it } }
         }.toMap()
-        return MarketplaceAttributeReadPolicy.recognized(MarketplaceAttributes(values))
+        return MarketplaceAttributeReadPolicy.recognized(MarketplaceAttributes(values), category)
     }
 
     private fun decodeValue(spec: MarketplaceAttributeSpec, primitive: JsonPrimitive): MarketplaceAttributeValue? {

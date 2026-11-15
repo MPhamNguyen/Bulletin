@@ -3,12 +3,14 @@ package com.jdrms.bulletin.app.di
 import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
 import com.jdrms.bulletin.app.integration.MarketplaceConversationListingPreviewProvider
+import com.jdrms.bulletin.app.integration.ProfileMessageSenderPhotoProvider
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
 import com.jdrms.bulletin.domain.messages.application.EditMessage
 import com.jdrms.bulletin.domain.messages.application.GetConversationMessages
 import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.application.HasListingConversation
 import com.jdrms.bulletin.domain.messages.application.HideConversation
+import com.jdrms.bulletin.domain.messages.application.IncomingMessageNotifier
 import com.jdrms.bulletin.domain.messages.application.MarkConversationRead
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.application.ObserveConversationMessages
@@ -22,7 +24,11 @@ import com.jdrms.bulletin.domain.messages.infrastructure.repository.InMemoryMess
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseInboxObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesObserver
 import com.jdrms.bulletin.domain.messages.infrastructure.repository.SupabaseMessagesRepository
+import com.jdrms.bulletin.domain.messages.presentation.ActiveConversationTracker
+import com.jdrms.bulletin.domain.messages.presentation.InAppMessageBannerController
+import com.jdrms.bulletin.domain.messages.presentation.InboxNotificationCoordinator
 import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
+import com.jdrms.bulletin.domain.messages.presentation.NotificationConversationRequests
 
 internal class MessagesModule(
     private val infrastructure: InfrastructureModule,
@@ -69,6 +75,14 @@ internal class MessagesModule(
     val inboxStateOwner by lazy {
         InboxStateOwner(getConversations, observeInboxInvalidations, AuthInboxIdentity(profile.sessionRepository))
     }
+    val activeConversation by lazy { ActiveConversationTracker() }
+    val notificationRequests by lazy { NotificationConversationRequests() }
+    val messageSenderPhotoProvider by lazy {
+        ProfileMessageSenderPhotoProvider(profile.publicProfilePhotos)
+    }
+    val inAppBanner by lazy { InAppMessageBannerController(inboxStateOwner.state) }
+    fun createInboxNotifications(notifier: IncomingMessageNotifier) =
+        InboxNotificationCoordinator(inboxStateOwner.state, activeConversation, notifier)
     val sendMessage by lazy { SendMessage(messagesRepository, currentMessageSenderProvider) }
     val messageSeller by lazy { MessageSeller(messagesRepository, currentMessageSenderProvider) }
     val reportMessage by lazy { ReportMessage(messagesRepository, currentMessageSenderProvider) }

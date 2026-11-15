@@ -15,22 +15,21 @@ object ListingAttributeKeys {
     const val FURNITURE_TYPE = "furniture_type"
     const val MATERIAL = "material"
     const val WIDTH_CM = "width_cm"
+    const val LENGTH_CM = "length_cm"
     const val CLOTHING_TYPE = "clothing_type"
+    const val SHOE_SIZE_SYSTEM = "shoe_size_system"
     const val SIZE = "size"
+    const val COLOR = "color"
     const val MONTHLY_RENT_USD = "monthly_rent_usd"
     const val AVAILABLE_DATE = "available_date"
     const val HOUSING_TYPE = "housing_type"
 }
 
 object ListingAttributeCatalog {
-    private const val BRAND_MAX_LENGTH = 40
-    private const val SIZE_MAX_LENGTH = 12
     private const val ISBN_MAX_LENGTH = 13
     private const val COURSE_CODE_MAX_LENGTH = 12
-    private const val RAM_MAX_GB = 4_096L
-    private const val STORAGE_MAX_GB = 100_000L
     private const val MAX_EDITION = 99L
-    private const val MAX_WIDTH_CM_TENTHS = 10_000L
+    private const val MAX_DIMENSION_CM_TENTHS = 10_000L
     private const val MAX_RENT_CENTS = 9_999_999L
     private const val MIN_DATE_YEAR = 2000
     private const val MAX_DATE_YEAR = 2100
@@ -46,36 +45,6 @@ object ListingAttributeCatalog {
         "console" to "Game console",
         "accessory" to "Accessory",
         "other" to "Other"
-    )
-
-    private val ramDeviceTypes = setOf("laptop", "desktop", "tablet", "phone")
-    private val storageDeviceTypes = ramDeviceTypes + "console"
-
-    private val brand = ListingAttributeDefinition(
-        ListingAttributeKeys.BRAND,
-        "Brand",
-        ListingAttributeType.Text(ListingTextFormat.BRAND, BRAND_MAX_LENGTH)
-    )
-
-    private val electronics = listOf(
-        brand,
-        ListingAttributeDefinition(
-            ListingAttributeKeys.DEVICE_TYPE,
-            "Device type",
-            ListingAttributeType.Choice(deviceTypes)
-        ),
-        ListingAttributeDefinition(
-            ListingAttributeKeys.RAM_GB,
-            "RAM",
-            ListingAttributeType.Integer(1, RAM_MAX_GB, ListingAttributeUnit.GIGABYTES),
-            ListingAttributeApplicability(ListingAttributeKeys.DEVICE_TYPE, ramDeviceTypes)
-        ),
-        ListingAttributeDefinition(
-            ListingAttributeKeys.STORAGE_GB,
-            "Storage",
-            ListingAttributeType.Integer(1, STORAGE_MAX_GB, ListingAttributeUnit.GIGABYTES),
-            ListingAttributeApplicability(ListingAttributeKeys.DEVICE_TYPE, storageDeviceTypes)
-        )
     )
 
     private val textbooks = listOf(
@@ -128,34 +97,19 @@ object ListingAttributeCatalog {
             "Width",
             ListingAttributeType.Decimal(
                 ListingDecimal(1, 1),
-                ListingDecimal(MAX_WIDTH_CM_TENTHS, 1),
+                ListingDecimal(MAX_DIMENSION_CM_TENTHS, 1),
+                ListingAttributeUnit.CENTIMETERS
+            )
+        ),
+        ListingAttributeDefinition(
+            ListingAttributeKeys.LENGTH_CM,
+            "Length",
+            ListingAttributeType.Decimal(
+                ListingDecimal(1, 1),
+                ListingDecimal(MAX_DIMENSION_CM_TENTHS, 1),
                 ListingAttributeUnit.CENTIMETERS
             )
         )
-    )
-
-    private val clothing = listOf(
-        ListingAttributeDefinition(
-            ListingAttributeKeys.CLOTHING_TYPE,
-            "Clothing type",
-            ListingAttributeType.Choice(
-                options(
-                    "top" to "Top",
-                    "bottom" to "Bottom",
-                    "outerwear" to "Outerwear",
-                    "dress" to "Dress",
-                    "shoes" to "Shoes",
-                    "accessory" to "Accessory",
-                    "other" to "Other"
-                )
-            )
-        ),
-        ListingAttributeDefinition(
-            ListingAttributeKeys.SIZE,
-            "Size",
-            ListingAttributeType.Text(ListingTextFormat.CLOTHING_SIZE, SIZE_MAX_LENGTH)
-        ),
-        brand
     )
 
     private val housing = listOf(
@@ -171,7 +125,8 @@ object ListingAttributeCatalog {
         ListingAttributeDefinition(
             ListingAttributeKeys.AVAILABLE_DATE,
             "Available date",
-            ListingAttributeType.Date(MIN_DATE_YEAR, MAX_DATE_YEAR)
+            ListingAttributeType.Date(MIN_DATE_YEAR, MAX_DATE_YEAR),
+            required = true
         ),
         ListingAttributeDefinition(
             ListingAttributeKeys.HOUSING_TYPE,
@@ -190,10 +145,10 @@ object ListingAttributeCatalog {
     )
 
     private val byCategory: Map<ListingCategory, List<ListingAttributeDefinition>> = mapOf(
-        ListingCategory.ELECTRONICS to electronics,
+        ListingCategory.ELECTRONICS to ListingElectronicsAttributeCatalog.definitions,
         ListingCategory.TEXTBOOKS to textbooks,
         ListingCategory.FURNITURE to furniture,
-        ListingCategory.CLOTHING to clothing,
+        ListingCategory.CLOTHING to ListingClothingAttributeCatalog.definitions,
         ListingCategory.HOUSING to housing,
         ListingCategory.OTHER to emptyList()
     )

@@ -2,63 +2,112 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeCatalog
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeFilters
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeMatching
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeKind
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributePredicate
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCapacityRange
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 
-/** Form text for the Electronics attribute filters. Parsing and validation live here, not in the composable. */
+internal data class MarketplaceAttributeFilterInput(
+    val exact: String = "",
+    val min: String = "",
+    val max: String = "",
+    val capacities: Set<MarketplaceCapacityRange> = emptySet(),
+    val choices: Set<String> = emptySet()
+)
+
+/** Category-driven form text for typed marketplace attribute filters. */
 internal data class MarketplaceAttributeFilterDraft(
-    val deviceType: String? = null,
-    val brand: String = "",
-    val ramMin: String = "",
-    val ramMax: String = "",
-    val storageMin: String = "",
-    val storageMax: String = ""
+    val inputs: Map<String, MarketplaceAttributeFilterInput> = emptyMap()
 ) {
     data class Result(val filters: MarketplaceAttributeFilters?, val errors: Map<String, String>)
 
-    fun toFilters(): Result {
+    fun input(key: String): MarketplaceAttributeFilterInput = inputs[key] ?: MarketplaceAttributeFilterInput()
+
+    fun withExact(key: String, value: String) = withInput(key, input(key).copy(exact = value))
+    fun withMin(key: String, value: String) = withInput(key, input(key).copy(min = value))
+    fun withMax(key: String, value: String) = withInput(key, input(key).copy(max = value))
+
+    fun toggleColor(code: String): MarketplaceAttributeFilterDraft {
+        return toggleChoice(MarketplaceAttributeCatalog.COLOR, code)
+    }
+
+    fun toggleChoice(key: String, code: String): MarketplaceAttributeFilterDraft {
+        val input = input(key)
+        val current = input.choices + setOfNotNull(input.exact.takeIf(String::isNotBlank))
+        val selected = if (code in current) current - code else current + code
+        return withInput(key, MarketplaceAttributeFilterInput(choices = selected))
+    }
+
+    fun toggleCapacity(key: String, range: MarketplaceCapacityRange): MarketplaceAttributeFilterDraft {
+        val current = input(key).selectedCapacities(key)
+        val selected = if (range in current) current - range else current + range
+        return withInput(key, MarketplaceAttributeFilterInput(capacities = selected))
+    }
+
+    fun toFilters(category: MarketplaceCategory): Result {
         val errors = mutableMapOf<String, String>()
-        if (brand.isNotBlank() && MarketplaceAttributeMatching.brandKey(brand).let {
-                it.isEmpty() || it.length > MarketplaceAttributeCatalog.MAX_BRAND_LENGTH
-            }
-        ) {
-            errors[BRAND] = "Enter a brand of up to ${MarketplaceAttributeCatalog.MAX_BRAND_LENGTH} characters."
+        val selectedChoices = selectedChoices()
+        val predicates = MarketplaceAttributeCatalog.applicableSpecs(category, selectedChoices).mapNotNull { spec ->
+            val input = input(spec.key)
+            runCatching { MarketplaceAttributeFilterParser.predicate(spec, input, selectedChoices) }
+                .getOrElse {
+                    errors[spec.key] = MarketplaceAttributeFilterParser.errorMessage(spec)
+                    null
+                }
+                ?.let { spec.key to it }
+        }.toMap()
+        return if (errors.isEmpty()) {
+            Result(MarketplaceAttributeFilters(predicates = predicates), emptyMap())
+        } else {
+            Result(null, errors)
         }
-        val ram = range(RAM, ramMin, ramMax, errors)
-        val storage = range(STORAGE, storageMin, storageMax, errors)
-        if (errors.isNotEmpty()) return Result(null, errors)
-        return Result(MarketplaceAttributeFilters.create(deviceType, brand, ram, storage), emptyMap())
     }
 
-    private fun range(
-        key: String,
-        min: String,
-        max: String,
-        errors: MutableMap<String, String>
-    ): MarketplaceCapacityRange? {
-        if (min.isBlank() && max.isBlank()) return null
-        val low = min.trim().takeIf(String::isNotEmpty)?.let { it.toLongOrNull() ?: return invalid(key, errors) }
-        val high = max.trim().takeIf(String::isNotEmpty)?.let { it.toLongOrNull() ?: return invalid(key, errors) }
-        return runCatching { MarketplaceCapacityRange(low, high) }.getOrElse { invalid(key, errors) }
+    fun reconciled(category: MarketplaceCategory): MarketplaceAttributeFilterDraft {
+        val selectedChoices = selectedChoices()
+        val visible = MarketplaceAttributeCatalog.applicableSpecs(category, selectedChoices).associateBy { it.key }
+        val reconciled = inputs.filter { (key, input) ->
+            val spec = visible[key] ?: return@filter false
+            if (input.choices.isNotEmpty()) {
+                return@filter spec.key in setOf(MarketplaceAttributeCatalog.COLOR, MarketplaceAttributeCatalog.SIZE) &&
+                    input.choices.all { it in spec.choicesFor(selectedChoices) }
+            }
+            if (spec.kind != MarketplaceAttributeKind.CHOICE || input.exact.isBlank()) return@filter true
+            input.exact in spec.choicesFor(selectedChoices)
+        }
+        return copy(inputs = reconciled)
     }
 
-    private fun invalid(key: String, errors: MutableMap<String, String>): MarketplaceCapacityRange? {
-        errors[key] = "Enter whole numbers in GB, with the minimum no larger than the maximum."
-        return null
-    }
+    private fun withInput(key: String, value: MarketplaceAttributeFilterInput) = copy(inputs = inputs + (key to value))
+
+    private fun selectedChoices(): Map<String, String> = inputs.mapNotNull { (key, input) ->
+        input.exact.trim().takeIf(String::isNotEmpty)?.let { key to it }
+    }.toMap()
 
     companion object {
-        const val BRAND = "brand"
-        const val RAM = "ram"
-        const val STORAGE = "storage"
-
-        fun from(filters: MarketplaceAttributeFilters) = MarketplaceAttributeFilterDraft(
-            deviceType = filters.deviceType,
-            brand = filters.brandKey.orEmpty(),
-            ramMin = filters.ramGb?.min?.toString().orEmpty(),
-            ramMax = filters.ramGb?.max?.toString().orEmpty(),
-            storageMin = filters.storageGb?.min?.toString().orEmpty(),
-            storageMax = filters.storageGb?.max?.toString().orEmpty()
-        )
+        fun from(filters: MarketplaceAttributeFilters): MarketplaceAttributeFilterDraft {
+            val inputs = filters.allPredicates.mapValues { (_, predicate) -> predicate.toInput() }
+            return MarketplaceAttributeFilterDraft(inputs)
+        }
     }
+}
+
+private fun MarketplaceAttributePredicate.toInput(): MarketplaceAttributeFilterInput = when (this) {
+    is MarketplaceAttributePredicate.ExactText -> MarketplaceAttributeFilterInput(exact = value)
+    is MarketplaceAttributePredicate.ChoiceOptions -> MarketplaceAttributeFilterInput(choices = codes)
+    is MarketplaceAttributePredicate.Choice -> MarketplaceAttributeFilterInput(exact = code)
+    is MarketplaceAttributePredicate.IntegerRange -> MarketplaceAttributeFilterInput(
+        exact = range.min?.takeIf { it == range.max }?.toString().orEmpty(),
+        min = range.min?.toString().orEmpty(),
+        max = range.max?.toString().orEmpty()
+    )
+    is MarketplaceAttributePredicate.IntegerOptions -> MarketplaceAttributeFilterInput(capacities = ranges)
+    is MarketplaceAttributePredicate.DecimalRange -> MarketplaceAttributeFilterInput(
+        min = min?.toString().orEmpty(),
+        max = max?.toString().orEmpty()
+    )
+    is MarketplaceAttributePredicate.DateRange -> MarketplaceAttributeFilterInput(
+        min = minIso.orEmpty(),
+        max = maxIso.orEmpty()
+    )
 }

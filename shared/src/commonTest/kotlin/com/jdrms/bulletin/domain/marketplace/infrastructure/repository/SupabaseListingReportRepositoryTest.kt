@@ -37,7 +37,6 @@ class SupabaseListingReportRepositoryTest {
         assertTrue(missingStatus.isOpenListingReportStatus())
         assertFalse("action_taken".isOpenListingReportStatus())
         assertFalse("dismissed".isOpenListingReportStatus())
-        assertFalse("duplicate".isOpenListingReportStatus())
         assertTrue("future_status".isOpenListingReportStatus())
         assertTrue("in_review".isOpenListingReportStatus())
         assertFalse("resolved".isOpenListingReportStatus())

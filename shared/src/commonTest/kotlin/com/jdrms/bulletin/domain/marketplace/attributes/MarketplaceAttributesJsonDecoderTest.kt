@@ -48,6 +48,15 @@ class MarketplaceAttributesJsonDecoderTest {
     }
 
     @Test
+    fun preservesLegacyClothingSizesWithoutNewControllingAttributes() {
+        val top = decode("""{"size":"M"}""", MarketplaceCategory.CLOTHING)
+        val shoes = decode("""{"clothing_type":"shoes","size":"10.5"}""", MarketplaceCategory.CLOTHING)
+
+        assertEquals(MarketplaceAttributeValue.Choice("M"), top["size"])
+        assertEquals(MarketplaceAttributeValue.Choice("10.5"), shoes["size"])
+    }
+
+    @Test
     fun invalidBoundsDatesAndInapplicableCapacitiesAreHidden() {
         assertEquals(
             setOf("device_type"),

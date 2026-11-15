@@ -10,7 +10,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
 
-interface MarketplaceRepository {
+interface MarketplaceRepository : MarketplaceReviewListingReader {
     suspend fun getCatalog(): List<MarketplaceItem>
     suspend fun search(
         query: String,
@@ -19,6 +19,7 @@ interface MarketplaceRepository {
     ): List<MarketplaceItem>
     suspend fun getItem(id: MarketplaceItemId): MarketplaceItem?
     suspend fun viewListing(listingID: String): Result<Listing>
+
     suspend fun bookmarkListing(userId: String, itemId: MarketplaceItemId): Result<Unit>
     suspend fun removeListingBookmark(userId: String, itemId: MarketplaceItemId): Result<Unit>
     suspend fun getBookmarkedItemIds(userId: String): Set<MarketplaceItemId>

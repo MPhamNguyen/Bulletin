@@ -128,11 +128,12 @@ class ListingsDomainTest {
 
     @Test
     fun ownerCanRestoreSoldListingToMarketplace() {
-        val soldListing = testListing(SellerId("owner_1")).markSold(SellerId("owner_1"))
+        val soldListing = testListing(SellerId("owner_1")).markSold(SellerId("owner_1"), "buyer_1")
 
         val restored = soldListing.restoreToMarketplace(SellerId("owner_1"))
 
         assertEquals(ListingStatus.AVAILABLE, restored.status)
+        assertEquals(null, restored.buyerId)
     }
 
     @Test

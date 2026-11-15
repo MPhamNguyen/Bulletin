@@ -4,6 +4,10 @@ package com.jdrms.bulletin.domain.listings.domain.model
 sealed interface ListingAttributeValue {
     data class Text(val value: String) : ListingAttributeValue
     data class Choice(val code: String) : ListingAttributeValue
+
+    /** One or more stable codes, held in catalog order. Never empty. */
+    data class MultiChoice(val codes: Set<String>) : ListingAttributeValue
+
     data class Integer(val value: Long) : ListingAttributeValue
     data class Decimal(val value: ListingDecimal) : ListingAttributeValue
     data class Date(val value: ListingAttributeDate) : ListingAttributeValue
