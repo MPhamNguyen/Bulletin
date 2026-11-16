@@ -102,7 +102,11 @@ private fun SignInContent(
         SignInHeader()
         SignInError(errorMessage)
         if (actions.canRestoreAccount) {
-            BulletinButton(onClick = actions.onRestoreAccount, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) {
+            BulletinButton(
+                onClick = actions.onRestoreAccount,
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Restore account")
             }
             Spacer(Modifier.height(BulletinSpacing.m))

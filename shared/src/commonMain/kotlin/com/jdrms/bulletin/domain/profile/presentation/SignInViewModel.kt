@@ -3,10 +3,10 @@ package com.jdrms.bulletin.domain.profile.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.profile.application.RestoreSoftDeletedProfile
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SignInExternally
 import com.jdrms.bulletin.domain.profile.application.SignInUser
-import com.jdrms.bulletin.domain.profile.application.RestoreSoftDeletedProfile
 import com.jdrms.bulletin.domain.profile.domain.model.ExternalSignInOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.SoftDeletedAccountException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +34,14 @@ class SignInViewModel(
 
     fun signIn(email: String, password: String) {
         if (state.value.isLoading) return
-        state.update { it.copy(isLoading = true, errorMessage = null, canRestoreAccount = false, externalStage = ExternalSignInStage.Idle) }
+        state.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null,
+                canRestoreAccount = false,
+                externalStage = ExternalSignInStage.Idle
+            )
+        }
         viewModelScope.launch {
             when (val result = signInUser(email, password)) {
                 is Result.Success -> {
