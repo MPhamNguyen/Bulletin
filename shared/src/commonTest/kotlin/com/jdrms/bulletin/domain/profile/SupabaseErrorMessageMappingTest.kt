@@ -21,7 +21,7 @@ class SupabaseErrorMessageMappingTest {
 
         val rateLimitError = Exception("over_email_send_rate_limit (email rate limit exceeded)")
         assertEquals(
-            "Too many signup attempts. Please wait a few minutes before trying again.",
+            "Email sending is temporarily limited. Please try again later; this can take up to an hour.",
             SupabaseAuthRepository.mapAuthErrorMessage(rateLimitError)
         )
 

@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRestoreRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.PublicProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
@@ -18,12 +19,13 @@ class InMemoryProfileRepository(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     initialProfiles: Map<String, ProfileDto> = defaultSeedProfiles,
     initialReviews: Map<String, List<ReviewDto>> = defaultSeedReviews
-) : ProfileRepository, PublicProfilePhotoRepository {
+) : ProfileRepository, ProfileRestoreRepository, PublicProfilePhotoRepository {
 
     private val profiles = initialProfiles.mapValues { ProfileMapper.toDomain(it.value) }.toMutableMap()
     private val reviewsByUser = initialReviews.mapValues { entry ->
         entry.value.map { ProfileMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
+    internal var restoreTargetId: UserId? = null
 
     override suspend fun getAvatarUrl(userId: UserId): Result<String?> =
         Result.Success(profiles[userId.value]?.avatarUrl)
@@ -43,6 +45,16 @@ class InMemoryProfileRepository(
         val existing = profiles[userId.value] ?: return Result.Error(IllegalArgumentException("Profile not found."))
         profiles[userId.value] = existing.copy(deletedAt = deletedAt)
         return Result.Success(Unit)
+    }
+
+    override suspend fun restoreCurrentProfile(): Result<StudentProfile> {
+        val profile = restoreTargetId?.let { userId -> profiles[userId.value] }
+            ?.takeIf(StudentProfile::isDeleted)
+            ?: return Result.Error(IllegalStateException("No deleted profile is available to restore."))
+        val restored = profile.copy(deletedAt = null)
+        profiles[restored.id.value] = restored
+        restoreTargetId = null
+        return Result.Success(restored)
     }
 
     override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {

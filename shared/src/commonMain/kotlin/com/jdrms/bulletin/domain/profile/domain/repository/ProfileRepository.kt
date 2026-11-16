@@ -23,6 +23,10 @@ interface ProfileRepository {
     suspend fun getReviewsPage(userId: UserId, offset: Int, pageSize: Int): StudentReviewPage
 }
 
+interface ProfileRestoreRepository {
+    suspend fun restoreCurrentProfile(): Result<StudentProfile>
+}
+
 interface ProfilePhotoRepository {
     suspend fun upload(userId: UserId, photo: ProfilePhoto): Result<ProfilePhotoUrl>
 }

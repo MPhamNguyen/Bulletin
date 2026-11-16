@@ -21,6 +21,8 @@ internal fun SignInRoute(container: AppContainer, recovery: PasswordRecoveryView
             actions = SignInScreenActions(
                 onClearMessages = viewModel::clearError,
                 onSignIn = viewModel::signIn,
+                onRestoreAccount = viewModel::restoreAccount,
+                canRestoreAccount = state.canRestoreAccount,
                 onMicrosoftSignIn = viewModel::signInWithMicrosoft,
                 onForgotPassword = recovery::beginPasswordReset,
                 onCreateAccount = onCreateAccount
