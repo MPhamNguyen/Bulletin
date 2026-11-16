@@ -6,8 +6,9 @@ internal fun selectReviewRequestToPresent(
     currentlyPresented: ReviewRequest?,
     actionableRequests: List<ReviewRequest>
 ): ReviewRequest? {
+    val eligible = actionableRequests.filter { it.isActionableByBuyer }
     val currentStillActionable = currentlyPresented?.let { current ->
-        actionableRequests.firstOrNull { it.listingId == current.listingId && it.buyerId == current.buyerId }
+        eligible.firstOrNull { it.listingId == current.listingId && it.buyerId == current.buyerId }
     }
-    return currentStillActionable ?: actionableRequests.firstOrNull()
+    return currentStillActionable ?: eligible.firstOrNull()
 }

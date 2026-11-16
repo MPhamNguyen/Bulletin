@@ -37,6 +37,17 @@ class ReviewRequestPromptSelectionTest {
         assertEquals(next, selectReviewRequestToPresent(current, listOf(next)))
     }
 
+    @Test
+    fun terminalRequestsAreNeverPresented() {
+        val submitted = request("listing-1", ReviewRequestStatus.SUBMITTED)
+        val declined = request("listing-2", ReviewRequestStatus.DECLINED)
+        val cancelled = request("listing-3", ReviewRequestStatus.CANCELLED)
+        val pending = request("listing-4")
+
+        assertEquals(null, selectReviewRequestToPresent(null, listOf(submitted, declined, cancelled)))
+        assertEquals(pending, selectReviewRequestToPresent(submitted, listOf(submitted, pending)))
+    }
+
     private fun request(
         listingId: String,
         status: ReviewRequestStatus = ReviewRequestStatus.PENDING

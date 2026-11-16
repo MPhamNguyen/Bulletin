@@ -37,7 +37,7 @@ internal data class ReviewRequestDialogActions(
 
 @Composable
 internal fun ReviewRequestDialog(state: ReviewRequestDialogState, actions: ReviewRequestDialogActions) {
-    if (state.request.status == ReviewRequestStatus.PENDING) {
+    if (state.request.canTransitionTo(ReviewRequestStatus.ACCEPTED)) {
         PendingReviewRequestDialog(state, actions)
     } else {
         ReviewRequestReviewDialog(state, actions.onSubmit, actions.onDefer)
