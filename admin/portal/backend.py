@@ -49,6 +49,11 @@ def reject_backend_request(error, method, path, access_token, public, missing_ok
         raise PortalError("This status is not allowed by the database's reports_status_check rule (23514).", 422) from None
     if method == "DELETE" and path == "/rest/v1/listings" and code == "23503":
         raise PortalError("Related data prevents this listing from being deleted. The listing and reports were retained.", 409) from None
+    if path == "/rest/v1/rpc/moderate_account_suspension":
+        if code == "PT409":
+            raise PortalError("This account's suspension changed. Reload before acting.", 409) from None
+        if code == "42501":
+            raise PortalError("This account action is not allowed.", 403) from None
     details = "HTTP " + str(error.code) + (", code " + code if code else "")
     raise PortalError("Supabase rejected the request (" + details + "). No success was confirmed.", 502) from None
 
@@ -123,12 +128,22 @@ class Supabase:
             raise PortalError("The account list could not be loaded. Please try again.", 502)
         return result["users"]
 
-    def set_ban(self, user_id, duration):
+    def set_ban(self, user_id, duration, *, actor_id, version, operation):
         # Auth bans alone do not revoke issued JWTs. Data-access enforcement is
         # provided separately by the deployed database policies.
-        return self.request(
-            "PUT", "/auth/v1/admin/users/" + user_id, data={"ban_duration": duration}
+        result = self.request(
+            "POST", "/rest/v1/rpc/moderate_account_suspension", data={
+                "p_user_id": user_id, "p_actor_id": actor_id,
+                "p_expected_banned_until": version.get("banned_until"),
+                "p_expected_updated_at": version.get("updated_at"),
+                "p_expected_suspended": version.get("suspended"),
+                "p_operation": operation,
+                "p_minutes": None if duration == "none" else int(duration.removesuffix("m")),
+            },
         )
+        if result != user_id:
+            raise PortalError("The account action could not be confirmed. Reload before retrying.", 502)
+        return result
 
     def sign_out(self, token):
         self.request(

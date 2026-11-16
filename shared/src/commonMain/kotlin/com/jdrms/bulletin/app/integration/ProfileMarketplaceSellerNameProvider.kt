@@ -16,8 +16,13 @@ class ProfileMarketplaceSellerNameProvider(
 ) : MarketplaceSellerProfileProvider {
     override suspend fun getSellerProfile(sellerId: String): MarketplaceSellerProfile? {
         val sellerIdValue = UserId(sellerId)
-        val summary = runCatching { profileRepository.getReputationSummary(sellerIdValue) }
-            .getOrDefault(StudentReputation(sellerIdValue))
+        val summary = try {
+            profileRepository.getReputationSummary(sellerIdValue)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            StudentReputation(sellerIdValue)
+        }
         val firstPage = try {
             profileRepository.getReviewsPage(sellerIdValue, 0, PROFILE_PREVIEW_REVIEW_COUNT)
         } catch (error: CancellationException) {
