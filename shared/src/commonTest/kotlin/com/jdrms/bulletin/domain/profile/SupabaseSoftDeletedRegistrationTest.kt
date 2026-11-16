@@ -23,7 +23,7 @@ class SupabaseSoftDeletedRegistrationTest {
     private val email = StudentEmail("deleted@example.com")
 
     @Test
-    fun registerWhenUserAlreadyExistsSendsOTPAndSucceeds() = runTest {
+    fun registerWhenUserAlreadyExistsDoesNotRestoreIt() = runTest {
         val profiles = InMemoryProfileRepository(initialProfiles = emptyMap())
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Auth) { minimalSettings() }
@@ -47,8 +47,7 @@ class SupabaseSoftDeletedRegistrationTest {
             val authRepo = SupabaseAuthRepository(client, profiles)
             val result = authRepo.register(email, "password123", "New Name", "CSULB")
 
-            assertIs<Result.Success<PendingRegistration>>(result)
-            assertEquals(email, result.data.email)
+            assertIs<Result.Error>(result)
             assertNull(client.auth.currentSessionOrNull())
         } finally {
             client.close()
@@ -56,7 +55,7 @@ class SupabaseSoftDeletedRegistrationTest {
     }
 
     @Test
-    fun registerWhenFakeUserReturnedSendsOTPAndSucceeds() = runTest {
+    fun registerWhenFakeUserReturnedDoesNotRestoreIt() = runTest {
         // When both email and phone confirmation are enabled, Supabase returns a fake user with empty
         // identities instead of throwing an error. The code throws EmailAlreadyInUseException, which
         // is now caught: the profile is reactivated via RPC and a fresh OTP email is sent.
@@ -83,8 +82,7 @@ class SupabaseSoftDeletedRegistrationTest {
             val authRepo = SupabaseAuthRepository(client, profiles)
             val result = authRepo.register(email, "password123", "New Name", "CSULB")
 
-            assertIs<Result.Success<PendingRegistration>>(result)
-            assertEquals(email, result.data.email)
+            assertIs<Result.Error>(result)
             assertNull(client.auth.currentSessionOrNull())
         } finally {
             client.close()

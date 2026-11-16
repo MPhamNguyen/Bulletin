@@ -15,13 +15,16 @@ interface ProfileRepository {
     suspend fun refreshProfile(userId: UserId): Result<StudentProfile?> = getProfile(userId)
     suspend fun updateProfile(profile: StudentProfile): Result<StudentProfile>
     suspend fun softDelete(userId: UserId, deletedAt: String): Result<Unit>
-    suspend fun restoreCurrentProfile(): Result<StudentProfile>
     suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit>
     suspend fun getReputation(userId: UserId): StudentReputation
     suspend fun getProfileBasics(userId: UserId): Result<StudentProfile?>
     suspend fun getPublicIdentity(userId: UserId): Result<PublicProfileIdentity?>
     suspend fun getReputationSummary(userId: UserId): StudentReputation
     suspend fun getReviewsPage(userId: UserId, offset: Int, pageSize: Int): StudentReviewPage
+}
+
+interface ProfileRestoreRepository {
+    suspend fun restoreCurrentProfile(): Result<StudentProfile>
 }
 
 interface ProfilePhotoRepository {

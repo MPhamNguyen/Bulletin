@@ -54,12 +54,11 @@ class SupabaseRepeatSignupTest {
     }
 
     @Test
-    fun emptyIdentitiesSendsOTPAndSucceeds() = runTest {
+    fun emptyIdentitiesDoesNotResendOrRestoreAnExistingAccount() = runTest {
         // When Supabase returns a fake user with empty identities (existing confirmed user, including
         // soft-deleted accounts), a fresh OTP email is sent and registration succeeds.
         val result = registerAgainst(userJson("[]"))
-        assertIs<Result.Success<PendingRegistration>>(result)
-        assertEquals(email, result.data.email)
+        assertIs<Result.Error>(result)
     }
 
     @Test

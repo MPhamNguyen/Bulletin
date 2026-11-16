@@ -15,7 +15,6 @@ internal fun SignInRoute(container: AppContainer, recovery: PasswordRecoveryView
     if (recoveryState.stage == PasswordRecoveryStage.NONE) {
         SignInScreen(
             errorMessage = state.errorMessage,
-            canRestoreAccount = state.canRestoreAccount,
             isLoading = state.isLoading,
             microsoftSignInEnabled = container.microsoftSignInEnabled,
             externalStage = state.externalStage,
@@ -23,6 +22,7 @@ internal fun SignInRoute(container: AppContainer, recovery: PasswordRecoveryView
                 onClearMessages = viewModel::clearError,
                 onSignIn = viewModel::signIn,
                 onRestoreAccount = viewModel::restoreAccount,
+                canRestoreAccount = state.canRestoreAccount,
                 onMicrosoftSignIn = viewModel::signInWithMicrosoft,
                 onForgotPassword = recovery::beginPasswordReset,
                 onCreateAccount = onCreateAccount

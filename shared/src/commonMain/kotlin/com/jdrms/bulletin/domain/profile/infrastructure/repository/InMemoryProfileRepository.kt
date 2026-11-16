@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRestoreRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.PublicProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
@@ -18,7 +19,7 @@ class InMemoryProfileRepository(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
     initialProfiles: Map<String, ProfileDto> = defaultSeedProfiles,
     initialReviews: Map<String, List<ReviewDto>> = defaultSeedReviews
-) : ProfileRepository, PublicProfilePhotoRepository {
+) : ProfileRepository, ProfileRestoreRepository, PublicProfilePhotoRepository {
 
     private val profiles = initialProfiles.mapValues { ProfileMapper.toDomain(it.value) }.toMutableMap()
     private val reviewsByUser = initialReviews.mapValues { entry ->

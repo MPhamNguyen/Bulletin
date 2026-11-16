@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRestoreRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
@@ -32,7 +33,7 @@ class SupabaseProfileRepository private constructor(
     private val supabase: SupabaseClient,
     private val policy: ProfileValidationPolicy,
     internal val readCache: ProfileReadCache
-) : ProfileRepository {
+) : ProfileRepository, ProfileRestoreRepository {
 
     constructor(supabase: SupabaseClient) : this(supabase, ProfileValidationPolicy(), ProfileReadCache())
 
