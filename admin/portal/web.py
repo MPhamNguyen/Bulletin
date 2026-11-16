@@ -16,6 +16,7 @@ from werkzeug.exceptions import HTTPException
 
 from .backend import PortalError, Supabase
 from .account_access import account_snapshot
+from .account_suspension import is_suspended
 from .listing_review import delete_reported_listing, listing_images, listing_snapshot
 from .moderation import (
     ACCOUNT_ACTIONS, ALIASES, PROFILE_COLUMNS, STATUSES, act_on_account,
@@ -256,6 +257,7 @@ def review(report_id):
         "review.html", report=report, reporter=reporter,
         version=version_serializer().dumps(snapshot(report)), images=images,
         account_version=account_version,
+        suspended=is_suspended(context["account"]) if context["account"] else False,
         image_error=image_error, delete_version=delete_version,
         moderation_events=events, history_error=history_error, **context,
     )

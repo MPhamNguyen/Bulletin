@@ -1,5 +1,8 @@
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 
+from portal.account_access import account_snapshot
+from portal.account_suspension import require_suspension_transition
 from portal.backend import PortalError
 
 ADMIN = "00000000-0000-0000-0000-000000000001"
@@ -140,13 +143,22 @@ class FakeSupabase:
     def auth_user(self, user_id):
         return deepcopy(self.admin_account if user_id == ADMIN else self.auth_account)
 
-    def set_ban(self, user_id, duration):
+    def set_ban(self, user_id, duration, *, actor_id, version, operation):
         if self.ban_failure:
             raise self.ban_failure
         if self.failure:
             raise self.failure
+        if version != account_snapshot(self.auth_account):
+            raise PortalError("Suspension changed", 409)
+        require_suspension_transition(self.auth_account, operation)
+        now = datetime.now(timezone.utc)
+        self.auth_account.update(
+            banned_until=None if duration == "none" else
+            (now + timedelta(minutes=int(duration.removesuffix("m")))).isoformat(),
+            updated_at=now.isoformat(),
+        )
         self.bans.append((user_id, duration))
-        return dict(id=user_id, banned_until="2026-11-01T00:00:00Z")
+        return user_id
 
     def sign_out(self, token):
         self.logged_out.append(token)

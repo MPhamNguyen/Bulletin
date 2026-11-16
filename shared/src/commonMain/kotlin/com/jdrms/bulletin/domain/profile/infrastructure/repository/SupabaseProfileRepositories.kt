@@ -14,7 +14,6 @@ import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReputationSummaryDto
-import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewInsertDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.PublicProfileIdentityMapper
@@ -23,7 +22,6 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -34,6 +32,7 @@ class SupabaseProfileRepository private constructor(
     private val policy: ProfileValidationPolicy,
     internal val readCache: ProfileReadCache
 ) : ProfileRepository, ProfileRestoreRepository {
+    private val reviewReader = SupabaseProfileReviewReader(supabase)
 
     constructor(supabase: SupabaseClient) : this(supabase, ProfileValidationPolicy(), ProfileReadCache())
 
@@ -153,23 +152,7 @@ class SupabaseProfileRepository private constructor(
         readCache.observeSession(currentUserId)
         val resolvedId = resolveUserId(userId) ?: return policy.calculateReputation(userId, emptyList())
         return readCache.reputation(UserId(resolvedId), isCurrentUser = resolvedId == currentUserId) {
-            val reviews = runCatching {
-                val dtos = runCatching {
-                    supabase.from(REVIEWS_VIEW).select {
-                        filter {
-                            eq("reviewee_id", resolvedId)
-                        }
-                    }.decodeList<ReviewDto>()
-                }.getOrElse {
-                    supabase.from(REVIEWS_TABLE).select {
-                        filter {
-                            eq("reviewee_id", resolvedId)
-                        }
-                    }.decodeList<ReviewDto>()
-                }
-                dtos.map { ProfileMapper.toDomain(it) }
-            }.getOrDefault(emptyList())
-            policy.calculateReputation(UserId(resolvedId), reviews)
+            policy.calculateReputation(UserId(resolvedId), reviewReader.getReviews(resolvedId))
         }
     }
 
@@ -222,26 +205,7 @@ class SupabaseProfileRepository private constructor(
         require(offset >= 0)
         require(pageSize in 1..MAX_REVIEW_PAGE_SIZE)
         val resolvedId = resolveUserId(userId) ?: return StudentReviewPage(emptyList(), null)
-        val rows = runCatching {
-            supabase.from(REVIEWS_VIEW).select {
-                filter { eq("reviewee_id", resolvedId) }
-                order("created_at", Order.DESCENDING)
-                order("id", Order.DESCENDING)
-                range(offset.toLong(), (offset + pageSize).toLong())
-            }.decodeList<ReviewDto>()
-        }.getOrElse {
-            supabase.from(REVIEWS_TABLE).select {
-                filter { eq("reviewee_id", resolvedId) }
-                order("created_at", Order.DESCENDING)
-                order("id", Order.DESCENDING)
-                range(offset.toLong(), (offset + pageSize).toLong())
-            }.decodeList<ReviewDto>()
-        }
-        val pageReviews = rows.take(pageSize).map(ProfileMapper::toDomain)
-        return StudentReviewPage(
-            reviews = pageReviews,
-            nextOffset = if (rows.size > pageSize) offset + pageSize else null
-        )
+        return reviewReader.getReviewsPage(resolvedId, offset, pageSize)
     }
 
     private fun resolveUserId(userId: UserId): String? {
@@ -257,7 +221,6 @@ class SupabaseProfileRepository private constructor(
     companion object {
         const val PROFILES_TABLE = "profiles"
         const val REVIEWS_TABLE = "reviews"
-        const val REVIEWS_VIEW = "reviews_with_names"
         const val GET_REPUTATION_SUMMARY_FUNCTION = "get_reputation_summary"
         const val MAX_REVIEW_PAGE_SIZE = 50
 

@@ -66,13 +66,18 @@ class SupabaseTests(unittest.TestCase):
         self.assertEqual([{"id": "report-id"}], rows)
 
     @patch("portal.backend.urlopen")
-    def test_ban_is_server_only_auth_admin_put(self, open_url):
-        open_url.return_value = Response(b'{"id":"target-id"}')
-        self.backend.set_ban("target-id", "24h")
+    def test_ban_is_server_only_conditional_rpc(self, open_url):
+        open_url.return_value = Response(b'"target-id"')
+        self.backend.set_ban("target-id", "1440m", actor_id="admin-id",
+                             version={"suspended": False}, operation="suspend")
         request = open_url.call_args.args[0]
-        self.assertEqual("PUT", request.method)
-        self.assertEqual("/auth/v1/admin/users/target-id", urlsplit(request.full_url).path)
-        self.assertEqual({"ban_duration": "24h"}, json.loads(request.data))
+        self.assertEqual("POST", request.method)
+        self.assertEqual("/rest/v1/rpc/moderate_account_suspension", urlsplit(request.full_url).path)
+        self.assertEqual("Bearer service-test", request.headers["Authorization"])
+        self.assertEqual({"p_user_id": "target-id", "p_actor_id": "admin-id",
+                          "p_expected_banned_until": None, "p_expected_updated_at": None,
+                          "p_expected_suspended": False, "p_operation": "suspend",
+                          "p_minutes": 1440}, json.loads(request.data))
 
     @patch("portal.backend.urlopen")
     def test_http_failures_do_not_expose_backend_response_or_credentials(self, open_url):
@@ -91,7 +96,8 @@ class SupabaseTests(unittest.TestCase):
             open_url.reset_mock()
             open_url.side_effect = error
             with self.assertRaises(PortalError) as caught:
-                self.backend.set_ban("target-id", "24h")
+                self.backend.set_ban("target-id", "1440m", actor_id="admin-id",
+                                     version={"suspended": False}, operation="suspend")
             self.assertEqual(502, caught.exception.status)
             self.assertNotIn("private-host", str(caught.exception))
             self.assertEqual(1, open_url.call_count)
@@ -168,7 +174,8 @@ class SupabaseTests(unittest.TestCase):
         open_url.side_effect = HTTPError("url", 404, "not-found", {}, io.BytesIO(b"{}"))
         self.assertIsNone(self.backend.auth_user("target-id"))
         with self.assertRaises(PortalError):
-            self.backend.set_ban("target-id", "24h")
+            self.backend.set_ban("target-id", "1440m", actor_id="admin-id",
+                                 version={"suspended": False}, operation="suspend")
 
     @patch("portal.backend.urlopen")
     def test_malformed_table_response_is_an_explicit_failure(self, open_url):

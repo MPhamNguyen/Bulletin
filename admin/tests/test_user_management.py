@@ -129,6 +129,7 @@ class UserManagementTests(unittest.TestCase):
     def test_restore_and_change_duration_do_not_need_a_report(self):
         self.backend.report = None
         for action, duration in (("restore", "none"), ("suspend", "120m")):
+            self.backend.auth_account["banned_until"] = "2099-01-01T00:00:00Z"
             data = self.form()
             data.update(action=action, duration="2", duration_unit="hours", confirm="yes")
             result = self.client.post(self.path + "/action", data=data)
