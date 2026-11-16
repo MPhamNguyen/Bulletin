@@ -110,6 +110,19 @@ class SupabaseProfileRepository private constructor(
         return result
     }
 
+    override suspend fun restoreCurrentProfile(): Result<StudentProfile> = runCatching {
+        val currentUserId = supabase.auth.currentUserOrNull()?.id
+            ?: error("Sign in before restoring your account.")
+        supabase.postgrest.rpc("restore_own_profile")
+        readCache.invalidate(UserId(currentUserId))
+        getProfile(UserId(currentUserId)).getOrNull()
+            ?.takeUnless(StudentProfile::isDeleted)
+            ?: error("Your account could not be restored. Please contact support.")
+    }.fold(
+        onSuccess = { Result.Success(it) },
+        onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+    )
+
     override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
         var resolvedTargetUserId: UserId? = null
         val result = runCatching {

@@ -45,6 +45,14 @@ class InMemoryProfileRepository(
         return Result.Success(Unit)
     }
 
+    override suspend fun restoreCurrentProfile(): Result<StudentProfile> {
+        val profile = profiles.values.singleOrNull { it.isDeleted }
+            ?: return Result.Error(IllegalStateException("No deleted profile is available to restore."))
+        val restored = profile.copy(deletedAt = null)
+        profiles[restored.id.value] = restored
+        return Result.Success(restored)
+    }
+
     override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
         val list = reviewsByUser.getOrPut(targetUserId.value) { mutableListOf() }
         list.add(review)

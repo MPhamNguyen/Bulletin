@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.model.SoftDeletedAccountException
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
@@ -84,6 +85,8 @@ class SupabaseAuthRepository(
             }
             // Empty identities mean the address already belongs to a confirmed account; null is unknown.
             if (signUp?.identities?.isEmpty() == true) throw EmailAlreadyInUseException()
+            // A successful signup already sends its confirmation email. Sending another request here
+            // doubles the provider quota consumption and can trigger the project-wide email limit.
             // Confirmation must be enforced by the server, never inferred from a profile row.
             if (supabase.auth.currentSessionOrNull() != null) {
                 sessionGuard.rejectSession("Email confirmation is unavailable. Please contact support.")
@@ -111,7 +114,7 @@ class SupabaseAuthRepository(
 
             profileProvisioner.readOrCreate(currentUser, email).also { profile ->
                 if (profile.isDeleted) {
-                    sessionGuard.rejectSession("Account not found. Please check your email or create an account.")
+                    throw SoftDeletedAccountException()
                 }
             }
         }.fold(

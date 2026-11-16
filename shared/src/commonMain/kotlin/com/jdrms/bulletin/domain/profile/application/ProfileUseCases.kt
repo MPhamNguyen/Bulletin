@@ -158,6 +158,10 @@ class SoftDeleteProfile(
     }
 }
 
+class RestoreSoftDeletedProfile(private val profileRepository: ProfileRepository) {
+    suspend operator fun invoke(): Result<StudentProfile> = profileRepository.restoreCurrentProfile()
+}
+
 class SubmitStudentReview(
     private val profileRepository: ProfileRepository,
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy()

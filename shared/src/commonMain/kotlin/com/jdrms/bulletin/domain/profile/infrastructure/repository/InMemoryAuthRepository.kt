@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.EmailVerificationOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
+import com.jdrms.bulletin.domain.profile.domain.model.SoftDeletedAccountException
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
@@ -52,9 +53,8 @@ class InMemoryAuthRepository(
             }
         if (userProfile != null) {
             if (userProfile.isDeleted) {
-                return Result.Error(
-                    IllegalArgumentException("Account not found. Please check your email or create an account.")
-                )
+                currentUser = userProfile
+                return Result.Error(SoftDeletedAccountException())
             }
             currentUser = userProfile
             return Result.Success(userProfile)
