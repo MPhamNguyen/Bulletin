@@ -1,26 +1,12 @@
 """Suspended-account browsing and moderation independent of reports."""
 
-from datetime import datetime, timezone
-
 from .account_access import account_snapshot
+from .account_suspension import is_suspended, require_suspension_transition
 from .backend import PortalError
 from .moderation import (
     PAGE_SIZE, PROFILE_COLUMNS, REPORT_COLUMNS, account_ban_duration,
     ensure_account_action_allowed, identifier,
 )
-
-
-def is_suspended(account):
-    value = account.get("banned_until")
-    if value is None or value == "":
-        return False
-    try:
-        expiry = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        if expiry.tzinfo is None:
-            raise ValueError
-    except (AttributeError, TypeError, ValueError):
-        raise PortalError("An account's suspension state could not be verified.", 502) from None
-    return expiry > datetime.now(timezone.utc)
 
 
 def suspended_users_page(backend, page, search):
@@ -66,4 +52,6 @@ def update_suspended_account(backend, user_id, actor_id, version, action, amount
     ensure_account_action_allowed(profile, account, actor_id)
     if version != account_snapshot(account) or not is_suspended(account):
         raise PortalError("This account's suspension changed. Reload before acting.", 409)
-    backend.set_ban(user_id, duration)
+    operation = "update" if action == "suspend" else "restore"
+    require_suspension_transition(account, operation)
+    backend.set_ban(user_id, duration, actor_id=actor_id, version=version, operation=operation)

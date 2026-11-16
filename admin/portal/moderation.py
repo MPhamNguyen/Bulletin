@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from .account_access import account_snapshot, require_active_account
+from .account_suspension import require_suspension_transition
 from .backend import PortalError
 
 STATUSES = {
@@ -185,9 +186,9 @@ def act_on_account(backend, report, actor_id, action, amount=None, unit=None, ac
     ensure_account_action_allowed(target, context["account"], actor_id)
     if account_version != account_snapshot(context["account"]):
         raise PortalError("This account changed since you opened the report. Reload before acting.", 409)
-    # Auth Admin has no conditional update API; this rejects stale forms but
-    # cannot make the check and subsequent remote update one atomic operation.
-    backend.set_ban(identifier(target["id"]), duration)
+    require_suspension_transition(context["account"], action)
+    backend.set_ban(identifier(target["id"]), duration, actor_id=actor_id,
+                    version=account_version, operation=action)
     return target["id"]
 
 

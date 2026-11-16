@@ -17,7 +17,9 @@
 <form class="mb-6 rounded-2xl border border-line bg-white dark:bg-slate-900 p-5 shadow-sm" method="post" action="{{ url_for('users.action', user_id=account.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf_token() }}">
   <input type="hidden" name="version" value="{{ version }}">
+  {% with account_actions={'suspend': 'Change suspension duration', 'restore': 'Restore account access'} %}
   {% include 'account_action_fields.html' %}
+  {% endwith %}
 </form>
 {% elif not suspended %}<p class="rounded-xl bg-blue-50 dark:bg-blue-950/50 p-4 text-sm text-blue-900 dark:text-blue-200">This account is no longer suspended.</p>
 {% else %}<p class="rounded-xl bg-paper p-4 text-sm text-muted">Account actions are unavailable for this account.</p>{% endif %}

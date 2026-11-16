@@ -71,6 +71,7 @@ class ModerationHistoryWebTests(unittest.TestCase):
         self.assertEqual("status_change_attempted_to_in_review", self.backend.events[0]["event_type"])
 
     def test_account_action_is_recorded_with_optional_comment(self):
+        self.backend.auth_account["banned_until"] = "2099-01-01T00:00:00Z"
         data = self.review_form()
         data.update(action="restore", confirm="yes", comment="Appeal approved.")
         result = self.client.post("/reports/" + REPORT + "/account", data=data)
@@ -89,6 +90,7 @@ class ModerationHistoryWebTests(unittest.TestCase):
         self.assertFalse(self.backend.bans)
 
     def test_account_action_failure_does_not_create_a_success_event(self):
+        self.backend.auth_account["banned_until"] = "2099-01-01T00:00:00Z"
         self.backend.ban_failure = PortalError("Account service unavailable", 502)
         data = self.review_form()
         data.update(action="restore", confirm="yes", comment="Appeal approved.")
@@ -106,6 +108,7 @@ class ModerationHistoryWebTests(unittest.TestCase):
         self.assertFalse(self.backend.events)
 
     def test_account_action_audit_failure_is_reported_after_action_was_applied(self):
+        self.backend.auth_account["banned_until"] = "2099-01-01T00:00:00Z"
         self.backend.event_failure_on_call = 2
         data = self.review_form()
         data.update(action="restore", confirm="yes", comment="Appeal approved.")

@@ -3,10 +3,12 @@
 from datetime import datetime, timezone
 
 from .backend import PortalError
+from .account_suspension import is_suspended
 
 
 def account_snapshot(account):
-    return {key: account.get(key) for key in ("id", "banned_until", "updated_at")}
+    return {**{key: account.get(key) for key in ("id", "banned_until", "updated_at")},
+            "suspended": is_suspended(account)}
 
 
 def require_active_account(backend, user_id):
