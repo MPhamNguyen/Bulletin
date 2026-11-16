@@ -24,7 +24,8 @@ internal fun ProfileModule.createSignInViewModel() = SignInViewModel(
     signInUser = signInUser,
     sessionRepository = sessionRepository,
     restoreSoftDeletedProfile = restoreSoftDeletedProfile,
-    signInExternally = signInExternally
+    signInExternally = signInExternally,
+    signOutUser = signOutUser
 )
 
 internal fun ProfileModule.createRegistrationViewModel() = RegistrationViewModel(

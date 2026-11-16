@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.profile.application.RestoreSoftDeletedProfile
 import com.jdrms.bulletin.domain.profile.application.SessionRepository
 import com.jdrms.bulletin.domain.profile.application.SignInExternally
 import com.jdrms.bulletin.domain.profile.application.SignInUser
+import com.jdrms.bulletin.domain.profile.application.SignOutUser
 import com.jdrms.bulletin.domain.profile.domain.model.ExternalSignInOutcome
 import com.jdrms.bulletin.domain.profile.domain.model.SoftDeletedAccountException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,13 +28,15 @@ class SignInViewModel(
     private val signInUser: SignInUser,
     private val sessionRepository: SessionRepository,
     private val signInExternally: SignInExternally? = null,
-    private val restoreSoftDeletedProfile: RestoreSoftDeletedProfile? = null
+    private val restoreSoftDeletedProfile: RestoreSoftDeletedProfile? = null,
+    private val signOutUser: SignOutUser? = null
 ) : ViewModel() {
     private val state = MutableStateFlow(SignInUiState())
     val uiState = state.asStateFlow()
 
     fun signIn(email: String, password: String) {
         if (state.value.isLoading) return
+        val requiresSessionClear = state.value.canRestoreAccount
         state.update {
             it.copy(
                 isLoading = true,
@@ -43,6 +46,7 @@ class SignInViewModel(
             )
         }
         viewModelScope.launch {
+            if (requiresSessionClear) signOutUser?.invoke()
             when (val result = signInUser(email, password)) {
                 is Result.Success -> {
                     sessionRepository.authenticated(result.data)
@@ -52,7 +56,8 @@ class SignInViewModel(
                     it.copy(
                         isLoading = false,
                         errorMessage = result.exception.message ?: "Failed to log in",
-                        canRestoreAccount = result.exception.cause is SoftDeletedAccountException
+                        canRestoreAccount = result.exception is SoftDeletedAccountException ||
+                            result.exception.cause is SoftDeletedAccountException
                     )
                 }
             }
@@ -79,6 +84,7 @@ class SignInViewModel(
         if (state.value.isLoading) return
         state.update { it.copy(isLoading = true, errorMessage = null, externalStage = ExternalSignInStage.InProgress) }
         viewModelScope.launch {
+            if (state.value.canRestoreAccount) signOutUser?.invoke()
             when (val outcome = signIn()) {
                 is ExternalSignInOutcome.SignedIn -> {
                     sessionRepository.authenticated(outcome.profile)

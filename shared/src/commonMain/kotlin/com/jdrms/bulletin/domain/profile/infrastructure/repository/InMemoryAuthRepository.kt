@@ -54,6 +54,7 @@ class InMemoryAuthRepository(
         if (userProfile != null) {
             if (userProfile.isDeleted) {
                 currentUser = userProfile
+                (profileRepository as? InMemoryProfileRepository)?.restoreTargetId = userProfile.id
                 return Result.Error(SoftDeletedAccountException())
             }
             currentUser = userProfile

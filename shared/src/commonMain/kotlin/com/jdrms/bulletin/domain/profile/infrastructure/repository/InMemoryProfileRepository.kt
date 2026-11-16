@@ -25,6 +25,7 @@ class InMemoryProfileRepository(
     private val reviewsByUser = initialReviews.mapValues { entry ->
         entry.value.map { ProfileMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
+    internal var restoreTargetId: UserId? = null
 
     override suspend fun getAvatarUrl(userId: UserId): Result<String?> =
         Result.Success(profiles[userId.value]?.avatarUrl)
@@ -47,10 +48,12 @@ class InMemoryProfileRepository(
     }
 
     override suspend fun restoreCurrentProfile(): Result<StudentProfile> {
-        val profile = profiles.values.singleOrNull { it.isDeleted }
+        val profile = restoreTargetId?.let { userId -> profiles[userId.value] }
+            ?.takeIf(StudentProfile::isDeleted)
             ?: return Result.Error(IllegalStateException("No deleted profile is available to restore."))
         val restored = profile.copy(deletedAt = null)
         profiles[restored.id.value] = restored
+        restoreTargetId = null
         return Result.Success(restored)
     }
 
