@@ -16,7 +16,7 @@ object ListingMapper {
         val condition = runCatching { ListingCondition.valueOf(dto.condition.uppercase()) }
             .getOrDefault(ListingCondition.GOOD)
         val status = runCatching { ListingStatus.valueOf(dto.status.uppercase()) }
-            .getOrDefault(ListingStatus.AVAILABLE)
+            .getOrDefault(ListingStatus.UNKNOWN)
 
         return Listing(
             id = ListingId(dto.id),

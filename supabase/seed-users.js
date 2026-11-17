@@ -76,7 +76,7 @@ async function main() {
         condition: listing.condition.trim().toUpperCase(),
         price: listing.price.trim() === "" ? null : Number(listing.price),
         description: listing.description.trim(),
-        is_sold: parseBoolean(listing.is_sold)
+        status: parseBoolean(listing.is_sold) ? "SOLD" : "AVAILABLE"
     }));
 
     for (const listing of listingRows) {

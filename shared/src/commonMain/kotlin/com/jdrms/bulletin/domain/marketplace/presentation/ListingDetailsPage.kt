@@ -34,6 +34,7 @@ import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 
 @Composable
 fun ListingDetailsPage(
@@ -172,7 +173,10 @@ fun ListingDetailsPage(
 
                         Spacer(modifier = Modifier.height(BulletinSpacing.xs))
 
-                        if (listing.isSold && listing.buyerId == state.currentUserId && !state.hasReview) {
+                        if (
+                            listing.status == MarketplaceListingStatus.SOLD &&
+                            listing.buyerId == state.currentUserId && !state.hasReview
+                        ) {
                             BulletinButton(
                                 onClick = onLeaveReview,
                                 modifier = Modifier.fillMaxWidth(),

@@ -81,6 +81,12 @@ data class MarketplaceItem(
 
 typealias MarketplaceListing = Listing
 
+enum class MarketplaceListingStatus {
+    AVAILABLE,
+    SOLD,
+    UNKNOWN
+}
+
 data class Listing(
     val id: MarketplaceItemId,
     val sellerId: String,
@@ -91,8 +97,7 @@ data class Listing(
     val price: MarketplacePrice,
     val category: MarketplaceCategory,
     val condition: String = "UNKNOWN",
-    val status: String = "AVAILABLE",
-    val isSold: Boolean = false,
+    val status: MarketplaceListingStatus = MarketplaceListingStatus.AVAILABLE,
     val photos: List<String> = emptyList(),
     val sellerReputationScore: Double? = null,
     val isBookmarked: Boolean = false,

@@ -21,7 +21,7 @@ class SupabaseListingBookmarksTest {
 
         assertTrue(columns.contains("profiles!listings_user_id_fkey"))
         assertTrue(columns.contains("buyer_id"))
-        assertTrue(columns.contains("is_sold"))
+        assertTrue(columns.contains("status"))
         assertTrue(
             columns.contains("listing_images(object_path,position,crop_scale,crop_offset_x,crop_offset_y)")
         )

@@ -31,9 +31,8 @@ enum class ListingCondition {
 
 enum class ListingStatus {
     AVAILABLE,
-    PENDING,
     SOLD,
-    ARCHIVED
+    UNKNOWN
 }
 
 data class ListingPrice(

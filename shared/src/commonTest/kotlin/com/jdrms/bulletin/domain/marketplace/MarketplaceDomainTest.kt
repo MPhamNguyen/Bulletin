@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
@@ -213,7 +214,7 @@ class MarketplaceDomainTest {
             price = MarketplacePrice(45.0),
             category = MarketplaceCategory.TEXTBOOKS,
             condition = "LIKE_NEW",
-            status = "AVAILABLE",
+            status = MarketplaceListingStatus.AVAILABLE,
             photos = listOf("https://example.com/photo1.jpg"),
             sellerReputationScore = 4.7
         )

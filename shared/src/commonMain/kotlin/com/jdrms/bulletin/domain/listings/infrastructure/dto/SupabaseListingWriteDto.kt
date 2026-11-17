@@ -13,7 +13,7 @@ data class SupabaseListingWriteDto(
     @SerialName("condition") val condition: String,
     @SerialName("price") val price: Double,
     @SerialName("description") val description: String,
-    @SerialName("is_sold") val isSold: Boolean,
+    @SerialName("status") val status: String,
     @SerialName("buyer_id") val buyerId: String? = null,
     /** Deliberately has no default: it must always be encoded so clearing every attribute persists as `{}`. */
     @SerialName("attributes") val attributes: JsonObject

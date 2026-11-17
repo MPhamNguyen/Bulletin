@@ -35,7 +35,7 @@ class ListingsSupabaseInfrastructureTest {
         assertEquals(listing.id.value, table.inserted?.id)
         assertEquals(listing.sellerId.value, table.inserted?.userId)
         assertEquals(listing.title, table.inserted?.name)
-        assertEquals(false, table.inserted?.isSold)
+        assertEquals(ListingStatus.AVAILABLE.name, table.inserted?.status)
         assertEquals(1, invalidations)
     }
 
@@ -82,7 +82,7 @@ class ListingsSupabaseInfrastructureTest {
         assertEquals("Updated Title", table.updated?.name)
         assertEquals("Updated Description", table.updated?.description)
         assertEquals(45.0, table.updated?.price)
-        assertEquals(true, table.updated?.isSold)
+        assertEquals(ListingStatus.SOLD.name, table.updated?.status)
     }
 
     @Test

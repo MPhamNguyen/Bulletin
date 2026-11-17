@@ -62,7 +62,7 @@ object SupabaseListingMapper {
             condition = listing.condition.name,
             price = listing.price.amount,
             description = listing.description,
-            isSold = listing.status == ListingStatus.SOLD,
+            status = listing.status.name,
             attributes = attributesCodec.encode(listing.attributes)
         )
     }
@@ -77,9 +77,8 @@ object SupabaseListingMapper {
     }
 
     private fun SupabaseListingDto.toListingStatus(): ListingStatus {
-        if (isSold) return ListingStatus.SOLD
         return runCatching { ListingStatus.valueOf(status.orEmpty().uppercase()) }
-            .getOrDefault(ListingStatus.AVAILABLE)
+            .getOrDefault(ListingStatus.UNKNOWN)
     }
 
     private const val DEFAULT_SELLER_NAME = "Student"

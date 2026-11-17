@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
@@ -72,8 +73,8 @@ object SupabaseMarketplaceListingMapper {
             category = runCatching { MarketplaceCategory.valueOf(category) }
                 .getOrDefault(MarketplaceCategory.OTHER),
             condition = condition,
-            status = "AVAILABLE",
-            isSold = dto.isSold,
+            status = runCatching { MarketplaceListingStatus.valueOf(dto.status.orEmpty().uppercase()) }
+                .getOrDefault(MarketplaceListingStatus.UNKNOWN),
             sellerReputationScore = reputationScore,
             photos = dto.listingImages.sortedBy { it.position }.map { image ->
                 imageUrl(image.objectPath)

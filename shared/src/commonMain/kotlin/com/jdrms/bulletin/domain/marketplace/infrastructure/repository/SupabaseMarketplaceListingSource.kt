@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplaceListingSourc
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceAttributeMatching
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSortOrder
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.mapper.SupabaseMarketplaceListingMapper
@@ -75,7 +76,7 @@ private class PostgrestMarketplaceListingTable(
         return supabase.from(LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
             filter {
                 applyMarketplaceSearch(request)
-                eq("is_sold", false)
+                eq("status", MarketplaceListingStatus.AVAILABLE.name)
 
                 applyMarketplaceCursor(request)
             }

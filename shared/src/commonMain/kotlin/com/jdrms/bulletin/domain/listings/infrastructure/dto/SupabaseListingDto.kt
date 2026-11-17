@@ -16,7 +16,6 @@ data class SupabaseListingDto(
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("status") val status: String? = null,
-    @SerialName("is_sold") val isSold: Boolean = false,
     @SerialName("seller_profile") val profile: SupabaseListingProfileDto? = null,
     @SerialName("buyer_id") val buyerId: String? = null,
     @SerialName("listing_images") val listingImages: List<SupabaseListingImageDto> = emptyList(),
