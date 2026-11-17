@@ -35,7 +35,6 @@ internal fun PublicProfileView(profile: StudentProfile? = null, onBack: () -> Un
                 PublicProfileIdentity(profile)
                 profile.reputation?.let {
                     PublicProfileReputation(it)
-                    ProfileReviewsSection(it)
                 }
                 if (profile.bio.isNotBlank()) PublicProfileAbout(profile.bio)
                 if (profile.university.isNotBlank()) UniversityCard(profile.university)
