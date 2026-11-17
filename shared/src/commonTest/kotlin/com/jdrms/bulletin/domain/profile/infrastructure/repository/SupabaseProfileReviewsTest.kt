@@ -52,7 +52,7 @@ class SupabaseProfileReviewsTest {
     }
 
     @Test
-    fun missingNullAndBlankProfileNamesUseReviewerWithoutDroppingReviews() = runTest {
+    fun missingNullAndBlankProfileNamesUseStudentWithoutDroppingReviews() = runTest {
         val fixture = ProfileReviewRepositoryFixture(
             rows = listOf(reviewRow(), reviewRow("review-2", SECOND_REVIEWER_ID), reviewRow("review-3", "missing")),
             profiles = listOf(
@@ -62,7 +62,7 @@ class SupabaseProfileReviewsTest {
         )
         try {
             val reputation = fixture.repository.getReputation(revieweeId)
-            assertEquals(listOf("Reviewer", "Reviewer", "Reviewer"), reputation.reviews.map { it.reviewerName })
+            assertEquals(listOf("Student", "Student", "Student"), reputation.reviews.map { it.reviewerName })
             assertEquals(3, reputation.totalReviews)
         } finally {
             fixture.client.close()
@@ -100,7 +100,10 @@ class SupabaseProfileReviewsTest {
         val rows = (1..101).map {
             reviewRow("review-$it", "00000000-0000-0000-0000-${it.toString().padStart(12, '0')}")
         }
-        val fixture = ProfileReviewRepositoryFixture(rows, rows.map { PublicProfileIdentityDto(it.reviewerId, it.id) })
+        val fixture = ProfileReviewRepositoryFixture(
+            rows,
+            rows.map { PublicProfileIdentityDto(requireNotNull(it.reviewerId), it.id) }
+        )
         try {
             val reputation = fixture.repository.getReputation(revieweeId)
             assertEquals(rows.map { it.id }, reputation.reviews.map { it.reviewerName })

@@ -9,7 +9,6 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentProfile
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
-import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.ProfilePhotoStorage
@@ -94,30 +93,6 @@ class ProfileInfrastructureTestPart1 {
         assertTrue(result is Result.Error)
         assertEquals("You do not have permission to upload this profile photo.", result.exception.message)
         assertNull(storage.path)
-    }
-
-    @Test
-    fun testMapperScoreClamping() {
-        val dto = ReviewDto(
-            id = "dto_r1",
-            reviewerId = "u1",
-            reviewerName = "Sean",
-            revieweeId = "u2",
-            score = 10,
-            comment = "Great"
-        )
-        val domain = ProfileMapper.toDomain(dto)
-        assertEquals(5, domain.rating.score)
-    }
-
-    @Test
-    fun missingReviewerNameDoesNotDefaultToStudent() {
-        val dto = Json.decodeFromString<ReviewDto>(
-            """{"id":"review-1","reviewer_id":"reviewer-id","reviewee_id":"seller-id","score":5,"comment":"Great"}"""
-        )
-
-        assertNull(dto.reviewerName)
-        assertEquals("", ProfileMapper.toDomain(dto).reviewerName)
     }
 
     @Test

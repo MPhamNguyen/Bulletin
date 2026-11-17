@@ -13,6 +13,7 @@ import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
+import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ReviewMapper
 
 class InMemoryProfileRepository(
     private val policy: ProfileValidationPolicy = ProfileValidationPolicy(),
@@ -22,7 +23,7 @@ class InMemoryProfileRepository(
 
     private val profiles = initialProfiles.mapValues { ProfileMapper.toDomain(it.value) }.toMutableMap()
     private val reviewsByUser = initialReviews.mapValues { entry ->
-        entry.value.map { ProfileMapper.toDomain(it) }.toMutableList()
+        entry.value.map { ReviewMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
 
     override suspend fun getAvatarUrl(userId: UserId): Result<String?> =

@@ -113,6 +113,9 @@ class ProfileValidationPolicy {
     }
 
     fun validateNewReview(review: StudentReview): Result<Unit> {
+        if (review.reviewerId.isNullOrBlank()) {
+            return Result.Error(IllegalArgumentException("A reviewer is required to submit a review."))
+        }
         if (review.reviewerId == review.revieweeId.value) {
             return Result.Error(IllegalArgumentException("Users cannot review themselves."))
         }

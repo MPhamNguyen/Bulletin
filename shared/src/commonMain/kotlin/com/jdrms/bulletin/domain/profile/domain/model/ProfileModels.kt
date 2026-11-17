@@ -120,21 +120,6 @@ data class Rating(val score: Int) {
     }
 }
 
-data class StudentReview(
-    val id: ReviewId,
-    val reviewerId: String,
-    val reviewerName: String,
-    val revieweeId: UserId,
-    val rating: Rating,
-    val comment: String,
-    val createdAtMillis: Long = 0L,
-    val relatedListingId: String? = null
-) {
-    init {
-        require(comment.isNotBlank()) { "Review comment cannot be blank." }
-    }
-}
-
 data class StudentReputation(
     val userId: UserId,
     val averageRating: Double = 0.0,
