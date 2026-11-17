@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,8 +31,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.LocalPlatformContext
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
 import com.jdrms.bulletin.core.designsystem.theme.BulletinFeedCardDefaults
@@ -133,7 +137,7 @@ private fun BoxScope.HomeFeedPhotos(photoUrl: String?, title: String) {
             contentScale = ContentScale.Crop
         ) { SubcomposeAsyncImageContent() }
         SubcomposeAsyncImage(
-            model = imageUrl.imageRequestUrl(),
+            model = homeCrossfadeRequest(imageUrl.imageRequestUrl()),
             contentDescription = "$title listing photo",
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Fit
@@ -158,6 +162,12 @@ private fun BoxScope.HomeFeedPhotos(photoUrl: String?, title: String) {
             )
         }
     }
+}
+
+@Composable
+private fun homeCrossfadeRequest(url: String): ImageRequest {
+    val context = LocalPlatformContext.current
+    return remember(context, url) { ImageRequest.Builder(context).data(url).crossfade(true).build() }
 }
 
 @Composable
