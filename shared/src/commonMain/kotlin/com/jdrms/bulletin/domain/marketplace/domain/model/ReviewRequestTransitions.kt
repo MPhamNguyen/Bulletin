@@ -9,9 +9,6 @@ package com.jdrms.bulletin.domain.marketplace.domain.model
  * Repeating a buyer-settable status that is already in place (ACCEPTED, DECLINED or SUBMITTED) is not a
  * transition; it is an idempotent no-op that reports success ([ReviewRequestTransition.AlreadyApplied]).
  * Every other change that is not in the table is rejected.
- *
- * The database trigger in `supabase/migrations/20261116000000_enforce_review_request_transitions.sql`
- * mirrors this table.
  */
 object ReviewRequestTransitions {
     private val legal: Map<ReviewRequestStatus, Set<ReviewRequestStatus>> = mapOf(
