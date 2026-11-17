@@ -25,7 +25,13 @@ internal fun ConversationListingCard(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "View listing", onClick = onClick),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                role = Role.Button,
+                onClickLabel = "View listing",
+                onClick = onClick
+            ),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
