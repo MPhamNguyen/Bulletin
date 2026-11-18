@@ -159,6 +159,11 @@ If Supabase is not configured, the normal Android runtime **fails to initialize*
 
 Profile photo removal clears the saved avatar URL. The uploaded image remains in Storage until replaced by a later upload.
 
+The scheduled 30-day account deletion worker and its incremental migration are provided in
+[`supabase/operations/ACCOUNT_DELETION_SETUP.md`](supabase/operations/ACCOUNT_DELETION_SETUP.md).
+Deployment and Cron activation are manual; adding these files does not enable automatic deletion.
+The worker removes attributable Storage files before hard-deleting Auth and respects moderation holds.
+
 Review readers accept null `reviewer_id` and `listing_id` references after hard deletion. Profile and marketplace seller reviews display **Student** with no author avatar when the reviewer is deleted, and retained reviews continue contributing to reputation. New listing reviews may contain only a rating; the sold-listing buyer, rating range and duplicate-review checks still apply. New profile-only reviews require comment text, and new submissions require a reviewer identity. The `was_listing_review` flag preserves rating-only listing reviews after their listing disappears, but that historical flag alone cannot authorize a new rating-only submission without a listing reference. This application support does not schedule account deletion or change database policies.
 
 ---

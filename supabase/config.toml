@@ -1,5 +1,9 @@
 project_id = "bulletin"
 
+# The handler validates its own dedicated Cron secret before any privileged I/O.
+[functions.purge-deleted-accounts]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321
