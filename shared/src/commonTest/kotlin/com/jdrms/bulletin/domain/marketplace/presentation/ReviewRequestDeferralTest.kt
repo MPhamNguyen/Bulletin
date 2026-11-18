@@ -15,6 +15,18 @@ class ReviewRequestDeferralTest {
         assertEquals(listOf(next), listOf(deferred, next).excludingDeferredReviewRequests(setOf("listing-1")))
     }
 
+    @Test
+    fun requestsThatAreNoLongerActionableAreDroppedWithoutBeingDeferred() {
+        val terminal = listOf(
+            ReviewRequestStatus.DECLINED,
+            ReviewRequestStatus.SUBMITTED,
+            ReviewRequestStatus.CANCELLED
+        ).map { request("listing-${it.name}", it) }
+        val actionable = request("listing-pending")
+
+        assertEquals(listOf(actionable), (terminal + actionable).excludingDeferredReviewRequests(emptySet()))
+    }
+
     private fun request(listingId: String, status: ReviewRequestStatus = ReviewRequestStatus.PENDING) =
         ReviewRequest(
             listingId = MarketplaceItemId(listingId),
