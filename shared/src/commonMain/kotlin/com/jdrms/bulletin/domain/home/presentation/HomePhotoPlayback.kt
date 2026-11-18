@@ -23,7 +23,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 
-private const val HOME_PHOTO_INTERVAL_MILLIS = 3_000L
+private const val HOME_PHOTO_INTERVAL_MILLIS = 5_000L
 
 @Composable
 internal fun HomePhotoMedia(
