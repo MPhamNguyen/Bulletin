@@ -51,6 +51,7 @@ internal fun CreateListingPhotosStep(
             hint = "Up to ${ListingImageUpload.MAX_LISTING_IMAGE_COUNT} " +
                 "photos, 5 MB each. Adjust each photo to fit the square. The first is the cover."
         )
+        state.errorMessage?.let { ListingPhotoSelectionError(it) }
         Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
             ListingRequiredLabel("Title", style = MaterialTheme.typography.titleSmall)
             BulletinTextField(

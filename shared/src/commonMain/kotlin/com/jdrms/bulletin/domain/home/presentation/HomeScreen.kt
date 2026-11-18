@@ -45,6 +45,7 @@ fun HomeScreen(
             viewModel.loadNextPage()
         }
     }
+    if (state.feed.isNotEmpty() && state.errorMessage == null) HomePhotoPrefetch(state)
     val announcements = remember(viewModel) { HomeAnnouncements() }
     CompositionLocalProvider(LocalHomeAnnouncements provides announcements) {
         HomeScreenBody(

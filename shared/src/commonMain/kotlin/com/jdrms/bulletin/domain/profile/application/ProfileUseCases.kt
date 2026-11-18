@@ -12,6 +12,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRestoreRepository
 import com.jdrms.bulletin.domain.profile.domain.service.PasswordResetPolicy
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import kotlin.time.Instant
@@ -156,6 +157,10 @@ class SoftDeleteProfile(
             is Result.Error -> repoResult
         }
     }
+}
+
+class RestoreSoftDeletedProfile(private val profileRepository: ProfileRestoreRepository) {
+    suspend operator fun invoke(): Result<StudentProfile> = profileRepository.restoreCurrentProfile()
 }
 
 class SubmitStudentReview(

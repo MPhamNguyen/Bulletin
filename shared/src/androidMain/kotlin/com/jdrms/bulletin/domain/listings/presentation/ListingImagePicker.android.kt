@@ -56,7 +56,7 @@ private fun Context.readListingImage(uri: Uri): ListingImageUpload {
             if (read < 0) break
             total += read
             require(total <= ListingImageUpload.MAX_LISTING_IMAGE_SIZE_BYTES) {
-                "Each listing image must be 5 MB or smaller."
+                "A selected photo is too large. Choose photos that are 5 MB or smaller."
             }
             output.write(buffer, 0, read)
         }

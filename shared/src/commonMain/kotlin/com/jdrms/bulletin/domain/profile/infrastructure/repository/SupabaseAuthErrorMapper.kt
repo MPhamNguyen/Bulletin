@@ -7,7 +7,7 @@ internal object SupabaseAuthErrorMapper {
         listOf("otp_expired", "token has expired", "token is invalid") to
             "This code is invalid or has expired. Request a new code and try again.",
         listOf("over_request_rate_limit", "over_email_send_rate_limit", "email rate limit exceeded") to
-            "Too many signup attempts. Please wait a few minutes before trying again.",
+            "Email sending is temporarily limited. Please try again later; this can take up to an hour.",
         listOf("user_already_exists", "user already registered", "bulletin_account_conflict") to
             EmailAlreadyInUseException.MESSAGE,
         listOf("invalid_credentials", "invalid login credentials") to

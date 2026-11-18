@@ -2,7 +2,9 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 data class MarketplaceScreenNavigation(
     val sellerProfileIdToOpen: String? = null,
+    val sellerReviewsIdToOpen: String? = null,
     val onSellerProfileRequestHandled: () -> Unit = {},
+    val onSellerReviewsRequestHandled: () -> Unit = {},
     val onReturnToInboxChat: () -> Unit = {},
     val userReportIdToOpen: String? = null,
     val onUserReportRequestHandled: () -> Unit = {},

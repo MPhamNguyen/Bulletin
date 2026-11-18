@@ -123,7 +123,7 @@ class InMemoryAuthLoginAndRegistrationTest {
         val loginResult = authRepo.login(profile.email, "pass123")
         assertTrue(loginResult is Result.Error)
         assertEquals(
-            "Account not found. Please check your email or create an account.",
+            "This account was deleted. Restore it to continue.",
             loginResult.exception.message
         )
     }

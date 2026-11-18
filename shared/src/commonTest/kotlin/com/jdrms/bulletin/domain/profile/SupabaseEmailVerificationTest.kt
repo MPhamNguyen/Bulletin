@@ -333,7 +333,10 @@ class SupabaseEmailVerificationTest {
             val repository = SupabaseAuthRepository(client, InMemoryProfileRepository())
             val signup = assertIs<Result.Error>(repository.register(email, "password123", "Student Name", "CSULB"))
             val resend = assertIs<Result.Error>(repository.resendVerificationCode(email))
-            assertEquals("Too many signup attempts. Please wait a few minutes before trying again.", signup.message)
+            assertEquals(
+                "Email sending is temporarily limited. Please try again later; this can take up to an hour.",
+                signup.message
+            )
             assertEquals(signup.message, resend.message)
             assertNull(client.auth.currentSessionOrNull())
         } finally {

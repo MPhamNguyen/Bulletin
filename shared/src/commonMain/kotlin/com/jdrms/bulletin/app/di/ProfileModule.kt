@@ -12,6 +12,7 @@ import com.jdrms.bulletin.domain.profile.application.RegisterStudent
 import com.jdrms.bulletin.domain.profile.application.RequestPasswordReset
 import com.jdrms.bulletin.domain.profile.application.ResendVerificationCode
 import com.jdrms.bulletin.domain.profile.application.RestoreAuthenticatedProfile
+import com.jdrms.bulletin.domain.profile.application.RestoreSoftDeletedProfile
 import com.jdrms.bulletin.domain.profile.application.SignInExternally
 import com.jdrms.bulletin.domain.profile.application.SignInUser
 import com.jdrms.bulletin.domain.profile.application.SignOutUser
@@ -27,6 +28,7 @@ import com.jdrms.bulletin.domain.profile.application.VerifyStudentEmail
 import com.jdrms.bulletin.domain.profile.domain.repository.AuthRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRestoreRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.PublicProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserBlockRepository
 import com.jdrms.bulletin.domain.profile.domain.repository.UserReportRepository
@@ -117,6 +119,7 @@ internal class ProfileModule(
     val updateStudentProfile by lazy { UpdateStudentProfile(profileRepository) }
     val uploadProfilePhoto by lazy { UploadProfilePhoto(profilePhotoRepository, profileRepository) }
     val softDeleteProfile by lazy { SoftDeleteProfile(profileRepository, signOutUser) }
+    val restoreSoftDeletedProfile by lazy { RestoreSoftDeletedProfile(profileRepository as ProfileRestoreRepository) }
     val submitStudentReview by lazy { SubmitStudentReview(profileRepository) }
     val publishStudentReview by lazy { PublishStudentReview(submitStudentReview) }
 }

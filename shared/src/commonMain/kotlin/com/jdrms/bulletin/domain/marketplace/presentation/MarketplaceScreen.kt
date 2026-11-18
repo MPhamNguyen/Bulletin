@@ -25,11 +25,10 @@ fun MarketplaceScreen(
     var sellerNavigation by remember {
         mutableStateOf(
             MarketplaceSellerNavigationState(
-                destination = if (navigation.sellerProfileIdToOpen != null) {
-                    MarketplaceDestination.SELLER_PROFILE
-                } else {
-                    MarketplaceDestination.CATALOG
-                }
+                destination = initialMarketplaceSellerDestination(
+                    navigation.sellerProfileIdToOpen,
+                    navigation.sellerReviewsIdToOpen
+                )
             )
         )
     }
@@ -41,6 +40,15 @@ fun MarketplaceScreen(
             sellerProfileOpenedFromInbox = true
             sellerProfileViewModel.load(sellerId)
             navigation.onSellerProfileRequestHandled()
+        }
+    }
+
+    LaunchedEffect(navigation.sellerReviewsIdToOpen) {
+        navigation.sellerReviewsIdToOpen?.let { sellerId ->
+            sellerProfileOpenedFromInbox = false
+            sellerProfileViewModel.load(sellerId)
+            sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.ALL_REVIEWS)
+            navigation.onSellerReviewsRequestHandled()
         }
     }
 

@@ -38,6 +38,8 @@ data class SignInScreenActions(
     val onPasswordChange: ((String) -> Unit)? = null,
     val onClearMessages: () -> Unit = {},
     val onSignIn: (String, String) -> Unit = { _, _ -> },
+    val onRestoreAccount: () -> Unit = {},
+    val canRestoreAccount: Boolean = false,
     val onMicrosoftSignIn: () -> Unit = {},
     val onForgotPassword: () -> Unit = {},
     val onCreateAccount: () -> Unit = {}
@@ -99,6 +101,16 @@ private fun SignInContent(
     ) {
         SignInHeader()
         SignInError(errorMessage)
+        if (actions.canRestoreAccount) {
+            BulletinButton(
+                onClick = actions.onRestoreAccount,
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Restore account")
+            }
+            Spacer(Modifier.height(BulletinSpacing.m))
+        }
         SignInEmailField(email, { actions.onEmailChange?.invoke(it) }, actions.onClearMessages)
         SignInPasswordField(password, { actions.onPasswordChange?.invoke(it) }, actions.onClearMessages)
         PasswordSignInActions(isLoading, actions.onForgotPassword) { actions.onSignIn(email, password) }

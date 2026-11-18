@@ -17,12 +17,9 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 @Composable
 internal fun MarketplaceProfileView(
     uiState: ProfileUiState,
-    interestNotificationCount: Int = 0,
-    onRefresh: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onMyListingsClick: () -> Unit,
-    onBookmarkedListingsClick: () -> Unit,
-    onInterestsClick: () -> Unit
+    interestNotificationCount: Int,
+    actions: ProfileLandingActions,
+    profileReviewsContent: @Composable (onViewAllReviews: () -> Unit) -> Unit
 ) {
     val profile = uiState.profile
     val fullName = profile?.fullName?.ifBlank { null } ?: "Profile unavailable"
@@ -34,10 +31,10 @@ internal fun MarketplaceProfileView(
     val itemsSoldDisplay = uiState.itemsSoldCount.takeIf { uiState.hasLoadedOverview }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        MarketplaceProfileTopBar(onSettingsClick = onSettingsClick)
+        MarketplaceProfileTopBar(onSettingsClick = actions.onSettingsClick)
         BulletinPullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
-            onRefresh = onRefresh,
+            onRefresh = actions.onRefresh,
             isComplete = uiState.profileRefreshComplete,
             completionContentDescription = "Profile updated",
             modifier = Modifier.weight(1f)
@@ -72,16 +69,14 @@ internal fun MarketplaceProfileView(
                     bio = profile?.bio
                 )
 
-                uiState.reputation?.let { reputation ->
-                    ProfileReviewsSection(reputation)
-                }
+                profileReviewsContent(actions.onViewAllReviews)
 
                 ProfileMarketplaceCard(
                     activeListings = activeListingsDisplay,
                     interestNotificationCount = interestNotificationCount,
-                    onMyListingsClick = onMyListingsClick,
-                    onBookmarkedListingsClick = onBookmarkedListingsClick,
-                    onInterestsClick = onInterestsClick
+                    onMyListingsClick = actions.onMyListingsClick,
+                    onBookmarkedListingsClick = actions.onBookmarkedListingsClick,
+                    onInterestsClick = actions.onInterestsClick
                 )
                 Spacer(modifier = Modifier.height(BulletinSpacing.l))
             }

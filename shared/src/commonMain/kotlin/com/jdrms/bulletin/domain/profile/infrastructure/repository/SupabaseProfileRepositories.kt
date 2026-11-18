@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRepository
+import com.jdrms.bulletin.domain.profile.domain.repository.ProfileRestoreRepository
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
@@ -29,7 +30,7 @@ class SupabaseProfileRepository private constructor(
     private val supabase: SupabaseClient,
     private val policy: ProfileValidationPolicy,
     internal val readCache: ProfileReadCache
-) : ProfileRepository {
+) : ProfileRepository, ProfileRestoreRepository {
     private val reviewReader = SupabaseProfileReviewReader(supabase)
     private val reviewWriter = SupabaseProfileReviewWriter(supabase, readCache, ::resolveUserId)
 
@@ -109,8 +110,42 @@ class SupabaseProfileRepository private constructor(
         return result
     }
 
-    override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> =
-        reviewWriter.submit(targetUserId, review)
+    override suspend fun restoreCurrentProfile(): Result<StudentProfile> = runCatching {
+        val currentUserId = supabase.auth.currentUserOrNull()?.id
+            ?: error("Sign in before restoring your account.")
+        supabase.postgrest.rpc("restore_own_profile")
+        readCache.invalidate(UserId(currentUserId))
+        getProfile(UserId(currentUserId)).getOrNull()
+            ?.takeUnless(StudentProfile::isDeleted)
+            ?: error("Your account could not be restored. Please contact support.")
+    }.fold(
+        onSuccess = { Result.Success(it) },
+        onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+    )
+
+    override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
+        var resolvedTargetUserId: UserId? = null
+        val result = runCatching {
+            val currentUserId = supabase.auth.currentUserOrNull()?.id
+                ?: error("You must be logged in to submit a review.")
+            val resolvedTargetId = resolveUserId(targetUserId) ?: targetUserId.value
+            resolvedTargetUserId = UserId(resolvedTargetId)
+
+            val insertDto = ReviewInsertDto(
+                reviewerId = currentUserId,
+                revieweeId = resolvedTargetId,
+                score = review.rating.score,
+                comment = review.comment
+            )
+            supabase.from(REVIEWS_TABLE).insert(insertDto)
+            Unit
+        }.fold(
+            onSuccess = { Result.Success(it) },
+            onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
+        )
+        if (result is Result.Success) resolvedTargetUserId?.let { readCache.invalidate(it) }
+        return result
+    }
 
     override suspend fun getReputation(userId: UserId): StudentReputation {
         val currentUserId = supabase.auth.currentUserOrNull()?.id

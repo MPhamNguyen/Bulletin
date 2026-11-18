@@ -30,6 +30,7 @@ data class ProfileScreenCallbacks(
     val onSignOut: () -> Unit,
     val onMyListingsClick: () -> Unit,
     val onOpenListing: (String) -> Unit = {},
+    val onViewAllReviews: () -> Unit = {},
     val onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
         { _, _, _, _ -> false },
     val hasExistingConversation: suspend (listingId: String, sellerId: String) -> Boolean =
@@ -50,9 +51,7 @@ fun ProfileScreen(
     flows: ProfileScreenFlows,
     destination: ProfileDestination,
     callbacks: ProfileScreenCallbacks,
-    interestNotificationCount: Int = 0,
-    themeViewModel: ThemeViewModel? = null,
-    reportedListingVisibilitySetting: ReportedListingVisibilitySetting? = null
+    options: ProfileScreenOptions = ProfileScreenOptions()
 ) {
     val profileState by viewModel.uiState.collectAsState()
     val editState by flows.editing.uiState.collectAsState()
@@ -76,9 +75,7 @@ fun ProfileScreen(
             ProfileDestinationStates(profileState, editState, viewModel),
             flows,
             callbacks,
-            interestNotificationCount,
-            themeViewModel,
-            reportedListingVisibilitySetting
+            options
         )
         SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
     }
@@ -90,21 +87,23 @@ private fun ProfileDestinationContent(
     states: ProfileDestinationStates,
     flows: ProfileScreenFlows,
     callbacks: ProfileScreenCallbacks,
-    interestNotificationCount: Int,
-    themeViewModel: ThemeViewModel?,
-    reportedListingVisibilitySetting: ReportedListingVisibilitySetting?
+    options: ProfileScreenOptions
 ) {
     when (destination) {
-        ProfileDestination.PROFILE -> ProfileLandingDestination(states.profile, callbacks, interestNotificationCount) {
-            states.viewModel.refreshProfile()
-        }
+        ProfileDestination.PROFILE -> ProfileLandingDestination(
+            states.profile,
+            callbacks,
+            options.interestNotificationCount,
+            onRefresh = states.viewModel::refreshProfile,
+            profileReviewsContent = options.profileReviewsContent
+        )
         ProfileDestination.EDIT_ACCOUNT -> ProfileEditDestination(states.edit, flows, callbacks)
         ProfileDestination.SETTINGS -> ProfileSettingsDestination(
             states.profile,
             flows,
             callbacks,
-            themeViewModel,
-            reportedListingVisibilitySetting
+            options.themeViewModel,
+            options.reportedListingVisibilitySetting
         )
         ProfileDestination.BOOKMARKED_LISTINGS -> {
             BookmarkedListingsView(
@@ -148,16 +147,21 @@ private fun ProfileLandingDestination(
     state: ProfileUiState,
     callbacks: ProfileScreenCallbacks,
     interestNotificationCount: Int,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    profileReviewsContent: @Composable (onViewAllReviews: () -> Unit) -> Unit
 ) {
     MarketplaceProfileView(
         uiState = state,
         interestNotificationCount = interestNotificationCount,
-        onRefresh = onRefresh,
-        onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
-        onMyListingsClick = callbacks.onMyListingsClick,
-        onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) },
-        onInterestsClick = { callbacks.onNavigate(ProfileDestination.INTERESTS) }
+        actions = ProfileLandingActions(
+            onRefresh = onRefresh,
+            onSettingsClick = { callbacks.onNavigate(ProfileDestination.SETTINGS) },
+            onMyListingsClick = callbacks.onMyListingsClick,
+            onBookmarkedListingsClick = { callbacks.onNavigate(ProfileDestination.BOOKMARKED_LISTINGS) },
+            onInterestsClick = { callbacks.onNavigate(ProfileDestination.INTERESTS) },
+            onViewAllReviews = callbacks.onViewAllReviews
+        ),
+        profileReviewsContent = profileReviewsContent
     )
 }
 

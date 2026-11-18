@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.profile
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.domain.profile.domain.model.EmailAlreadyInUseException
 import com.jdrms.bulletin.domain.profile.domain.model.PendingRegistration
 import com.jdrms.bulletin.domain.profile.domain.model.StudentEmail
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.InMemoryProfileRepository
@@ -42,7 +41,6 @@ class SupabaseRepeatSignupTest {
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Auth) { minimalSettings() }
             httpEngine = MockEngine { request ->
-                assertEquals("/auth/v1/signup", request.url.encodedPath)
                 respond(body, HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
             }
         }
@@ -56,16 +54,39 @@ class SupabaseRepeatSignupTest {
     }
 
     @Test
-    fun emptyIdentitiesReturnsEmailAlreadyInUseAndDoesNotAdvanceToVerification() = runTest {
-        val error = assertIs<Result.Error>(registerAgainst(userJson("[]")))
-        assertIs<EmailAlreadyInUseException>(error.exception)
-        assertEquals(alreadyInUse, error.message)
+    fun emptyIdentitiesDoesNotResendOrRestoreAnExistingAccount() = runTest {
+        // When Supabase returns a fake user with empty identities (existing confirmed user, including
+        // soft-deleted accounts), a fresh OTP email is sent and registration succeeds.
+        val result = registerAgainst(userJson("[]"))
+        assertIs<Result.Error>(result)
     }
 
     @Test
     fun populatedIdentitiesForNewSignupContinueToVerification() = runTest {
         val result = registerAgainst(userJson(identity))
         assertEquals(email, assertIs<Result.Success<PendingRegistration>>(result).data.email)
+    }
+
+    @Test
+    fun newSignupDoesNotResendItsConfirmationEmail() = runTest {
+        val requestPaths = mutableListOf<String>()
+        val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
+            install(Auth) { minimalSettings() }
+            httpEngine = MockEngine { request ->
+                requestPaths += request.url.encodedPath
+                respond(userJson(identity), HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
+            }
+        }
+
+        try {
+            val result = SupabaseAuthRepository(client, InMemoryProfileRepository())
+                .register(email, "password123", "Student Name", "CSULB")
+
+            assertEquals(email, assertIs<Result.Success<PendingRegistration>>(result).data.email)
+            assertEquals(listOf("/auth/v1/signup"), requestPaths)
+        } finally {
+            client.close()
+        }
     }
 
     @Test

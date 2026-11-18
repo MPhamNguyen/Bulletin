@@ -26,6 +26,15 @@ internal data class MarketplaceSellerNavigationState(
     )
 }
 
+internal fun initialMarketplaceSellerDestination(
+    sellerProfileId: String?,
+    sellerReviewsId: String?
+): MarketplaceDestination = when {
+    sellerProfileId != null -> MarketplaceDestination.SELLER_PROFILE
+    sellerReviewsId != null -> MarketplaceDestination.ALL_REVIEWS
+    else -> MarketplaceDestination.CATALOG
+}
+
 internal fun Listing.toSellerListingContext() = SellerListingContext(
     listingId = id.value,
     sellerId = sellerId,
