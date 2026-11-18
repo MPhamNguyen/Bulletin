@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -50,12 +50,11 @@ internal fun CreateListingFooter(
                 BulletinButton(
                     onClick = onBack,
                     enabled = !state.isSubmitting,
-                    modifier = Modifier,
+                    modifier = Modifier.weight(1f),
                     variant = BulletinButtonVariant.Outlined,
                     size = BulletinButtonSize.Large
                 ) {
-                    // Decorative arrow: the text label keeps the accessible name and the test selector.
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Outlined.ChevronLeft, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Back", fontWeight = FontWeight.Bold)
                 }
@@ -74,11 +73,11 @@ internal fun CreateListingFooter(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text(if (state.step.isLast) "Post Listing" else "Continue", fontWeight = FontWeight.Bold)
+                    Text(if (state.step.isLast) "Post Listing" else "Next", fontWeight = FontWeight.Bold)
                     if (!state.step.isLast) {
                         Spacer(Modifier.width(8.dp))
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowForward,
+                            Icons.Outlined.ChevronRight,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
