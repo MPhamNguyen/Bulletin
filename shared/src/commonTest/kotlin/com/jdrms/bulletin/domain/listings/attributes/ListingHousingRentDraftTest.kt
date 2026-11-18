@@ -6,6 +6,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingDecimal
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraft
+import com.jdrms.bulletin.domain.listings.presentation.ListingPhotoDraft
 import com.jdrms.bulletin.domain.listings.presentation.ListingsUiState
 import com.jdrms.bulletin.domain.listings.presentation.listingAttributeFormFields
 import com.jdrms.bulletin.domain.listings.presentation.parseListingFormAttributes
@@ -60,6 +61,7 @@ class ListingHousingRentDraftTest {
             editDescription = "Available next month",
             editCategory = ListingCategory.HOUSING,
             editPriceCents = "150000",
+            editPhotos = listOf(ListingPhotoDraft.Pending(ListingImageUpload(byteArrayOf(1), "image/jpeg"))),
             editAttributes = stale.copy(preserved = mapOf("future" to "true", rent to "\"bad legacy value\""))
         )
         val draft = assertNotNull(validateEditListingDraft(state).draft)

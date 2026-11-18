@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraft
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraftActions
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeSuggestions
 import com.jdrms.bulletin.domain.listings.presentation.ListingForm
+import com.jdrms.bulletin.domain.listings.presentation.ListingPhotoDraft
 import com.jdrms.bulletin.domain.listings.presentation.ListingsUiState
 import com.jdrms.bulletin.domain.listings.presentation.validateEditListingDraft
 import com.jdrms.bulletin.domain.listings.presentation.validateNewListingDraft
@@ -124,6 +125,7 @@ class ListingAttributeDraftActionsTest {
             editTitle = "Laptop",
             editDescription = "d",
             editPriceCents = "100",
+            editPhotos = listOf(ListingPhotoDraft.Pending(ListingImageUpload(byteArrayOf(1), "image/jpeg"))),
             editCategory = ListingCategory.ELECTRONICS,
             editAttributes = ListingAttributeDraft(
                 inputs = mapOf("brand" to "Framework", "device_type" to "laptop"),
