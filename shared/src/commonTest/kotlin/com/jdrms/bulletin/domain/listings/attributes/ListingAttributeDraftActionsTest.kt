@@ -5,10 +5,10 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDisplay
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraft
-import com.jdrms.bulletin.domain.listings.presentation.ListingPhotoDraft
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraftActions
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeSuggestions
 import com.jdrms.bulletin.domain.listings.presentation.ListingForm
+import com.jdrms.bulletin.domain.listings.presentation.ListingPhotoDraft
 import com.jdrms.bulletin.domain.listings.presentation.ListingsUiState
 import com.jdrms.bulletin.domain.listings.presentation.validateEditListingDraft
 import com.jdrms.bulletin.domain.listings.presentation.validateNewListingDraft
