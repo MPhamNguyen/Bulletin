@@ -4,7 +4,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.StudentReviewPage
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
-import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
+import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ReviewMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -33,20 +33,18 @@ internal class SupabaseProfileReviewReader(private val supabase: SupabaseClient)
 
     private suspend fun resolveReviewers(rows: List<ReviewDto>): List<StudentReview> {
         if (rows.isEmpty()) return emptyList()
-        val profiles = rows.map { it.reviewerId }.distinct().chunked(PROFILE_BATCH_SIZE).flatMap { ids ->
+        val profiles = rows.mapNotNull { it.reviewerId }.distinct().chunked(PROFILE_BATCH_SIZE).flatMap { ids ->
             supabase.from(SupabaseProfileRepository.PROFILES_TABLE).select(Columns.raw("id,full_name")) {
                 filter { isIn("id", ids) }
             }.decodeList<PublicProfileIdentityDto>()
         }.associateBy { it.id }
         return rows.map { review ->
-            val name = profiles[review.reviewerId]?.fullName?.trim()?.takeIf(String::isNotBlank)
-                ?: FALLBACK_REVIEWER_NAME
-            ProfileMapper.toDomain(review.copy(reviewerName = name))
+            val name = review.reviewerId?.let(profiles::get)?.fullName
+            ReviewMapper.toDomain(review.copy(reviewerName = name))
         }
     }
 
     private companion object {
         const val PROFILE_BATCH_SIZE = 100
-        const val FALLBACK_REVIEWER_NAME = "Reviewer"
     }
 }

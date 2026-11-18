@@ -35,7 +35,7 @@ class SupabaseProfileReviewPageTest {
         val fixture = ProfileReviewRepositoryFixture(profiles = emptyList())
         try {
             val page = fixture.repository.getReviewsPage(revieweeId, 0, 3)
-            assertEquals("Reviewer", page.reviews.single().reviewerName)
+            assertEquals("Student", page.reviews.single().reviewerName)
             assertNull(page.nextOffset)
         } finally {
             fixture.client.close()

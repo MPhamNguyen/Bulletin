@@ -34,7 +34,6 @@ class SuspensionDatabaseTests(unittest.TestCase):
                             (user_id, email, admin))
 
     def remove_fixtures(self):
-        self.db.execute("delete from public.profiles where id in (%s,%s)", (ACTOR, TARGET))
         self.db.execute("delete from auth.users where id in (%s,%s)", (ACTOR, TARGET))
 
     def snapshot(self):

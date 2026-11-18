@@ -38,11 +38,12 @@ data class MarketplaceListingDto(
 @Serializable
 data class MarketplaceReviewDto(
     @SerialName("id") val id: String = "",
-    @SerialName("listing_id") val listingId: String,
-    @SerialName("reviewer_id") val reviewerId: String,
+    @SerialName("listing_id") val listingId: String?,
+    @SerialName("reviewer_id") val reviewerId: String?,
     @SerialName("reviewee_id") val revieweeId: String,
     @SerialName("score") val score: Int,
-    @SerialName("comment") val comment: String
+    @SerialName("comment") val comment: String,
+    @SerialName("was_listing_review") val wasListingReview: Boolean = false
 )
 
 @Serializable

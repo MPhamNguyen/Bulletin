@@ -6,7 +6,7 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
-import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
+import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ReviewMapper
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -69,7 +69,7 @@ class ProfileReputationTest {
             score = 10,
             comment = "Great"
         )
-        val domain = ProfileMapper.toDomain(dto)
+        val domain = ReviewMapper.toDomain(dto)
         assertEquals(5, domain.rating.score)
     }
 }

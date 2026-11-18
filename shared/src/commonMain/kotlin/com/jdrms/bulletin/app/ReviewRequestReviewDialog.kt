@@ -73,7 +73,7 @@ internal fun ReviewRequestReviewDialog(
                     onValueChange = { comment = it.take(MAX_REVIEW_COMMENT_LENGTH) },
                     modifier = Modifier.fillMaxWidth(),
                     decoration = BulletinFieldDecoration(
-                        label = { Text("Comment") },
+                        label = { Text("Comment (optional)") },
                         placeholder = { Text("Describe your experience") }
                     ),
                     options = BulletinFieldOptions(minLines = 3, maxLines = 5)
@@ -89,7 +89,7 @@ internal fun ReviewRequestReviewDialog(
                     }
                     BulletinButton(
                         onClick = { onSubmit(score, comment) },
-                        enabled = !state.isProcessing && score in 1..5 && comment.isNotBlank()
+                        enabled = !state.isProcessing && score in 1..5
                     ) {
                         Text(if (state.isProcessing) "Submitting…" else "Submit review")
                     }

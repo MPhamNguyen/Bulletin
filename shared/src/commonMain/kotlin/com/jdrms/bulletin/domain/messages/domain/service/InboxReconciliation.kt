@@ -18,6 +18,10 @@ object InboxReconciliation {
                 }
             }
             val previous = previousConversation.lastMessage
+            if (previous != null && previous.id == remote.lastMessage?.id) {
+                val retained = MessageTimeline.merge(listOf(previous), listOf(remote.lastMessage)).single()
+                return@map withCurrentReads.recordMessage(retained).getOrNull() ?: withCurrentReads
+            }
             if (previous != null && previous.isNewerThan(remote.lastMessage)) {
                 withCurrentReads.recordMessage(previous).getOrNull() ?: withCurrentReads
             } else {

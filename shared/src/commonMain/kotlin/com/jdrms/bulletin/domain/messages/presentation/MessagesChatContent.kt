@@ -10,6 +10,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
+import com.jdrms.bulletin.domain.messages.domain.model.Message
 
 @Composable
 internal fun MessagesChatContent(
@@ -19,14 +20,15 @@ internal fun MessagesChatContent(
     modifier: Modifier,
     navigation: ConversationNavigation = ConversationNavigation()
 ) {
-    val counterpart = conversation.counterpart(state.viewerId)
+    val isReadOnly = state.isSelectedConversationReadOnly
+    val counterpart = conversation.counterpart(state.viewerId).takeUnless { isReadOnly }
     val isBlocked = counterpart != null && state.block.isBlocked(counterpart.id)
     var optionsOpen by remember(conversation.id, state.viewerId) { mutableStateOf(false) }
     LaunchedEffect(counterpart?.id, state.viewerId) { counterpart?.let { viewModel.refreshBlockStatus(it.id) } }
     Column(modifier.imePadding()) {
         ConversationHeader(
             counterpart,
-            conversationTitle(conversation, state.viewerId),
+            if (isReadOnly) Message.MISSING_SENDER_NAME else conversationTitle(conversation, state.viewerId),
             counterpart != null && !isBlocked,
             ConversationHeaderActions(
                 viewModel::returnToInbox,
@@ -50,7 +52,9 @@ internal fun MessagesChatContent(
             Modifier.weight(1f).padding(horizontal = BulletinSpacing.m),
             navigation.onViewProfile
         )
-        if (counterpart != null && isBlocked) {
+        if (isReadOnly) {
+            ReadOnlyConversationNotice()
+        } else if (counterpart != null && isBlocked) {
             BlockedConversationBar(
                 counterpart.displayName,
                 state.block.flow is ConversationBlockFlow.Submitting,

@@ -108,7 +108,7 @@ internal class IncomingMessageAlertDetector {
         messageId = id,
         conversationId = conversationId,
         recipientId = recipient,
-        senderName = senderName,
+        senderName = displaySenderName,
         content = content,
         createdAt = orderingTimestamp,
         senderId = senderId,

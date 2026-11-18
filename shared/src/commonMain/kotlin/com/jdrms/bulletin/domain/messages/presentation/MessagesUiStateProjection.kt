@@ -24,9 +24,13 @@ internal class MessagesUiStateProjection(
     override suspend fun collect(collector: FlowCollector<MessagesUiState>): Nothing = changes.collect(collector)
 }
 
-private fun withInbox(thread: MessagesUiState, inbox: InboxState): MessagesUiState = thread.copy(
-    viewerId = inbox.viewerId,
-    conversations = inbox.conversations,
-    isLoading = inbox.isLoading,
-    errorMessage = thread.errorMessage ?: thread.sendErrorMessage ?: inbox.errorMessage
-)
+private fun withInbox(thread: MessagesUiState, inbox: InboxState): MessagesUiState {
+    val conversation = inbox.conversations.firstOrNull { it.id == thread.selectedConversationId }
+    val retained = conversation?.let(thread::withRetainedHistory) ?: thread
+    return retained.copy(
+        viewerId = inbox.viewerId,
+        conversations = inbox.conversations,
+        isLoading = inbox.isLoading,
+        errorMessage = thread.errorMessage ?: thread.sendErrorMessage ?: inbox.errorMessage
+    )
+}

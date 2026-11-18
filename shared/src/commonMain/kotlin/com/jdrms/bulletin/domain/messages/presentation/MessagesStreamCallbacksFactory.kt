@@ -42,6 +42,9 @@ internal class MessagesStreamCallbacksFactory(
     }
 
     fun onInboxSnapshot(snapshot: InboxState) {
+        snapshot.conversations.firstOrNull { it.id == uiState.value.selectedConversationId }?.let { conversation ->
+            uiState.update { it.withRetainedHistory(conversation) }
+        }
         val conversationId = pendingConversationId ?: return
         if (snapshot.viewerId != pendingViewerId) {
             clearPending()
@@ -92,8 +95,15 @@ internal class MessagesStreamCallbacksFactory(
     private fun deliver(message: Message, conversation: Conversation) {
         val viewerId = inbox.state.value.viewerId ?: return
         if (!conversation.includes(viewerId) || !conversation.canSee(message)) return
+        if (message.senderId != null && !conversation.includes(message.senderId)) {
+            // A row event queued before deletion may arrive after the membership refresh.
+            inbox.refresh()
+            reloadSelectedConversation(conversation.id)
+            return
+        }
         val senderName = conversation.participants.firstOrNull { it.id == message.senderId }?.displayName
-        val resolvedMessage = senderName?.let { message.copy(senderName = it) } ?: message
+        val resolvedMessage = message.copy(senderName = senderName ?: message.displaySenderName)
+        if (message.senderId == null) inbox.refresh()
         when (val recorded = inbox.recordMessage(resolvedMessage)) {
             is Result.Error -> showFailure(recorded)
             is Result.Success -> {
