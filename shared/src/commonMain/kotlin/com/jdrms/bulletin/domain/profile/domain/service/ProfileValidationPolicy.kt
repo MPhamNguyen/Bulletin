@@ -119,7 +119,9 @@ class ProfileValidationPolicy {
         if (review.reviewerId == review.revieweeId.value) {
             return Result.Error(IllegalArgumentException("Users cannot review themselves."))
         }
-        if (review.comment.isBlank()) {
+        // The origin flag also describes retained history after a listing disappears.
+        // A new rating-only review needs the actual listing reference.
+        if (review.relatedListingId.isNullOrBlank() && review.comment.isBlank()) {
             return Result.Error(IllegalArgumentException("Review comment cannot be empty."))
         }
         return Result.Success(Unit)

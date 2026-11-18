@@ -13,7 +13,6 @@ import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ProfileDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.PublicProfileIdentityDto
 import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReputationSummaryDto
-import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewInsertDto
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.ProfileMapper
 import com.jdrms.bulletin.domain.profile.infrastructure.mapper.PublicProfileIdentityMapper
 import io.github.jan.supabase.SupabaseClient
@@ -32,6 +31,7 @@ class SupabaseProfileRepository private constructor(
     internal val readCache: ProfileReadCache
 ) : ProfileRepository {
     private val reviewReader = SupabaseProfileReviewReader(supabase)
+    private val reviewWriter = SupabaseProfileReviewWriter(supabase, readCache, ::resolveUserId)
 
     constructor(supabase: SupabaseClient) : this(supabase, ProfileValidationPolicy(), ProfileReadCache())
 
@@ -109,29 +109,8 @@ class SupabaseProfileRepository private constructor(
         return result
     }
 
-    override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
-        var resolvedTargetUserId: UserId? = null
-        val result = runCatching {
-            val currentUserId = supabase.auth.currentUserOrNull()?.id
-                ?: error("You must be logged in to submit a review.")
-            val resolvedTargetId = resolveUserId(targetUserId) ?: targetUserId.value
-            resolvedTargetUserId = UserId(resolvedTargetId)
-
-            val insertDto = ReviewInsertDto(
-                reviewerId = currentUserId,
-                revieweeId = resolvedTargetId,
-                score = review.rating.score,
-                comment = review.comment
-            )
-            supabase.from(REVIEWS_TABLE).insert(insertDto)
-            Unit
-        }.fold(
-            onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
-        )
-        if (result is Result.Success) resolvedTargetUserId?.let { readCache.invalidate(it) }
-        return result
-    }
+    override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> =
+        reviewWriter.submit(targetUserId, review)
 
     override suspend fun getReputation(userId: UserId): StudentReputation {
         val currentUserId = supabase.auth.currentUserOrNull()?.id

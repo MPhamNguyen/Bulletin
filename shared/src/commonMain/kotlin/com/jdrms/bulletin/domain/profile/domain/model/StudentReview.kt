@@ -9,6 +9,7 @@ data class StudentReview(
     val comment: String,
     val createdAtMillis: Long = 0L,
     val relatedListingId: String? = null,
+    /** Retains listing origin on reads; it does not replace a listing reference for new submissions. */
     val wasListingReview: Boolean = relatedListingId != null
 ) {
     init {

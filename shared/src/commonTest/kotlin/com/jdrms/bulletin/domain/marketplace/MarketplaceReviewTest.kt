@@ -56,8 +56,9 @@ class MarketplaceReviewTest {
     }
 
     @Test
-    fun reviewRequiresAComment() = runTest {
-        val useCase = SubmitMarketplaceReview(repositoryWithListing(status = "SOLD", buyerId = "buyer-1"))
+    fun reviewRequestAllowsARatingWithoutAComment() = runTest {
+        val repository = repositoryWithListing(status = "SOLD", buyerId = "buyer-1")
+        val useCase = SubmitMarketplaceReview(repository)
         val result = useCase.submitForSoldListing(
             listingId = "listing-1",
             buyerId = "buyer-1",
@@ -67,7 +68,17 @@ class MarketplaceReviewTest {
             comment = "   "
         )
 
-        assertEquals("Review comment cannot be empty.", assertIs<Result.Error>(result).exception.message)
+        assertIs<Result.Success<Unit>>(result)
+        assertTrue(repository.hasReviewForListing(MarketplaceItemId("listing-1"), "buyer-1"))
+    }
+
+    @Test
+    fun listingDetailAlsoAllowsARatingWithoutAComment() = runTest {
+        val repository = InMemoryMarketplaceRepository()
+        val result = SubmitMarketplaceReview(repository)(soldListing("buyer-1"), "buyer-1", 5, "")
+
+        assertIs<Result.Success<Unit>>(result)
+        assertTrue(repository.hasReviewForListing(MarketplaceItemId("listing-1"), "buyer-1"))
     }
 
     @Test

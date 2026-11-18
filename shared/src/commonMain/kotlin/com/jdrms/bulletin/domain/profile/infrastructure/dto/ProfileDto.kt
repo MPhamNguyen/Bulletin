@@ -25,11 +25,3 @@ data class ProfileUpdateDto(
     // No default: null must be sent to clear an existing photo.
     @SerialName("avatar_url") val avatarUrl: String?
 )
-
-@Serializable
-data class ReviewInsertDto(
-    @SerialName("reviewer_id") val reviewerId: String,
-    @SerialName("reviewee_id") val revieweeId: String,
-    @SerialName("score") val score: Int,
-    @SerialName("comment") val comment: String
-)
