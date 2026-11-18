@@ -3,11 +3,17 @@ package com.jdrms.bulletin.domain.listings.presentation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +54,9 @@ internal fun CreateListingFooter(
                     variant = BulletinButtonVariant.Outlined,
                     size = BulletinButtonSize.Large
                 ) {
+                    // Decorative arrow: the text label keeps the accessible name and the test selector.
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text("Back", fontWeight = FontWeight.Bold)
                 }
             }
@@ -66,6 +75,14 @@ internal fun CreateListingFooter(
                     )
                 } else {
                     Text(if (state.step.isLast) "Post Listing" else "Continue", fontWeight = FontWeight.Bold)
+                    if (!state.step.isLast) {
+                        Spacer(Modifier.width(8.dp))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }

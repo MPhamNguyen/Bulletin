@@ -1,6 +1,14 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
@@ -28,10 +38,11 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
     val pickListingImages = rememberListingImagePicker(viewModel::addNewImages, viewModel::imageSelectionFailed)
     var stepIndex by rememberSaveable { mutableIntStateOf(0) }
     val step = CreateListingStep.entries[stepIndex]
-    val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
 
     BackHandler { if (step.isFirst) onClose() else stepIndex-- }
-    LaunchedEffect(stepIndex) { scrollState.scrollTo(0) }
+    // Drop focus from the outgoing step's field so the keyboard doesn't follow the slide.
+    LaunchedEffect(stepIndex) { focusManager.clearFocus() }
     // A rejected attribute value lives on the details step, so take the seller there.
     LaunchedEffect(state.newAttributes.errors) {
         if (state.newAttributes.errors.isNotEmpty()) stepIndex = CreateListingStep.DETAILS.ordinal
@@ -49,11 +60,19 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.fillMaxSize()) {
             CreateListingHeader(step, onClose)
-            Column(
-                modifier = Modifier.weight(1f).verticalScroll(scrollState)
-                    .padding(horizontal = 20.dp, vertical = 20.dp)
-            ) {
-                CreateListingStepContent(step, state, viewModel, pickListingImages)
+            AnimatedContent(
+                targetState = step,
+                modifier = Modifier.weight(1f),
+                transitionSpec = { createListingStepTransition(initialState, targetState) },
+                label = "createListingStep"
+            ) { animatedStep ->
+                // Each step owns its scroll state so the outgoing step doesn't jump to the top mid-slide.
+                Column(
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 20.dp)
+                ) {
+                    CreateListingStepContent(animatedStep, state, viewModel, pickListingImages)
+                }
             }
             CreateListingFooter(
                 state = CreateListingFooterState(step, step.canContinue(state), state.isSubmitting),
@@ -78,6 +97,22 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
     state.pendingCategoryChange?.takeIf { it.form == ListingForm.NEW }?.let { change ->
         ListingCategoryChangeDialog(change, viewModel::confirmCategoryChange, viewModel::cancelCategoryChange)
     }
+}
+
+private const val STEP_TRANSITION_MILLIS = 380
+private const val STEP_TRAVEL_DIVISOR = 3
+
+/** +1 when moving to a later step (slide in from the right), -1 when moving back (slide in from the left). */
+internal fun stepDirection(from: CreateListingStep, to: CreateListingStep): Int =
+    if (to.ordinal > from.ordinal) 1 else -1
+
+private fun createListingStepTransition(from: CreateListingStep, to: CreateListingStep): ContentTransform {
+    val direction = stepDirection(from, to)
+    val fade = tween<Float>(STEP_TRANSITION_MILLIS)
+    val slide = tween<IntOffset>(STEP_TRANSITION_MILLIS)
+    val enter = slideInHorizontally(slide) { width -> direction * width / STEP_TRAVEL_DIVISOR } + fadeIn(fade)
+    val exit = slideOutHorizontally(slide) { width -> -direction * width / STEP_TRAVEL_DIVISOR } + fadeOut(fade)
+    return enter.togetherWith(exit)
 }
 
 @Composable
