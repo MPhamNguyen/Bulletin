@@ -8,14 +8,14 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
-import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
-import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
+import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingImagesRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,6 +44,7 @@ class ListingsViewModelManagementTest {
     private lateinit var sellerProvider: FakeListingSellerProvider
     private lateinit var repository: InMemoryListingsRepository
     private lateinit var viewModel: ListingsViewModel
+    private val images = InMemoryListingImagesRepository()
 
     @BeforeTest
     fun setUp() {
@@ -58,7 +59,10 @@ class ListingsViewModelManagementTest {
             manageListing = ManageListing(repository, policy),
             deleteListing = DeleteListing(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            session = ListingsViewModelSessionDependencies(sellerProvider)
+            session = ListingsViewModelSessionDependencies(
+                sellerProvider,
+                manageListingImages = ManageListingImages(images)
+            )
         )
     }
 
@@ -67,19 +71,7 @@ class ListingsViewModelManagementTest {
         Dispatchers.resetMain()
     }
 
-    private fun testListing(ownerId: SellerId): Listing {
-        return Listing(
-            id = ListingId("list_test_vm"),
-            sellerId = ownerId,
-            sellerName = sellerName,
-            title = "Tactile Keyboard",
-            description = "Quiet tactile switches for studying",
-            price = ListingPrice(40.0),
-            category = ListingCategory.ELECTRONICS,
-            condition = ListingCondition.GOOD,
-            status = ListingStatus.AVAILABLE
-        )
-    }
+    private suspend fun testListing(ownerId: SellerId): Listing = editableTestListing(ownerId, sellerName, images)
 
     private class FakeListingSellerProvider(
         var currentSeller: Result<ListingSeller>

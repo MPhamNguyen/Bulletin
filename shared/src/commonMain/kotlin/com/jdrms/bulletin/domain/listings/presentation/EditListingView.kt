@@ -147,7 +147,7 @@ fun EditListingView(
 
             BulletinButton(
                 onClick = actions.onSave,
-                enabled = !uiState.isUpdating,
+                enabled = !uiState.isUpdating && uiState.hasEditChanges,
                 modifier = Modifier
                     .fillMaxWidth(),
                 variant = BulletinButtonVariant.Primary,
