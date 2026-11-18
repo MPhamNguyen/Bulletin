@@ -77,7 +77,7 @@ fun EditListingView(
                     onValueChange = actions.onTitleChange,
                     modifier = Modifier.fillMaxWidth(),
                     decoration = BulletinFieldDecoration(
-                        label = { Text("Item Title") }
+                        label = { ListingRequiredLabel("Item Title", style = MaterialTheme.typography.bodyMedium) }
                     )
                 )
 
@@ -89,6 +89,7 @@ fun EditListingView(
                     CurrencyTextField(
                         digits = uiState.editPriceCents,
                         onDigitsChange = actions.onPriceChange,
+                        required = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -109,12 +110,14 @@ fun EditListingView(
 
                 Spacer(modifier = Modifier.height(BulletinSpacing.m))
 
-                ListingConditionSelectionRow(
-                    selectedCondition = uiState.editCondition,
-                    onConditionSelected = actions.onConditionSelected
-                )
+                if (uiState.editCategory != ListingCategory.HOUSING) {
+                    ListingConditionSelectionRow(
+                        selectedCondition = uiState.editCondition,
+                        onConditionSelected = actions.onConditionSelected
+                    )
 
-                Spacer(modifier = Modifier.height(BulletinSpacing.m))
+                    Spacer(modifier = Modifier.height(BulletinSpacing.m))
+                }
 
                 if (uiState.editCategory == ListingCategory.HOUSING) {
                     ListingHousingDescriptionField(uiState.editDescription, actions.onDescriptionChange)
@@ -123,11 +126,13 @@ fun EditListingView(
                 }
             }
 
+            ListingRequiredLabel("Photos", style = MaterialTheme.typography.titleSmall)
             ListingImageSelectionField(
                 photos = uiState.editPhotos,
                 onPick = pickListingImages,
                 onRemove = actions.onRemoveImage,
-                onCropChange = actions.onCropImage
+                onCropChange = actions.onCropImage,
+                label = ""
             )
 
             uiState.errorMessage?.let { error ->
