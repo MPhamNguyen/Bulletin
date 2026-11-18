@@ -21,17 +21,15 @@ data class ReviewRequest(
     fun submitted(): ReviewRequest = transition(ReviewRequestStatus.SUBMITTED)
     fun cancel(): ReviewRequest = transition(ReviewRequestStatus.CANCELLED)
 
-    private fun transition(next: ReviewRequestStatus): ReviewRequest {
-        require(status == ReviewRequestStatus.PENDING || status == ReviewRequestStatus.ACCEPTED) {
-            "A declined or submitted review request cannot be changed."
+    /** True while the buyer can still accept, decline or submit. Terminal requests are not actionable. */
+    val isActionableByBuyer: Boolean get() = ReviewRequestTransitions.isActionableByBuyer(status)
+
+    fun canTransitionTo(next: ReviewRequestStatus): Boolean = ReviewRequestTransitions.isLegal(status, next)
+
+    private fun transition(next: ReviewRequestStatus): ReviewRequest =
+        when (val decision = ReviewRequestTransitions.decide(status, next)) {
+            ReviewRequestTransition.Apply -> copy(status = next)
+            ReviewRequestTransition.AlreadyApplied -> this
+            is ReviewRequestTransition.Rejected -> throw IllegalArgumentException(decision.message)
         }
-        require(next != ReviewRequestStatus.DECLINED || status == ReviewRequestStatus.PENDING) {
-            "An accepted review request cannot be declined."
-        }
-        require(
-            next != ReviewRequestStatus.CANCELLED ||
-                status == ReviewRequestStatus.PENDING || status == ReviewRequestStatus.ACCEPTED
-        ) { "A completed review request cannot be cancelled." }
-        return copy(status = next)
-    }
 }

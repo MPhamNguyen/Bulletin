@@ -3,6 +3,7 @@ package com.jdrms.bulletin.app.integration
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.home.application.ContactSellerFailure
 import com.jdrms.bulletin.domain.marketplace.application.DEFAULT_MARKETPLACE_PAGE_SIZE
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.messages.application.MessageSenderLookupException
 import com.jdrms.bulletin.domain.messages.application.MessagingAuthenticationRequiredException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
@@ -36,8 +37,8 @@ class MessagesHomeContactSellerAdapterTest {
         val cases: List<HomeContactFixture.() -> Unit> = listOf(
             { hidden = setOf(listing.sellerId) },
             { reported = setOf(listing.id) },
-            { listing = listing.copy(isSold = true) },
-            { listing = listing.copy(status = "UNAVAILABLE") },
+            { listing = listing.copy(status = MarketplaceListingStatus.SOLD) },
+            { listing = listing.copy(status = MarketplaceListingStatus.UNKNOWN) },
             { available = false },
             { lookupFailure = NoSuchElementException("private-seller-id") },
             { lookupFailure = IllegalStateException("Listing not found.") }

@@ -5,10 +5,12 @@ import com.jdrms.bulletin.domain.listings.application.CreateListing
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeKeys
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeValue
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
+import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingImagesRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import com.jdrms.bulletin.domain.listings.presentation.ListingActionCallbacks
 import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraft
@@ -16,6 +18,7 @@ import com.jdrms.bulletin.domain.listings.presentation.ListingAttributeDraftActi
 import com.jdrms.bulletin.domain.listings.presentation.ListingCreationActions
 import com.jdrms.bulletin.domain.listings.presentation.ListingEditActions
 import com.jdrms.bulletin.domain.listings.presentation.ListingsUiState
+import com.jdrms.bulletin.domain.listings.presentation.listingWithStoredPhoto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -95,11 +98,22 @@ class ListingAttributeSubmissionTest {
 
     @Test
     fun editLoadsSavesAndResetsAttributesAndCancelClearsDraft() = runTest {
+        val images = InMemoryListingImagesRepository()
+        val listing = listingWithStoredPhoto(listing, images)
         val repository = InMemoryListingsRepository(emptyList())
         repository.createListing(listing)
         val state = MutableStateFlow(ListingsUiState())
         val drafts = ListingAttributeDraftActions(state)
-        val edit = ListingEditActions(state, this, ManageListing(repository), null, seller, callbacks, drafts)
+        val edit =
+            ListingEditActions(
+                state,
+                this,
+                ManageListing(repository),
+                ManageListingImages(images),
+                seller,
+                callbacks,
+                drafts
+            )
         edit.start(listing)
         advanceUntilIdle()
         assertEquals("16", state.value.editAttributes.inputs["ram_gb"])

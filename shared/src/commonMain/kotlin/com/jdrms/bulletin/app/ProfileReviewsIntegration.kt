@@ -1,24 +1,32 @@
 package com.jdrms.bulletin.app
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerReview
 import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileReviews
-import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfileViewModel
+import com.jdrms.bulletin.domain.profile.presentation.ProfileUiState
 
 @Composable
 internal fun ProfileReviewsIntegration(
-    sellerProfileViewModel: SellerProfileViewModel,
+    profileState: ProfileUiState,
     onViewAllReviews: () -> Unit,
     onListingClick: (String) -> Unit
 ) {
-    val state by sellerProfileViewModel.uiState.collectAsState()
-    state.profile?.let { seller ->
+    if (profileState.hasLoadedOverview) {
         SellerProfileReviews(
-            reviews = seller.reviews,
-            reviewLoadError = state.reviewLoadError,
-            isLoadingReviews = state.isLoadingMoreReviews,
-            onRetryReviews = sellerProfileViewModel::loadMoreReviews,
+            reviews = profileState.reputation?.reviews.orEmpty().map { review ->
+                MarketplaceSellerReview(
+                    id = review.id.value,
+                    reviewerName = review.reviewerName,
+                    rating = review.rating.score,
+                    comment = review.comment,
+                    createdAtMillis = review.createdAtMillis,
+                    reviewerAvatarUrl = review.reviewerAvatarUrl,
+                    relatedListingId = review.relatedListingId
+                )
+            },
+            reviewLoadError = null,
+            isLoadingReviews = false,
+            onRetryReviews = {},
             onViewAllReviews = onViewAllReviews,
             onListingClick = onListingClick
         )

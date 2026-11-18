@@ -10,7 +10,8 @@ data class StudentReview(
     val createdAtMillis: Long = 0L,
     val relatedListingId: String? = null,
     /** Retains listing origin on reads; it does not replace a listing reference for new submissions. */
-    val wasListingReview: Boolean = relatedListingId != null
+    val wasListingReview: Boolean = relatedListingId != null,
+    val reviewerAvatarUrl: String? = null
 ) {
     init {
         require(wasListingReview || comment.isNotBlank()) { "Review comment cannot be blank." }

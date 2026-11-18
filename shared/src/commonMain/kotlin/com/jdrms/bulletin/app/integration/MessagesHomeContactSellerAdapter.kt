@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.home.domain.model.HomeItemId
 import com.jdrms.bulletin.domain.home.domain.model.SellerMessage
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceListing
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.messages.application.MessageSeller
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
@@ -39,7 +40,10 @@ class MessagesHomeContactSellerAdapter(
             is Result.Error -> return Result.Error(contactFailure(result.exception))
         }
         if (listing.sellerId == userId) return Result.Error(ContactSellerFailure.OwnListing())
-        if (listing.isSold || listing.status != "AVAILABLE" || !isVisible(userId, listingId, listing.sellerId)) {
+        if (
+            listing.status != MarketplaceListingStatus.AVAILABLE ||
+            !isVisible(userId, listingId, listing.sellerId)
+        ) {
             return Result.Error(ContactSellerFailure.ListingUnavailable())
         }
         return when (

@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.listings.application.DeleteListing
 import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
+import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.application.MarkListingSold
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyer
 import com.jdrms.bulletin.domain.listings.application.RecentListingBuyersProvider
@@ -16,11 +17,11 @@ import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
-import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
+import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingImagesRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +53,7 @@ class ListingsViewModelTestPart1 {
     private lateinit var sellerProvider: FakeListingSellerProvider
     private lateinit var repository: InMemoryListingsRepository
     private lateinit var viewModel: ListingsViewModel
+    private val images = InMemoryListingImagesRepository()
 
     @BeforeTest
     fun setUp() {
@@ -67,7 +69,10 @@ class ListingsViewModelTestPart1 {
             deleteListing = DeleteListing(repository, policy),
             markListingSold = MarkListingSold(repository, policy),
             getSellerListings = GetSellerListings(repository),
-            session = ListingsViewModelSessionDependencies(sellerProvider)
+            session = ListingsViewModelSessionDependencies(
+                sellerProvider,
+                manageListingImages = ManageListingImages(images)
+            )
         )
     }
 
@@ -76,19 +81,7 @@ class ListingsViewModelTestPart1 {
         Dispatchers.resetMain()
     }
 
-    private fun testListing(ownerId: SellerId): Listing {
-        return Listing(
-            id = ListingId("list_test_vm"),
-            sellerId = ownerId,
-            sellerName = sellerName,
-            title = "Tactile Keyboard",
-            description = "Quiet tactile switches for studying",
-            price = ListingPrice(40.0),
-            category = ListingCategory.ELECTRONICS,
-            condition = ListingCondition.GOOD,
-            status = ListingStatus.AVAILABLE
-        )
-    }
+    private suspend fun testListing(ownerId: SellerId): Listing = editableTestListing(ownerId, sellerName, images)
 
     private class FakeListingSellerProvider(
         var currentSeller: Result<ListingSeller>
@@ -136,7 +129,7 @@ class ListingsViewModelTestPart1 {
     }
 
     @Test
-    fun testImmediateDuplicateSavesInvokeRepositoryOnce() = runTest {
+    fun testImmediateDuplicateSavesRunOneDetailsAndPhotoUpdate() = runTest {
         val baseRepository = InMemoryListingsRepository(initialListings = emptyList())
         val countingRepository = CountingListingsRepository(baseRepository)
         val listing = testListing(sellerId)
@@ -147,7 +140,10 @@ class ListingsViewModelTestPart1 {
             markListingSold = MarkListingSold(countingRepository),
             deleteListing = DeleteListing(countingRepository),
             getSellerListings = GetSellerListings(countingRepository),
-            session = ListingsViewModelSessionDependencies(sellerProvider)
+            session = ListingsViewModelSessionDependencies(
+                sellerProvider,
+                manageListingImages = ManageListingImages(images)
+            )
         )
         advanceUntilIdle()
         duplicateSaveViewModel.startEditing(listing)
@@ -158,7 +154,8 @@ class ListingsViewModelTestPart1 {
         duplicateSaveViewModel.saveListingChanges()
         advanceUntilIdle()
 
-        assertEquals(1, countingRepository.updateCount)
+        // One save writes the details, then the synchronized photo URLs.
+        assertEquals(2, countingRepository.updateCount)
     }
 
     @Test

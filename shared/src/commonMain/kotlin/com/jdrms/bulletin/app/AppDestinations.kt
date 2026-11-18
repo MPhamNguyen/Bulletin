@@ -54,6 +54,10 @@ internal fun MainAppContent(
             onReportUser = { id ->
                 navigation.pendingUserReportId = id
                 navigation.currentDestination = AppDestination.MARKETPLACE
+            },
+            onViewListing = { listingId ->
+                models.marketplace.onListingClicked(listingId)
+                navigation.openListing(listingId)
             }
         )
         AppDestination.PROFILE -> ProfileDestinationContent(container, navigation, models, content.profile)

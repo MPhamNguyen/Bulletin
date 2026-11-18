@@ -28,7 +28,7 @@ class ListingsRepositoryAttributesContractTest {
 
         private fun SupabaseListingWriteDto.toReadDto() = SupabaseListingDto(
             id = id, name = name, userId = userId, category = category, condition = condition, price = price,
-            description = description, isSold = isSold, buyerId = buyerId, attributes = attributes
+            description = description, status = status, buyerId = buyerId, attributes = attributes
         )
     }
 

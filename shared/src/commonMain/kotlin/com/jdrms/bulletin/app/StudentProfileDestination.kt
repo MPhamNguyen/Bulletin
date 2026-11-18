@@ -31,8 +31,7 @@ internal fun StudentProfileDestination(
     val profileState by resolvedProfileViewModel.uiState.collectAsState()
     val hideReportedListings by profilePresentation.reportedListingVisibilityViewModel
         .shouldHideReportedListings.collectAsState()
-    LaunchedEffect(profileState.profile?.id, profileState.reputation?.totalReviews) {
-        profileState.profile?.id?.value?.let(models.sellerProfile::load)
+    LaunchedEffect(profileState.profile?.id) {
         profilePresentation.reportedListingVisibilityViewModel.setAccount(
             profileState.profile?.id?.value?.let(::MarketplaceReporterId)
         )
@@ -79,7 +78,7 @@ internal fun StudentProfileDestination(
             ),
             profileReviewsContent = { onViewAllReviews ->
                 ProfileReviewsIntegration(
-                    sellerProfileViewModel = models.sellerProfile,
+                    profileState = profileState,
                     onViewAllReviews = onViewAllReviews,
                     onListingClick = { listingId ->
                         models.marketplace.onListingClicked(listingId)

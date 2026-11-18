@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.domain.model.OwnListingBookmarkException
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
@@ -132,7 +133,7 @@ class InMemoryMarketplaceRepository(
                 price = 35.0,
                 category = "TEXTBOOKS",
                 condition = "GOOD",
-                status = "AVAILABLE",
+                status = MarketplaceListingStatus.AVAILABLE.name,
                 photos = listOf("https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c"),
                 reputationScore = 4.8
             ),
@@ -145,7 +146,7 @@ class InMemoryMarketplaceRepository(
                 price = 180.0,
                 category = "ELECTRONICS",
                 condition = "LIKE_NEW",
-                status = "AVAILABLE",
+                status = MarketplaceListingStatus.AVAILABLE.name,
                 photos = listOf("https://images.unsplash.com/photo-1505740420928-5e560c06d30e"),
                 reputationScore = 4.9
             ),
@@ -158,7 +159,7 @@ class InMemoryMarketplaceRepository(
                 price = 70.0,
                 category = "FURNITURE",
                 condition = "GOOD",
-                status = "AVAILABLE",
+                status = MarketplaceListingStatus.AVAILABLE.name,
                 photos = emptyList(),
                 reputationScore = 4.5
             ),
@@ -171,7 +172,7 @@ class InMemoryMarketplaceRepository(
                 price = 20.0,
                 category = "CLOTHING",
                 condition = "LIKE_NEW",
-                status = "AVAILABLE",
+                status = MarketplaceListingStatus.AVAILABLE.name,
                 photos = listOf("https://images.unsplash.com/photo-1556905055-8f358a7a47b2"),
                 reputationScore = 5.0
             )
