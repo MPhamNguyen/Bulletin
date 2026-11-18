@@ -123,29 +123,8 @@ class SupabaseProfileRepository private constructor(
         onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
     )
 
-    override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> {
-        var resolvedTargetUserId: UserId? = null
-        val result = runCatching {
-            val currentUserId = supabase.auth.currentUserOrNull()?.id
-                ?: error("You must be logged in to submit a review.")
-            val resolvedTargetId = resolveUserId(targetUserId) ?: targetUserId.value
-            resolvedTargetUserId = UserId(resolvedTargetId)
-
-            val insertDto = ReviewInsertDto(
-                reviewerId = currentUserId,
-                revieweeId = resolvedTargetId,
-                score = review.rating.score,
-                comment = review.comment
-            )
-            supabase.from(REVIEWS_TABLE).insert(insertDto)
-            Unit
-        }.fold(
-            onSuccess = { Result.Success(it) },
-            onFailure = { Result.Error(Exception(mapProfileErrorMessage(it), it)) }
-        )
-        if (result is Result.Success) resolvedTargetUserId?.let { readCache.invalidate(it) }
-        return result
-    }
+    override suspend fun submitReview(targetUserId: UserId, review: StudentReview): Result<Unit> =
+        reviewWriter.submit(targetUserId, review)
 
     override suspend fun getReputation(userId: UserId): StudentReputation {
         val currentUserId = supabase.auth.currentUserOrNull()?.id
