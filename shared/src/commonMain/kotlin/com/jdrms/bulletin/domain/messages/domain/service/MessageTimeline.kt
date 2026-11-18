@@ -11,17 +11,24 @@ object MessageTimeline {
     private fun preferKnownSenderName(versions: List<Message>): Message {
         val newestEdit = versions.mapNotNull { it.editedAt }.maxOrNull()
         val latest = versions.last { it.editedAt == newestEdit }
+        // A delayed page or edit response must never reattach a hard-deleted sender.
+        if (versions.any { it.senderId == null }) {
+            return preserveReportState(latest.copy(senderId = null, senderName = Message.MISSING_SENDER_NAME), versions)
+        }
         val knownName = versions.lastOrNull { it.senderName != DEFAULT_SENDER_NAME }?.senderName
         val resolved = if (latest.senderName == DEFAULT_SENDER_NAME && knownName != null) {
             latest.copy(senderName = knownName)
         } else {
             latest
         }
-        return resolved.copy(
+        return preserveReportState(resolved, versions)
+    }
+
+    private fun preserveReportState(message: Message, versions: List<Message>): Message =
+        message.copy(
             isReported = versions.any { it.isReported },
             isEditLocked = versions.lastOrNull { it.isEditLocked != null }?.isEditLocked
         )
-    }
 
     private const val DEFAULT_SENDER_NAME = "Student"
 }

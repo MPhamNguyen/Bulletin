@@ -3,7 +3,7 @@ package com.jdrms.bulletin.domain.messages.infrastructure.dto
 data class MessageDto(
     val id: String,
     val conversationId: String,
-    val senderId: String,
+    val senderId: String?,
     val senderName: String,
     val content: String,
     val timestampMillis: Long = 0L,

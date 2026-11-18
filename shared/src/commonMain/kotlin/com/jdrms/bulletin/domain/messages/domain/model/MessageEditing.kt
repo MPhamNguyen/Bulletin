@@ -26,7 +26,7 @@ class MessageEditException(val failure: MessageEditFailure) : IllegalStateExcept
 /** The server repeats these checks using its own clock and all reports, including private reports. */
 object MessageEditing {
     fun canEdit(message: Message, viewerId: SenderId?, now: Instant): Boolean =
-        message.senderId == viewerId && message.deletedAt == null && message.isEditLocked != true &&
+        viewerId != null && message.senderId == viewerId && message.deletedAt == null && message.isEditLocked != true &&
             now >= message.orderingTimestamp && now < message.orderingTimestamp + 15.minutes
 
     fun apply(message: Message, editor: SenderId, edit: MessageEdit, now: Instant): Result<Message> {

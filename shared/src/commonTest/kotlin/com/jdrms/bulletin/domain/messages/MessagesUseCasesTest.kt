@@ -244,7 +244,7 @@ class MessagesUseCasesTest {
 
         override suspend fun sendMessage(message: Message): Result<Message> {
             sentMessageCount++
-            callers.add(message.senderId)
+            callers.add(checkNotNull(message.senderId))
             return failure ?: Result.Success(message)
         }
 

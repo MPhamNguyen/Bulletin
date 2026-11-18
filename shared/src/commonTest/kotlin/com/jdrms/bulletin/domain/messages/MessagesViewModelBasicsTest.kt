@@ -49,7 +49,7 @@ class MessagesViewModelBasicsTest {
     fun previewTitleShowsOnlyOtherParticipantAndHasSafeEmptyFallback() {
         assertEquals("Carol", conversationTitle(conversation(), alice.id))
         assertEquals("Conversation", conversationTitle(conversation(), null))
-        assertEquals("Conversation", conversationTitle(conversation(senders = listOf(alice)), alice.id))
+        assertEquals("User Not Found", conversationTitle(conversation(senders = listOf(alice)), alice.id))
     }
 
     @Test

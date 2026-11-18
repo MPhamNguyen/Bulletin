@@ -59,7 +59,7 @@ data class SupabaseMessageProfileDto(
 data class SupabaseMessageDto(
     @SerialName("id") val id: String,
     @SerialName("conversation_id") val conversationId: String,
-    @SerialName("sender_id") val senderId: String,
+    @SerialName("sender_id") val senderId: String?,
     @SerialName("body") val content: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("profiles") val senderProfile: SupabaseMessageProfileDto? = null,

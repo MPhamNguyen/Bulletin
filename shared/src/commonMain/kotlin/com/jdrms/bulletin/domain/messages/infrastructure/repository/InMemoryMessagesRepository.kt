@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationReadOnlyException
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
@@ -25,11 +26,6 @@ import com.jdrms.bulletin.domain.messages.infrastructure.dto.ConversationDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.MessageDto
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.MessagesMapper
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
@@ -42,8 +38,6 @@ class InMemoryMessagesRepository(
     private val now: () -> Instant = { Clock.System.now() }
 ) : MessagesRepository, MessagesObserver, InboxObserver {
     private val mutex = Mutex()
-    private val inserts = MutableSharedFlow<Message>(extraBufferCapacity = 64)
-    private val readChanges = MutableSharedFlow<InboxInvalidation.Changed>(extraBufferCapacity = 64)
     private val conversations = initialConversations.map {
         MessagesMapper.toDomain(it)
     }.associateBy { it.id }.toMutableMap()
@@ -55,6 +49,17 @@ class InMemoryMessagesRepository(
     private val messagesByConvId = initialMessages.mapKeys { ConversationId(it.key) }.mapValues { entry ->
         entry.value.map { MessagesMapper.toDomain(it) }.toMutableList()
     }.toMutableMap()
+
+    private val events = InMemoryMessagesEvents(
+        canAccess = { userId, id -> mutex.withLock { conversations[id]?.includes(userId) == true } },
+        canReceive = { userId, id, message ->
+            mutex.withLock {
+                val cutoff = historyVisibleAfter[id to userId]
+                message.conversationId == id && userId !in hiddenBy[id].orEmpty() &&
+                    (cutoff == null || message.orderingTimestamp > cutoff)
+            }
+        }
+    )
 
     override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = mutex.withLock {
         Result.Success(
@@ -135,7 +140,7 @@ class InMemoryMessagesRepository(
             readAtByParticipant[conversationId to userId] = lastReadAt
             lastReadAt
         } ?: return Result.Error(ConversationAccessException())
-        readChanges.emit(InboxInvalidation.Changed(conversationId))
+        events.readChanged(conversationId)
         return Result.Success(markedAt)
     }
 
@@ -164,6 +169,8 @@ class InMemoryMessagesRepository(
         val result = mutex.withLock {
             val conversation = conversations[message.conversationId]
                 ?: return@withLock Result.Error(ConversationAccessException())
+            val authorized = conversation.authorizeSending(message.senderId)
+            if (authorized is Result.Error) return@withLock authorized
             when (val updated = conversation.recordMessage(message)) {
                 is Result.Error -> updated
                 is Result.Success -> {
@@ -174,7 +181,7 @@ class InMemoryMessagesRepository(
                 }
             }
         }
-        if (result is Result.Success) inserts.emit(message)
+        if (result is Result.Success) events.messageChanged(message)
         return result
     }
 
@@ -208,7 +215,7 @@ class InMemoryMessagesRepository(
 
     override suspend fun editMessage(userId: SenderId, edit: MessageEdit): Result<Message> {
         val result = mutex.withLock { editStoredMessage(userId, edit) }
-        if (result is Result.Success) inserts.emit(result.data)
+        if (result is Result.Success) events.messageChanged(result.data)
         return result
     }
 
@@ -217,13 +224,15 @@ class InMemoryMessagesRepository(
         val messages = messagesByConvId[edit.conversationId]
         val index = messages?.indexOfFirst { it.id == edit.messageId } ?: -1
         val cutoff = historyVisibleAfter[edit.conversationId to userId]
-        val unavailable = conversation?.includes(userId) != true || userId in hiddenBy[edit.conversationId].orEmpty()
+        val unavailable = conversation?.includes(userId) != true ||
+            userId in hiddenBy[edit.conversationId].orEmpty()
         if (messages == null || index < 0 || unavailable) {
             return Result.Error(MessageEditException(MessageEditFailure.UNAVAILABLE))
         }
         if (cutoff != null && messages[index].orderingTimestamp <= cutoff) {
             return Result.Error(MessageEditException(MessageEditFailure.UNAVAILABLE))
         }
+        if (conversation.isReadOnly) return Result.Error(ConversationReadOnlyException())
         return when (val edited = MessageEditing.apply(messages[index], userId, edit, now())) {
             is Result.Error -> edited
             is Result.Success -> {
@@ -247,36 +256,10 @@ class InMemoryMessagesRepository(
 
     internal fun reportsForTesting(): List<InMemoryMessageReport> = reportHistory.toList()
 
-    override fun observe(userId: SenderId, conversationId: ConversationId): Flow<MessageStreamEvent> = flow {
-        val allowed = mutex.withLock { conversations[conversationId]?.includes(userId) == true }
-        if (!allowed) {
-            emit(MessageStreamEvent.Failed(ConversationAccessException()))
-            return@flow
-        }
-        emit(MessageStreamEvent.Connected)
-        inserts.collect { message ->
-            val visible = mutex.withLock {
-                val cutoff = historyVisibleAfter[conversationId to userId]
-                message.conversationId == conversationId && userId !in hiddenBy[conversationId].orEmpty() &&
-                    (cutoff == null || message.orderingTimestamp > cutoff)
-            }
-            if (visible) emit(MessageStreamEvent.Received(message))
-        }
-    }
+    override fun observe(userId: SenderId, conversationId: ConversationId): Flow<MessageStreamEvent> =
+        events.observe(userId, conversationId)
 
-    override fun observe(userId: SenderId): Flow<InboxInvalidation> = flow {
-        emit(InboxInvalidation.Subscribed)
-        merge(
-            inserts.mapNotNull { message ->
-                val allowed = mutex.withLock { conversations[message.conversationId]?.includes(userId) == true }
-                if (allowed) InboxInvalidation.Changed(message.conversationId) else null
-            },
-            readChanges.mapNotNull { changed ->
-                val allowed = mutex.withLock { conversations[changed.conversationId]?.includes(userId) == true }
-                if (allowed) changed else null
-            }
-        ).collect { invalidation -> emit(invalidation) }
-    }
+    override fun observe(userId: SenderId): Flow<InboxInvalidation> = events.observe(userId)
 }
 
 internal data class InMemoryMessageReport(

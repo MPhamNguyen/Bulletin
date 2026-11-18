@@ -47,6 +47,10 @@ Students can discover listings, buy or sell items, message other students, build
 
 ### Messaging behavior
 
+- **Deleted participants:** Message readers accept a null `sender_id` and display **User Not Found**
+  with an initials avatar and no profile link. The remaining participant keeps access to the conversation
+  history. Conversations with a removed participant are read-only: sending and editing are disabled,
+  while message reporting remains available.
 - **Drafts:** Each conversation keeps its own draft in memory while the messaging ViewModel is alive.
   Successful sends clear the submitted draft; failed sends retain it. Signing out, switching accounts,
   or restarting the app clears all drafts.

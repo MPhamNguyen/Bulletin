@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.domain.model
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
 import kotlin.jvm.JvmInline
 import kotlin.time.Instant
 
@@ -31,7 +32,7 @@ data class ConversationParticipant(
 data class Message(
     val id: MessageId,
     val conversationId: ConversationId,
-    val senderId: SenderId,
+    val senderId: SenderId?,
     val senderName: String,
     val content: String,
     val timestampMillis: Long = 0L,
@@ -42,6 +43,11 @@ data class Message(
     /** Null means a realtime row omitted report metadata; the server always enforces private report locks. */
     val isEditLocked: Boolean? = false
 ) {
+    companion object {
+        const val MISSING_SENDER_NAME = "User Not Found"
+    }
+
+    val displaySenderName: String get() = if (senderId == null) MISSING_SENDER_NAME else senderName
     val orderingTimestamp: Instant get() = preciseCreatedAt ?: Instant.fromEpochMilliseconds(timestampMillis)
     init {
         require(content.isNotBlank()) { "Message content cannot be blank." }
@@ -66,10 +72,18 @@ class Conversation(
         require(participants.isNotEmpty()) { "A conversation must have participants." }
         require(participants.map { it.id }.distinct().size == participants.size) { "Participants must be unique." }
         require(lastMessage == null || lastMessage.conversationId == id) { "Message belongs to another conversation." }
-        require(lastMessage == null || includes(lastMessage.senderId)) { "Sender must be a participant." }
+        require(lastMessage?.senderId == null || includes(lastMessage.senderId)) { "Sender must be a participant." }
     }
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
+
+    val isReadOnly: Boolean get() = participants.size < 2 || (lastMessage != null && lastMessage.senderId == null)
+
+    fun authorizeSending(senderId: SenderId?): Result<Unit> = when {
+        senderId == null || !includes(senderId) -> Result.Error(ConversationAccessException())
+        isReadOnly -> Result.Error(ConversationReadOnlyException())
+        else -> Result.Success(Unit)
+    }
 
     fun recordReadAt(readerId: SenderId, readAt: Instant): Result<Conversation> {
         if (!includes(readerId)) return Result.Error(ConversationAccessException())
@@ -102,7 +116,7 @@ class Conversation(
     }
 
     fun reconcileMessages(messages: List<Message>): Result<Conversation> {
-        if (messages.any { it.conversationId != id || !includes(it.senderId) }) {
+        if (messages.any { it.conversationId != id || (it.senderId != null && !includes(it.senderId)) }) {
             return Result.Error(ConversationAccessException())
         }
         val latest = messages.maxWithOrNull(compareBy<Message> { it.timestampMillis }.thenBy { it.id.value })
@@ -110,15 +124,14 @@ class Conversation(
     }
 
     fun recordMessage(message: Message): Result<Conversation> {
-        if (message.conversationId != id || !includes(message.senderId)) {
+        if (message.conversationId != id || (message.senderId != null && !includes(message.senderId))) {
             return Result.Error(ConversationAccessException())
         }
         val current = lastMessage
-        val currentEdit = current?.editedAt
-        val incomingEdit = message.editedAt
-        val isStaleVersion = currentEdit != null && (incomingEdit == null || currentEdit > incomingEdit)
-        if (current?.id == message.id && isStaleVersion) {
-            return Result.Success(this)
+        val resolved = if (current?.id == message.id) {
+            MessageTimeline.merge(listOf(current), listOf(message)).single()
+        } else {
+            message
         }
         val isNewer = current == null || message.timestampMillis > current.timestampMillis ||
             (message.timestampMillis == current.timestampMillis && message.id.value >= current.id.value)
@@ -128,7 +141,7 @@ class Conversation(
             Conversation(
                 id = id,
                 participants = participants,
-                lastMessage = message,
+                lastMessage = resolved,
                 updatedAtMillis = maxOf(updatedAtMillis, message.timestampMillis),
                 listingId = listingId,
                 historyVisibleAfter = historyVisibleAfter

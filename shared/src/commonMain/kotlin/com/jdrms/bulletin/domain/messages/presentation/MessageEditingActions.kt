@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.EditMessage
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationReadOnlyException
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEditException
@@ -36,7 +37,9 @@ internal class MessageEditingActions(
         val snapshot = state.value
         val viewerId = inbox.state.value.viewerId ?: return
         val message = snapshot.currentMessages.firstOrNull { it.id == messageId } ?: return
-        val busy = snapshot.isSending || snapshot.editState is MessageEditState.Saving
+        val conversation = inbox.state.value.conversations.firstOrNull { it.id == message.conversationId }
+        val busy = snapshot.isSending || snapshot.editState is MessageEditState.Saving ||
+            conversation?.isReadOnly != false || snapshot.currentMessages.any { it.senderId == null }
         if (editMessage == null || busy || !MessageEditing.canEdit(message, viewerId, now())
         ) {
             return
@@ -67,6 +70,9 @@ internal class MessageEditingActions(
         val editing = snapshot.editState as? MessageEditState.Editing ?: return
         val action = editMessage ?: return
         val session = editing.session
+        val conversation = inbox.state.value.conversations.firstOrNull { it.id == session.original.conversationId }
+        val readOnly = conversation?.isReadOnly != false || snapshot.currentMessages.any { it.senderId == null }
+        if (readOnly) return
         if (inbox.state.value.viewerId != session.viewerId) return
         state.update { it.copy(editState = MessageEditState.Saving(session), editError = null) }
         scope.launch {
@@ -88,8 +94,11 @@ internal class MessageEditingActions(
             is Result.Error -> state.update {
                 it.copy(
                     editState = MessageEditState.Editing(session),
-                    editError = (result.exception as? MessageEditException)?.failure?.description
-                        ?: "Unable to save changes. Check your connection and try again."
+                    editError = when (val exception = result.exception) {
+                        is ConversationReadOnlyException -> exception.message
+                        is MessageEditException -> exception.failure.description
+                        else -> "Unable to save changes. Check your connection and try again."
+                    }
                 )
             }
             is Result.Success -> {

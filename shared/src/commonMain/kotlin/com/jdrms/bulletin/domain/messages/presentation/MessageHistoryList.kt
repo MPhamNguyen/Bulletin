@@ -63,7 +63,8 @@ internal fun MessageList(
 }
 
 private fun seenMessageId(state: MessagesUiState, conversation: Conversation): MessageId? {
-    val latestOutgoing = state.currentMessages.lastOrNull { it.senderId == state.viewerId } ?: return null
+    val viewerId = state.viewerId ?: return null
+    val latestOutgoing = state.currentMessages.lastOrNull { it.senderId == viewerId } ?: return null
     val otherReadAt = conversation.participants.filterNot { it.id == state.viewerId }
         .mapNotNull { it.lastReadAt }.maxOrNull() ?: return null
     return latestOutgoing.id.takeIf { latestOutgoing.orderingTimestamp <= otherReadAt }
@@ -81,7 +82,7 @@ private fun MessageHistoryEntry(
 ) {
     val message = state.currentMessages[index]
     val previous = state.currentMessages.getOrNull(index - 1)
-    val isMine = message.senderId == state.viewerId
+    val isMine = state.viewerId != null && message.senderId == state.viewerId
     val isLastInGroup = isLastInGroup(state, index)
     Column {
         if (previous == null || conversationLocalDayKey(previous.timestampMillis) !=
@@ -105,8 +106,9 @@ private fun MessageHistoryEntry(
                 onReport = { viewModel.report(message.id) },
                 onToggleVisibility = { viewModel.toggleReportedMessageVisibility(message.id) },
                 onEdit = { viewModel.edit(message.id) },
-                onViewSenderProfile = { onViewProfile(message.senderId.value) },
-                editingDisabled = state.isSending || state.editState is MessageEditState.Saving
+                onViewSenderProfile = { message.senderId?.let { onViewProfile(it.value) } },
+                editingDisabled = state.isSelectedConversationReadOnly || state.isSending ||
+                    state.editState is MessageEditState.Saving
             )
         )
     }
