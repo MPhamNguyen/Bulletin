@@ -27,8 +27,7 @@ class ListingsActiveListingsCountProviderTest {
             createTestListing("item-1", targetSellerId, ListingStatus.AVAILABLE),
             createTestListing("item-2", targetSellerId, ListingStatus.AVAILABLE),
             createTestListing("item-3", targetSellerId, ListingStatus.SOLD),
-            createTestListing("item-4", targetSellerId, ListingStatus.ARCHIVED),
-            createTestListing("item-5", targetSellerId, ListingStatus.PENDING),
+            createTestListing("item-4", targetSellerId, ListingStatus.UNKNOWN),
             createTestListing("item-6", otherSellerId, ListingStatus.AVAILABLE)
         )
         val repository = FakeListingsRepository(listings)

@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.ListingBookmarksPageCu
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceAttributeFormatter
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListingFilterOptions
@@ -76,7 +77,7 @@ class MarketplaceProfileBookmarkedListingsProvider(
         photos = photos,
         sellerReputationScore = sellerReputationScore,
         buyerId = buyerId,
-        isSold = isSold,
+        isSold = status == MarketplaceListingStatus.SOLD,
         createdAtMillis = createdAtMillis,
         attributes = MarketplaceAttributeFormatter.linesFor(category, attributes)
             .map { ProfileListingAttribute(it.label, it.value) }

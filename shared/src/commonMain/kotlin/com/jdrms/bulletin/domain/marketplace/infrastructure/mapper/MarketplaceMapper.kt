@@ -5,6 +5,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceItemDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
@@ -51,6 +52,8 @@ object MarketplaceMapper {
         val category = runCatching { MarketplaceCategory.valueOf(dto.category.uppercase()) }
             .getOrDefault(MarketplaceCategory.OTHER)
         val score = (reputationScore ?: dto.reputationScore)?.coerceIn(0.0, 5.0)
+        val status = runCatching { MarketplaceListingStatus.valueOf(dto.status.uppercase()) }
+            .getOrDefault(MarketplaceListingStatus.UNKNOWN)
         return Listing(
             id = MarketplaceItemId(dto.id),
             sellerId = dto.sellerId,
@@ -61,8 +64,7 @@ object MarketplaceMapper {
             price = MarketplacePrice(dto.price.coerceAtLeast(0.0)),
             category = category,
             condition = dto.condition,
-            status = dto.status,
-            isSold = dto.status.equals("SOLD", ignoreCase = true),
+            status = status,
             photos = dto.photos,
             sellerReputationScore = score,
             isBookmarked = isBookmarked,
@@ -82,7 +84,7 @@ object MarketplaceMapper {
             price = domain.price.amount,
             category = domain.category.name,
             condition = domain.condition,
-            status = domain.status,
+            status = domain.status.name,
             photos = domain.photos,
             reputationScore = domain.sellerReputationScore,
             createdAtMillis = domain.createdAtMillis,

@@ -51,7 +51,7 @@ class ListingsInfrastructureTest {
                 name = "Desk Lamp",
                 userId = "seller-42",
                 price = 18.5,
-                isSold = true
+                status = ListingStatus.SOLD.name
             )
         )
 
@@ -59,38 +59,18 @@ class ListingsInfrastructureTest {
     }
 
     @Test
-    fun preservesPendingAndArchivedSupabaseStatusesWhenNotSold() {
-        val statuses = listOf(ListingStatus.PENDING, ListingStatus.ARCHIVED)
-
-        statuses.forEach { status ->
-            val listing = SupabaseListingMapper.toDomain(
-                SupabaseListingDto(
-                    id = "listing-${status.name.lowercase()}",
-                    name = "Desk Lamp",
-                    userId = "seller-42",
-                    price = 18.5,
-                    status = status.name.lowercase()
-                )
-            )
-
-            assertEquals(status, listing?.status)
-        }
-    }
-
-    @Test
-    fun soldFlagOverridesSupabaseStatus() {
+    fun unknownSupabaseStatusMapsToUnknown() {
         val listing = SupabaseListingMapper.toDomain(
             SupabaseListingDto(
-                id = "listing-sold",
+                id = "listing-future-status",
                 name = "Desk Lamp",
                 userId = "seller-42",
                 price = 18.5,
-                status = ListingStatus.PENDING.name,
-                isSold = true
+                status = "FUTURE_STATUS"
             )
         )
 
-        assertEquals(ListingStatus.SOLD, listing?.status)
+        assertEquals(ListingStatus.UNKNOWN, listing?.status)
     }
 
     @Test
@@ -138,6 +118,6 @@ class ListingsInfrastructureTest {
         assertEquals("ELECTRONICS", dto.category)
         assertEquals("LIKE_NEW", dto.condition)
         assertEquals(18.5, dto.price)
-        assertEquals(false, dto.isSold)
+        assertEquals(ListingStatus.AVAILABLE.name, dto.status)
     }
 }

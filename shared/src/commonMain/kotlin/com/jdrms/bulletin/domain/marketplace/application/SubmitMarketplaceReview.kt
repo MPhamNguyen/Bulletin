@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.marketplace.application
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReview
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceReviewId
 import com.jdrms.bulletin.domain.marketplace.domain.model.ReviewRequestStatus
@@ -55,7 +56,7 @@ class SubmitMarketplaceReview(
         reviewerId: String,
         score: Int
     ): String? = when {
-        !listing.isSold -> "Reviews are available after a listing is sold."
+        listing.status != MarketplaceListingStatus.SOLD -> "Reviews are available after a listing is sold."
         buyerId != reviewerId || listing.buyerId != reviewerId -> "Only the buyer can review this seller."
         listing.sellerId != sellerId -> "The listing's seller has changed."
         score !in 1..5 -> "Choose a rating from 1 to 5 stars."
@@ -69,7 +70,7 @@ class SubmitMarketplaceReview(
         comment: String
     ): Result<Unit> {
         val eligibilityError = when {
-            !listing.isSold -> "Reviews are available after a listing is sold."
+            listing.status != MarketplaceListingStatus.SOLD -> "Reviews are available after a listing is sold."
             listing.buyerId != reviewerId -> "Only the buyer can review this seller."
             score !in 1..5 -> "Choose a rating from 1 to 5 stars."
             else -> null

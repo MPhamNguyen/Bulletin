@@ -346,6 +346,22 @@ class ListingsDomainTest {
         assertEquals(dto.images, backToDto.images)
     }
 
+    @Test
+    fun unknownListingStatusMapsToUnknown() {
+        val dto = ListingDto(
+            id = "future-status",
+            sellerId = "seller-1",
+            sellerName = "Student Seller",
+            title = "Desk Chair",
+            description = "Mesh back",
+            price = 45.0,
+            category = "FURNITURE",
+            status = "FUTURE_STATUS"
+        )
+
+        assertEquals(ListingStatus.UNKNOWN, ListingMapper.toDomain(dto).status)
+    }
+
     private fun testListing(sellerId: SellerId): Listing {
         return Listing(
             id = ListingId("list_123"),

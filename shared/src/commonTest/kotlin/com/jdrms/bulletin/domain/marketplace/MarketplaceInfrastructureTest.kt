@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.marketplace
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCondition
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.MarketplaceListingDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceImageDto
 import com.jdrms.bulletin.domain.marketplace.infrastructure.dto.SupabaseMarketplaceListingDto
@@ -77,6 +78,7 @@ class MarketplaceInfrastructureTest {
                 condition = "GOOD",
                 price = 45.0,
                 description = "Hardcover Edition",
+                status = "SOLD",
                 createdAt = "2026-09-21T12:00:00Z"
             ),
             reputationScore = 4.5
@@ -89,6 +91,23 @@ class MarketplaceInfrastructureTest {
         assertEquals(false, listing?.isBookmarked)
         assertEquals(4.5, listing?.sellerReputationScore)
         assertEquals("GOOD", listing?.condition)
+        assertEquals(MarketplaceListingStatus.SOLD, listing?.status)
+    }
+
+    @Test
+    fun unknownSupabaseListingStatusMapsToUnknown() {
+        val listing = SupabaseMarketplaceListingMapper.toListing(
+            dto = SupabaseMarketplaceListingDto(
+                id = "listing-future-status",
+                name = "Desk",
+                userId = "seller",
+                price = 20.0,
+                status = "FUTURE_STATUS"
+            ),
+            reputationScore = null
+        )
+
+        assertEquals(MarketplaceListingStatus.UNKNOWN, listing?.status)
     }
 
     @Test
@@ -183,6 +202,7 @@ class MarketplaceInfrastructureTest {
         assertEquals("LIKE_NEW", domain.condition)
         assertEquals(4.9, domain.sellerReputationScore)
         assertEquals(true, domain.isBookmarked)
+        assertEquals(MarketplaceListingStatus.AVAILABLE, domain.status)
         assertEquals(1, domain.photos.size)
 
         val backToDto = MarketplaceMapper.toListingDto(domain)
@@ -191,6 +211,21 @@ class MarketplaceInfrastructureTest {
         assertEquals(dto.price, backToDto.price)
         assertEquals(dto.category, backToDto.category)
         assertEquals(dto.reputationScore, backToDto.reputationScore)
+    }
+
+    @Test
+    fun unknownMarketplaceDtoStatusMapsToUnknown() {
+        val listing = MarketplaceMapper.toListingDomain(
+            MarketplaceListingDto(
+                id = "future-status",
+                sellerId = "seller",
+                title = "Desk",
+                price = 20.0,
+                status = "FUTURE_STATUS"
+            )
+        )
+
+        assertEquals(MarketplaceListingStatus.UNKNOWN, listing.status)
     }
 
     @Test
