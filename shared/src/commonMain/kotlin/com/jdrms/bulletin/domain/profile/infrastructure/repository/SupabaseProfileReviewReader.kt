@@ -34,13 +34,15 @@ internal class SupabaseProfileReviewReader(private val supabase: SupabaseClient)
     private suspend fun resolveReviewers(rows: List<ReviewDto>): List<StudentReview> {
         if (rows.isEmpty()) return emptyList()
         val profiles = rows.mapNotNull { it.reviewerId }.distinct().chunked(PROFILE_BATCH_SIZE).flatMap { ids ->
-            supabase.from(SupabaseProfileRepository.PROFILES_TABLE).select(Columns.raw("id,full_name")) {
+            supabase.from(SupabaseProfileRepository.PROFILES_TABLE).select(Columns.raw("id,full_name,avatar_url")) {
                 filter { isIn("id", ids) }
             }.decodeList<PublicProfileIdentityDto>()
         }.associateBy { it.id }
         return rows.map { review ->
-            val name = review.reviewerId?.let(profiles::get)?.fullName
-            ReviewMapper.toDomain(review.copy(reviewerName = name))
+            val profile = review.reviewerId?.let(profiles::get)
+            ReviewMapper.toDomain(review.copy(reviewerName = profile?.fullName)).copy(
+                reviewerAvatarUrl = profile?.avatarUrl
+            )
         }
     }
 
