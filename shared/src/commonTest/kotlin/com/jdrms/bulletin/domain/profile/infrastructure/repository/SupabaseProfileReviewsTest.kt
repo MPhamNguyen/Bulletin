@@ -13,7 +13,7 @@ class SupabaseProfileReviewsTest {
         val rows = listOf(reviewRow(), reviewRow("review-2", SECOND_REVIEWER_ID), reviewRow("review-3"))
         val profiles = listOf(
             PublicProfileIdentityDto(SECOND_REVIEWER_ID, "Second Buyer"),
-            PublicProfileIdentityDto(FIRST_REVIEWER_ID, "  Campus Buyer  ")
+            PublicProfileIdentityDto(FIRST_REVIEWER_ID, "  Campus Buyer  ", "https://example.com/avatar.jpg")
         )
         val fixture = ProfileReviewRepositoryFixture(rows, profiles)
         try {
@@ -22,6 +22,7 @@ class SupabaseProfileReviewsTest {
                 listOf("Campus Buyer", "Second Buyer", "Campus Buyer"),
                 reputation.reviews.map { it.reviewerName }
             )
+            assertEquals("https://example.com/avatar.jpg", reputation.reviews.first().reviewerAvatarUrl)
             assertEquals(3, reputation.totalReviews)
             assertEquals(5.0, reputation.averageRating)
             assertEquals(rows.map { it.id }, reputation.reviews.map { it.id.value })
@@ -29,7 +30,7 @@ class SupabaseProfileReviewsTest {
             assertEquals(listOf("/rest/v1/reviews", "/rest/v1/profiles"), fixture.requests.map { it.url.encodedPath })
             assertEquals("eq.${revieweeId.value}", fixture.requests.first().url.parameters["reviewee_id"])
             val query = fixture.requests.last().url.parameters
-            assertEquals("id,full_name", query["select"])
+            assertEquals("id,full_name,avatar_url", query["select"])
             assertEquals("in.($FIRST_REVIEWER_ID,$SECOND_REVIEWER_ID)", query["id"])
         } finally {
             fixture.client.close()
