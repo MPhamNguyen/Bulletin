@@ -21,10 +21,14 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
  * Posts one notification per conversation (tag = conversation ID) so a newer message replaces the previous one.
  * Content is redacted on the lock screen. Nothing is posted without permission or while the channel is blocked.
  */
-internal class AndroidIncomingMessageNotifier(context: Context) : IncomingMessageNotifier {
+internal class AndroidIncomingMessageNotifier(
+    context: Context,
+    private val notificationsEnabled: () -> Boolean = { true }
+) : IncomingMessageNotifier {
     private val context = context.applicationContext
 
     override fun show(alert: IncomingMessageAlert) {
+        if (!notificationsEnabled()) return
         ensureChannel()
         val manager = NotificationManagerCompat.from(context)
         if (!canPost(manager)) return

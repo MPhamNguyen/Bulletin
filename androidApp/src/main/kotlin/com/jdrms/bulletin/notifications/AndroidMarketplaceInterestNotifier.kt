@@ -17,10 +17,14 @@ import com.jdrms.bulletin.R
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestAlert
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceInterestNotifier
 
-internal class AndroidMarketplaceInterestNotifier(context: Context) : MarketplaceInterestNotifier {
+internal class AndroidMarketplaceInterestNotifier(
+    context: Context,
+    private val notificationsEnabled: () -> Boolean = { true }
+) : MarketplaceInterestNotifier {
     private val context = context.applicationContext
 
     override fun show(alert: MarketplaceInterestAlert) {
+        if (!notificationsEnabled()) return
         ensureChannel()
         val manager = NotificationManagerCompat.from(context)
         if (!canPost(manager)) {

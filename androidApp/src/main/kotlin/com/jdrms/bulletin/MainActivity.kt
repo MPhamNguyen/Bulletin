@@ -10,14 +10,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.jdrms.bulletin.app.App
+import com.jdrms.bulletin.app.notifications.LocalNotificationPreferences
 import com.jdrms.bulletin.notifications.MarketplaceInterestNotificationIntents
 import com.jdrms.bulletin.notifications.MessageNotificationIntents
+import com.jdrms.bulletin.notifications.NotificationSettingsHost
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -37,7 +40,11 @@ class MainActivity : ComponentActivity() {
         bulletin.container.startMessageNotifications(bulletin.messageNotifier)
         bulletin.container.startMarketplaceInterestNotifications()
         requestNotificationPermissionAfterSignIn()
-        setContent { App(appContainer = bulletin.container) }
+        setContent {
+            CompositionLocalProvider(LocalNotificationPreferences provides bulletin.notificationPreferences) {
+                NotificationSettingsHost { App(appContainer = bulletin.container) }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
