@@ -39,7 +39,8 @@ fun MessagesScreen(
     viewModel: MessagesViewModel,
     onViewProfile: (String) -> Unit = {},
     onConversationVisibilityChanged: (Boolean) -> Unit = {},
-    onReportUser: (String) -> Unit = {}
+    onReportUser: (String) -> Unit = {},
+    onViewListing: ((String) -> Unit)? = null
 ) {
     DisposableEffect(viewModel) {
         viewModel.onDestinationActiveChanged(true)
@@ -89,7 +90,7 @@ fun MessagesScreen(
                         viewModel,
                         conversation,
                         Modifier.fillMaxSize(),
-                        ConversationNavigation(onViewProfile, onReportUser)
+                        ConversationNavigation(onViewProfile, onReportUser, onViewListing)
                     )
                 }
             }
@@ -112,7 +113,8 @@ fun MessagesScreen(
 }
 
 internal fun conversationTitle(conversation: Conversation, viewerId: SenderId?): String {
-    val otherNames = viewerId?.let(conversation::otherParticipantNames).orEmpty()
+    if (conversation.isReadOnly) return Message.MISSING_SENDER_NAME
+    val otherNames = viewerId?.takeIf(conversation::includes)?.let(conversation::otherParticipantNames).orEmpty()
     return otherNames.joinToString(", ").ifBlank { "Conversation" }
 }
 

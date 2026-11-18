@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages.presentation
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationReadOnlyException
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.service.MessageTimeline
@@ -40,6 +41,9 @@ internal class MessageSendingActions(
             when (sent) {
                 is Result.Error -> if (sent.isMessagingIdentityUnavailable) {
                     showFailure(sent)
+                } else if (sent.exception is ConversationReadOnlyException) {
+                    finish(conversationId, sent.exception.message)
+                    inbox.refresh()
                 } else {
                     finish(conversationId, "Unable to send message. Check your connection and try again.")
                 }

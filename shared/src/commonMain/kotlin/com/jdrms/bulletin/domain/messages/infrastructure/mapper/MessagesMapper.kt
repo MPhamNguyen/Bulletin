@@ -16,8 +16,8 @@ object MessagesMapper {
         return Message(
             id = MessageId(dto.id),
             conversationId = ConversationId(dto.conversationId),
-            senderId = SenderId(dto.senderId),
-            senderName = dto.senderName,
+            senderId = dto.senderId?.let(::SenderId),
+            senderName = if (dto.senderId == null) Message.MISSING_SENDER_NAME else dto.senderName,
             content = dto.content,
             timestampMillis = dto.timestampMillis,
             isReported = dto.isReported,
@@ -31,8 +31,8 @@ object MessagesMapper {
         return MessageDto(
             id = domain.id.value,
             conversationId = domain.conversationId.value,
-            senderId = domain.senderId.value,
-            senderName = domain.senderName,
+            senderId = domain.senderId?.value,
+            senderName = domain.displaySenderName,
             content = domain.content,
             timestampMillis = domain.timestampMillis,
             isReported = domain.isReported,

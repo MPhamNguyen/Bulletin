@@ -17,8 +17,9 @@ internal class MessageReportActions(
     private val showFailure: (Result.Error) -> Unit
 ) {
     fun begin(messageId: MessageId) {
+        val viewerId = inbox.state.value.viewerId ?: return
         val message = state.value.currentMessages.firstOrNull { it.id == messageId } ?: return
-        if (message.isReported || message.senderId == state.value.viewerId) return
+        if (message.isReported || message.senderId == viewerId) return
         state.update { it.copy(messageReportForm = MessageReportFormState(messageId), errorMessage = null) }
     }
 

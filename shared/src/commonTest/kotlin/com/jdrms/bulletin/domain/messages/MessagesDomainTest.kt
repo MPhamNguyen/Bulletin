@@ -69,7 +69,13 @@ class MessagesDomainTest {
         val senderId = SenderId("student_1")
         val repo = InMemoryMessagesRepository(
             initialConversations = listOf(
-                ConversationDto("conv_1", listOf(ConversationParticipantDto(senderId.value, "Dominic")))
+                ConversationDto(
+                    "conv_1",
+                    listOf(
+                        ConversationParticipantDto(senderId.value, "Dominic"),
+                        ConversationParticipantDto("recipient-id", "Recipient")
+                    )
+                )
             )
         )
         val convId = ConversationId("conv_1")

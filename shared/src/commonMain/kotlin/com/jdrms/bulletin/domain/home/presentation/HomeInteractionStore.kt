@@ -38,6 +38,7 @@ internal class HomeInteractionStore(private val canSave: Boolean, private val ca
                 listingId = listingId,
                 pendingEffects = if (clearEffects) emptyList() else it.pendingEffects,
                 accountNotice = if (viewer == null) HomeInteractionError.NOT_SIGNED_IN else null,
+                signedIn = viewer != null,
                 saveAvailable = listingId != null && viewer != null && canSave,
                 messageAvailable = listingId != null && viewer != null && canMessage
             )

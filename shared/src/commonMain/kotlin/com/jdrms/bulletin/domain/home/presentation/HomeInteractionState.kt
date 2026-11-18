@@ -34,13 +34,14 @@ data class HomeInteractionState(
     val departure: HomeDeparture? = null,
     val pendingEffects: List<HomeEffect> = emptyList(),
     val accountNotice: HomeInteractionError? = HomeInteractionError.NOT_SIGNED_IN,
+    val signedIn: Boolean = false,
     val saveAvailable: Boolean = false,
     val messageAvailable: Boolean = false
 ) {
     val availableActions get() = card.availableActions(
         HomeActionContext(
             hasListing = listingId != null,
-            signedIn = accountNotice != HomeInteractionError.NOT_SIGNED_IN,
+            signedIn = signedIn,
             canSave = saveAvailable,
             canMessage = messageAvailable
         )

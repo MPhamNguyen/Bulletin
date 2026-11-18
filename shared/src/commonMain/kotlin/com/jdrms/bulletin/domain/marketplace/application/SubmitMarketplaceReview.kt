@@ -29,7 +29,7 @@ class SubmitMarketplaceReview(
                 IllegalStateException("Couldn't verify the listing's current status.", result.exception)
             )
         }
-        reviewEligibilityError(currentListing, buyerId, sellerId, reviewerId, score, comment)?.let { error ->
+        reviewEligibilityError(currentListing, buyerId, sellerId, reviewerId, score)?.let { error ->
             return Result.Error(IllegalArgumentException(error))
         }
         if (repository.hasReviewForListing(canonicalListingId, reviewerId)) {
@@ -54,13 +54,11 @@ class SubmitMarketplaceReview(
         buyerId: String?,
         sellerId: String,
         reviewerId: String,
-        score: Int,
-        comment: String
+        score: Int
     ): String? = when {
         listing.status != MarketplaceListingStatus.SOLD -> "Reviews are available after a listing is sold."
         buyerId != reviewerId || listing.buyerId != reviewerId -> "Only the buyer can review this seller."
         listing.sellerId != sellerId -> "The listing's seller has changed."
-        comment.isBlank() -> "Review comment cannot be empty."
         score !in 1..5 -> "Choose a rating from 1 to 5 stars."
         else -> null
     }

@@ -64,11 +64,11 @@ class ProfileMarketplaceSellerNameProvider(
 
     private suspend fun mapReviews(reviews: List<StudentReview>): List<MarketplaceSellerReview> =
         reviews.map { review ->
-            val reviewer = when (
-                val result = profileRepository.getPublicIdentity(UserId(review.reviewerId))
-            ) {
-                is com.jdrms.bulletin.core.common.Result.Success -> result.data
-                is com.jdrms.bulletin.core.common.Result.Error -> null
+            val reviewer = review.reviewerId?.let { reviewerId ->
+                when (val result = profileRepository.getPublicIdentity(UserId(reviewerId))) {
+                    is com.jdrms.bulletin.core.common.Result.Success -> result.data
+                    is com.jdrms.bulletin.core.common.Result.Error -> null
+                }
             }
             MarketplaceSellerReview(
                 id = review.id.value,
@@ -81,16 +81,18 @@ class ProfileMarketplaceSellerNameProvider(
             )
         }
 
-    private fun resolveReviewerName(review: StudentReview, profileName: String?): String =
-        profileName?.takeUnless(::isPlaceholderReviewerName)?.takeIf(String::isNotBlank)
-            ?: review.reviewerName.takeUnless(::isPlaceholderReviewerName)?.takeIf(String::isNotBlank)
+    private fun resolveReviewerName(review: StudentReview, profileName: String?): String {
+        if (review.reviewerId == null) return FALLBACK_REVIEWER_NAME
+        return profileName?.trim()?.takeUnless(::isPlaceholderReviewerName)?.takeIf(String::isNotBlank)
+            ?: review.reviewerName.trim().takeUnless(::isPlaceholderReviewerName)?.takeIf(String::isNotBlank)
             ?: FALLBACK_REVIEWER_NAME
+    }
 
     private fun isPlaceholderReviewerName(name: String): Boolean = name in PLACEHOLDER_REVIEWER_NAMES
 
     private companion object {
         const val PROFILE_PREVIEW_REVIEW_COUNT = 3
-        const val FALLBACK_REVIEWER_NAME = "Reviewer"
-        val PLACEHOLDER_REVIEWER_NAMES = setOf("Student", FALLBACK_REVIEWER_NAME)
+        const val FALLBACK_REVIEWER_NAME = "Student"
+        val PLACEHOLDER_REVIEWER_NAMES = setOf("Reviewer", FALLBACK_REVIEWER_NAME)
     }
 }

@@ -47,6 +47,10 @@ Students can discover listings, buy or sell items, message other students, build
 
 ### Messaging behavior
 
+- **Deleted participants:** Message readers accept a null `sender_id` and display **User Not Found**
+  with an initials avatar and no profile link. The remaining participant keeps access to the conversation
+  history. Conversations with a removed participant are read-only: sending and editing are disabled,
+  while message reporting remains available.
 - **Drafts:** Each conversation keeps its own draft in memory while the messaging ViewModel is alive.
   Successful sends clear the submitted draft; failed sends retain it. Signing out, switching accounts,
   or restarting the app clears all drafts.
@@ -154,6 +158,8 @@ If Supabase is not configured, the normal Android runtime **fails to initialize*
 > These bindings describe what the code does, not that every flow has been verified against a deployed Supabase project.
 
 Profile photo removal clears the saved avatar URL. The uploaded image remains in Storage until replaced by a later upload.
+
+Review readers accept null `reviewer_id` and `listing_id` references after hard deletion. Profile and marketplace seller reviews display **Student** with no author avatar when the reviewer is deleted, and retained reviews continue contributing to reputation. New listing reviews may contain only a rating; the sold-listing buyer, rating range and duplicate-review checks still apply. New profile-only reviews require comment text, and new submissions require a reviewer identity. The `was_listing_review` flag preserves rating-only listing reviews after their listing disappears, but that historical flag alone cannot authorize a new rating-only submission without a listing reference. This application support does not schedule account deletion or change database policies.
 
 ---
 

@@ -248,7 +248,7 @@ internal class FakeSupabaseMessagesTable(
     private fun toMessageDto(message: Message): SupabaseMessageDto = SupabaseMessageDto(
         id = message.id.value,
         conversationId = message.conversationId.value,
-        senderId = message.senderId.value,
+        senderId = message.senderId?.value,
         content = message.content,
         createdAt = message.orderingTimestamp.toString(),
         editedAt = message.editedAt?.toString(),

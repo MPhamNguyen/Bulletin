@@ -9,12 +9,12 @@ import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessException
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationReadOnlyException
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEditException
-import com.jdrms.bulletin.domain.messages.domain.model.MessageEditFailure
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
@@ -116,15 +116,9 @@ class SupabaseMessagesRepository internal constructor(
         messagesTable.markConversationRead(conversationId.value) ?: throw ConversationAccessException()
     }
 
-    override suspend fun sendMessage(message: Message): Result<Message> = repositoryCall {
-        val authenticatedSenderId = requireAuthenticatedUser(message.senderId)
-        requireParticipant(authenticatedSenderId, message.conversationId)
-        messagesTable.insertMessage(SupabaseMessagesMapper.toInsertDto(message))
-        val stored = checkNotNull(messagesTable.findMessage(message.conversationId.value, message.id.value)) {
-            "Inserted message was not returned"
-        }
-        SupabaseMessagesMapper.toMessage(stored)
-    }
+    private val writer = SupabaseMessageWriter(messagesTable, ::requireAuthenticatedUser)
+
+    override suspend fun sendMessage(message: Message): Result<Message> = repositoryCall { writer.send(message) }
 
     override suspend fun reportMessage(
         userId: SenderId,
@@ -141,24 +135,8 @@ class SupabaseMessagesRepository internal constructor(
         submitReport(messageId, authenticatedReporterId, reason, description)
     }
 
-    override suspend fun editMessage(userId: SenderId, edit: MessageEdit): Result<Message> = repositoryCall {
-        requireAuthenticatedUser(userId)
-        try {
-            SupabaseMessagesMapper.toMessage(messagesTable.editMessage(edit))
-        } catch (exception: PostgrestRestException) {
-            val failure = when (exception.code) {
-                "BM001" -> MessageEditFailure.UNAVAILABLE
-                "BM002" -> MessageEditFailure.EXPIRED
-                "BM003" -> MessageEditFailure.REPORTED
-                "BM004" -> MessageEditFailure.CONFLICT
-                "BM005" -> MessageEditFailure.INVALID
-                "42501" -> MessageEditFailure.UNAVAILABLE
-                else -> null
-            }
-            if (failure != null) throw MessageEditException(failure)
-            throw exception
-        }
-    }
+    override suspend fun editMessage(userId: SenderId, edit: MessageEdit): Result<Message> =
+        repositoryCall { writer.edit(userId, edit) }
 
     private suspend fun submitReport(
         messageId: MessageId,
@@ -216,6 +194,8 @@ class SupabaseMessagesRepository internal constructor(
         } catch (exception: ConversationAccessException) {
             Result.Error(exception)
         } catch (exception: MessageReportAlreadySubmittedException) {
+            Result.Error(exception)
+        } catch (exception: ConversationReadOnlyException) {
             Result.Error(exception)
         } catch (exception: MessageEditException) {
             Result.Error(exception)

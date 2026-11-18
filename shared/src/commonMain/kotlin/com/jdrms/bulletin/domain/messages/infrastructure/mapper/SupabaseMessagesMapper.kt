@@ -76,8 +76,12 @@ object SupabaseMessagesMapper {
         return Message(
             id = MessageId(dto.id),
             conversationId = ConversationId(dto.conversationId),
-            senderId = SenderId(dto.senderId),
-            senderName = dto.senderProfile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
+            senderId = dto.senderId?.let(::SenderId),
+            senderName = if (dto.senderId == null) {
+                Message.MISSING_SENDER_NAME
+            } else {
+                dto.senderProfile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME
+            },
             content = dto.content,
             timestampMillis = createdAt.toEpochMilliseconds(),
             isReported = dto.reports.isNotEmpty(),
