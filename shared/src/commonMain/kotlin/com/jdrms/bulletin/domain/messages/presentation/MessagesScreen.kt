@@ -39,7 +39,8 @@ fun MessagesScreen(
     viewModel: MessagesViewModel,
     onViewProfile: (String) -> Unit = {},
     onConversationVisibilityChanged: (Boolean) -> Unit = {},
-    onReportUser: (String) -> Unit = {}
+    onReportUser: (String) -> Unit = {},
+    onViewListing: ((String) -> Unit)? = null
 ) {
     DisposableEffect(viewModel) {
         viewModel.onDestinationActiveChanged(true)
@@ -89,7 +90,7 @@ fun MessagesScreen(
                         viewModel,
                         conversation,
                         Modifier.fillMaxSize(),
-                        ConversationNavigation(onViewProfile, onReportUser)
+                        ConversationNavigation(onViewProfile, onReportUser, onViewListing)
                     )
                 }
             }
