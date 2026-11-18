@@ -58,7 +58,7 @@ class MarketplaceReviewTest {
 
     @Test
     fun reviewRequestAllowsARatingWithoutAComment() = runTest {
-        val repository = repositoryWithListing(status = "SOLD", buyerId = "buyer-1")
+        val repository = repositoryWithListing(status = MarketplaceListingStatus.SOLD, buyerId = "buyer-1")
         val useCase = SubmitMarketplaceReview(repository)
         val result = useCase.submitForSoldListing(
             listingId = "listing-1",
