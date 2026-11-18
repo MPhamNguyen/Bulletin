@@ -57,7 +57,7 @@ class ListingFormLayoutDeviceTest(private val width: Int, private val fontScale:
         val actions = ListingAttributeDraftActions(state)
         renderForm(state, actions)
         savePreview("top")
-        compose.onNodeWithText("Continue").assertIsDisplayed()
+        compose.onNodeWithText("Next").assertIsDisplayed()
         compose.onNodeWithText("Apple").performScrollTo().assertIsEnabled()
         compose.onNodeWithText("4 GB").performScrollTo().assertIsNotEnabled()
             .assertHeightIsEqualTo(BulletinSpacing.control).performTouchInput { click() }
@@ -76,7 +76,7 @@ class ListingFormLayoutDeviceTest(private val width: Int, private val fontScale:
         compose.onNodeWithText("Game console").performScrollTo().performClick()
         compose.onNodeWithText("16 GB").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithText("2 TB+").performScrollTo().assertIsEnabled().assertIsDisplayed()
-        compose.onNodeWithText("Continue").assertIsDisplayed()
+        compose.onNodeWithText("Next").assertIsDisplayed()
     }
 
     private fun renderForm(state: MutableStateFlow<ListingsUiState>, actions: ListingAttributeDraftActions) {
