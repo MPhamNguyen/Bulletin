@@ -40,7 +40,7 @@ fun MessagesScreen(
     onViewProfile: (String) -> Unit = {},
     onConversationVisibilityChanged: (Boolean) -> Unit = {},
     onReportUser: (String) -> Unit = {},
-    onViewListing: (String) -> Unit = {}
+    onViewListing: ((String) -> Unit)? = null
 ) {
     DisposableEffect(viewModel) {
         viewModel.onDestinationActiveChanged(true)

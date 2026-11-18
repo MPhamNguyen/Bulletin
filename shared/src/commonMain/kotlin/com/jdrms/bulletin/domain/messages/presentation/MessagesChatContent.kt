@@ -37,7 +37,9 @@ internal fun MessagesChatContent(
         conversation.listingId?.let { listingId ->
             ConversationListingCard(
                 state.listingPreviews[listingId.value],
-                onClick = { navigation.onViewListing(listingId.value) },
+                onClick = navigation.onViewListing?.let { onViewListing ->
+                    { onViewListing(listingId.value) }
+                },
                 modifier = Modifier.padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s)
             )
         }

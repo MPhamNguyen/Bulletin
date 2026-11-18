@@ -21,16 +21,22 @@ import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
 @Composable
 internal fun ConversationListingCard(
     preview: ConversationListingPreview?,
-    onClick: () -> Unit = {},
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(
-                role = Role.Button,
-                onClickLabel = "View listing",
-                onClick = onClick
+            .then(
+                if (preview != null && onClick != null) {
+                    Modifier.clickable(
+                        role = Role.Button,
+                        onClickLabel = "View listing",
+                        onClick = onClick
+                    )
+                } else {
+                    Modifier
+                }
             ),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
