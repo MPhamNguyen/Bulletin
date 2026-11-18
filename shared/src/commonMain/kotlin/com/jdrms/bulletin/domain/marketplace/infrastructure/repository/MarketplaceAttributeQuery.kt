@@ -81,6 +81,7 @@ private fun MarketplaceAttributeColumns.textColumn(
     else -> "attributes->>$key"
 }
 
+// Keep this JSONB expression aligned with the marketplace_numeric_attribute_indexes migration.
 private fun numberColumn(key: String): String = "attributes->$key"
 
 private fun PostgrestFilterBuilder.applyRange(column: String, range: MarketplaceCapacityRange) {
