@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 
 class ListingAttributesPostgrestTest {
     @Test
-    fun realClientIgnoresGeneratedColumnsAndReadsAttributesFromWildcardSelect() = runTest {
+    fun realClientIgnoresUnknownColumnsAndReadsAttributesFromWildcardSelect() = runTest {
         val client = createSupabaseClient("https://attributes-test.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine { request ->
@@ -20,7 +20,7 @@ class ListingAttributesPostgrestTest {
                 respond(
                     """[{"id":"listing-1","name":"Laptop","user_id":"seller-1","price":10,
                     "category":"ELECTRONICS","attributes":{"brand":"Framework"},
-                    "attr_brand_key":"framework","attr_ram_gb":null,"future_column":true}]""",
+                    "future_column":true}]""",
                     headers = headersOf("Content-Type", "application/json")
                 )
             }

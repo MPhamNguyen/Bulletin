@@ -34,9 +34,9 @@ class MarketplaceCapacityQueryTest {
         )
         val query = builder.params["and"].orEmpty().joinToString()
         assertEquals(2, Regex("or\\(").findAll(query).count())
-        assertTrue("attr_ram_gb.eq.16" in query)
-        assertTrue("attr_ram_gb.gte.128" in query)
-        assertTrue("attr_storage_gb.eq.512" in query)
-        assertTrue("attr_storage_gb.gte.2048" in query)
+        assertTrue("attributes->ram_gb.eq.16" in query)
+        assertTrue("attributes->ram_gb.gte.128" in query)
+        assertTrue("attributes->storage_gb.eq.512" in query)
+        assertTrue("attributes->storage_gb.gte.2048" in query)
     }
 }

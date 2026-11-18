@@ -18,6 +18,6 @@ class MarketplaceBrandSearchQueryTest {
 
         val disjunction = builder.params["or"].orEmpty().joinToString()
         assertTrue("name.fts.levi:*" in disjunction)
-        assertTrue("attr_brand_key.eq.levis" in disjunction)
+        assertTrue("listing_brand_key.eq.levis" in disjunction)
     }
 }

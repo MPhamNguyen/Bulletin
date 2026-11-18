@@ -27,10 +27,10 @@ class MarketplaceAttributeQueryTest {
             )
         )
         assertEquals(listOf("ilike.ELECTRONICS", "eq.ELECTRONICS"), builder.params["category"])
-        assertEquals(listOf("eq.laptop"), builder.params["attr_device_type"])
-        assertEquals(listOf("eq.h and m"), builder.params["attr_brand_key"])
-        assertEquals(listOf("gte.8", "lte.32"), builder.params["attr_ram_gb"])
-        assertEquals(listOf("gte.256"), builder.params["attr_storage_gb"])
+        assertEquals(listOf("eq.laptop"), builder.params["attributes->>device_type"])
+        assertEquals(listOf("eq.h and m"), builder.params["listing_brand_key"])
+        assertEquals(listOf("gte.8", "lte.32"), builder.params["attributes->ram_gb"])
+        assertEquals(listOf("gte.256"), builder.params["attributes->storage_gb"])
     }
 
     @Test
