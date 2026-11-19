@@ -31,12 +31,8 @@ internal fun ColumnScope.MarketplaceDetailPreview(item: MarketplaceItem, isBookm
         if (isBookmarked) Text("Saved", style = MaterialTheme.typography.labelMedium)
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    Text(item.sellerName, style = MaterialTheme.typography.titleMedium)
-    Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
-        Text("Loading seller details…", style = MaterialTheme.typography.bodySmall)
-        BulletinSkeletonBlock(Modifier.fillMaxWidth(0.6f).height(16.dp))
-        BulletinSkeletonBlock(Modifier.fillMaxWidth(0.4f).height(16.dp))
-    }
+    SellerInfoCardSkeleton(name = item.sellerName)
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     if (item.description.isNotBlank()) {
         Text("Description", style = MaterialTheme.typography.titleMedium)
         Text(item.description, style = MaterialTheme.typography.bodyMedium)
