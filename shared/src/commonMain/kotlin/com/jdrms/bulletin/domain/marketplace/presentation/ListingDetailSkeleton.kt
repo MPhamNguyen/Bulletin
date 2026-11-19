@@ -1,6 +1,5 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -8,12 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +17,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinSkeletonBlock
-import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 /**
@@ -44,7 +39,7 @@ internal fun ColumnScope.ListingDetailSkeleton() {
         SkeletonTitleRow()
         SkeletonBadgeRow()
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        SkeletonSellerCard()
+        SellerInfoCardSkeleton()
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         SkeletonTextLines(widths = DESCRIPTION_LINE_WIDTHS)
         SkeletonTextLines(widths = DETAIL_LINE_WIDTHS)
@@ -68,29 +63,6 @@ private fun SkeletonBadgeRow() {
     Row(horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
         BulletinSkeletonBlock(Modifier.width(88.dp).height(26.dp))
         BulletinSkeletonBlock(Modifier.width(72.dp).height(26.dp))
-    }
-}
-
-@Composable
-private fun SkeletonSellerCard() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier.padding(BulletinSpacing.l),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
-        ) {
-            BulletinSkeletonBlock(Modifier.size(84.dp), BulletinShapes.pill)
-            Column(verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
-                BulletinSkeletonBlock(Modifier.width(140.dp).height(18.dp))
-                BulletinSkeletonBlock(Modifier.width(110.dp).height(14.dp))
-                BulletinSkeletonBlock(Modifier.width(90.dp).height(14.dp))
-            }
-        }
     }
 }
 
