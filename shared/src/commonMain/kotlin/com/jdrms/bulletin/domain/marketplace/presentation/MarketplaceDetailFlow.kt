@@ -42,10 +42,11 @@ private fun MarketplaceDetailOverlay(
     ListingDetailsPage(
         state = MarketplaceDetailSheetState(
             listing = state.detail.listing,
+            preview = state.detail.preview,
             isLoading = state.detail.isLoading,
             errorMessage = state.detail.errorMessage,
             bookmarkErrorMessage = state.bookmarkErrorMessage,
-            isBookmarked = state.detail.listing?.let { it.id in state.bookmarkedItemIds } ?: false,
+            isBookmarked = (state.detail.listing?.id ?: state.detail.preview?.id) in state.bookmarkedItemIds,
             currentUserId = state.currentUserId,
             hasReview = state.detail.hasReview,
             isReviewDialogOpen = state.detail.isReviewDialogOpen,
