@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -120,7 +119,7 @@ internal fun MarketplaceCatalogContent(
             horizontalArrangement = Arrangement.spacedBy(CATALOG_GAP)
         ) {
             marketplaceCatalogHeader(state, headerActions)
-            marketplaceLoadingItem(state.isLoading && !state.isRefreshing)
+            marketplaceSkeletonItems(state.layoutPreference.columns, state.isLoading && !state.isRefreshing)
             marketplaceEmptyResultsItem(state)
             marketplaceListingItems(state, viewModel)
             marketplacePaginationItem(state)
@@ -155,15 +154,6 @@ internal fun MarketplaceCatalogContent(
     }
 }
 
-private fun LazyGridScope.marketplaceLoadingItem(isLoading: Boolean) {
-    if (!isLoading) return
-    fullWidthItem {
-        Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-    }
-}
-
 private fun LazyGridScope.marketplaceEmptyResultsItem(state: MarketplaceUiState) {
     if (state.items.isNotEmpty() || state.isLoading || state.errorMessage != null) return
     fullWidthItem {
@@ -194,7 +184,7 @@ private fun LazyGridScope.marketplacePaginationItem(state: MarketplaceUiState) {
     fullWidthItem(key = "marketplace-pagination-trigger") {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             if (state.isLoadingMore) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                MarketplaceItemCardSkeletonRow(state.layoutPreference.columns)
             }
         }
     }
