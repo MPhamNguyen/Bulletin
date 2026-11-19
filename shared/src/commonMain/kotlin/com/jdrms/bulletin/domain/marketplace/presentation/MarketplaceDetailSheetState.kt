@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
+import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
 data class MarketplaceDetailSheetState(
     val listing: Listing?,
@@ -12,7 +13,8 @@ data class MarketplaceDetailSheetState(
     val hasReview: Boolean,
     val isReviewDialogOpen: Boolean = false,
     val isSubmittingReview: Boolean = false,
-    val reviewErrorMessage: String? = null
+    val reviewErrorMessage: String? = null,
+    val preview: MarketplaceItem? = null
 )
 
 data class MarketplaceDetailSheetActions(

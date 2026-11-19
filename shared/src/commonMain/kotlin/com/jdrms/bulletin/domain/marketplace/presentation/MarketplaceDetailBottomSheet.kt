@@ -70,6 +70,10 @@ fun MarketplaceDetailBottomSheet(
             verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             when {
+                isLoading && state.preview != null -> MarketplaceDetailPreview(
+                    state.preview,
+                    state.isBookmarked
+                )
                 isLoading -> ListingDetailSkeleton()
 
                 errorMessage != null -> {

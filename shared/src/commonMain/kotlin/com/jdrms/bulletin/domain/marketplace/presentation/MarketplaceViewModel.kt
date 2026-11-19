@@ -3,7 +3,6 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
-import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.marketplace.application.LoadMarketplaceListingDetail
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
@@ -38,7 +37,12 @@ class MarketplaceViewModel(
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
-    private val loadListingDetailUseCase = LoadMarketplaceListingDetail(viewMarketplaceListing)
+    private val detailController = MarketplaceDetailController(
+        _uiState,
+        viewModelScope,
+        LoadMarketplaceListingDetail(viewMarketplaceListing),
+        currentUserIdProvider
+    )
     private val firstPageLoader = MarketplaceFirstPageLoader(
         _uiState,
         searchMarketplace,
@@ -64,7 +68,7 @@ class MarketplaceViewModel(
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
                 refreshListings()
-                _uiState.value.detail.listingId?.let(::loadListingDetail)
+                detailController.retry()
             }
         }
     }
@@ -187,54 +191,11 @@ class MarketplaceViewModel(
         }
     }
 
-    fun onListingClicked(listingId: String) {
-        _uiState.update {
-            it.copy(detail = MarketplaceDetailState(listingId = listingId, isLoading = true, isOpen = true))
-        }
-        loadListingDetail(listingId)
-    }
+    fun onListingClicked(listingId: String) = detailController.open(listingId)
 
-    fun retryLoadListingDetail() {
-        val listingId = _uiState.value.detail.listingId ?: return
-        _uiState.update {
-            it.copy(detail = it.detail.copy(isLoading = true, errorMessage = null))
-        }
-        loadListingDetail(listingId)
-    }
+    fun retryLoadListingDetail() = detailController.retry()
 
-    private fun loadListingDetail(listingId: String) {
-        val sellerIdHint = _uiState.value.items.firstOrNull { it.id.value == listingId }?.sellerId
-        viewModelScope.launch {
-            val currentUserId = currentUserIdProvider()
-            when (val result = loadListingDetailUseCase(listingId, currentUserId, sellerIdHint)) {
-                is Result.Success -> {
-                    val canonicalId = MarketplaceItemId(listingId)
-                    _uiState.update {
-                        it.copy(
-                            detail = it.detail.copy(
-                                listing = result.data.listing.copy(
-                                    id = canonicalId,
-                                    isBookmarked = canonicalId in it.bookmarkedItemIds
-                                ),
-                                isLoading = false,
-                                errorMessage = null,
-                                hasReview = result.data.hasReview
-                            ),
-                            currentUserId = currentUserId
-                        )
-                    }
-                }
-                is Result.Error -> _uiState.update {
-                    val message = result.exception.message ?: "Failed to load listing details."
-                    it.copy(detail = it.detail.copy(isLoading = false, errorMessage = message))
-                }
-            }
-        }
-    }
-
-    fun dismissListingDetail() {
-        _uiState.update { it.copy(detail = MarketplaceDetailState()) }
-    }
+    fun dismissListingDetail() = detailController.dismiss()
 
     fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) = bookmarkController.toggle(itemId, userId)
 
