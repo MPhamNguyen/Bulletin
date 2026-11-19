@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,14 +20,13 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinSkeletonBlock
 import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
-import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 /** Skeleton cards that fill the catalog grid while the first page of listings loads. */
 internal fun LazyGridScope.marketplaceSkeletonItems(columns: Int, isVisible: Boolean) {
     if (!isVisible) return
     items(items = List(columns * SKELETON_ROWS) { it }, key = { "marketplace-skeleton-$it" }) {
-        MarketplaceItemCardSkeleton(showDescription = columns == 1)
+        MarketplaceItemCardSkeleton()
     }
 }
 
@@ -38,34 +38,29 @@ internal fun MarketplaceItemCardSkeletonRow(columns: Int) {
         horizontalArrangement = Arrangement.spacedBy(CARD_GAP)
     ) {
         repeat(columns) {
-            Column(Modifier.weight(1f)) { MarketplaceItemCardSkeleton(showDescription = columns == 1) }
+            Column(Modifier.weight(1f)) { MarketplaceItemCardSkeleton() }
         }
     }
 }
 
-/** Mirrors [MarketplaceItemCard]: square photo, title and price, optional description, metadata. */
+/** Mirrors [MarketplaceItemCard]: square photo, title, price, divider, metadata. */
 @Composable
-internal fun MarketplaceItemCardSkeleton(showDescription: Boolean) {
+internal fun MarketplaceItemCardSkeleton() {
     Card(
         modifier = Modifier.fillMaxWidth().wrapContentHeight().clearAndSetSemantics { },
-        shape = BulletinShapes.listingCard,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = BulletinElevation.none)
     ) {
         BulletinSkeletonBlock(Modifier.fillMaxWidth().aspectRatio(1f), shape = MaterialTheme.shapes.extraSmall)
         Column(
-            modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
+            modifier = Modifier.padding(BulletinSpacing.m),
+            verticalArrangement = Arrangement.spacedBy(BulletinSpacing.xs)
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                BulletinSkeletonBlock(Modifier.fillMaxWidth(TITLE_FRACTION).height(18.dp))
-                BulletinSkeletonBlock(Modifier.fillMaxWidth(PRICE_FRACTION).height(18.dp))
-            }
-            if (showDescription) {
-                BulletinSkeletonBlock(Modifier.fillMaxWidth().height(14.dp))
-                BulletinSkeletonBlock(Modifier.fillMaxWidth(DESCRIPTION_FRACTION).height(14.dp))
-            }
-            BulletinSkeletonBlock(Modifier.fillMaxWidth(METADATA_FRACTION).height(12.dp))
+            BulletinSkeletonBlock(Modifier.fillMaxWidth(TITLE_FRACTION).height(20.dp))
+            BulletinSkeletonBlock(Modifier.fillMaxWidth(PRICE_FRACTION).height(26.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            BulletinSkeletonBlock(Modifier.fillMaxWidth(METADATA_FRACTION).height(16.dp))
         }
     }
 }
@@ -73,6 +68,5 @@ internal fun MarketplaceItemCardSkeleton(showDescription: Boolean) {
 private const val SKELETON_ROWS = 3
 private const val TITLE_FRACTION = 0.5f
 private const val PRICE_FRACTION = 0.5f
-private const val DESCRIPTION_FRACTION = 0.7f
 private const val METADATA_FRACTION = 0.6f
-private val CARD_GAP = 14.dp
+private val CARD_GAP = BulletinSpacing.m
