@@ -3,6 +3,8 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.marketplace.application.LoadMarketplaceListingDetail
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
@@ -23,7 +25,7 @@ import kotlinx.coroutines.launch
 class MarketplaceViewModel(
     private val searchMarketplace: SearchMarketplace,
     bookmarks: MarketplaceBookmarkDependencies,
-    private val viewMarketplaceListing: ViewMarketplaceListing,
+    viewMarketplaceListing: ViewMarketplaceListing,
     private val submitMarketplaceReview: SubmitMarketplaceReview =
         SubmitMarketplaceReview(
             com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
@@ -36,6 +38,7 @@ class MarketplaceViewModel(
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
+    private val loadListingDetailUseCase = LoadMarketplaceListingDetail(viewMarketplaceListing)
     private val firstPageLoader = MarketplaceFirstPageLoader(
         _uiState,
         searchMarketplace,
@@ -200,37 +203,30 @@ class MarketplaceViewModel(
     }
 
     private fun loadListingDetail(listingId: String) {
+        val sellerIdHint = _uiState.value.items.firstOrNull { it.id.value == listingId }?.sellerId
         viewModelScope.launch {
-            when (val result = viewMarketplaceListing(listingId, currentUserIdProvider())) {
-                is com.jdrms.bulletin.core.common.Result.Success -> {
-                    val listing = result.data
+            val currentUserId = currentUserIdProvider()
+            when (val result = loadListingDetailUseCase(listingId, currentUserId, sellerIdHint)) {
+                is Result.Success -> {
                     val canonicalId = MarketplaceItemId(listingId)
-                    val isBookmarked = _uiState.value.bookmarkedItemIds.contains(canonicalId)
-                    val currentUserId = currentUserIdProvider()
-                    val hasReview = currentUserId?.let {
-                        viewMarketplaceListing.hasReview(listing.id.value, it)
-                    } ?: false
                     _uiState.update {
                         it.copy(
                             detail = it.detail.copy(
-                                listing = listing.copy(id = canonicalId, isBookmarked = isBookmarked),
+                                listing = result.data.listing.copy(
+                                    id = canonicalId,
+                                    isBookmarked = canonicalId in it.bookmarkedItemIds
+                                ),
                                 isLoading = false,
                                 errorMessage = null,
-                                hasReview = hasReview
+                                hasReview = result.data.hasReview
                             ),
                             currentUserId = currentUserId
                         )
                     }
                 }
-                is com.jdrms.bulletin.core.common.Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            detail = it.detail.copy(
-                                isLoading = false,
-                                errorMessage = result.exception.message ?: "Failed to load listing details."
-                            )
-                        )
-                    }
+                is Result.Error -> _uiState.update {
+                    val message = result.exception.message ?: "Failed to load listing details."
+                    it.copy(detail = it.detail.copy(isLoading = false, errorMessage = message))
                 }
             }
         }
