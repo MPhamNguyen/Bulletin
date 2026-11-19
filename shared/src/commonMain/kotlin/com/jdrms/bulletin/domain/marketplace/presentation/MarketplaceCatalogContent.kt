@@ -31,7 +31,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
@@ -171,7 +170,6 @@ private fun LazyGridScope.marketplaceListingItems(state: MarketplaceUiState, vie
     items(items = state.items, key = { item -> item.id.value }) { item ->
         MarketplaceItemCard(
             item = item,
-            columns = state.layoutPreference.columns,
             isBookmarked = item.id in state.bookmarkedItemIds,
             onBookmarkClick = { viewModel.toggleBookmark(item.id) },
             onCardClick = { viewModel.onListingClicked(item.id.value) }
@@ -215,5 +213,5 @@ private fun LazyGridScope.fullWidthItem(
 ) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
 
 private const val PREFETCH_ITEM_THRESHOLD = 6
-private val CATALOG_GUTTER = 20.dp
-private val CATALOG_GAP = 14.dp
+private val CATALOG_GUTTER = BulletinSpacing.l
+private val CATALOG_GAP = BulletinSpacing.m

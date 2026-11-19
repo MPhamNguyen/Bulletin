@@ -77,7 +77,9 @@ private fun MarketplaceBookmarkButton(
 ) {
     IconButton(onClick = onClick, modifier = modifier.size(48.dp)) {
         Box(
-            modifier = Modifier.size(36.dp).background(MaterialTheme.colorScheme.background, CircleShape),
+            modifier = Modifier.size(
+                36.dp
+            ).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
