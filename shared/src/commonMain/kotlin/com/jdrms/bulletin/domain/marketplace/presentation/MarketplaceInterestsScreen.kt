@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,10 +62,7 @@ fun MarketplaceInterestsScreen(
         ) {
             BulletinCard {
                 if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    MarketplaceInterestsSkeleton()
                 } else {
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s),
