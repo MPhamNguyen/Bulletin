@@ -8,7 +8,7 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
 /** Uses the final listing sections for known data while unknown seller and action data loads. */
 @Composable
-internal fun ColumnScope.MarketplaceDetailPreview(item: MarketplaceItem, currentUserId: String?) {
+internal fun ColumnScope.MarketplaceDetailPreview(item: MarketplaceItem) {
     ListingPhotosSection(photos = item.photos)
     MarketplaceListingHeader(item.title, item.price.formatted, item.category.name, item.condition.name)
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -16,5 +16,4 @@ internal fun ColumnScope.MarketplaceDetailPreview(item: MarketplaceItem, current
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     MarketplaceListingDescription(item.description, item.createdAtMillis, item.updatedAtMillis)
     MarketplaceItemDetails(item.category, item.attributes)
-    ListingActionsSkeleton(showBuyerActions = currentUserId != item.sellerId)
 }
