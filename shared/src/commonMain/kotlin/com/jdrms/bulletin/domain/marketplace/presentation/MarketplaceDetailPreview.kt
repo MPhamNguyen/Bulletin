@@ -12,7 +12,7 @@ internal fun ColumnScope.MarketplaceDetailPreview(item: MarketplaceItem, current
     ListingPhotosSection(photos = item.photos)
     MarketplaceListingHeader(item.title, item.price.formatted, item.category.name, item.condition.name)
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    SellerInfoCardSkeleton(name = item.sellerName)
+    SellerInfoCard(seller = null, previewName = item.sellerName, isLoading = true)
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     MarketplaceListingDescription(item.description, item.createdAtMillis, item.updatedAtMillis)
     MarketplaceItemDetails(item.category, item.attributes)
