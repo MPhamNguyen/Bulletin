@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.app
 
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.integration.toMarketplaceDetailPreview
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
@@ -37,9 +38,9 @@ internal fun profileCallbacks(
             listingsViewModel.clearMessages()
             navigation.profileDestination = ProfileDestination.MY_LISTINGS
         },
-        onOpenListing = { listingId ->
-            marketplaceViewModel.onListingClicked(listingId)
-            navigation.openListing(listingId)
+        onOpenListing = { listing ->
+            marketplaceViewModel.onListingClicked(listing.id, listing.toMarketplaceDetailPreview())
+            navigation.openListing(listing.id)
         },
         onMessageSeller = conversationActions::messageSeller,
         onMessageSent = {

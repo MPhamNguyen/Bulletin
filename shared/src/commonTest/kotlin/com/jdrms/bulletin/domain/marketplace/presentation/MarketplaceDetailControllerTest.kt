@@ -42,7 +42,7 @@ class MarketplaceDetailControllerTest {
     fun cardDataIsAvailableSynchronouslyWhileFreshDetailsLoad() = runTest {
         val controller = MarketplaceDetailController(state, this, loader()) { null }
         controller.open("mkt_1")
-        assertEquals(item, state.value.detail.preview)
+        assertEquals(item.toDetailPreview(), state.value.detail.preview)
         assertNull(state.value.detail.listing)
         assertTrue(state.value.detail.isLoading)
         response.complete(InMemoryMarketplaceRepository().viewListing("mkt_1"))
@@ -84,6 +84,22 @@ class MarketplaceDetailControllerTest {
         assertNull(state.value.detail.preview)
         assertNull(state.value.detail.listing)
         assertEquals("This listing is unavailable.", state.value.detail.errorMessage)
+        assertFalse(state.value.detail.isLoading)
+    }
+
+    @Test
+    fun externalPreviewIsAvailableWithoutTheListingInTheFeed() = runTest {
+        state.value = MarketplaceUiState()
+        val preview = item.toDetailPreview()
+        val controller = MarketplaceDetailController(state, this, loader()) { null }
+        controller.open(item.id.value, preview)
+        assertEquals(preview, state.value.detail.preview)
+        assertTrue(state.value.detail.isLoading)
+        assertNull(state.value.detail.listing)
+        response.complete(InMemoryMarketplaceRepository().viewListing(item.id.value))
+        runCurrent()
+        assertNull(state.value.detail.preview)
+        assertEquals(item.id, state.value.detail.listing?.id)
         assertFalse(state.value.detail.isLoading)
     }
 

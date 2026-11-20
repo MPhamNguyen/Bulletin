@@ -23,12 +23,13 @@ internal class MarketplaceDetailController(
     private var job: Job? = null
     private var generation = 0
 
-    fun open(listingId: String) {
+    fun open(listingId: String, preview: MarketplaceListingPreview? = null) {
         state.update {
             it.copy(
                 detail = MarketplaceDetailState(
                     listingId = listingId,
-                    preview = it.items.firstOrNull { item -> item.id.value == listingId },
+                    preview = preview?.takeIf { it.listingId == listingId }
+                        ?: it.items.firstOrNull { item -> item.id.value == listingId }?.toDetailPreview(),
                     isLoading = true,
                     isOpen = true
                 )

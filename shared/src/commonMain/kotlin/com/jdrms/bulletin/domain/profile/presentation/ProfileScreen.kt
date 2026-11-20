@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.UserMessenger
+import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
 data class ProfileScreenFlows(
     val editing: EditProfileViewModel,
@@ -29,7 +30,7 @@ data class ProfileScreenCallbacks(
     val onBack: () -> Unit,
     val onSignOut: () -> Unit,
     val onMyListingsClick: () -> Unit,
-    val onOpenListing: (String) -> Unit = {},
+    val onOpenListing: (ProfileBookmarkedListing) -> Unit = {},
     val onViewAllReviews: () -> Unit = {},
     val onMessageSeller: suspend (listingId: String, sellerId: String, sellerName: String, content: String) -> Boolean =
         { _, _, _, _ -> false },
@@ -119,7 +120,10 @@ private fun ProfileDestinationContent(
                     removingListingId = states.profile.removingBookmarkedListingId
                 ),
                 actions = BookmarkedListingsActions(
-                    onListingClick = callbacks.onOpenListing,
+                    onListingClick = { id ->
+                        states.profile.bookmarkedListings.firstOrNull { it.id == id }
+                            ?.let(callbacks.onOpenListing)
+                    },
                     onRemoveBookmark = states.viewModel::removeBookmarkedListing,
                     onRefresh = states.viewModel::loadBookmarkedListings,
                     onLoadMore = states.viewModel::loadMoreBookmarkedListings,

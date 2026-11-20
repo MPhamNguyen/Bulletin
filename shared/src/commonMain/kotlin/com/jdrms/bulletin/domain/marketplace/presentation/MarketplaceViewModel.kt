@@ -191,7 +191,8 @@ class MarketplaceViewModel(
         }
     }
 
-    fun onListingClicked(listingId: String) = detailController.open(listingId)
+    fun onListingClicked(listingId: String, preview: MarketplaceListingPreview? = null) =
+        detailController.open(listingId, preview)
 
     fun retryLoadListingDetail() = detailController.retry()
 
