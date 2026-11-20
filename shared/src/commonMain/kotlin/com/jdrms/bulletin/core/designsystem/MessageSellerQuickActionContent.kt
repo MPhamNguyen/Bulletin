@@ -26,6 +26,7 @@ internal fun MessageSellerQuickActionContent(
     isSending: Boolean = false,
     errorMessage: String? = null
 ) {
+    val canSend = status.canSend && status.isEditable && status.fieldText.isNotBlank()
     androidx.compose.foundation.layout.Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
@@ -66,7 +67,7 @@ internal fun MessageSellerQuickActionContent(
                 onClick = onSend,
                 modifier = Modifier.skeleton(isLoading),
                 enabled = !isLoading && !isSending &&
-                    (status.isMessageSent || (status.isEditable && status.fieldText.isNotBlank())),
+                    (status.isMessageSent || canSend),
                 variant = BulletinButtonVariant.Primary
             ) {
                 if (isSending) {
