@@ -18,7 +18,8 @@ internal fun ConversationSummary(
     viewerId: SenderId?,
     titleColor: androidx.compose.ui.graphics.Color,
     secondaryColor: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    previewText: String = conversationPreviewText(conversation)
 ) {
     Column(modifier = modifier) {
         Text(
@@ -30,7 +31,7 @@ internal fun ConversationSummary(
             overflow = TextOverflow.Ellipsis
         )
         Text(
-            conversationPreviewText(conversation),
+            previewText,
             style = MaterialTheme.typography.bodyMedium,
             color = secondaryColor,
             maxLines = 1,

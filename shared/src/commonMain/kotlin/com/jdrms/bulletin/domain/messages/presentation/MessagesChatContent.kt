@@ -50,7 +50,9 @@ internal fun MessagesChatContent(
         )
         val listingPreview = conversation.listingId?.value?.let(state.listingPreviews::get)
         val reviews by viewModel.reviews.state.collectAsState()
-        buyerRatingPromptSeller(listingPreview, state.viewerId, counterpart)?.let { seller ->
+        val hasReview = conversation.id in state.pendingReviewConversationIds ||
+            reviews[conversation.listingId?.value] == ConversationReviewState.Submitted
+        buyerRatingPromptSeller(listingPreview, state.viewerId, counterpart)?.takeIf { hasReview }?.let { seller ->
             key(state.viewerId, conversation.listingId) {
                 BuyerSaleNotice(
                     seller,
