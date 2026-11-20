@@ -12,6 +12,7 @@ import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 data class MessagesUiState(
     val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
+    val pendingReviewConversationIds: Set<ConversationId> = emptySet(),
     val listingPreviews: Map<String, ConversationListingPreview?> = emptyMap(),
     val selectedConversationId: ConversationId? = null,
     val isConversationOpen: Boolean = false,

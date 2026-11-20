@@ -57,7 +57,15 @@ internal class MessagesModule(
         )
     }
     val currentMessageSenderProvider by lazy { AuthMessageSenderProvider(profile.restoreAuthenticatedProfile) }
-    val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
+    val getConversations by lazy {
+        GetConversations(
+            messagesRepository,
+            currentMessageSenderProvider,
+            com.jdrms.bulletin.app.integration.MarketplacePendingConversationReviews(
+                marketplace.reviewRequestRepository
+            )
+        )
+    }
     val conversationListingPreviewProvider by lazy {
         MarketplaceConversationListingPreviewProvider(listings.listingsRepository, marketplace.marketplaceRepository)
     }
