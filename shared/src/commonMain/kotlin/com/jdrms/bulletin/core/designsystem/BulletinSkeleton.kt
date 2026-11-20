@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 
@@ -23,12 +24,13 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 @Composable
 fun BulletinSkeletonBlock(
     modifier: Modifier = Modifier,
-    shape: Shape = MaterialTheme.shapes.small
+    shape: Shape = MaterialTheme.shapes.small,
+    color: Color = MaterialTheme.colorScheme.surfaceVariant
 ) {
     Box(
         modifier = modifier
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(color)
             .bulletinShimmer()
     )
 }

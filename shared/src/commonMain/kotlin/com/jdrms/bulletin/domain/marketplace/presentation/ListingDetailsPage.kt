@@ -86,7 +86,7 @@ fun ListingDetailsPage(
                 when {
                     isLoading && state.preview != null -> MarketplaceDetailPreview(
                         state.preview,
-                        state.isBookmarked
+                        state.currentUserId
                     )
                     isLoading -> ListingDetailSkeleton()
 

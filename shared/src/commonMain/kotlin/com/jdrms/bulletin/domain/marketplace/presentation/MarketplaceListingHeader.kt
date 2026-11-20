@@ -17,6 +17,11 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @Composable
 internal fun MarketplaceListingHeader(listing: Listing) {
+    MarketplaceListingHeader(listing.title, listing.price.formatted, listing.category.name, listing.condition)
+}
+
+@Composable
+internal fun MarketplaceListingHeader(title: String, price: String, category: String, condition: String) {
     // Title & Price Row
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -24,14 +29,14 @@ internal fun MarketplaceListingHeader(listing: Listing) {
         verticalAlignment = Alignment.Top
     ) {
         Text(
-            text = listing.title,
+            text = title,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = listing.price.formatted,
+            text = price,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.primary
         )
@@ -48,7 +53,7 @@ internal fun MarketplaceListingHeader(listing: Listing) {
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ) {
             Text(
-                text = listing.category.name,
+                text = category,
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
             )
@@ -58,7 +63,7 @@ internal fun MarketplaceListingHeader(listing: Listing) {
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
-            val conditionText = listing.condition.replace("_", " ")
+            val conditionText = condition.replace("_", " ")
             Text(
                 text = conditionText,
                 style = MaterialTheme.typography.labelMedium,
