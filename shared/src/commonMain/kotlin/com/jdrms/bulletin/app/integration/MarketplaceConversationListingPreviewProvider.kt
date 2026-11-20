@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.app.integration
 
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
+import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.domain.repository.MarketplaceRepository
@@ -20,16 +21,23 @@ class MarketplaceConversationListingPreviewProvider(
             return ConversationListingPreview(
                 title = listing.title,
                 formattedPrice = listing.price.formatted,
-                imageUrl = listing.images.firstOrNull()
+                imageUrl = listing.images.firstOrNull(),
+                categoryLabel = listing.category.displayLabel(),
+                isActive = listing.status == ListingStatus.AVAILABLE
             )
         }
         val item = marketplaceRepository.getItem(MarketplaceItemId(id)) ?: return null
         return ConversationListingPreview(
             title = item.title,
             formattedPrice = item.price.formatted,
-            imageUrl = item.photos.firstOrNull()
+            imageUrl = item.photos.firstOrNull(),
+            categoryLabel = item.category.displayLabel(),
+            isActive = true
         )
     }
+
+    private fun Enum<*>.displayLabel(): String =
+        name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
 
     private companion object {
         const val LISTING_ID_PREFIX = "listing:"

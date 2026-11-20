@@ -44,7 +44,12 @@ internal fun MessagesChatContent(
                         onViewListing(listingId.value)
                     }
                 },
-                modifier = Modifier.padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s)
+                modifier = Modifier.padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s),
+                sellAction = counterpart?.let { buyer ->
+                    navigation.onSellListing?.let { onSell ->
+                        ListingSellAction(buyer.displayName) { onSell(listingId.value, buyer.id.value) }
+                    }
+                }
             )
         }
         ChatStatusMessages(state, viewModel)
