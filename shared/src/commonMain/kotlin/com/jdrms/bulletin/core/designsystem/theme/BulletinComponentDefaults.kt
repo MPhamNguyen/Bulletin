@@ -12,6 +12,7 @@ object BulletinSpacing {
     val l = 16.dp
     val xl = 24.dp
     val gutter = l
+    val controlCompact = 24.dp
     val control = 48.dp
     val controlLarge = 52.dp
 }

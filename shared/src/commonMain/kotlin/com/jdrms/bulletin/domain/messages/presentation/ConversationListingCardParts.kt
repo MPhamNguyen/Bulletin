@@ -46,12 +46,12 @@ internal fun ListingActiveBadge(modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun SellToAction(buyerName: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun SellToAction(buyerName: String, isUpdating: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val color = MaterialTheme.bulletinColors.success
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(enabled = !isUpdating, role = Role.Button, onClick = onClick),
         shape = BulletinButtonDefaults.shape,
         color = color.copy(alpha = 0.08f),
         contentColor = color,
@@ -70,5 +70,23 @@ internal fun SellToAction(buyerName: String, onClick: () -> Unit, modifier: Modi
                 overflow = TextOverflow.Ellipsis
             )
         }
+    }
+}
+
+@Composable
+internal fun ListingSoldBadge(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = BulletinShapes.pill,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Text(
+            "Sold",
+            modifier = Modifier.padding(horizontal = BulletinSpacing.s, vertical = BulletinSpacing.xs / 2),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1
+        )
     }
 }

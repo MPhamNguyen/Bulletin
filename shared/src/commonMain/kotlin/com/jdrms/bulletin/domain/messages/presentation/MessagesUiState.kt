@@ -32,8 +32,11 @@ data class MessagesUiState(
     val messageReportForm: MessageReportFormState? = null,
     val errorMessage: String? = null,
     val statusMessage: String? = null,
+    val listingSaleUpdate: ConversationListingSaleUpdate? = null,
+    val listingSaleError: String? = null,
     val block: ConversationBlockUiState = ConversationBlockUiState()
 ) {
+    val isUpdatingListingSale: Boolean get() = listingSaleUpdate != null
     val isSending: Boolean get() = sendStates[selectedConversationId] == MessageSendState.Sending
     val sendErrorMessage: String? get() = (sendStates[selectedConversationId] as? MessageSendState.Failed)?.message
 }

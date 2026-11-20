@@ -3,7 +3,6 @@ package com.jdrms.bulletin.app
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.geometry.Rect
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
@@ -11,8 +10,6 @@ import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.navigation.backFromProfile
 import com.jdrms.bulletin.domain.home.presentation.HomeScreen
-import com.jdrms.bulletin.domain.listings.domain.model.ListingId
-import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.presentation.ListingsScreen
 import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import com.jdrms.bulletin.domain.listings.presentation.MyListingsScreen
@@ -21,7 +18,6 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
-import kotlinx.coroutines.launch
 
 @Composable
 internal fun MainAppContent(
@@ -34,7 +30,6 @@ internal fun MainAppContent(
     val container = content.container
     val navigation = content.navigation
     val models = content.models
-    val scope = rememberCoroutineScope()
     MainDestinationState(navigation.currentDestination) {
         when (navigation.currentDestination) {
             AppDestination.HOME -> HomeScreen(
@@ -70,15 +65,6 @@ internal fun MainAppContent(
                 onViewListing = { listingId ->
                     models.marketplace.onListingClicked(listingId)
                     navigation.openListing(listingId)
-                },
-                onSellListing = { listingId, sellerId, buyerId ->
-                    scope.launch {
-                        container.listings.markListingSold(
-                            ListingId(listingId.removePrefix("listing:")),
-                            SellerId(sellerId),
-                            buyerId
-                        )
-                    }
                 }
             )
             AppDestination.PROFILE -> ProfileDestinationContent(container, navigation, models, content.profile)

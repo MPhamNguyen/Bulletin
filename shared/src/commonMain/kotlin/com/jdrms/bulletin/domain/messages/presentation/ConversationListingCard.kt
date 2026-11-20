@@ -28,7 +28,8 @@ internal fun ConversationListingCard(
     preview: ConversationListingPreview?,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    sellAction: ListingSellAction? = null
+    sellAction: ListingSellAction? = null,
+    soldAction: ListingSoldAction? = null
 ) {
     Surface(
         modifier = modifier
@@ -51,18 +52,23 @@ internal fun ConversationListingCard(
     ) {
         Column(modifier = Modifier.padding(BulletinSpacing.m)) {
             ListingSummaryRow(preview, showChevron = onClick != null)
-            if (sellAction != null && preview != null) {
+            if ((sellAction != null || soldAction != null) && preview != null) {
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = BulletinSpacing.m),
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
-                SellToAction(sellAction.buyerName, sellAction.onClick)
+            }
+            if (preview != null) {
+                sellAction?.let { SellToAction(it.buyerName, it.isUpdating, it.onClick) }
+                soldAction?.let { SoldStatusRow(it.label, it.isUpdating, it.onUndo) }
             }
         }
     }
 }
 
-internal data class ListingSellAction(val buyerName: String, val onClick: () -> Unit)
+internal data class ListingSellAction(val buyerName: String, val isUpdating: Boolean = false, val onClick: () -> Unit)
+
+internal data class ListingSoldAction(val label: String, val isUpdating: Boolean = false, val onUndo: () -> Unit)
 
 @Composable
 private fun ListingSummaryRow(preview: ConversationListingPreview?, showChevron: Boolean) {
@@ -83,7 +89,10 @@ private fun ListingSummaryRow(preview: ConversationListingPreview?, showChevron:
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (preview?.isActive == true) ListingActiveBadge()
+                when {
+                    preview?.isSold == true -> ListingSoldBadge()
+                    preview?.isActive == true -> ListingActiveBadge()
+                }
             }
             Text(
                 preview?.formattedPrice ?: "Listing information unavailable",

@@ -2,6 +2,7 @@ package com.jdrms.bulletin.app.di
 
 import com.jdrms.bulletin.app.integration.AuthInboxIdentity
 import com.jdrms.bulletin.app.integration.AuthMessageSenderProvider
+import com.jdrms.bulletin.app.integration.ListingsConversationListingSales
 import com.jdrms.bulletin.app.integration.MarketplaceConversationListingPreviewProvider
 import com.jdrms.bulletin.app.integration.ProfileMessageSenderPhotoProvider
 import com.jdrms.bulletin.domain.messages.application.ConsoleMessagesInstrumentation
@@ -59,6 +60,15 @@ internal class MessagesModule(
     val getConversations by lazy { GetConversations(messagesRepository, currentMessageSenderProvider) }
     val conversationListingPreviewProvider by lazy {
         MarketplaceConversationListingPreviewProvider(listings.listingsRepository, marketplace.marketplaceRepository)
+    }
+    val conversationListingSales by lazy {
+        ListingsConversationListingSales(
+            listings.currentListingSellerProvider,
+            listings.markListingSold,
+            listings.restoreListingToMarketplace,
+            listings.createReviewRequest,
+            listings.cancelReviewRequests
+        )
     }
     internal val recentListingBuyersProvider by lazy { createRecentListingBuyersProvider(getConversations) }
     val hideConversation by lazy { HideConversation(messagesRepository, currentMessageSenderProvider) }
