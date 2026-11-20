@@ -2,10 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,26 +26,7 @@ internal fun MarketplaceListingHeader(
     condition: String?,
     isLoading: Boolean = false
 ) {
-    // Title & Price Row
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = title ?: "Listing title",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f).skeleton(isLoading && title == null)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = price ?: "$00.00",
-            modifier = Modifier.skeleton(isLoading && price == null, color = MaterialTheme.colorScheme.onSurface),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
+    MarketplaceListingTitleRow(title, price, isLoading)
 
     // Metadata Badges (Category & Condition)
     Row(
