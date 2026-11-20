@@ -108,7 +108,7 @@ fun MarketplaceScreen(
             sellerProfileViewModel = sellerProfileViewModel,
             listingReportViewModel = listingReportViewModel,
             actions = actions.copy(onListingClosed = navigation.onListingClosed),
-            onContentNoLongerScrollable = navigation.onContentNoLongerScrollable,
+            navigation = navigation,
             onNavigate = { destination ->
                 val context = state.detail.listing
                     ?.takeIf { destination == MarketplaceDestination.SELLER_PROFILE }

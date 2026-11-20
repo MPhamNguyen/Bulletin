@@ -30,37 +30,44 @@ internal fun MainAppContent(
     val container = content.container
     val navigation = content.navigation
     val models = content.models
-    when (navigation.currentDestination) {
-        AppDestination.HOME -> HomeScreen(
-            models.home,
-            profileAnchorInWindow = profileAnchorInWindow,
-            onSaveCelebration = onSaveCelebration
-        )
-        AppDestination.MARKETPLACE -> MarketplaceDestination(container, navigation, models, onContentNoLongerScrollable)
-        AppDestination.LISTINGS -> ListingsScreen(
-            models.listings,
-            onClose = {
-                models.listings.clearMessages()
-                navigation.closeCreateListing()
-            }
-        )
-        AppDestination.MESSAGES -> MessagesScreen(
-            viewModel = models.messages,
-            onViewProfile = { sellerId ->
-                navigation.pendingSellerProfileId = sellerId
-                navigation.currentDestination = AppDestination.MARKETPLACE
-            },
-            onConversationVisibilityChanged = onConversationVisibilityChanged,
-            onReportUser = { id ->
-                navigation.pendingUserReportId = id
-                navigation.currentDestination = AppDestination.MARKETPLACE
-            },
-            onViewListing = { listingId ->
-                models.marketplace.onListingClicked(listingId)
-                navigation.openListing(listingId)
-            }
-        )
-        AppDestination.PROFILE -> ProfileDestinationContent(container, navigation, models, content.profile)
+    MainDestinationState(navigation.currentDestination) {
+        when (navigation.currentDestination) {
+            AppDestination.HOME -> HomeScreen(
+                models.home,
+                profileAnchorInWindow = profileAnchorInWindow,
+                onSaveCelebration = onSaveCelebration
+            )
+            AppDestination.MARKETPLACE -> MarketplaceDestination(
+                container,
+                navigation,
+                models,
+                onContentNoLongerScrollable
+            )
+            AppDestination.LISTINGS -> ListingsScreen(
+                models.listings,
+                onClose = {
+                    models.listings.clearMessages()
+                    navigation.closeCreateListing()
+                }
+            )
+            AppDestination.MESSAGES -> MessagesScreen(
+                viewModel = models.messages,
+                onViewProfile = { sellerId ->
+                    navigation.pendingSellerProfileId = sellerId
+                    navigation.currentDestination = AppDestination.MARKETPLACE
+                },
+                onConversationVisibilityChanged = onConversationVisibilityChanged,
+                onReportUser = { id ->
+                    navigation.pendingUserReportId = id
+                    navigation.currentDestination = AppDestination.MARKETPLACE
+                },
+                onViewListing = { listingId ->
+                    models.marketplace.onListingClicked(listingId)
+                    navigation.openListing(listingId)
+                }
+            )
+            AppDestination.PROFILE -> ProfileDestinationContent(container, navigation, models, content.profile)
+        }
     }
 }
 
@@ -79,6 +86,7 @@ private fun MarketplaceDestination(
         listingReportViewModel = models.listingReport,
         userBlockViewModel = models.marketplaceUserBlock,
         navigation = MarketplaceScreenNavigation(
+            scrollToTopRequest = navigation.marketplaceScrollToTopRequest,
             sellerProfileIdToOpen = navigation.pendingSellerProfileId,
             sellerReviewsIdToOpen = navigation.pendingSellerReviewsId,
             userReportIdToOpen = navigation.pendingUserReportId,

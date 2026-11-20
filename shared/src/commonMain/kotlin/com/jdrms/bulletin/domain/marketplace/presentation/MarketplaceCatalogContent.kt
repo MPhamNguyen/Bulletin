@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,10 +48,10 @@ internal fun MarketplaceCatalogContent(
     sellerProfileViewModel: SellerProfileViewModel,
     listingReportViewModel: ListingReportViewModel,
     actions: MarketplaceScreenActions,
-    onContentNoLongerScrollable: () -> Unit,
+    navigation: MarketplaceScreenNavigation,
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
-    val gridState = rememberLazyGridState()
+    val gridState = rememberMarketplaceCatalogScrollState(navigation.scrollToTopRequest)
     val focusManager = LocalFocusManager.current
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -72,7 +71,7 @@ internal fun MarketplaceCatalogContent(
         }
     )
     LaunchedEffect(gridState.canScrollForward) {
-        if (!gridState.canScrollForward) onContentNoLongerScrollable()
+        if (!gridState.canScrollForward) navigation.onContentNoLongerScrollable()
     }
     LaunchedEffect(
         gridState,

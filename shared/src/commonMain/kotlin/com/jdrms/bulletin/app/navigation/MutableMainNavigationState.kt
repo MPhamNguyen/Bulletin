@@ -9,6 +9,8 @@ internal class MutableMainNavigationState {
     var currentDestination by mutableStateOf(AppDestination.HOME)
     var profileDestination by mutableStateOf(ProfileDestination.PROFILE)
     var editReturnDestination by mutableStateOf(ProfileDestination.PROFILE)
+    var marketplaceScrollToTopRequest by mutableStateOf(0)
+        private set
     var pendingConversationId by mutableStateOf<ConversationId?>(null)
     var pendingSellerProfileId by mutableStateOf<String?>(null)
     var pendingSellerReviewsId by mutableStateOf<String?>(null)
@@ -43,6 +45,13 @@ internal class MutableMainNavigationState {
         get() = snapshot().showsBottomNavigation
 
     fun snapshot() = NavigationSnapshot(currentDestination, profileDestination)
+
+    fun selectTab(destination: AppDestination) {
+        if (destination == AppDestination.MARKETPLACE && currentDestination == destination) {
+            marketplaceScrollToTopRequest++
+        }
+        apply(snapshot().selectBottomNavigationDestination(destination))
+    }
 
     fun openCreateListing() {
         if (currentDestination != AppDestination.LISTINGS) createListingReturn = snapshot()
