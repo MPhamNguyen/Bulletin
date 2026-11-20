@@ -38,8 +38,7 @@ fun MessagesScreen(
     onConversationVisibilityChanged: (Boolean) -> Unit = {},
     onReportUser: (String) -> Unit = {},
     onViewListing: ((String) -> Unit)? = null,
-    senderPhotos: MessageSenderPhotoProvider? = null,
-    onSellListing: ((listingId: String, sellerId: String, buyerId: String) -> Unit)? = null
+    senderPhotos: MessageSenderPhotoProvider? = null
 ) {
     CompositionLocalProvider(LocalMessageSenderPhotos provides senderPhotos) {
         MessagesScreenContent(
@@ -47,8 +46,7 @@ fun MessagesScreen(
             onViewProfile,
             onConversationVisibilityChanged,
             onReportUser,
-            onViewListing,
-            onSellListing
+            onViewListing
         )
     }
 }
@@ -60,8 +58,7 @@ private fun MessagesScreenContent(
     onViewProfile: (String) -> Unit,
     onConversationVisibilityChanged: (Boolean) -> Unit,
     onReportUser: (String) -> Unit,
-    onViewListing: ((String) -> Unit)?,
-    onSellListing: ((listingId: String, sellerId: String, buyerId: String) -> Unit)?
+    onViewListing: ((String) -> Unit)?
 ) {
     DisposableEffect(viewModel) {
         viewModel.onDestinationActiveChanged(true)
@@ -111,7 +108,7 @@ private fun MessagesScreenContent(
                         viewModel,
                         conversation,
                         Modifier.fillMaxSize(),
-                        ConversationNavigation(onViewProfile, onReportUser, onViewListing, onSellListing)
+                        ConversationNavigation(onViewProfile, onReportUser, onViewListing)
                     )
                 }
             }

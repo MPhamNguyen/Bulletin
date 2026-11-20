@@ -11,12 +11,15 @@ import androidx.compose.ui.unit.dp
 
 /** Emphasis levels for shared buttons. */
 enum class BulletinButtonVariant {
-    Primary, Outlined, Text, Neutral, Tonal, Destructive, DestructiveOutlined, DestructiveText
+    Primary, Outlined, Text, Neutral, NeutralOutlined, Tonal, Destructive, DestructiveOutlined, DestructiveText
 }
 
 object BulletinButtonDefaults {
     val shape: Shape
         @Composable get() = MaterialTheme.shapes.medium
+
+    val compactShape: Shape
+        @Composable get() = MaterialTheme.shapes.small
 
     private val borderWidth = 1.dp
 
@@ -37,6 +40,10 @@ object BulletinButtonDefaults {
             )
             BulletinButtonVariant.Neutral -> ButtonDefaults.buttonColors(
                 containerColor = scheme.surfaceVariant,
+                contentColor = scheme.onSurface
+            )
+            BulletinButtonVariant.NeutralOutlined -> ButtonDefaults.outlinedButtonColors(
+                containerColor = scheme.onSurface.copy(alpha = 0.10f),
                 contentColor = scheme.onSurface
             )
             BulletinButtonVariant.Tonal -> ButtonDefaults.filledTonalButtonColors(
@@ -62,6 +69,7 @@ object BulletinButtonDefaults {
         val scheme = MaterialTheme.colorScheme
         val color = when (variant) {
             BulletinButtonVariant.Outlined -> scheme.outlineVariant
+            BulletinButtonVariant.NeutralOutlined -> scheme.onSurface.copy(alpha = 0.15f)
             BulletinButtonVariant.DestructiveOutlined -> scheme.error.copy(alpha = 0.45f)
             else -> return null
         }

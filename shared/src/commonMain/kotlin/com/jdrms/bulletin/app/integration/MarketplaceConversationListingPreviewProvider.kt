@@ -24,7 +24,9 @@ class MarketplaceConversationListingPreviewProvider(
                 imageUrl = listing.images.firstOrNull(),
                 categoryLabel = listing.category.displayLabel(),
                 isActive = listing.status == ListingStatus.AVAILABLE,
-                sellerId = listing.sellerId.value
+                sellerId = listing.sellerId.value,
+                isSold = listing.status == ListingStatus.SOLD,
+                soldToBuyerId = listing.buyerId
             )
         }
         val item = marketplaceRepository.getItem(MarketplaceItemId(id)) ?: return null
@@ -41,7 +43,7 @@ class MarketplaceConversationListingPreviewProvider(
     private fun Enum<*>.displayLabel(): String =
         name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
 
-    private companion object {
+    internal companion object {
         const val LISTING_ID_PREFIX = "listing:"
     }
 }

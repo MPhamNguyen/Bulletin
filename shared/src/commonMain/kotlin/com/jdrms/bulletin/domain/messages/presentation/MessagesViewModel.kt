@@ -41,6 +41,12 @@ class MessagesViewModel(
     private var requestedConversationId: ConversationId? = null
     private val listingPreviewLoader =
         ConversationListingPreviewLoader(threadState, listingPreviewProvider, viewModelScope)
+    private val listingSales = ConversationListingSaleActions(
+        threadState,
+        threadOperations.listingSales,
+        listingPreviewLoader::refresh,
+        viewModelScope
+    )
     private var observeJob: Job? = null
     private val destinationLifecycle = MessagesDestinationLifecycle(
         inbox,
@@ -229,6 +235,8 @@ class MessagesViewModel(
         if (!uiState.value.canSendToCounterpart()) return
         if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send(showFailure)
     }
+    val markListingSold: (listingId: String, buyerId: String) -> Unit = listingSales::markSold
+    val undoListingSale: (listingId: String) -> Unit = listingSales::undoSale
     val requestBlock: (BlockTarget) -> Unit = blocking::request
     val confirmBlock: () -> Unit = blocking::confirm
     val dismissBlock: () -> Unit = blocking::dismiss

@@ -22,7 +22,6 @@ internal fun MessagesChatContent(
 ) {
     val isReadOnly = state.isSelectedConversationReadOnly
     val counterpart = conversation.counterpart(state.viewerId).takeUnless { isReadOnly }
-    val sellerId = state.viewerId?.value
     val isBlocked = counterpart != null && state.block.isBlocked(counterpart.id)
     var optionsOpen by remember(conversation.id, state.viewerId) { mutableStateOf(false) }
     LaunchedEffect(counterpart?.id, state.viewerId) { counterpart?.let { viewModel.refreshBlockStatus(it.id) } }
@@ -37,24 +36,8 @@ internal fun MessagesChatContent(
                 { optionsOpen = true }
             )
         )
-        conversation.listingId?.let { listingId ->
-            ConversationListingCard(
-                state.listingPreviews[listingId.value],
-                onClick = navigation.onViewListing?.let { onViewListing ->
-                    {
-                        onViewListing(listingId.value)
-                    }
-                },
-                modifier = Modifier.padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s),
-                sellAction = counterpart?.takeIf { isSeller(state, listingId.value) }?.let { buyer ->
-                    navigation.onSellListing?.let { onSell ->
-                        ListingSellAction(
-                            buyer.displayName
-                        ) { onSell(listingId.value, sellerId.orEmpty(), buyer.id.value) }
-                    }
-                }
-            )
-        }
+        ConversationListingSection(state, viewModel, conversation, counterpart, navigation)
+        state.listingSaleError?.let { ListingSaleError(it) }
         ChatStatusMessages(state, viewModel)
         MessageHistoryRetryNotice(state, viewModel::retryHistory)
         MessageList(
@@ -88,9 +71,6 @@ internal fun MessagesChatContent(
         )
     }
 }
-
-private fun isSeller(state: MessagesUiState, listingId: String): Boolean =
-    state.viewerId?.value != null && state.listingPreviews[listingId]?.sellerId == state.viewerId.value
 
 @Composable
 private fun ChatStatusMessages(state: MessagesUiState, viewModel: MessagesViewModel) {

@@ -1,10 +1,11 @@
 package com.jdrms.bulletin.domain.marketplace.domain.model
 
 /**
- * The single source of truth for review-request status changes.
+ * The single source of truth for status changes within an existing review-request lifecycle.
  *
  * PENDING -> SUBMITTED is intentional: a buyer may submit a review without accepting the request first.
- * DECLINED, SUBMITTED and CANCELLED are terminal.
+ * DECLINED, SUBMITTED and CANCELLED are terminal for these status changes. A seller making a new sale
+ * may reissue a cancelled request through listing-sale orchestration; buyers cannot reset it to PENDING.
  *
  * Repeating a buyer-settable status that is already in place (ACCEPTED, DECLINED or SUBMITTED) is not a
  * transition; it is an idempotent no-op that reports success ([ReviewRequestTransition.AlreadyApplied]).
