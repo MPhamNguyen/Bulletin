@@ -29,7 +29,8 @@ internal fun ListingDetailActions(
     callbacks: ListingDetailActionCallbacks,
     canBookmarkListing: Boolean,
     canReportListing: Boolean,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    bookmarkEnabled: Boolean = !isLoading
 ) {
     bookmarkErrorMessage?.takeIf { canBookmarkListing }?.let { message ->
         Text(text = message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
@@ -42,7 +43,7 @@ internal fun ListingDetailActions(
             BulletinButton(
                 onClick = callbacks.onToggleBookmark,
                 modifier = Modifier.weight(1f),
-                enabled = !isLoading,
+                enabled = bookmarkEnabled,
                 variant = BulletinButtonVariant.Outlined
             ) {
                 Crossfade(isBookmarked, animationSpec = tween(BulletinMotion.STANDARD), label = "bookmark") { saved ->
