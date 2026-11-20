@@ -6,7 +6,12 @@ import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 data class ConversationListingPreview(
     val title: String,
     val formattedPrice: String,
-    val imageUrl: String?
+    val imageUrl: String?,
+    val categoryLabel: String? = null,
+    val isActive: Boolean = false,
+    val sellerId: String? = null,
+    val isSold: Boolean = false,
+    val soldToBuyerId: String? = null
 )
 
 fun interface ConversationListingPreviewProvider {

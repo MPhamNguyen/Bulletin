@@ -30,6 +30,7 @@ private fun withInbox(thread: MessagesUiState, inbox: InboxState): MessagesUiSta
     return retained.copy(
         viewerId = inbox.viewerId,
         conversations = inbox.conversations,
+        pendingReviewConversationIds = inbox.pendingReviewConversationIds,
         isLoading = inbox.isLoading,
         errorMessage = thread.errorMessage ?: thread.sendErrorMessage ?: inbox.errorMessage
     )

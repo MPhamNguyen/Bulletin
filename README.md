@@ -157,6 +157,14 @@ If Supabase is not configured, the normal Android runtime **fails to initialize*
 
 > These bindings describe what the code does, not that every flow has been verified against a deployed Supabase project.
 
+Conversation Sell and Undo actions update the listing card optimistically while saving. Repeated actions are disabled until completion; failures restore the previous card and reload backend state to account for partial success.
+
+The buyer rating form in Messages submits through the marketplace review use case and its configured Supabase adapter. Only the recorded buyer of a currently sold listing can rate its seller; comments are optional. Success appears after saving the review and completing its review request. Failed submissions retain the form for retry, and a retry after the review was saved completes the request without creating another review. Pending or accepted buyer review requests put their matching conversation first in the inbox with unread styling and the preview **Leave a review.** The reminder stays until the review is submitted; it refreshes with the inbox on entry, foregrounding, and inbox events. Review-status loading failures retain the last known reminder state without blocking messages.
+
+Restoring a listing clears `buyer_id` explicitly, allowing the review-request cleanup policy and existing database trigger to cancel actionable requests for the former buyer. `supabase/migrations/20261119000100_clear_restored_listing_buyers.sql` repairs available listings whose buyers were retained by older clients.
+
+A new sale to the same buyer may reissue a cancelled review request. `supabase/migrations/20261120051000_allow_review_request_renewal_for_resale.sql` limits that renewal to a nested sale trigger whose listing is sold to the same buyer by the same seller. Direct resets remain forbidden, and submitted or declined requests are preserved. The temporary-fixture regression in `supabase/tests/test_listing_review_request_resale.sql` exercises the deployed trigger functions without changing application rows.
+
 Profile photo removal clears the saved avatar URL. The uploaded image remains in Storage until replaced by a later upload.
 
 The scheduled 30-day account deletion worker and its incremental migration are provided in
