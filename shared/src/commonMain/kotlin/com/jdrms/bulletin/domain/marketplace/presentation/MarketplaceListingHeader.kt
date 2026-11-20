@@ -44,9 +44,9 @@ internal fun MarketplaceListingHeader(
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = price ?: "$00.00",
-            modifier = Modifier.skeleton(isLoading && price == null, color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.skeleton(isLoading && price == null, color = MaterialTheme.colorScheme.onSurface),
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 
