@@ -48,6 +48,8 @@ internal fun MessagesChatContent(
             Modifier.weight(1f).padding(horizontal = BulletinSpacing.m),
             navigation.onViewProfile
         )
+        val listingPreview = conversation.listingId?.value?.let(state.listingPreviews::get)
+        buyerSaleNotice(listingPreview, state.viewerId, counterpart)?.let { BuyerSaleNotice(it) }
         if (isReadOnly) {
             ReadOnlyConversationNotice()
         } else if (counterpart != null && isBlocked) {

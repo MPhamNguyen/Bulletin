@@ -207,7 +207,12 @@ class MessagesViewModel(
         )
     }
 
-    private fun reloadSelectedConversation(conversationId: ConversationId) = history.reload(conversationId)
+    private fun reloadSelectedConversation(conversationId: ConversationId) {
+        inbox.state.value.conversations.firstOrNull { it.id == conversationId }?.listingId?.let {
+            listingPreviewLoader.refresh(it.value)
+        }
+        history.reload(conversationId)
+    }
 
     fun loadOlderMessages() = history.loadOlder()
     fun retryHistory(request: MessageHistoryRequest) {
