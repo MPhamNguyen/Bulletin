@@ -86,6 +86,7 @@ private fun MarketplaceDestination(
         listingReportViewModel = models.listingReport,
         userBlockViewModel = models.marketplaceUserBlock,
         navigation = MarketplaceScreenNavigation(
+            scrollToTopRequest = navigation.marketplaceScrollToTopRequest,
             sellerProfileIdToOpen = navigation.pendingSellerProfileId,
             sellerReviewsIdToOpen = navigation.pendingSellerReviewsId,
             userReportIdToOpen = navigation.pendingUserReportId,

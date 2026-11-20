@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -16,6 +15,7 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jdrms.bulletin.app.navigation.AppDestination
+import com.jdrms.bulletin.domain.marketplace.presentation.rememberMarketplaceCatalogScrollState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,11 +30,12 @@ class MainDestinationStateDeviceTest {
     @Test
     fun marketplaceScrollSurvivesEveryOtherDestination() {
         val destination = mutableStateOf(AppDestination.MARKETPLACE)
+        val scrollRequest = mutableStateOf(0)
         lateinit var grid: LazyGridState
         compose.setContent {
             MainDestinationState(destination.value) {
                 if (destination.value == AppDestination.MARKETPLACE) {
-                    grid = rememberLazyGridState()
+                    grid = rememberMarketplaceCatalogScrollState(scrollRequest.value)
                     LazyVerticalGrid(GridCells.Fixed(2), Modifier.testTag("market"), state = grid) {
                         items(100) { Box(Modifier.height(101.dp)) }
                     }
@@ -49,6 +50,11 @@ class MainDestinationStateDeviceTest {
             offset = grid.firstVisibleItemScrollOffset
             assertTrue(index > 0)
         }
+        compose.runOnIdle { scrollRequest.value++ }
+        compose.waitForIdle()
+        compose.runOnIdle { assertAtTop(grid) }
+        // Scrolling again after a reselection must survive leaving and returning.
+        compose.onNodeWithTag("market").performScrollToIndex(40)
         AppDestination.entries.filter { it != AppDestination.MARKETPLACE }.forEach { other ->
             compose.runOnIdle { destination.value = other }
             compose.waitForIdle()
@@ -60,5 +66,10 @@ class MainDestinationStateDeviceTest {
                 assertEquals(offset, grid.firstVisibleItemScrollOffset, "Returning from $other")
             }
         }
+    }
+
+    private fun assertAtTop(grid: LazyGridState) {
+        assertEquals(0, grid.firstVisibleItemIndex)
+        assertEquals(0, grid.firstVisibleItemScrollOffset)
     }
 }
