@@ -6,9 +6,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -20,6 +23,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 
@@ -53,14 +57,35 @@ internal fun ListingZoomOverlay(
     var photoTarget by remember { mutableStateOf<Rect?>(null) }
     val isSettled by remember { derivedStateOf { progress.value >= 1f } }
     val frame = { listingZoomFrame(progress.value, origin, overlayBounds, photoTarget) }
+    val targets = remember(origin) { ListingTransitionTargets(origin) { progress.value } }
+    // The card's matched texts are hidden (not removed) for exactly as long as their travelling copies exist.
+    DisposableEffect(origin) {
+        origin?.sourceVisibility?.isHidden = true
+        onDispose { origin?.sourceVisibility?.isHidden = false }
+    }
 
     Box(Modifier.fillMaxSize().onGloballyPositioned { overlayBounds = it.boundsInRoot() }) {
         Box(Modifier.fillMaxSize().graphicsLayer { applyPageFrame(frame(), overlayBounds) }) {
-            page(Modifier.onGloballyPositioned { photoTarget = it.squareBoundsInRoot() })
+            CompositionLocalProvider(LocalListingTransitionTargets provides targets) {
+                page(Modifier.onGloballyPositioned { photoTarget = it.squareBoundsInRoot() })
+            }
         }
         // Taps during the animation must not reach the page or the grid beneath it.
         if (!isSettled) Box(Modifier.fillMaxSize().blockPointerInput())
         if (origin != null) ListingZoomHero(origin.photoUrl, frame) { overlayBounds.topLeft }
+        origin?.texts?.forEach { (element, snapshot) ->
+            key(element) {
+                ListingTransitionText(
+                    text = snapshot.text,
+                    frame = {
+                        // A target outside the overlay (scrolled away) is treated as missing, so the text fades.
+                        val target = targets.placement(element)?.takeIf { overlayBounds.overlaps(it.bounds) }
+                        listingTextFrame(progress.value, snapshot.placement, target)
+                    },
+                    overlayOrigin = { overlayBounds.topLeft }
+                )
+            }
+        }
     }
 }
 
@@ -76,9 +101,10 @@ private fun GraphicsLayerScope.applyPageFrame(frame: ListingZoomFrame, overlay: 
 }
 
 // The photo slot also holds the pager's page dots once a listing has several photos; only the square is the photo.
+// Unclipped on purpose: boundsInRoot() would let the animated page window change the very target it animates toward.
 private fun LayoutCoordinates.squareBoundsInRoot(): Rect {
-    val bounds = boundsInRoot()
-    return Rect(bounds.left, bounds.top, bounds.right, bounds.top + bounds.width)
+    val topLeft = positionInRoot()
+    return Rect(topLeft.x, topLeft.y, topLeft.x + size.width, topLeft.y + size.width)
 }
 
 private fun Modifier.blockPointerInput(): Modifier = pointerInput(Unit) {

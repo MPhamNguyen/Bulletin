@@ -10,6 +10,12 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 internal class ListingBoundsTracker {
     private var card: LayoutCoordinates? = null
     private var photo: LayoutCoordinates? = null
+    private val probes = ListingTransitionElement.entries.associateWith { ListingTextProbe() }
+
+    /** Hides the card's matched texts while their travelling copies are drawn. */
+    val sourceVisibility = ListingSourceVisibility()
+
+    fun probe(element: ListingTransitionElement): ListingTextProbe = probes.getValue(element)
 
     fun trackCard(coordinates: LayoutCoordinates) {
         card = coordinates
@@ -23,7 +29,20 @@ internal class ListingBoundsTracker {
     fun capture(item: MarketplaceItem): ListingZoomOrigin? {
         val cardBounds = card?.takeIf { it.isAttached }?.unclippedBounds() ?: return null
         val photoBounds = photo?.takeIf { it.isAttached }?.unclippedBounds() ?: return null
-        return ListingZoomOrigin(item.id.value, cardBounds, photoBounds, item.photos.firstOrNull())
+        val texts = mapOf(
+            ListingTransitionElement.TITLE to item.title,
+            ListingTransitionElement.PRICE to item.price.formatted
+        ).mapNotNull { (element, text) ->
+            probe(element).placement()?.let { element to ListingTextSnapshot(text, it) }
+        }.toMap()
+        return ListingZoomOrigin(
+            listingId = item.id.value,
+            card = cardBounds,
+            photo = photoBounds,
+            photoUrl = item.photos.firstOrNull(),
+            texts = texts,
+            sourceVisibility = sourceVisibility
+        )
     }
 
     // boundsInRoot() would clip a half-scrolled card and squash the photo's square shape.
