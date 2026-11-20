@@ -13,12 +13,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.common.formatRelativeTime
 import com.jdrms.bulletin.core.designsystem.theme.BulletinElevation
+import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
 
@@ -28,17 +31,29 @@ internal fun MarketplaceItemCard(
     item: MarketplaceItem,
     isBookmarked: Boolean,
     onBookmarkClick: () -> Unit,
-    onCardClick: () -> Unit
+    onCardClick: () -> Unit,
+    onOriginCaptured: (ListingZoomOrigin?) -> Unit = {}
 ) {
+    val bounds = remember { ListingBoundsTracker() }
     Card(
-        modifier = Modifier.fillMaxWidth().wrapContentHeight().clickable(onClick = onCardClick),
-        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth().wrapContentHeight()
+            .onGloballyPositioned(bounds::trackCard)
+            .clickable {
+                onOriginCaptured(bounds.capture(item))
+                onCardClick()
+            },
+        shape = BulletinShapes.listingCard,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = BulletinElevation.none)
     ) {
         Column {
-            MarketplaceListingPhoto(item, isBookmarked, onBookmarkClick, Modifier.fillMaxWidth())
+            MarketplaceListingPhoto(
+                item,
+                isBookmarked,
+                onBookmarkClick,
+                Modifier.fillMaxWidth().onGloballyPositioned(bounds::trackPhoto)
+            )
             ListingDetails(item)
         }
     }

@@ -13,7 +13,9 @@ data class MarketplaceDetailSheetState(
     val isReviewDialogOpen: Boolean = false,
     val isSubmittingReview: Boolean = false,
     val reviewErrorMessage: String? = null,
-    val preview: MarketplaceListingPreview? = null
+    val preview: MarketplaceListingPreview? = null,
+    /** Card photo available before the full listing loads. */
+    val previewPhotoUrl: String? = null
 )
 
 data class MarketplaceDetailSheetActions(

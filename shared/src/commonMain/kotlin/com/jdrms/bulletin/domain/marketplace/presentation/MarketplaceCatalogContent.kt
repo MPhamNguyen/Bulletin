@@ -56,6 +56,7 @@ internal fun MarketplaceCatalogContent(
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
     var filtersBeforeCategoryReset by remember { mutableStateOf<MarketplaceFilterState?>(null) }
+    var zoomOrigin by remember { mutableStateOf<ListingZoomOrigin?>(null) }
     val headerActions = MarketplaceCatalogHeaderActions(
         onQueryChanged = viewModel::onSearchQueryChanged,
         onFiltersApplied = viewModel::onFiltersApplied,
@@ -121,7 +122,7 @@ internal fun MarketplaceCatalogContent(
             marketplaceCatalogHeader(state, headerActions)
             marketplaceSkeletonItems(state.layoutPreference.columns, state.isLoading && !state.isRefreshing)
             marketplaceEmptyResultsItem(state)
-            marketplaceListingItems(state, viewModel)
+            marketplaceListingItems(state, viewModel) { zoomOrigin = it }
             marketplacePaginationItem(state)
             marketplaceErrorItems(state, viewModel)
         }
@@ -145,11 +146,14 @@ internal fun MarketplaceCatalogContent(
             sellerProfileViewModel,
             listingReportViewModel,
             actions,
-            onNavigate,
-            {
-                viewModel.dismissListingDetail()
-                actions.onListingClosed()
-            }
+            MarketplaceDetailNavigation(
+                onNavigate = onNavigate,
+                onDismiss = {
+                    viewModel.dismissListingDetail()
+                    actions.onListingClosed()
+                }
+            ),
+            zoomOrigin = zoomOrigin
         )
     }
 }
@@ -167,13 +171,18 @@ private fun LazyGridScope.marketplaceEmptyResultsItem(state: MarketplaceUiState)
     }
 }
 
-private fun LazyGridScope.marketplaceListingItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+private fun LazyGridScope.marketplaceListingItems(
+    state: MarketplaceUiState,
+    viewModel: MarketplaceViewModel,
+    onOriginCaptured: (ListingZoomOrigin?) -> Unit
+) {
     items(items = state.items, key = { item -> item.id.value }) { item ->
         MarketplaceItemCard(
             item = item,
             isBookmarked = item.id in state.bookmarkedItemIds,
             onBookmarkClick = { viewModel.toggleBookmark(item.id) },
-            onCardClick = { viewModel.onListingClicked(item.id.value) }
+            onCardClick = { viewModel.onListingClicked(item.id.value) },
+            onOriginCaptured = onOriginCaptured
         )
     }
 }
