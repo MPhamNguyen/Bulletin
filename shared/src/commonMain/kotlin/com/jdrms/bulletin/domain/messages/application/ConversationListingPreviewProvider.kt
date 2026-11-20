@@ -8,7 +8,8 @@ data class ConversationListingPreview(
     val formattedPrice: String,
     val imageUrl: String?,
     val categoryLabel: String? = null,
-    val isActive: Boolean = false
+    val isActive: Boolean = false,
+    val sellerId: String? = null
 )
 
 fun interface ConversationListingPreviewProvider {

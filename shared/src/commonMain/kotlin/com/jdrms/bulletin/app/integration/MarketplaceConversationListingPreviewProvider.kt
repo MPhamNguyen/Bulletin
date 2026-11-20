@@ -23,7 +23,8 @@ class MarketplaceConversationListingPreviewProvider(
                 formattedPrice = listing.price.formatted,
                 imageUrl = listing.images.firstOrNull(),
                 categoryLabel = listing.category.displayLabel(),
-                isActive = listing.status == ListingStatus.AVAILABLE
+                isActive = listing.status == ListingStatus.AVAILABLE,
+                sellerId = listing.sellerId.value
             )
         }
         val item = marketplaceRepository.getItem(MarketplaceItemId(id)) ?: return null
@@ -32,7 +33,8 @@ class MarketplaceConversationListingPreviewProvider(
             formattedPrice = item.price.formatted,
             imageUrl = item.photos.firstOrNull(),
             categoryLabel = item.category.displayLabel(),
-            isActive = true
+            isActive = true,
+            sellerId = item.sellerId
         )
     }
 
