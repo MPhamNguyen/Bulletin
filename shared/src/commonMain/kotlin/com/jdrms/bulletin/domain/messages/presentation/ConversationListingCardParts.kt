@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
@@ -51,7 +52,7 @@ internal fun SellToAction(buyerName: String, onClick: () -> Unit, modifier: Modi
         modifier = modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick),
-        shape = BulletinShapes.pill,
+        shape = BulletinButtonDefaults.shape,
         color = color.copy(alpha = 0.08f),
         contentColor = color,
         border = BorderStroke(1.dp, color.copy(alpha = OUTLINE_ALPHA))
