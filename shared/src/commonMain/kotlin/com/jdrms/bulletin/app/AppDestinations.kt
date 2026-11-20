@@ -52,6 +52,7 @@ internal fun MainAppContent(
             )
             AppDestination.MESSAGES -> MessagesScreen(
                 viewModel = models.messages,
+                senderPhotos = container.messages.messageSenderPhotoProvider,
                 onViewProfile = { sellerId ->
                     navigation.pendingSellerProfileId = sellerId
                     navigation.currentDestination = AppDestination.MARKETPLACE
