@@ -177,9 +177,11 @@ fun MarketplaceDetailBottomSheet(
                     ListingDetailActions(
                         isBookmarked = isBookmarked,
                         bookmarkErrorMessage = state.bookmarkErrorMessage,
-                        onToggleBookmark = onToggleBookmark,
-                        onDismiss = onDismiss,
-                        onReportListing = actions.onReportListing,
+                        callbacks = ListingDetailActionCallbacks(
+                            onToggleBookmark,
+                            onDismiss,
+                            actions.onReportListing
+                        ),
                         canBookmarkListing = state.currentUserId != listing.sellerId,
                         canReportListing = state.currentUserId != listing.sellerId
                     )

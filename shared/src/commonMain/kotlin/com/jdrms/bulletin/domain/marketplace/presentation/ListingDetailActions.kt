@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
+import com.jdrms.bulletin.core.designsystem.skeleton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
@@ -23,11 +24,10 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 internal fun ListingDetailActions(
     isBookmarked: Boolean,
     bookmarkErrorMessage: String?,
-    onToggleBookmark: () -> Unit,
-    onDismiss: () -> Unit,
-    onReportListing: () -> Unit,
+    callbacks: ListingDetailActionCallbacks,
     canBookmarkListing: Boolean,
-    canReportListing: Boolean
+    canReportListing: Boolean,
+    isLoading: Boolean = false
 ) {
     bookmarkErrorMessage?.takeIf { canBookmarkListing }?.let { message ->
         Text(text = message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
@@ -38,8 +38,9 @@ internal fun ListingDetailActions(
     ) {
         if (canBookmarkListing) {
             BulletinButton(
-                onClick = onToggleBookmark,
-                modifier = Modifier.weight(1f),
+                onClick = callbacks.onToggleBookmark,
+                modifier = Modifier.weight(1f).skeleton(isLoading),
+                enabled = !isLoading,
                 variant = BulletinButtonVariant.Outlined
             ) {
                 Icon(
@@ -52,8 +53,9 @@ internal fun ListingDetailActions(
             }
         }
         BulletinButton(
-            onClick = onDismiss,
-            modifier = Modifier.weight(1f),
+            onClick = callbacks.onDismiss,
+            modifier = Modifier.weight(1f).skeleton(isLoading),
+            enabled = !isLoading,
             variant = BulletinButtonVariant.Primary
         ) {
             Text("Close")
@@ -61,8 +63,9 @@ internal fun ListingDetailActions(
     }
     if (canReportListing) {
         BulletinButton(
-            onClick = onReportListing,
-            modifier = Modifier.fillMaxWidth(),
+            onClick = callbacks.onReportListing,
+            modifier = Modifier.fillMaxWidth().skeleton(isLoading),
+            enabled = !isLoading,
             variant = BulletinButtonVariant.DestructiveOutlined
         ) {
             Text("Report Listing")

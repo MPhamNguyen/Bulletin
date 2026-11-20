@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.skeleton
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @Composable
@@ -21,7 +22,13 @@ internal fun MarketplaceListingHeader(listing: Listing) {
 }
 
 @Composable
-internal fun MarketplaceListingHeader(title: String, price: String, category: String, condition: String) {
+internal fun MarketplaceListingHeader(
+    title: String?,
+    price: String?,
+    category: String?,
+    condition: String?,
+    isLoading: Boolean = false
+) {
     // Title & Price Row
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -29,14 +36,15 @@ internal fun MarketplaceListingHeader(title: String, price: String, category: St
         verticalAlignment = Alignment.Top
     ) {
         Text(
-            text = title,
+            text = title ?: "Listing title",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).skeleton(isLoading && title == null)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = price,
+            text = price ?: "$00.00",
+            modifier = Modifier.skeleton(isLoading && price == null, color = MaterialTheme.colorScheme.primary),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.primary
         )
@@ -48,22 +56,27 @@ internal fun MarketplaceListingHeader(title: String, price: String, category: St
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
+            modifier = Modifier.skeleton(isLoading && category == null),
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ) {
             Text(
-                text = category,
+                text = category ?: "CATEGORY",
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
         Surface(
+            modifier = Modifier.skeleton(
+                isLoading && condition == null,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ),
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
-            val conditionText = condition.replace("_", " ")
+            val conditionText = (condition ?: "CONDITION").replace("_", " ")
             Text(
                 text = conditionText,
                 style = MaterialTheme.typography.labelMedium,
