@@ -47,6 +47,7 @@ data class MarketplaceFilterState(
 
 data class MarketplaceDetailState(
     val listingId: String? = null,
+    val preview: MarketplaceListingPreview? = null,
     val listing: Listing? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,

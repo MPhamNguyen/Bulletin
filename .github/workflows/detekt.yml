@@ -69,7 +69,7 @@ jobs:
           echo "${DETEKT_CLI_SHA256}  $RUNNER_TEMP/detekt-cli.jar" | sha256sum --check --strict
 
           download \
-            "https://repo1.maven.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/${DETEKT_VERSION}/detekt-formatting-${DETEKT_VERSION}.jar" \
+            "https://repo.maven.apache.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/${DETEKT_VERSION}/detekt-formatting-${DETEKT_VERSION}.jar" \
             "$RUNNER_TEMP/detekt-formatting.jar"
           echo "${DETEKT_FORMATTING_SHA256}  $RUNNER_TEMP/detekt-formatting.jar" | sha256sum --check --strict
 
@@ -116,5 +116,5 @@ jobs:
 #
 #   v=1.23.8
 #   curl -fsSL -o /tmp/cli.jar https://github.com/detekt/detekt/releases/download/v$v/detekt-cli-$v-all.jar
-#   curl -fsSL -o /tmp/fmt.jar https://repo1.maven.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/$v/detekt-formatting-$v.jar
+#   curl -fsSL -o /tmp/fmt.jar https://repo.maven.apache.org/maven2/io/gitlab/arturbosch/detekt/detekt-formatting/$v/detekt-formatting-$v.jar
 #   sha256sum /tmp/cli.jar /tmp/fmt.jar
