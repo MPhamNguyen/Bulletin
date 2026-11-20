@@ -214,7 +214,11 @@ private fun ConversationCardContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
-        ConversationAvatar(conversationTitle(conversation, viewerId))
+        MessageParticipantPhoto(
+            conversationTitle(conversation, viewerId),
+            conversation.participants.singleOrNull { it.id != viewerId }?.id
+                .takeIf { viewerId != null && conversation.includes(viewerId) && !conversation.isReadOnly }
+        )
         ConversationSummary(conversation, viewerId, titleColor, secondaryColor, Modifier.weight(1f))
         if (hasUnreadMessage) {
             Box(Modifier.padding(end = BulletinSpacing.s)) {
