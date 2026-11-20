@@ -25,7 +25,7 @@ internal fun MessagesChatContent(
     val isBlocked = counterpart != null && state.block.isBlocked(counterpart.id)
     var optionsOpen by remember(conversation.id, state.viewerId) { mutableStateOf(false) }
     LaunchedEffect(counterpart?.id, state.viewerId) { counterpart?.let { viewModel.refreshBlockStatus(it.id) } }
-    Column(modifier.imePadding()) {
+    Column(modifier.conversationBackSwipe(viewModel::returnToInbox).imePadding()) {
         ConversationHeader(
             counterpart,
             if (isReadOnly) Message.MISSING_SENDER_NAME else conversationTitle(conversation, state.viewerId),
