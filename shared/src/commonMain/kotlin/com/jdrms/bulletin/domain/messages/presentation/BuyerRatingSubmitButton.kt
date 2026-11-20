@@ -16,12 +16,13 @@ import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
-internal fun BuyerRatingSubmitButton(onClick: () -> Unit) {
+internal fun BuyerRatingSubmitButton(isProcessing: Boolean = false, onClick: () -> Unit) {
     BulletinButton(
         onClick = onClick,
+        enabled = !isProcessing,
         modifier = Modifier.padding(top = BulletinSpacing.m).fillMaxWidth()
     ) {
-        Text("Submit Rating", style = MaterialTheme.typography.labelLarge)
+        Text(if (isProcessing) "Submitting…" else "Submit Rating", style = MaterialTheme.typography.labelLarge)
         Icon(
             Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
