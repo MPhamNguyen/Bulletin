@@ -5,17 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,16 +22,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun ListingDetailsPage(
     state: MarketplaceDetailSheetState,
-    actions: MarketplaceDetailSheetActions
+    actions: MarketplaceDetailSheetActions,
+    photoModifier: Modifier = Modifier
 ) {
     val listing = state.listing
     val isLoading = state.isLoading
@@ -77,46 +72,16 @@ fun ListingDetailsPage(
             ) {
                 when {
                     listing == null && isLoading && state.preview != null -> MarketplaceDetailPreview(
-                        state.preview
+                        state.preview,
+                        photoModifier
                     )
-                    listing == null && isLoading -> ListingDetailSkeleton()
+                    listing == null && isLoading -> ListingDetailsLoading(state.previewPhotoUrl, photoModifier)
 
-                    listing == null && errorMessage != null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = BulletinSpacing.xl),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Warning,
-                                    contentDescription = "Error",
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                                Text(
-                                    text = errorMessage,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                Spacer(modifier = Modifier.height(BulletinSpacing.xs))
-                                BulletinButton(
-                                    onClick = onRetry,
-                                    variant = BulletinButtonVariant.Primary
-                                ) {
-                                    Text("Retry")
-                                }
-                            }
-                        }
-                    }
+                    listing == null && errorMessage != null -> ListingDetailsError(errorMessage, onRetry)
 
                     listing != null -> {
                         // Photos section
-                        ListingPhotosSection(photos = listing.photos)
+                        Box(photoModifier) { ListingPhotosSection(photos = listing.photos) }
 
                         MarketplaceListingHeader(listing)
 
