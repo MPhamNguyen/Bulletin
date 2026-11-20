@@ -30,7 +30,8 @@ private fun messageSellerStatus(conversationExists: Boolean?, message: String): 
 @Composable
 fun MessageSellerQuickAction(
     actions: MessageSellerQuickActionActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    canSend: Boolean = true
 ) {
     var message by remember { mutableStateOf(DEFAULT_SELLER_MESSAGE) }
     var isSending by remember { mutableStateOf(false) }
@@ -44,7 +45,7 @@ fun MessageSellerQuickAction(
     }
 
     MessageSellerQuickActionContent(
-        status = status,
+        status = status.copy(canSend = canSend),
         modifier = modifier,
         isSending = isSending,
         errorMessage = errorMessage,
@@ -59,7 +60,7 @@ fun MessageSellerQuickAction(
                 scope.launch { actions.onSeeChat() }
                 return@MessageSellerQuickActionContent
             }
-            if (isSending) return@MessageSellerQuickActionContent
+            if (!canSend || isSending) return@MessageSellerQuickActionContent
             isSending = true
             errorMessage = null
             scope.launch {

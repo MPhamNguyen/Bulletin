@@ -70,13 +70,13 @@ fun MarketplaceDetailBottomSheet(
             verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
         ) {
             when {
-                isLoading && state.preview != null -> MarketplaceDetailPreview(
+                listing == null && isLoading && state.preview != null -> MarketplaceDetailPreview(
                     state.preview,
                     state.currentUserId
                 )
-                isLoading -> ListingDetailSkeleton()
+                listing == null && isLoading -> ListingDetailSkeleton()
 
-                errorMessage != null -> {
+                listing == null && errorMessage != null -> {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -146,6 +146,7 @@ fun MarketplaceDetailBottomSheet(
                     ) {
                         BulletinButton(
                             onClick = onLeaveReview,
+                            enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth(),
                             variant = BulletinButtonVariant.Primary
                         ) {
@@ -155,6 +156,7 @@ fun MarketplaceDetailBottomSheet(
 
                     if (state.currentUserId != listing.sellerId) {
                         MessageSellerQuickAction(
+                            canSend = !isLoading,
                             actions = MessageSellerQuickActionActions(
                                 conversationKey = "${listing.id.value}:${listing.sellerId}",
                                 hasExistingConversation = {
