@@ -49,7 +49,16 @@ internal fun MessagesChatContent(
             navigation.onViewProfile
         )
         val listingPreview = conversation.listingId?.value?.let(state.listingPreviews::get)
-        buyerRatingPromptSeller(listingPreview, state.viewerId, counterpart)?.let { BuyerSaleNotice(it) }
+        val reviews by viewModel.reviews.state.collectAsState()
+        buyerRatingPromptSeller(listingPreview, state.viewerId, counterpart)?.let { seller ->
+            key(state.viewerId, conversation.listingId) {
+                BuyerSaleNotice(
+                    seller,
+                    reviews[conversation.listingId?.value] ?: ConversationReviewState.Ready,
+                    viewModel.reviews::submit
+                )
+            }
+        }
         if (isReadOnly) {
             ReadOnlyConversationNotice()
         } else if (counterpart != null && isBlocked) {

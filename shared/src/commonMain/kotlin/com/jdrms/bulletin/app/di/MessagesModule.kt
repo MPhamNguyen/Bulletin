@@ -61,6 +61,15 @@ internal class MessagesModule(
     val conversationListingPreviewProvider by lazy {
         MarketplaceConversationListingPreviewProvider(listings.listingsRepository, marketplace.marketplaceRepository)
     }
+    val submitConversationReview by lazy {
+        com.jdrms.bulletin.domain.messages.application.SubmitConversationReview(
+            com.jdrms.bulletin.app.integration.MarketplaceConversationReviews(
+                marketplace.submitMarketplaceReview,
+                marketplace.reviewRequestRepository
+            ),
+            currentMessageSenderProvider
+        )
+    }
     val conversationListingSales by lazy {
         ListingsConversationListingSales(
             listings.currentListingSellerProvider,

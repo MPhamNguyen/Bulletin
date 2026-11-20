@@ -13,7 +13,7 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 private const val MAX_COMMENT_LENGTH = 300
 
 @Composable
-internal fun BuyerRatingComment(comment: String, onCommentChange: (String) -> Unit) {
+internal fun BuyerRatingComment(comment: String, enabled: Boolean = true, onCommentChange: (String) -> Unit) {
     BulletinTextField(
         value = comment,
         onValueChange = onCommentChange,
@@ -23,6 +23,6 @@ internal fun BuyerRatingComment(comment: String, onCommentChange: (String) -> Un
             placeholder = { Text("Share details of your experience (optional)...") },
             supportingText = { Text("${comment.length} / $MAX_COMMENT_LENGTH") }
         ),
-        options = BulletinFieldOptions(minLines = 3, maxLines = 5)
+        options = BulletinFieldOptions(minLines = 3, maxLines = 5, enabled = enabled)
     )
 }

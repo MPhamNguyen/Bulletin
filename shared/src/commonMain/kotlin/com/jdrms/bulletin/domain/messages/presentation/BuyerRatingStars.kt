@@ -31,7 +31,7 @@ private fun ratingLabel(rating: Int): String = when (rating) {
 }
 
 @Composable
-internal fun BuyerRatingStars(rating: Int, onRatingChange: (Int) -> Unit) {
+internal fun BuyerRatingStars(rating: Int, enabled: Boolean = true, onRatingChange: (Int) -> Unit) {
     Column(
         modifier = Modifier.padding(top = 14.dp).fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
@@ -49,7 +49,7 @@ internal fun BuyerRatingStars(rating: Int, onRatingChange: (Int) -> Unit) {
                     } else {
                         MaterialTheme.colorScheme.outline
                     },
-                    modifier = Modifier.size(36.dp).clickable { onRatingChange(value) }.padding(4.dp)
+                    modifier = Modifier.size(36.dp).clickable(enabled = enabled) { onRatingChange(value) }.padding(4.dp)
                 )
             }
         }

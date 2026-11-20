@@ -31,21 +31,6 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
-import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
-import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
-import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-
-/** Returns the seller's display name when the viewer is the chosen buyer and should be asked to rate them. */
-internal fun buyerRatingPromptSeller(
-    preview: ConversationListingPreview?,
-    viewerId: SenderId?,
-    seller: ConversationParticipant?
-): String? {
-    if (preview?.isSold != true || viewerId == null || seller == null) return null
-    if (preview.soldToBuyerId != viewerId.value || preview.sellerId != seller.id.value) return null
-    if (preview.sellerId == viewerId.value) return null
-    return seller.displayName
-}
 
 private const val MAX_COMMENT_LENGTH = 300
 private const val DEFAULT_RATING = 5
@@ -53,10 +38,11 @@ private const val DEFAULT_RATING = 5
 @Composable
 internal fun BuyerSaleNotice(
     sellerName: String,
-    onSubmit: (rating: Int, comment: String) -> Unit = { _, _ -> }
+    state: ConversationReviewState,
+    onSubmit: (rating: Int, comment: String) -> Unit
 ) {
     var dismissed by remember { mutableStateOf(false) }
-    var submitted by remember { mutableStateOf(false) }
+    val isProcessing = state == ConversationReviewState.Submitting
     var rating by remember { mutableStateOf(DEFAULT_RATING) }
     var comment by remember { mutableStateOf("") }
     if (dismissed) return
@@ -74,16 +60,18 @@ internal fun BuyerSaleNotice(
                 )
             )
         ) {
-            if (submitted) {
+            if (state == ConversationReviewState.Submitted) {
                 BuyerRatingSubmitted(sellerName)
             } else {
                 Column(Modifier.padding(BulletinSpacing.l)) {
-                    BuyerRatingHeader(sellerName) { dismissed = true }
-                    BuyerRatingStars(rating) { rating = it }
-                    BuyerRatingComment(comment) { comment = it.take(MAX_COMMENT_LENGTH) }
-                    BuyerRatingSubmitButton {
+                    BuyerRatingHeader(sellerName) { if (!isProcessing) dismissed = true }
+                    BuyerRatingStars(rating, enabled = !isProcessing) { rating = it }
+                    BuyerRatingComment(comment, enabled = !isProcessing) { comment = it.take(MAX_COMMENT_LENGTH) }
+                    (state as? ConversationReviewState.Failed)?.let {
+                        Text(it.message, color = MaterialTheme.colorScheme.error)
+                    }
+                    BuyerRatingSubmitButton(isProcessing = isProcessing) {
                         onSubmit(rating, comment.trim())
-                        submitted = true
                     }
                 }
             }
