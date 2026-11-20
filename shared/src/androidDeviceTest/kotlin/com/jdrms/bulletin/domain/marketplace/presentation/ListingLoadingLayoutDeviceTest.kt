@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -101,6 +102,42 @@ class ListingLoadingLayoutDeviceTest {
         compose.runOnIdle { lookup.complete(true) }
         compose.waitForIdle()
         compose.onNodeWithText("See Chat").assertExists()
+    }
+
+    @Test fun cachedBookmarkIsVisibleAndInteractiveBeforeDetailsArrive() {
+        var toggles = 0
+        val preview = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem(
+            id = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId("listing"),
+            sellerId = "seller",
+            sellerName = "Sam",
+            title = "Desk",
+            description = "Desk",
+            price = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplacePrice(20.0),
+            category = com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceCategory.OTHER
+        )
+        compose.setContent {
+            BulletinTheme {
+                ListingInteractionSection(
+                    state = MarketplaceDetailSheetState(
+                        listing = null,
+                        preview = preview,
+                        isLoading = true,
+                        errorMessage = null,
+                        bookmarkErrorMessage = null,
+                        isBookmarked = true,
+                        currentUserId = "buyer",
+                        hasReview = false
+                    ),
+                    actions = MarketplaceDetailSheetActions(
+                        onDismiss = {},
+                        onRetry = {},
+                        onToggleBookmark = { toggles++ }
+                    )
+                )
+            }
+        }
+        compose.onNodeWithText("Bookmarked").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, toggles) }
     }
 
     private fun loadedSeller() = SellerInfoCardState(

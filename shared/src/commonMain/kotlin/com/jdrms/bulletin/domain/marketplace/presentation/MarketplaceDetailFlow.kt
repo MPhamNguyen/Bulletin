@@ -56,7 +56,9 @@ private fun MarketplaceDetailOverlay(
         actions = MarketplaceDetailSheetActions(
             onDismiss = onDetailDismiss,
             onRetry = viewModel::retryLoadListingDetail,
-            onToggleBookmark = { state.detail.listing?.let { viewModel.toggleBookmark(it.id) } },
+            onToggleBookmark = {
+                (state.detail.listing?.id ?: state.detail.preview?.id)?.let { viewModel.toggleBookmark(it) }
+            },
             onLeaveReview = viewModel.reviewActions::openReviewDialog,
             onDismissReview = viewModel.reviewActions::dismissReviewDialog,
             onSubmitReview = viewModel.reviewActions::submitReview,

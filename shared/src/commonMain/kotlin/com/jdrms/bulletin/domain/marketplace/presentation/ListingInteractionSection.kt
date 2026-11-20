@@ -21,6 +21,7 @@ internal fun ListingInteractionSection(state: MarketplaceDetailSheetState, actio
     val listing = state.listing
     val listingId = listing?.id?.value ?: state.preview?.id?.value
     val sellerId = listing?.sellerId ?: state.preview?.sellerId
+    val hasListingIdentity = listingId != null && sellerId != null
     val sellerName = listing?.sellerName ?: state.preview?.sellerName.orEmpty()
     val showBuyerActions = sellerId == null || state.currentUserId != sellerId
     Column(
@@ -34,7 +35,7 @@ internal fun ListingInteractionSection(state: MarketplaceDetailSheetState, actio
         }
         if (showBuyerActions) {
             MessageSellerQuickAction(
-                canSend = listingId != null && sellerId != null,
+                canSend = hasListingIdentity,
                 actions = MessageSellerQuickActionActions(
                     conversationKey = "$listingId:$sellerId",
                     hasExistingConversation = {
@@ -65,7 +66,8 @@ internal fun ListingInteractionSection(state: MarketplaceDetailSheetState, actio
             ),
             canBookmarkListing = showBuyerActions,
             canReportListing = showBuyerActions,
-            isLoading = listing == null
+            isLoading = listing == null,
+            bookmarkEnabled = hasListingIdentity
         )
     }
 }
