@@ -11,6 +11,11 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @Composable
 internal fun MarketplaceListingDescription(listing: Listing) {
+    MarketplaceListingDescription(listing.description, listing.createdAtMillis, listing.updatedAtMillis)
+}
+
+@Composable
+internal fun MarketplaceListingDescription(description: String, createdAtMillis: Long, updatedAtMillis: Long) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = "About this item",
@@ -18,14 +23,14 @@ internal fun MarketplaceListingDescription(listing: Listing) {
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = listing.description,
+            text = description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = formatMarketplaceListingTime(
-                createdAtMillis = listing.createdAtMillis,
-                updatedAtMillis = listing.updatedAtMillis,
+                createdAtMillis = createdAtMillis,
+                updatedAtMillis = updatedAtMillis,
                 nowMillis = currentTimeMillis()
             ),
             style = MaterialTheme.typography.bodySmall,
