@@ -16,5 +16,4 @@ internal fun ColumnScope.ListingDetailSkeleton() {
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     MarketplaceListingDescription(null, null, null, isLoading = true)
     ItemDetailsSection(emptyList(), isLoading = true)
-    ListingActionsSkeleton()
 }

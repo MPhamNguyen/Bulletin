@@ -53,7 +53,7 @@ class ListingLoadingLayoutDeviceTest {
         compose.runOnIdle { assertEquals(1, clicks) }
     }
 
-    @Test fun loadingActionHidesLabelAndBlocksTouchesThenBecomesInteractive() {
+    @Test fun closeRemainsVisibleAndInteractiveWhileLoading() {
         var loading by mutableStateOf(true)
         var closes = 0
         compose.setContent {
@@ -70,15 +70,39 @@ class ListingLoadingLayoutDeviceTest {
                 }
             }
         }
-        compose.onNodeWithText("Close").assertDoesNotExist()
-        compose.onNodeWithTag("actions").performTouchInput { click(center) }
+        compose.onNodeWithText("Close").performClick()
         compose.runOnIdle {
-            assertEquals(0, closes)
+            assertEquals(1, closes)
             loading = false
         }
         compose.onNodeWithText("Close").performClick()
-        compose.runOnIdle { assertEquals(1, closes) }
+        compose.runOnIdle { assertEquals(2, closes) }
     }
+
+    @Test fun messageControlsAppearBeforeConversationLookupCompletes() {
+        val lookup = kotlinx.coroutines.CompletableDeferred<Boolean>()
+        compose.setContent {
+            BulletinTheme {
+                com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction(
+                    actions = com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions(
+                        conversationKey = "listing:seller",
+                        hasExistingConversation = { lookup.await() },
+                        onSend = { false },
+                        onSent = {},
+                        onSeeChat = {}
+                    )
+                )
+            }
+        }
+        compose.onNodeWithText("Message Seller").assertExists()
+        compose.onNodeWithText("Hi, is this available?").assertExists()
+        compose.onNodeWithText("Send").assertExists()
+        compose.onNodeWithText("Checking...").assertDoesNotExist()
+        compose.runOnIdle { lookup.complete(true) }
+        compose.waitForIdle()
+        compose.onNodeWithText("See Chat").assertExists()
+    }
+
     private fun loadedSeller() = SellerInfoCardState(
         name = "Sam",
         school = "Campus",

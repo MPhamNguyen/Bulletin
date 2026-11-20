@@ -24,14 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
-import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
-import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.ReviewSubmissionDialog
 import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSheetDefaults
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,14 +39,9 @@ fun MarketplaceDetailBottomSheet(
     val listing = state.listing
     val isLoading = state.isLoading
     val errorMessage = state.errorMessage
-    val isBookmarked = state.isBookmarked
     val onDismiss = actions.onDismiss
     val onRetry = actions.onRetry
-    val onToggleBookmark = actions.onToggleBookmark
     val onSellerClick = actions.onSellerClick
-    val onMessageSeller = actions.onMessageSeller
-    val hasExistingConversation = actions.hasExistingConversation
-    val onLeaveReview = actions.onLeaveReview
     val onDismissReview = actions.onDismissReview
     val onSubmitReview = actions.onSubmitReview
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -71,8 +63,7 @@ fun MarketplaceDetailBottomSheet(
         ) {
             when {
                 listing == null && isLoading && state.preview != null -> MarketplaceDetailPreview(
-                    state.preview,
-                    state.currentUserId
+                    state.preview
                 )
                 listing == null && isLoading -> ListingDetailSkeleton()
 
@@ -137,58 +128,9 @@ fun MarketplaceDetailBottomSheet(
                     MarketplaceListingDescription(listing)
 
                     MarketplaceItemDetails(listing)
-
-                    Spacer(modifier = Modifier.height(BulletinSpacing.xs))
-
-                    if (
-                        listing.status == MarketplaceListingStatus.SOLD &&
-                        listing.buyerId == state.currentUserId && !state.hasReview
-                    ) {
-                        BulletinButton(
-                            onClick = onLeaveReview,
-                            enabled = !isLoading,
-                            modifier = Modifier.fillMaxWidth(),
-                            variant = BulletinButtonVariant.Primary
-                        ) {
-                            Text("Leave Review for Seller")
-                        }
-                    }
-
-                    if (state.currentUserId != listing.sellerId) {
-                        MessageSellerQuickAction(
-                            canSend = !isLoading,
-                            actions = MessageSellerQuickActionActions(
-                                conversationKey = "${listing.id.value}:${listing.sellerId}",
-                                hasExistingConversation = {
-                                    hasExistingConversation(listing.id.value, listing.sellerId)
-                                },
-                                onSend = { content ->
-                                    onMessageSeller(listing.id.value, listing.sellerId, listing.sellerName, content)
-                                },
-                                onSent = {
-                                    onDismiss()
-                                    actions.onMessageSent()
-                                },
-                                onSeeChat = {
-                                    actions.onSeeChat(listing.id.value, listing.sellerId)
-                                }
-                            )
-                        )
-                    }
-
-                    ListingDetailActions(
-                        isBookmarked = isBookmarked,
-                        bookmarkErrorMessage = state.bookmarkErrorMessage,
-                        callbacks = ListingDetailActionCallbacks(
-                            onToggleBookmark,
-                            onDismiss,
-                            actions.onReportListing
-                        ),
-                        canBookmarkListing = state.currentUserId != listing.sellerId,
-                        canReportListing = state.currentUserId != listing.sellerId
-                    )
                 }
             }
+            ListingInteractionSection(state, actions)
         }
         if (state.isReviewDialogOpen) {
             ReviewSubmissionDialog(

@@ -1,5 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
-import com.jdrms.bulletin.core.designsystem.skeleton
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
+import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
@@ -39,23 +41,26 @@ internal fun ListingDetailActions(
         if (canBookmarkListing) {
             BulletinButton(
                 onClick = callbacks.onToggleBookmark,
-                modifier = Modifier.weight(1f).skeleton(isLoading),
+                modifier = Modifier.weight(1f),
                 enabled = !isLoading,
                 variant = BulletinButtonVariant.Outlined
             ) {
-                Icon(
-                    imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = if (isBookmarked) "Bookmarked" else "Bookmark",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(if (isBookmarked) "Bookmarked" else "Bookmark")
+                Crossfade(isBookmarked, animationSpec = tween(BulletinMotion.STANDARD), label = "bookmark") { saved ->
+                    Row {
+                        Icon(
+                            imageVector = if (saved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = if (saved) "Bookmarked" else "Bookmark",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(if (saved) "Bookmarked" else "Bookmark")
+                    }
+                }
             }
         }
         BulletinButton(
             onClick = callbacks.onDismiss,
-            modifier = Modifier.weight(1f).skeleton(isLoading),
-            enabled = !isLoading,
+            modifier = Modifier.weight(1f),
             variant = BulletinButtonVariant.Primary
         ) {
             Text("Close")
@@ -64,7 +69,7 @@ internal fun ListingDetailActions(
     if (canReportListing) {
         BulletinButton(
             onClick = callbacks.onReportListing,
-            modifier = Modifier.fillMaxWidth().skeleton(isLoading),
+            modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading,
             variant = BulletinButtonVariant.DestructiveOutlined
         ) {
