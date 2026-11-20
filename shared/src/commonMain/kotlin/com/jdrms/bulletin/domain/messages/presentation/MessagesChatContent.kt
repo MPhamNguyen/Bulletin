@@ -49,7 +49,7 @@ internal fun MessagesChatContent(
             navigation.onViewProfile
         )
         val listingPreview = conversation.listingId?.value?.let(state.listingPreviews::get)
-        buyerSaleNotice(listingPreview, state.viewerId, counterpart)?.let { BuyerSaleNotice(it) }
+        buyerRatingPromptSeller(listingPreview, state.viewerId, counterpart)?.let { BuyerSaleNotice(it) }
         if (isReadOnly) {
             ReadOnlyConversationNotice()
         } else if (counterpart != null && isBlocked) {
