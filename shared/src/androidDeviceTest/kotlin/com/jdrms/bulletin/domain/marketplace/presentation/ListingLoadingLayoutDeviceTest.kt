@@ -120,7 +120,7 @@ class ListingLoadingLayoutDeviceTest {
                 ListingInteractionSection(
                     state = MarketplaceDetailSheetState(
                         listing = null,
-                        preview = preview,
+                        preview = preview.toDetailPreview(),
                         isLoading = true,
                         errorMessage = null,
                         bookmarkErrorMessage = null,
