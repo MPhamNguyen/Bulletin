@@ -132,8 +132,8 @@ private fun ProfileDestinationContent(
             models.sellerProfile,
             onListingClick = { listingId ->
                 val preview = models.messages.uiState.value.listingPreviews[listingId]
-                        ?.toMarketplaceDetailPreview(listingId)
-                    models.marketplace.onListingClicked(listingId, preview)
+                    ?.toMarketplaceDetailPreview(listingId)
+                models.marketplace.onListingClicked(listingId, preview)
                 navigation.openListing(listingId)
             },
             onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
@@ -144,8 +144,8 @@ private fun ProfileDestinationContent(
             onBack = { navigation.profileDestination = ProfileDestination.PROFILE },
             onListingClick = { listingId ->
                 val preview = models.messages.uiState.value.listingPreviews[listingId]
-                        ?.toMarketplaceDetailPreview(listingId)
-                    models.marketplace.onListingClicked(listingId, preview)
+                    ?.toMarketplaceDetailPreview(listingId)
+                models.marketplace.onListingClicked(listingId, preview)
                 navigation.openListing(listingId)
             }
         )

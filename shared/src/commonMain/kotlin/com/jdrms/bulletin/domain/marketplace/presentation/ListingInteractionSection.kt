@@ -5,15 +5,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickAction
 import com.jdrms.bulletin.core.designsystem.MessageSellerQuickActionActions
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceListingStatus
 
 /** Keeps action identity and message drafts stable as preview data becomes full details. */
 @Composable
@@ -28,14 +25,10 @@ internal fun ListingInteractionSection(state: MarketplaceDetailSheetState, actio
         modifier = Modifier.fillMaxWidth().animateContentSize(tween(BulletinMotion.STANDARD)),
         verticalArrangement = Arrangement.spacedBy(BulletinSpacing.l)
     ) {
-        if (state.canLeaveSellerReview()) {
-            BulletinButton(onClick = actions.onLeaveReview, modifier = Modifier.fillMaxWidth()) {
-                Text("Leave Review for Seller")
-            }
-        }
+        ListingSellerReviewAction(state, actions.onLeaveReview)
         if (showBuyerActions) {
             MessageSellerQuickAction(
-                canSend = hasListingIdentity,
+                canSend = hasListingIdentity && !state.isLoading,
                 actions = MessageSellerQuickActionActions(
                     conversationKey = "$listingId:$sellerId",
                     hasExistingConversation = {
@@ -71,6 +64,3 @@ internal fun ListingInteractionSection(state: MarketplaceDetailSheetState, actio
         )
     }
 }
-
-private fun MarketplaceDetailSheetState.canLeaveSellerReview(): Boolean =
-    listing?.status == MarketplaceListingStatus.SOLD && listing.buyerId == currentUserId && !hasReview
