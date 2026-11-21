@@ -9,7 +9,8 @@ import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 data class MessageInbox(
     val viewerId: SenderId,
     val conversations: List<Conversation>,
-    val pendingReviewConversationIds: Set<ConversationId>? = emptySet()
+    val pendingReviewConversationIds: Set<ConversationId>? = emptySet(),
+    val unmatchedReviewRequests: List<PendingConversationReview>? = emptyList()
 )
 
 class GetConversations(
@@ -26,17 +27,22 @@ class GetConversations(
             is Result.Success -> result.data
             is Result.Error -> return result
         }
-        val pending = reviews.forBuyer(viewer).getOrNull()?.let { requests ->
+        val requests = reviews.forBuyer(viewer).getOrNull()
+        val pending = requests?.let { requests ->
             conversations.filter { conversation ->
-                conversation.includes(viewer) && !conversation.isReadOnly && requests.any { request ->
-                    request.listingId.value.removePrefix("listing:") ==
-                        conversation.listingId?.value?.removePrefix("listing:") &&
-                        conversation.counterpartId(viewer) == request.sellerId
-                }
+                requests.any { request -> conversation.matchesReview(request, viewer) }
             }.mapTo(mutableSetOf(), Conversation::id)
         }
-        return Result.Success(MessageInbox(viewer, conversations, pending))
+        val unmatched = requests?.filter { request ->
+            conversations.none { it.id in pending.orEmpty() && it.matchesReview(request, viewer) }
+        }
+        return Result.Success(MessageInbox(viewer, conversations, pending, unmatched))
     }
+
+    private fun Conversation.matchesReview(request: PendingConversationReview, viewer: SenderId): Boolean =
+        includes(viewer) && !isReadOnly &&
+            request.listingId.value.removePrefix("listing:") == listingId?.value?.removePrefix("listing:") &&
+            counterpartId(viewer) == request.sellerId
 
     private fun Conversation.counterpartId(viewer: SenderId): SenderId? =
         participants.singleOrNull { it.id != viewer }?.id

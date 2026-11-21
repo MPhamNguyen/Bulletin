@@ -22,7 +22,7 @@ internal class MessagesDestinationLifecycle(
             listingPreviewLoader.cancel()
             return
         }
-        listingPreviewLoader.load(inbox.state.value.conversations)
+        listingPreviewLoader.load(inbox.state.value)
         inbox.refresh()
         state.value.selectedConversationId?.let { conversationId ->
             reloadSelectedConversation(conversationId)

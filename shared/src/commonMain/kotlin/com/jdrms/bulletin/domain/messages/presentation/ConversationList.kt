@@ -13,6 +13,9 @@ internal fun ConversationList(state: MessagesUiState, viewModel: MessagesViewMod
     val reviews by viewModel.reviews.state.collectAsState()
     var pendingRemoval by remember { mutableStateOf<ConversationId?>(null) }
     LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
+        items(state.unmatchedReviewRequests, key = { "review:${it.listingId.value}:${it.sellerId.value}" }) { request ->
+            UnmatchedReviewCard(request, state, viewModel.reviews)
+        }
         items(
             state.conversations.sortedByDescending { conversation ->
                 conversationInboxAttention(conversation, state, reviews).hasPendingReview

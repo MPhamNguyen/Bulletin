@@ -44,8 +44,54 @@ class GetConversationsReviewsTest {
                     Result.Success(listOf(PendingConversationReview(ListingReferenceId(listing), seller)))
                 }
             )
-            assertEquals(expected, get().getOrThrow().pendingReviewConversationIds)
+            val inbox = get().getOrThrow()
+            assertEquals(expected, inbox.pendingReviewConversationIds)
+            assertEquals(if (expected.isEmpty()) 1 else 0, inbox.unmatchedReviewRequests?.size)
         }
+    }
+
+    @Test
+    fun hiddenConversationKeepsAnIndependentReviewEntryUntilCompletion() = runTest {
+        val chat = Conversation(conversationId, conversation().participants, listingId = ListingReferenceId("1"))
+        val repository = messagesRepository(listOf(chat))
+        repository.hideConversation(alice.id, chat.id).getOrThrow()
+        val request = PendingConversationReview(ListingReferenceId("1"), carol.id)
+        var pending = listOf(request)
+        val get = GetConversations(
+            repository,
+            MutableMessageSenderProvider(),
+            PendingConversationReviews { Result.Success(pending) }
+        )
+        val inbox = get().getOrThrow()
+        assertTrue(inbox.conversations.isEmpty())
+        assertTrue(inbox.pendingReviewConversationIds.orEmpty().isEmpty())
+        assertEquals(listOf(request), inbox.unmatchedReviewRequests)
+        pending = emptyList()
+        assertTrue(get().getOrThrow().unmatchedReviewRequests.orEmpty().isEmpty())
+        assertTrue(repository.getConversations(alice.id).getOrThrow().isEmpty())
+    }
+
+    @Test
+    fun unmatchedRequestsSurviveTemporaryFailureAndClearOnSignOut() = runTest {
+        val request = PendingConversationReview(ListingReferenceId("1"), carol.id)
+        var result: Result<List<PendingConversationReview>> = Result.Success(listOf(request))
+        val identity = MutableMessageSenderProvider()
+        val owner = InboxStateOwner(
+            GetConversations(messagesRepository(emptyList()), identity, PendingConversationReviews { result }),
+            ObserveInboxInvalidations(InboxObserver { emptyFlow() }),
+            identity,
+            backgroundScope
+        )
+        runCurrent()
+        assertEquals(listOf(request), owner.state.value.unmatchedReviewRequests)
+        result = Result.Error(IllegalStateException("Offline"))
+        owner.refresh()
+        runCurrent()
+        assertEquals(listOf(request), owner.state.value.unmatchedReviewRequests)
+        identity.result = Result.Error(IllegalStateException("Signed out"))
+        runCurrent()
+        assertTrue(owner.state.value.unmatchedReviewRequests.isEmpty())
+        owner.close()
     }
 
     @Test

@@ -151,6 +151,8 @@ class InboxStateOwner(
                         conversations = InboxReconciliation.merge(snapshot.conversations, result.data.conversations),
                         pendingReviewConversationIds = result.data.pendingReviewConversationIds
                             ?: snapshot.pendingReviewConversationIds,
+                        unmatchedReviewRequests = result.data.unmatchedReviewRequests
+                            ?: snapshot.unmatchedReviewRequests,
                         isLoading = false,
                         errorMessage = null
                     )

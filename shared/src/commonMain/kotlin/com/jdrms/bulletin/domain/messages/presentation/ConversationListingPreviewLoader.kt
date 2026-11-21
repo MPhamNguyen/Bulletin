@@ -21,8 +21,10 @@ internal class ConversationListingPreviewLoader(
 ) {
     private val jobs = mutableMapOf<String, Job>()
 
-    fun load(conversations: List<Conversation>) {
-        val listingIds = conversations.mapNotNull { it.listingId?.value }.toSet()
+    fun load(inbox: InboxState) = load(inbox.conversations, inbox.unmatchedReviewRequests.map { it.listingId })
+
+    fun load(conversations: List<Conversation>, reviewListings: List<ListingReferenceId> = emptyList()) {
+        val listingIds = conversations.mapNotNull { it.listingId?.value }.toSet() + reviewListings.map { it.value }
         jobs.keys.filterNot(listingIds::contains).forEach { listingId -> jobs.remove(listingId)?.cancel() }
         uiState.update { state -> state.copy(listingPreviews = state.listingPreviews.filterKeys(listingIds::contains)) }
         val loadedIds = uiState.value.listingPreviews.keys

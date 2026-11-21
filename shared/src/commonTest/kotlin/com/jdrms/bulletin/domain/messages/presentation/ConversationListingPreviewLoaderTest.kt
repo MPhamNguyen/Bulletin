@@ -3,6 +3,9 @@ package com.jdrms.bulletin.domain.messages.presentation
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreviewProvider
+import com.jdrms.bulletin.domain.messages.application.PendingConversationReview
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -17,6 +20,28 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationListingPreviewLoaderTest {
+    @Test
+    fun loadsPurchaseTitleForRequestsWithoutVisibleChatsAndDropsItWhenResolved() = runTest {
+        val state = MutableStateFlow(MessagesUiState())
+        val preview = listingSalePreview(sold = true)
+        val loader = ConversationListingPreviewLoader(
+            state,
+            ConversationListingPreviewProvider { preview },
+            backgroundScope
+        )
+        loader.load(
+            InboxState(
+                unmatchedReviewRequests = listOf(
+                    PendingConversationReview(ListingReferenceId(SALE_LISTING_ID), SenderId("seller"))
+                )
+            )
+        )
+        runCurrent()
+        assertEquals(preview, state.value.listingPreviews[SALE_LISTING_ID])
+        loader.load(InboxState())
+        assertTrue(state.value.listingPreviews.isEmpty())
+    }
+
     @Test
     fun previewStartedBeforeTheTapCannotReplaceTheOptimisticSale() = runTest {
         val previous = listingSalePreview()

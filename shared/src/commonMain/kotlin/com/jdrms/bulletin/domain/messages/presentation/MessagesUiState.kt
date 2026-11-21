@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
+import com.jdrms.bulletin.domain.messages.application.PendingConversationReview
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
@@ -13,6 +14,7 @@ data class MessagesUiState(
     val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
     val pendingReviewConversationIds: Set<ConversationId> = emptySet(),
+    val unmatchedReviewRequests: List<PendingConversationReview> = emptyList(),
     val listingPreviews: Map<String, ConversationListingPreview?> = emptyMap(),
     val selectedConversationId: ConversationId? = null,
     val isConversationOpen: Boolean = false,

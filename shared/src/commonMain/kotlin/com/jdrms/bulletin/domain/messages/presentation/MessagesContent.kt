@@ -55,12 +55,13 @@ internal fun MessagesInboxContent(
                 ) { Text("Retry") }
             }
         }
+        val isEmpty = state.conversations.isEmpty() && state.unmatchedReviewRequests.isEmpty()
         when {
-            state.isLoading && state.conversations.isEmpty() -> CenterMessage(
+            state.isLoading && isEmpty -> CenterMessage(
                 "Loading conversations...",
                 loading = true
             )
-            state.conversations.isEmpty() -> CenterMessage(
+            isEmpty -> CenterMessage(
                 "No conversations yet. Message a seller to start a conversation."
             )
             else -> ConversationList(state, viewModel, Modifier.weight(1f).fillMaxWidth())

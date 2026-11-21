@@ -4,6 +4,7 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.application.ConversationReviews
 import com.jdrms.bulletin.domain.messages.application.CurrentMessageSenderProvider
 import com.jdrms.bulletin.domain.messages.application.MessageSender
+import com.jdrms.bulletin.domain.messages.application.PendingConversationReview
 import com.jdrms.bulletin.domain.messages.application.SubmitConversationReview
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
@@ -93,6 +94,48 @@ class ConversationReviewInteractionTest {
             this
         )
         interaction.submit(5, "")
+        runCurrent()
+        assertTrue(interaction.state.value.isEmpty())
+    }
+
+    @Test
+    fun unmatchedRequestCanBeSubmittedWithoutAChatAndRetriedAfterFailure() = runTest {
+        val request = PendingConversationReview(ListingReferenceId("1"), SenderId("seller"))
+        var calls = 0
+        val interaction = ConversationReviewInteraction(
+            useCase { listing, buyer, seller, rating, comment ->
+                assertEquals(request.listingId, listing)
+                assertEquals(SenderId("buyer"), buyer)
+                assertEquals(request.sellerId, seller)
+                assertEquals(4, rating)
+                assertEquals("Thanks", comment)
+                if (++calls == 1) Result.Error(IllegalStateException("Offline")) else Result.Success(Unit)
+            },
+            { MessagesUiState(viewerId = SenderId("buyer"), unmatchedReviewRequests = listOf(request)) },
+            this
+        )
+        interaction.submitPending(request, 4, " Thanks ")
+        runCurrent()
+        assertEquals(ConversationReviewState.Failed("Offline"), interaction.state.value["1"])
+        interaction.submitPending(request, 4, "Thanks")
+        interaction.submitPending(request, 4, "Thanks")
+        runCurrent()
+        assertEquals(2, calls)
+        assertEquals(ConversationReviewState.Submitted, interaction.state.value["1"])
+    }
+
+    @Test
+    fun unmatchedSubmissionRequiresCurrentRequestAndSignedInBuyer() = runTest {
+        val request = PendingConversationReview(ListingReferenceId("1"), SenderId("seller"))
+        var snapshot = MessagesUiState(viewerId = SenderId("buyer"))
+        val interaction = ConversationReviewInteraction(
+            useCase { _, _, _, _, _ -> error("Must not save") },
+            { snapshot },
+            this
+        )
+        interaction.submitPending(request, 5, "")
+        snapshot = MessagesUiState(unmatchedReviewRequests = listOf(request))
+        interaction.submitPending(request, 5, "")
         runCurrent()
         assertTrue(interaction.state.value.isEmpty())
     }

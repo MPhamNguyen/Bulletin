@@ -1,7 +1,10 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.application.PendingConversationReview
 import com.jdrms.bulletin.domain.messages.application.SubmitConversationReview
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,12 +37,23 @@ internal class ConversationReviewInteraction(
         ) {
             return
         }
+        submit(listing, buyer, seller.id, rating, comment)
+    }
+
+    fun submitPending(request: PendingConversationReview, rating: Int, comment: String) {
+        val snapshot = currentState()
+        val buyer = snapshot.viewerId ?: return
+        if (request !in snapshot.unmatchedReviewRequests) return
+        submit(request.listingId, buyer, request.sellerId, rating, comment)
+    }
+
+    private fun submit(listing: ListingReferenceId, buyer: SenderId, seller: SenderId, rating: Int, comment: String) {
         val previous = state.value[listing.value]
         if (previous == ConversationReviewState.Submitting || previous == ConversationReviewState.Submitted) return
         val version = generation
         mutableState.update { it + (listing.value to ConversationReviewState.Submitting) }
         scope.launch {
-            val result = save { submitReview?.invoke(listing, buyer, seller.id, rating, comment) }
+            val result = save { submitReview?.invoke(listing, buyer, seller, rating, comment) }
             if (version == generation) mutableState.update { it + (listing.value to result) }
         }
     }

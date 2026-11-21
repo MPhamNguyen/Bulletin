@@ -163,7 +163,7 @@ class MessagesViewModel(
             }
         }
         if (snapshot.viewerId == null) return
-        if (destinationLifecycle.isActive) listingPreviewLoader.load(snapshot.conversations)
+        if (destinationLifecycle.isActive) listingPreviewLoader.load(snapshot)
         if (snapshot.isLoading) return
         val current = threadState.value.selectedConversationId
         if (streamCallbacks.isWaitingForInbox(snapshot, current, requestedConversationId)) {
