@@ -185,6 +185,7 @@ class MessagesViewModel(
         streamCallbacks.clearPending()
         threadState.update { it.copy(isConversationOpen = true) }
         conversationSelection.select(conversationId)
+        inbox.refresh()
     }
 
     fun returnToInbox() {
