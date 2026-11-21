@@ -3,7 +3,6 @@ package com.jdrms.bulletin.app
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,12 +31,8 @@ internal fun AppRoot(
     LaunchedEffect(container) { container.profile.sessionRepository.restore() }
     LaunchedEffect(authState) { currentScreen = resolveRootScreen(currentScreen, authState) }
     if (authState == AuthSessionState.CHECKING) {
-        Box(
-            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
+        // The platform splash screen covers this wait. If it gives up first, show the plain background, not a spinner.
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
     } else {
         val screen = resolveRootScreen(currentScreen, authState)
         when (screen) {

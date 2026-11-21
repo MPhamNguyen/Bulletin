@@ -6,12 +6,16 @@ import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageCursor
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
 import com.jdrms.bulletin.domain.marketplace.application.listingComparator
 import com.jdrms.bulletin.domain.marketplace.application.toCursor
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class CompositeMarketplaceListingSource(
     private vararg val sources: MarketplaceListingSource
 ) : MarketplaceListingSource {
     override suspend fun getAvailableListings(request: MarketplacePageRequest): MarketplaceListingPage {
-        val sourcePages = sources.map { it.getAvailableListings(request) }
+        // Sources are independent, so query them concurrently; awaitAll keeps their declared order.
+        val sourcePages = coroutineScope { sources.map { async { it.getAvailableListings(request) } }.awaitAll() }
         val merged = sourcePages
             .flatMap { it.listings }
             .distinctBy { it.id }
