@@ -14,7 +14,6 @@ internal fun ConversationChatDialogs(
     if (options.isOpen) {
         ConversationOptionsDialog(
             ConversationOptionsActions(
-                onToggleMute = null,
                 onReportUser = {
                     options.onDismiss()
                     navigation.onReportUser(counterpart.id.value)

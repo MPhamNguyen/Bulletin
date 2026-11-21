@@ -14,29 +14,37 @@ import androidx.compose.ui.unit.dp
 
 data class ItemDetailRow(val label: String, val value: String)
 
-/** Compact label/value list under an "Item details" heading. Renders nothing, and no gap, when [rows] is empty. */
+/** Shared loaded/placeholder label-value layout. Known rows remain visible during refresh.
+ * Empty loaded sections emit nothing; unknown sections reserve three text-scaled rows.
+ */
 @Composable
-fun ItemDetailsSection(rows: List<ItemDetailRow>, modifier: Modifier = Modifier) {
-    if (rows.isEmpty()) return
+fun ItemDetailsSection(
+    rows: List<ItemDetailRow>,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false
+) {
+    if (rows.isEmpty() && !isLoading) return
+    val showPlaceholders = isLoading && rows.isEmpty()
+    val displayedRows = if (showPlaceholders) List(3) { ItemDetailRow("Attribute", "Item value") } else rows
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = "Item details",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        rows.forEach { row ->
+        displayedRows.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = row.label,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(120.dp)
+                    modifier = Modifier.width(120.dp).skeleton(showPlaceholders)
                 )
                 Text(
                     text = row.value,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.widthIn(min = 0.dp)
+                    modifier = Modifier.widthIn(min = 0.dp).skeleton(showPlaceholders)
                 )
             }
         }

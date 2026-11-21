@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jdrms.bulletin.core.common.RefreshSignal
+import com.jdrms.bulletin.domain.marketplace.application.LoadMarketplaceListingDetail
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreference
 import com.jdrms.bulletin.domain.marketplace.application.MarketplaceLayoutPreferenceStore
 import com.jdrms.bulletin.domain.marketplace.application.MarketplacePageRequest
@@ -23,7 +24,7 @@ import kotlinx.coroutines.launch
 class MarketplaceViewModel(
     private val searchMarketplace: SearchMarketplace,
     bookmarks: MarketplaceBookmarkDependencies,
-    private val viewMarketplaceListing: ViewMarketplaceListing,
+    viewMarketplaceListing: ViewMarketplaceListing,
     private val submitMarketplaceReview: SubmitMarketplaceReview =
         SubmitMarketplaceReview(
             com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository()
@@ -36,6 +37,12 @@ class MarketplaceViewModel(
     private val _uiState = MutableStateFlow(MarketplaceUiState())
     val uiState: StateFlow<MarketplaceUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
+    private val detailController = MarketplaceDetailController(
+        _uiState,
+        viewModelScope,
+        LoadMarketplaceListingDetail(viewMarketplaceListing),
+        currentUserIdProvider
+    )
     private val firstPageLoader = MarketplaceFirstPageLoader(
         _uiState,
         searchMarketplace,
@@ -61,7 +68,7 @@ class MarketplaceViewModel(
         viewModelScope.launch {
             listingChangedSignal?.events?.collect {
                 refreshListings()
-                _uiState.value.detail.listingId?.let(::loadListingDetail)
+                detailController.retry()
             }
         }
     }
@@ -184,61 +191,12 @@ class MarketplaceViewModel(
         }
     }
 
-    fun onListingClicked(listingId: String) {
-        _uiState.update {
-            it.copy(detail = MarketplaceDetailState(listingId = listingId, isLoading = true, isOpen = true))
-        }
-        loadListingDetail(listingId)
-    }
+    fun onListingClicked(listingId: String, preview: MarketplaceListingPreview? = null) =
+        detailController.open(listingId, preview)
 
-    fun retryLoadListingDetail() {
-        val listingId = _uiState.value.detail.listingId ?: return
-        _uiState.update {
-            it.copy(detail = it.detail.copy(isLoading = true, errorMessage = null))
-        }
-        loadListingDetail(listingId)
-    }
+    fun retryLoadListingDetail() = detailController.retry()
 
-    private fun loadListingDetail(listingId: String) {
-        viewModelScope.launch {
-            when (val result = viewMarketplaceListing(listingId, currentUserIdProvider())) {
-                is com.jdrms.bulletin.core.common.Result.Success -> {
-                    val listing = result.data
-                    val canonicalId = MarketplaceItemId(listingId)
-                    val isBookmarked = _uiState.value.bookmarkedItemIds.contains(canonicalId)
-                    val currentUserId = currentUserIdProvider()
-                    val hasReview = currentUserId?.let {
-                        viewMarketplaceListing.hasReview(listing.id.value, it)
-                    } ?: false
-                    _uiState.update {
-                        it.copy(
-                            detail = it.detail.copy(
-                                listing = listing.copy(id = canonicalId, isBookmarked = isBookmarked),
-                                isLoading = false,
-                                errorMessage = null,
-                                hasReview = hasReview
-                            ),
-                            currentUserId = currentUserId
-                        )
-                    }
-                }
-                is com.jdrms.bulletin.core.common.Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            detail = it.detail.copy(
-                                isLoading = false,
-                                errorMessage = result.exception.message ?: "Failed to load listing details."
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    fun dismissListingDetail() {
-        _uiState.update { it.copy(detail = MarketplaceDetailState()) }
-    }
+    fun dismissListingDetail() = detailController.dismiss()
 
     fun toggleBookmark(itemId: MarketplaceItemId, userId: String? = null) = bookmarkController.toggle(itemId, userId)
 

@@ -16,15 +16,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,22 +29,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.cropSettings
 import com.jdrms.bulletin.core.common.imageRequestUrl
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
+import com.jdrms.bulletin.core.designsystem.skeleton
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun ListingPhotosSection(photos: List<String>) {
+internal fun ListingPhotosSection(photos: List<String>, isLoading: Boolean = false) {
     if (photos.isEmpty()) {
         Box(
             modifier = Modifier
+                .skeleton(isLoading, shape = MaterialTheme.shapes.medium)
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(MaterialTheme.shapes.medium)
@@ -96,6 +90,9 @@ internal fun ListingPhotosSection(photos: List<String>) {
                         contentDescription = "Listing photo ${page + 1} of ${photos.size}",
                         modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                         contentScale = ContentScale.Fit,
+                        loading = {
+                            Box(Modifier.fillMaxWidth().aspectRatio(1f).skeleton(visible = true))
+                        },
                         error = { ListingPhotoFallback() },
                         success = {
                             SubcomposeAsyncImageContent(
@@ -192,148 +189,5 @@ private fun ListingPhotoFallback() {
         contentAlignment = Alignment.Center
     ) {
         Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-internal data class SellerInfoCardState(
-    val name: String,
-    val school: String,
-    val avatarUrl: String?,
-    val reputationScore: Double?,
-    val major: String,
-    val reviewCount: Int,
-    val isVerified: Boolean
-)
-
-@Composable
-internal fun SellerInfoCard(
-    seller: SellerInfoCardState,
-    onClick: () -> Unit = {}
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = BulletinSpacing.l,
-                    top = BulletinSpacing.l,
-                    bottom = BulletinSpacing.l,
-                    end = BulletinSpacing.m
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
-            ) {
-                if (seller.avatarUrl != null) {
-                    AsyncImage(
-                        model = seller.avatarUrl,
-                        contentDescription = "${seller.name} profile photo",
-                        modifier = Modifier
-                            .size(84.dp)
-                            .clip(CircleShape),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(84.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = "Seller Avatar",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = seller.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1
-                        )
-                        if (seller.isVerified) {
-                            Icon(
-                                imageVector = Icons.Filled.Verified,
-                                contentDescription = "Verified profile",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                    Text(
-                        text = formatAcademicLine(seller.major, seller.school),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = "Seller rating",
-                            tint = MaterialTheme.bulletinColors.star,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = formatReputationScore(seller.reputationScore),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "(${seller.reviewCount} reviews)",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = "View seller profile",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-    }
-}
-
-private fun formatAcademicLine(major: String, school: String): String {
-    val details = listOf(major).filter(String::isNotBlank)
-    return details.joinToString(" ").ifBlank { "$school student" }
-}
-
-internal fun formatReputationScore(reputationScore: Double?): String {
-    return if (reputationScore != null) {
-        "${(reputationScore * 10).toInt() / 10.0} / 5.0"
-    } else {
-        "5.0 (New)"
     }
 }

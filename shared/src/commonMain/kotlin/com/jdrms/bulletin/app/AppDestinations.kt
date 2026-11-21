@@ -5,6 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.geometry.Rect
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.integration.toMarketplaceDetailPreview
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
@@ -63,7 +64,9 @@ internal fun MainAppContent(
                     navigation.currentDestination = AppDestination.MARKETPLACE
                 },
                 onViewListing = { listingId ->
-                    models.marketplace.onListingClicked(listingId)
+                    val preview = models.messages.uiState.value.listingPreviews[listingId]
+                        ?.toMarketplaceDetailPreview(listingId)
+                    models.marketplace.onListingClicked(listingId, preview)
                     navigation.openListing(listingId)
                 }
             )
@@ -128,7 +131,9 @@ private fun ProfileDestinationContent(
             profilePresentation.viewModel,
             models.sellerProfile,
             onListingClick = { listingId ->
-                models.marketplace.onListingClicked(listingId)
+                val preview = models.messages.uiState.value.listingPreviews[listingId]
+                    ?.toMarketplaceDetailPreview(listingId)
+                models.marketplace.onListingClicked(listingId, preview)
                 navigation.openListing(listingId)
             },
             onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
@@ -138,7 +143,9 @@ private fun ProfileDestinationContent(
             viewModel = profilePresentation.marketplaceInterestsViewModel,
             onBack = { navigation.profileDestination = ProfileDestination.PROFILE },
             onListingClick = { listingId ->
-                models.marketplace.onListingClicked(listingId)
+                val preview = models.messages.uiState.value.listingPreviews[listingId]
+                    ?.toMarketplaceDetailPreview(listingId)
+                models.marketplace.onListingClicked(listingId, preview)
                 navigation.openListing(listingId)
             }
         )
