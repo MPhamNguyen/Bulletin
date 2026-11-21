@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.marketplace.presentation
 
 data class MarketplaceScreenNavigation(
+    val scrollToTopRequest: Int = 0,
     val sellerProfileIdToOpen: String? = null,
     val sellerReviewsIdToOpen: String? = null,
     val onSellerProfileRequestHandled: () -> Unit = {},
