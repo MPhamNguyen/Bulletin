@@ -14,7 +14,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
@@ -38,19 +37,28 @@ class MessagesViewModel(
     )
     val uiState: StateFlow<MessagesUiState> = MessagesUiStateProjection(threadState, inbox.state, viewModelScope)
     val inboxState: StateFlow<InboxState> = inbox.state
+    internal val reviews = ConversationReviewInteraction(
+        threadOperations.submitReview,
+        { uiState.value },
+        viewModelScope
+    )
     private var requestedConversationId: ConversationId? = null
     private val listingPreviewLoader =
         ConversationListingPreviewLoader(threadState, listingPreviewProvider, viewModelScope)
-    private var observeJob: Job? = null
+    private val listingSales = ConversationListingSaleActions(
+        threadState,
+        threadOperations.listingSales,
+        listingPreviewLoader::refresh,
+        viewModelScope
+    )
     private val destinationLifecycle = MessagesDestinationLifecycle(
         inbox,
         threadState,
         listingPreviewLoader,
         ::reloadSelectedConversation,
-        ::observeConversation
+        { observation.observe(it) }
     ) {
-        observeJob?.cancel()
-        observeJob = null
+        observation.cancel()
     }
     private var visibleViewerId: SenderId? = null
     private val drafts = ConversationMessageDrafts(threadState)
@@ -59,7 +67,7 @@ class MessagesViewModel(
         if (presented.identityUnavailable) {
             drafts.reset()
             history.cancel()
-            observeJob?.cancel()
+            observation.cancel()
         }
         threadState.value = presented.state
     }
@@ -81,7 +89,6 @@ class MessagesViewModel(
     )
     private val editing = MessageEditingActions(inbox, threadState, threadOperations.edit, viewModelScope)
     private val blocking = ConversationBlockActions(threadState, threadOperations.userBlocker, viewModelScope)
-    private val streamCoordinator = MessageStreamCoordinator(observeConversationMessages)
     private val readReceiptHandler = ConversationReadReceiptHandler(
         inbox,
         threadState,
@@ -103,13 +110,12 @@ class MessagesViewModel(
         drafts,
         cancelCurrentLoads = {
             history.cancel()
-            observeJob?.cancel()
-            observeJob = null
+            observation.cancel()
         },
         resetPage = history::reset,
         isDestinationActive = { destinationLifecycle.isActive },
         reload = ::reloadSelectedConversation,
-        observe = ::observeConversation
+        observe = { observation.observe(it) }
     )
     private val streamCallbacks = MessagesStreamCallbacksFactory(
         threadState,
@@ -120,6 +126,13 @@ class MessagesViewModel(
         readReceiptHandler::markIfNeeded
     )
 
+    private val observation = ConversationObservation(
+        observeConversationMessages,
+        threadState,
+        streamCallbacks,
+        viewModelScope
+    )
+
     init { viewModelScope.launch { inbox.state.collect(::applyInboxSelection) } }
 
     fun loadConversations() {
@@ -127,18 +140,16 @@ class MessagesViewModel(
         applyInboxSelection(inbox.state.value)
     }
 
-    fun onDestinationActiveChanged(isActive: Boolean) {
-        destinationLifecycle.onActiveChanged(isActive)
-    }
+    fun onDestinationActiveChanged(isActive: Boolean) = destinationLifecycle.onActiveChanged(isActive)
 
     private fun applyInboxSelection(snapshot: InboxState) {
         if (snapshot.viewerId != visibleViewerId) {
             drafts.reset()
+            reviews.reset()
             val previousViewerId = visibleViewerId
             visibleViewerId = snapshot.viewerId
             history.cancel()
-            observeJob?.cancel()
-            observeJob = null
+            observation.cancel()
             listingPreviewLoader.cancel()
             requestedConversationId = null
             streamCallbacks.clearPending()
@@ -152,7 +163,7 @@ class MessagesViewModel(
             }
         }
         if (snapshot.viewerId == null) return
-        if (destinationLifecycle.isActive) listingPreviewLoader.load(snapshot.conversations)
+        if (destinationLifecycle.isActive) listingPreviewLoader.load(snapshot)
         if (snapshot.isLoading) return
         val current = threadState.value.selectedConversationId
         if (streamCallbacks.isWaitingForInbox(snapshot, current, requestedConversationId)) {
@@ -174,6 +185,7 @@ class MessagesViewModel(
         streamCallbacks.clearPending()
         threadState.update { it.copy(isConversationOpen = true) }
         conversationSelection.select(conversationId)
+        inbox.refresh()
     }
 
     fun returnToInbox() {
@@ -191,17 +203,12 @@ class MessagesViewModel(
         inbox.refresh()
     }
 
-    private fun observeConversation(conversationId: ConversationId) {
-        observeJob?.cancel()
-        threadState.update { it.copy(connectionState = MessageConnectionState.CONNECTING) }
-        observeJob = streamCoordinator.observe(
-            viewModelScope,
-            conversationId,
-            streamCallbacks.forConversation(conversationId)
-        )
+    private fun reloadSelectedConversation(conversationId: ConversationId) {
+        inbox.state.value.conversations.firstOrNull { it.id == conversationId }?.listingId?.let {
+            listingPreviewLoader.refresh(it.value)
+        }
+        history.reload(conversationId)
     }
-
-    private fun reloadSelectedConversation(conversationId: ConversationId) = history.reload(conversationId)
 
     fun loadOlderMessages() = history.loadOlder()
     fun retryHistory(request: MessageHistoryRequest) {
@@ -229,6 +236,8 @@ class MessagesViewModel(
         if (!uiState.value.canSendToCounterpart()) return
         if (threadState.value.editState is MessageEditState.Editing) editing.save() else actions.send(showFailure)
     }
+    val markListingSold: (listingId: String, buyerId: String) -> Unit = listingSales::markSold
+    val undoListingSale: (listingId: String) -> Unit = listingSales::undoSale
     val requestBlock: (BlockTarget) -> Unit = blocking::request
     val confirmBlock: () -> Unit = blocking::confirm
     val dismissBlock: () -> Unit = blocking::dismiss

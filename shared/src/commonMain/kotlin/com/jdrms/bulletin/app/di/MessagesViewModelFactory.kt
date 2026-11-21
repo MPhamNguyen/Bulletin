@@ -12,5 +12,11 @@ internal fun MessagesModule.createMessagesViewModel(userBlocker: ConversationUse
     reportMessage,
     hideConversation,
     conversationListingPreviewProvider,
-    MessageThreadOperations(markConversationRead, editMessage, userBlocker)
+    MessageThreadOperations(
+        markConversationRead,
+        editMessage,
+        userBlocker,
+        conversationListingSales,
+        submitConversationReview
+    )
 )

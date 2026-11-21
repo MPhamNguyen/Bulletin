@@ -48,7 +48,7 @@ internal fun AppRoot(
                 themeViewModel = theme
             ) { currentScreen = AppRootScreen.SIGN_IN }
         }
-        if (authState == AuthSessionState.AUTHENTICATED) ReviewRequestPrompt(container, session)
+
         val showsBanners = authState == AuthSessionState.AUTHENTICATED &&
             InAppBannerScreenPolicy.allows(screen, recoveryState.stage != PasswordRecoveryStage.NONE)
         Box(Modifier.fillMaxSize()) {

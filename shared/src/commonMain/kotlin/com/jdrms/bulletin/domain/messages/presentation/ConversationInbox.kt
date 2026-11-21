@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
@@ -39,49 +37,14 @@ import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
-import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
-internal fun ConversationList(state: MessagesUiState, viewModel: MessagesViewModel, modifier: Modifier) {
-    var pendingRemoval by remember { mutableStateOf<ConversationId?>(null) }
-    LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(BulletinSpacing.s)) {
-        items(state.conversations, key = { it.id.value }) { conversation ->
-            ConversationCard(
-                conversation = conversation,
-                viewerId = state.viewerId,
-                isSelected = conversation.id == state.selectedConversationId,
-                hasUnreadMessage = conversation.hasUnreadMessage(state.viewerId),
-                listingPreviewUrl = conversation.listingId?.value?.let(state.listingPreviews::get)?.imageUrl,
-                onClick = { viewModel.selectConversation(conversation.id) },
-                onRemove = { pendingRemoval = conversation.id }
-            )
-        }
-    }
-    pendingRemoval?.let { conversationId ->
-        RemoveConversationDialog(
-            onDismiss = { pendingRemoval = null },
-            onConfirm = {
-                pendingRemoval = null
-                viewModel.hideConversationFromInbox(conversationId)
-            }
-        )
-    }
-}
-
-private fun Conversation.hasUnreadMessage(viewerId: SenderId?): Boolean {
-    val latestMessage = lastMessage ?: return false
-    if (viewerId == null || latestMessage.senderId == viewerId) return false
-    val viewerReadAt = participants.firstOrNull { it.id == viewerId }?.lastReadAt
-    return viewerReadAt == null || latestMessage.orderingTimestamp > viewerReadAt
-}
-
-@Composable
-private fun ConversationCard(
+internal fun ConversationCard(
     conversation: Conversation,
     viewerId: SenderId?,
     isSelected: Boolean,
-    hasUnreadMessage: Boolean,
+    attention: ConversationInboxAttention,
     listingPreviewUrl: String?,
     onClick: () -> Unit,
     onRemove: () -> Unit
@@ -103,7 +66,7 @@ private fun ConversationCard(
             conversation = conversation,
             viewerId = viewerId,
             isSelected = isSelected,
-            hasUnreadMessage = hasUnreadMessage,
+            attention = attention,
             listingPreviewUrl = listingPreviewUrl,
             selectedColor = selectedColor,
             modifier = conversationCardModifier(
@@ -124,13 +87,13 @@ private fun ConversationCardSurface(
     conversation: Conversation,
     viewerId: SenderId?,
     isSelected: Boolean,
-    hasUnreadMessage: Boolean,
+    attention: ConversationInboxAttention,
     listingPreviewUrl: String?,
     selectedColor: androidx.compose.ui.graphics.Color,
     modifier: Modifier
 ) {
     val cardShape = MaterialTheme.shapes.medium
-    val cardModifier = if (hasUnreadMessage && !isSelected) {
+    val cardModifier = if (attention.hasUnreadMessage && !isSelected) {
         modifier.background(
             brush = Brush.horizontalGradient(
                 colors = listOf(
@@ -149,13 +112,13 @@ private fun ConversationCardSurface(
         colors = CardDefaults.cardColors(
             containerColor = when {
                 isSelected -> MaterialTheme.colorScheme.primaryContainer
-                hasUnreadMessage -> androidx.compose.ui.graphics.Color.Transparent
+                attention.hasUnreadMessage -> androidx.compose.ui.graphics.Color.Transparent
                 else -> MaterialTheme.colorScheme.surface
             },
             contentColor = selectedColor
         )
     ) {
-        ConversationCardContent(conversation, listingPreviewUrl, viewerId, isSelected, hasUnreadMessage, selectedColor)
+        ConversationCardContent(conversation, listingPreviewUrl, viewerId, isSelected, attention, selectedColor)
     }
 }
 
@@ -200,7 +163,7 @@ private fun ConversationCardContent(
     listingPreviewUrl: String?,
     viewerId: SenderId?,
     isSelected: Boolean,
-    hasUnreadMessage: Boolean,
+    attention: ConversationInboxAttention,
     selectedColor: androidx.compose.ui.graphics.Color
 ) {
     val secondaryColor = if (isSelected) {
@@ -214,9 +177,20 @@ private fun ConversationCardContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
-        ConversationAvatar(conversationTitle(conversation, viewerId))
-        ConversationSummary(conversation, viewerId, titleColor, secondaryColor, Modifier.weight(1f))
-        if (hasUnreadMessage) {
+        MessageParticipantPhoto(
+            conversationTitle(conversation, viewerId),
+            conversation.participants.singleOrNull { it.id != viewerId }?.id
+                .takeIf { viewerId != null && conversation.includes(viewerId) && !conversation.isReadOnly }
+        )
+        ConversationSummary(
+            conversation,
+            viewerId,
+            titleColor,
+            secondaryColor,
+            Modifier.weight(1f),
+            attention.previewText
+        )
+        if (attention.hasUnreadMessage) {
             Box(Modifier.padding(end = BulletinSpacing.s)) {
                 ConversationUnreadIndicator()
             }
