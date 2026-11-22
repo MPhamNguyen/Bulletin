@@ -6,7 +6,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 @Composable
 internal fun InboxConversationAvatar(conversation: Conversation, viewerId: SenderId?) {
-    val peer = conversation.counterpart(viewerId)?.takeUnless { conversation.isReadOnly }
+    val peer = conversation.avatarPeer(viewerId)
     MessageParticipantPhoto(
         name = conversationTitle(conversation, viewerId),
         senderId = peer?.id,

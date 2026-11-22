@@ -30,10 +30,12 @@ internal fun MessageParticipantPhoto(
     val provider = LocalMessageSenderPhotos.current
     val context = LocalPlatformContext.current
     val sizePixels = with(LocalDensity.current) { MessageAvatarSize.roundToPx() }
-    key(senderId, provider, initialUrl) {
-        val url by produceState(initialUrl?.takeIf(String::isNotBlank)) {
+    val knownUrl = initialUrl?.takeIf(String::isNotBlank)
+    key(senderId, provider, knownUrl) {
+        val url by produceState(knownUrl) {
+            if (knownUrl != null) return@produceState
             value = try {
-                initialUrl?.takeIf(String::isNotBlank) ?: senderId?.let { provider?.photoUrl(it) }
+                senderId?.let { provider?.photoUrl(it) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {

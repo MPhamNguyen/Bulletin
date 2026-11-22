@@ -4,7 +4,9 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryList
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,5 +54,30 @@ class ConversationListingDetailPreviewTest {
     @Test
     fun cardWithoutDetailSnapshotUsesNormalDetailLoading() {
         assertNull(ConversationListingPreview("Desk", "$20.00", null).toMarketplaceDetailPreview("listing:1"))
+    }
+
+    @Test
+    fun sellerAvatarComesFromTheMatchingInboxParticipant() = runTest {
+        val listing = InMemoryListingsRepository().getAllListings().first()
+        val card = listing.toConversationPreview()
+        val seller = ConversationParticipant(
+            SenderId(listing.sellerId.value),
+            "Seller",
+            avatarUrl = "https://example.com/seller.jpg"
+        )
+        val buyer = ConversationParticipant(SenderId("buyer"), "Buyer", avatarUrl = "https://example.com/buyer.jpg")
+        val preview = assertNotNull(card.toMarketplaceDetailPreview(listing.id.value, listOf(buyer, seller)))
+        assertEquals(seller.avatarUrl, preview.sellerAvatarUrl)
+    }
+
+    @Test
+    fun missingBlankOrUnrelatedAvatarsLeaveTheSellerAvatarToNormalLoading() = runTest {
+        val listing = InMemoryListingsRepository().getAllListings().first()
+        val card = listing.toConversationPreview()
+        val id = listing.id.value
+        val blank = ConversationParticipant(SenderId(listing.sellerId.value), "Seller", avatarUrl = " ")
+        val other = ConversationParticipant(SenderId("other"), "Other", avatarUrl = "https://example.com/o.jpg")
+        assertNull(assertNotNull(card.toMarketplaceDetailPreview(id)).sellerAvatarUrl)
+        assertNull(assertNotNull(card.toMarketplaceDetailPreview(id, listOf(blank, other))).sellerAvatarUrl)
     }
 }

@@ -6,12 +6,13 @@ import androidx.compose.ui.platform.LocalDensity
 import coil3.SingletonImageLoader
 import coil3.compose.LocalPlatformContext
 import com.jdrms.bulletin.core.common.imageRequestUrl
+import com.jdrms.bulletin.domain.messages.application.GetConversations
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
 internal fun conversationListingPrefetchUrls(viewerId: SenderId?, conversations: List<Conversation>): List<String> {
     if (viewerId == null) return emptyList()
-    return conversations.take(10).filter { it.includes(viewerId) }.mapNotNull {
+    return conversations.take(GetConversations.PAGE_SIZE).filter { it.includes(viewerId) }.mapNotNull {
         it.listingThumbnailUrl?.takeIf(String::isNotBlank)
     }.distinctBy(String::imageRequestUrl)
 }

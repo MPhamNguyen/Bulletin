@@ -14,8 +14,6 @@ internal class PublicProfilePhotoCache(
     suspend fun getOrLoad(userId: UserId, loader: suspend () -> String?): String? =
         entries.getOrLoad(userId) { Photo(loader()) }?.url
 
-    suspend fun getIfPresent(userId: UserId): String? = entries.getIfPresent(userId)?.url
-
     suspend fun invalidate(userId: UserId) = entries.invalidate(userId)
 
     suspend fun clear() = entries.clear()

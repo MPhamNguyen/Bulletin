@@ -15,17 +15,16 @@ internal class InboxReviewLoader(
     private val mutableState: MutableStateFlow<InboxState>,
     private val scope: CoroutineScope
 ) {
-    private val state get() = mutableState
     private var job: Job? = null
 
     fun refresh(userId: SenderId) {
         job?.cancel()
         job = scope.launch {
-            val snapshot = state.value
+            val snapshot = mutableState.value
             val result = getConversations.enrich(
                 MessageInbox(userId, snapshot.conversations)
             )
-            if (state.value.viewerId != userId || result !is Result.Success) return@launch
+            if (mutableState.value.viewerId != userId || result !is Result.Success) return@launch
             mutableState.update {
                 it.copy(
                     pendingReviewConversationIds = result.data.pendingReviewConversationIds

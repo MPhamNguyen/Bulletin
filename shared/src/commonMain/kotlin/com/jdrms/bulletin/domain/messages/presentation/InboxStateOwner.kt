@@ -142,7 +142,7 @@ class InboxStateOwner(
     private suspend fun refreshFor(userId: SenderId) = refreshMutex.withLock {
         if (state.value.viewerId != userId) return@withLock
         mutableState.update { it.copy(isLoading = true) }
-        val limit = maxOf(10, state.value.conversations.size)
+        val limit = maxOf(GetConversations.PAGE_SIZE, state.value.conversations.size)
         val result = getConversations(offset = 0, includeReviews = false, limit = limit)
         if (state.value.viewerId != userId) return@withLock
         when (result) {
@@ -195,7 +195,7 @@ class InboxStateOwner(
                             conversations = (current.conversations + result.data.conversations).distinctBy(
                                 Conversation::id
                             ),
-                            hasMore = result.data.conversations.size == 10,
+                            hasMore = result.data.conversations.size == GetConversations.PAGE_SIZE,
                             isLoadingMore = false
                         )
                         is Result.Error -> current.copy(

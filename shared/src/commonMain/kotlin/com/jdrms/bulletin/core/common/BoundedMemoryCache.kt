@@ -51,8 +51,6 @@ internal class BoundedMemoryCache<K : Any, V : Any>(
         return result.getOrThrow()
     }
 
-    suspend fun getIfPresent(key: K): V? = mutex.withLock { getLocked(key) }
-
     suspend fun put(key: K, value: V) = mutex.withLock { putLocked(key, value) }
 
     suspend fun invalidate(key: K) {

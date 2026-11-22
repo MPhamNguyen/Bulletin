@@ -1,5 +1,6 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
@@ -22,7 +23,7 @@ import com.jdrms.bulletin.core.common.cropSettings
 internal fun ConversationListingPreview(imageUrl: String?, imageSize: Dp = ConversationListingImageSize) {
     val context = LocalPlatformContext.current
     val sizePixels = with(LocalDensity.current) { imageSize.roundToPx() }
-    androidx.compose.foundation.layout.Box(
+    Box(
         Modifier.size(imageSize).clip(MaterialTheme.shapes.small).clipToBounds()
     ) {
         ListingPreviewPlaceholder(imageSize)
@@ -51,7 +52,7 @@ internal fun ConversationListingPreview(imageUrl: String?, imageSize: Dp = Conve
 
 @Composable
 private fun ListingPreviewPlaceholder(size: Dp) {
-    androidx.compose.foundation.layout.Box(
+    Box(
         Modifier.size(size),
         contentAlignment = androidx.compose.ui.Alignment.Center
     ) {

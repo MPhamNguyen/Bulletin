@@ -14,7 +14,7 @@ class GetConversations(
     suspend operator fun invoke(
         offset: Int? = null,
         includeReviews: Boolean = true,
-        limit: Int = 10
+        limit: Int = PAGE_SIZE
     ): Result<MessageInbox> {
         val viewer = when (val sender = currentSenderProvider.getCurrentSender()) {
             is Result.Success -> sender.data.id
@@ -58,4 +58,9 @@ class GetConversations(
 
     private fun Conversation.counterpartId(viewer: SenderId): SenderId? =
         participants.singleOrNull { it.id != viewer }?.id
+
+    companion object {
+        /** Rows per inbox page; paging, refresh sizing and first-page media warming all use this. */
+        const val PAGE_SIZE = 10
+    }
 }

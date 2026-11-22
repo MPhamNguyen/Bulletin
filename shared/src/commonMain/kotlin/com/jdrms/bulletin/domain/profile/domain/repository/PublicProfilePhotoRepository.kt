@@ -6,7 +6,4 @@ import com.jdrms.bulletin.domain.profile.domain.model.UserId
 /** Public avatar lookup without loading the profile or its reputation. */
 fun interface PublicProfilePhotoRepository {
     suspend fun getAvatarUrl(userId: UserId): Result<String?>
-
-    /** Returns an unexpired cached URL without starting or waiting for a backend request. */
-    suspend fun getCachedAvatarUrl(userId: UserId): String? = null
 }

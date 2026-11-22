@@ -31,11 +31,6 @@ class SupabasePublicProfilePhotoRepository internal constructor(
         )
     }
 
-    override suspend fun getCachedAvatarUrl(userId: UserId): String? {
-        readCache.observeSession(currentSessionId())
-        return readCache.publicPhotos.getIfPresent(userId)
-    }
-
     private suspend fun loadAvatarUrl(userId: UserId): String? =
         supabase.from(SupabaseProfileRepository.PROFILES_TABLE)
             .select(columns = Columns.raw("avatar_url")) {
