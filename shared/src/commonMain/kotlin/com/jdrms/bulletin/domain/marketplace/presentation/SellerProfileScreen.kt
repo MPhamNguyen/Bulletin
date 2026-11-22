@@ -46,7 +46,7 @@ fun SellerProfileScreen(
             showUserActions = options.showUserActions
         )
         when {
-            state.isLoading -> SellerProfileSkeleton()
+            state.isLoading -> SellerProfileSkeleton(state.preview)
             state.errorMessage != null -> SellerProfileError(state.errorMessage)
             state.profile != null -> LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),

@@ -2,11 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jdrms.bulletin.domain.marketplace.application.MarketplaceSellerProfile
 import com.jdrms.bulletin.domain.marketplace.application.ViewMarketplaceSellerProfile
-import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItem
-import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceItemSortingPolicy
-import com.jdrms.bulletin.domain.marketplace.domain.service.MarketplaceSearchPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,33 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class SellerProfileUiState(
-    val profile: MarketplaceSellerProfile? = null,
-    val listings: List<MarketplaceItem> = emptyList(),
-    val filters: MarketplaceFilterState = MarketplaceFilterState(),
-    val soldListingsCount: Int = 0,
-    val isLoadingMoreReviews: Boolean = false,
-    val reviewLoadError: String? = null,
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null
-) {
-    val filteredListings: List<MarketplaceItem>
-        get() = sellerProfileSortingPolicy.sort(
-            sellerProfileSearchPolicy.filterItems(
-                items = listings,
-                query = filters.query,
-                category = filters.category,
-                condition = filters.condition,
-                attributes = filters.attributes,
-                priceRange = filters.priceRange
-            ),
-            filters.sortOrder
-        )
-}
-
-private val sellerProfileSearchPolicy = MarketplaceSearchPolicy()
-private val sellerProfileSortingPolicy = MarketplaceItemSortingPolicy()
 
 class SellerProfileViewModel(
     private val viewSellerProfile: ViewMarketplaceSellerProfile
@@ -50,10 +19,10 @@ class SellerProfileViewModel(
     private var loadJob: Job? = null
     private var reviewsJob: Job? = null
 
-    fun load(sellerId: String) {
+    fun load(sellerId: String, preview: SellerProfilePreview? = null) {
         loadJob?.cancel()
         reviewsJob?.cancel()
-        _uiState.value = SellerProfileUiState(isLoading = true)
+        _uiState.value = SellerProfileUiState(isLoading = true, preview = preview?.takeIf { it.sellerId == sellerId })
         loadJob = viewModelScope.launch {
             try {
                 val details = viewSellerProfile(sellerId)
