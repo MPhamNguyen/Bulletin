@@ -6,12 +6,13 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceListingPrev
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 
-/** Inbox rows already carry participant avatars, so the loading preview can show the seller's photo for free. */
+/** Preserve known participant photos, including their absence, while fresh listing details load. */
 internal fun ConversationListingPreview.toMarketplaceDetailPreview(
     listingId: String,
     knownParticipants: List<ConversationParticipant> = emptyList()
 ): MarketplaceListingPreview? {
     val snapshot = details ?: return null
+    val seller = knownParticipants.firstOrNull { it.id.value == snapshot.sellerId }
     return MarketplaceListingPreview(
         listingId = listingId,
         sellerId = snapshot.sellerId,
@@ -27,7 +28,7 @@ internal fun ConversationListingPreview.toMarketplaceDetailPreview(
             createdAtMillis = snapshot.createdAtMillis,
             updatedAtMillis = snapshot.updatedAtMillis
         ),
-        sellerAvatarUrl = knownParticipants
-            .firstOrNull { it.id.value == snapshot.sellerId && !it.avatarUrl.isNullOrBlank() }?.avatarUrl
+        sellerAvatarUrl = seller?.avatarUrl?.takeIf(String::isNotBlank),
+        sellerAvatarKnown = seller != null
     )
 }

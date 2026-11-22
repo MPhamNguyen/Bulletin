@@ -22,6 +22,7 @@ internal fun ColumnScope.MarketplaceDetailPreview(
         seller = null,
         previewName = item.sellerName,
         previewAvatarUrl = item.sellerAvatarUrl,
+        previewAvatarKnown = item.sellerAvatarKnown,
         isLoading = true
     )
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

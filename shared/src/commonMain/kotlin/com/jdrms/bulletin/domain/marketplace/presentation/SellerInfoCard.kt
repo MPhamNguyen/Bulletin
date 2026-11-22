@@ -29,7 +29,8 @@ internal fun SellerInfoCard(
     onClick: () -> Unit = {},
     isLoading: Boolean = false,
     previewName: String? = null,
-    previewAvatarUrl: String? = null
+    previewAvatarUrl: String? = null,
+    previewAvatarKnown: Boolean = previewAvatarUrl != null
 ) {
     val fieldsLoading = isLoading && seller == null
     Surface(
@@ -58,9 +59,9 @@ internal fun SellerInfoCard(
                 horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
             ) {
                 SellerAvatar(
-                    avatarUrl = seller?.avatarUrl ?: previewAvatarUrl,
+                    avatarUrl = if (seller != null) seller.avatarUrl else previewAvatarUrl,
                     name = seller?.name ?: previewName,
-                    isLoading = fieldsLoading && previewAvatarUrl == null
+                    isLoading = fieldsLoading && !previewAvatarKnown
                 )
 
                 Column(

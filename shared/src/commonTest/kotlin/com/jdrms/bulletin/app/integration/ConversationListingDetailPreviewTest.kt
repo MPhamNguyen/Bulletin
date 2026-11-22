@@ -10,8 +10,10 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ConversationListingDetailPreviewTest {
     @Test
@@ -68,16 +70,22 @@ class ConversationListingDetailPreviewTest {
         val buyer = ConversationParticipant(SenderId("buyer"), "Buyer", avatarUrl = "https://example.com/buyer.jpg")
         val preview = assertNotNull(card.toMarketplaceDetailPreview(listing.id.value, listOf(buyer, seller)))
         assertEquals(seller.avatarUrl, preview.sellerAvatarUrl)
+        assertTrue(preview.sellerAvatarKnown)
     }
 
     @Test
-    fun missingBlankOrUnrelatedAvatarsLeaveTheSellerAvatarToNormalLoading() = runTest {
+    fun missingOrUnrelatedParticipantsKeepAvatarUnknown() = runTest {
         val listing = InMemoryListingsRepository().getAllListings().first()
         val card = listing.toConversationPreview()
         val id = listing.id.value
         val blank = ConversationParticipant(SenderId(listing.sellerId.value), "Seller", avatarUrl = " ")
         val other = ConversationParticipant(SenderId("other"), "Other", avatarUrl = "https://example.com/o.jpg")
-        assertNull(assertNotNull(card.toMarketplaceDetailPreview(id)).sellerAvatarUrl)
-        assertNull(assertNotNull(card.toMarketplaceDetailPreview(id, listOf(blank, other))).sellerAvatarUrl)
+        assertFalse(assertNotNull(card.toMarketplaceDetailPreview(id)).sellerAvatarKnown)
+        assertFalse(assertNotNull(card.toMarketplaceDetailPreview(id, listOf(other))).sellerAvatarKnown)
+        for (seller in listOf(blank, blank.copy(avatarUrl = null))) {
+            val preview = assertNotNull(card.toMarketplaceDetailPreview(id, listOf(seller, other)))
+            assertNull(preview.sellerAvatarUrl)
+            assertTrue(preview.sellerAvatarKnown)
+        }
     }
 }

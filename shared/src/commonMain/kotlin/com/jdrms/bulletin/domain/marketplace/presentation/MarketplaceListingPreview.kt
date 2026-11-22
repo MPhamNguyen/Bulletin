@@ -11,7 +11,9 @@ data class MarketplaceListingPreview(
     val sellerId: String,
     val sellerName: String,
     val content: MarketplaceListingPreviewContent,
-    val sellerAvatarUrl: String? = null
+    val sellerAvatarUrl: String? = null,
+    /** True when a null URL means no photo rather than an unresolved photo. */
+    val sellerAvatarKnown: Boolean = false
 ) {
     val id: MarketplaceItemId get() = MarketplaceItemId(listingId)
 }
