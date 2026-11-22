@@ -61,6 +61,18 @@ class SupabaseMessagesRepository internal constructor(
             }
         }
 
+    override suspend fun getConversationPage(userId: SenderId, offset: Int, limit: Int): Result<List<Conversation>> =
+        repositoryCall {
+            require(offset >= 0 && limit > 0)
+            messagesTable.getInboxPage(userId.value, offset, limit).map(SupabaseMessagesMapper::toInboxConversation)
+        }
+
+    override suspend fun getConversation(userId: SenderId, conversationId: ConversationId): Result<Conversation?> =
+        repositoryCall {
+            messagesTable.getInboxConversation(userId.value, conversationId.value)
+                ?.let(SupabaseMessagesMapper::toInboxConversation)
+        }
+
     override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =
         repositoryCall {
             val viewerId = requireAuthenticatedUser(userId)

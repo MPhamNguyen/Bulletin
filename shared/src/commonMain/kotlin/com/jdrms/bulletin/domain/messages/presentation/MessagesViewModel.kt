@@ -135,13 +135,12 @@ class MessagesViewModel(
 
     init { viewModelScope.launch { inbox.state.collect(::applyInboxSelection) } }
 
+    val loadMoreConversations: () -> Unit = inbox::loadMore
     fun loadConversations() {
         inbox.refresh()
         applyInboxSelection(inbox.state.value)
     }
-
     fun onDestinationActiveChanged(isActive: Boolean) = destinationLifecycle.onActiveChanged(isActive)
-
     private fun applyInboxSelection(snapshot: InboxState) {
         if (snapshot.viewerId != visibleViewerId) {
             drafts.reset()
@@ -185,7 +184,7 @@ class MessagesViewModel(
         streamCallbacks.clearPending()
         threadState.update { it.copy(isConversationOpen = true) }
         conversationSelection.select(conversationId)
-        inbox.refresh()
+        inbox.refreshConversation(conversationId)
     }
 
     fun returnToInbox() {
@@ -200,7 +199,7 @@ class MessagesViewModel(
         threadState.update { it.copy(isConversationOpen = true) }
         conversationSelection.select(null)
         applyInboxSelection(inbox.state.value)
-        inbox.refresh()
+        inbox.refreshConversation(conversationId)
     }
 
     private fun reloadSelectedConversation(conversationId: ConversationId) {

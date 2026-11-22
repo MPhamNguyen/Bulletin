@@ -54,7 +54,7 @@ internal class ProfileModule(
     private val inMemoryProfiles by lazy { InMemoryProfileRepository() }
     internal val publicProfilePhotos: PublicProfilePhotoRepository by lazy {
         infrastructure.backend(
-            supabase = ::SupabasePublicProfilePhotoRepository,
+            supabase = { SupabasePublicProfilePhotoRepository(it, profileReadCache) },
             inMemory = { inMemoryProfiles }
         )
     }

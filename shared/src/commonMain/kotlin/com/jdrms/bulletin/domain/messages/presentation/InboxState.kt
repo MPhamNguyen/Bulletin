@@ -8,6 +8,8 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 data class InboxState(
     val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
+    val hasMore: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val isLoading: Boolean = true,
     val pendingReviewConversationIds: Set<ConversationId> = emptySet(),
     val unmatchedReviewRequests: List<PendingConversationReview> = emptyList(),

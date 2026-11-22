@@ -1,13 +1,10 @@
 package com.jdrms.bulletin.domain.messages.infrastructure.repository
 
 import com.jdrms.bulletin.domain.messages.application.MessagesInstrumentation
-import com.jdrms.bulletin.domain.messages.application.MessagesMeasurement
 import com.jdrms.bulletin.domain.messages.application.NoOpMessagesInstrumentation
-import com.jdrms.bulletin.domain.messages.application.measuredMessagesOperation
 import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationDto
-import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationLookupDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationMembershipDto
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationParticipantDto
@@ -20,7 +17,6 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
@@ -47,12 +43,12 @@ internal interface SupabaseMessageEditingTable {
 }
 
 internal interface SupabaseMessagesTable :
+    SupabaseInboxTable,
     SupabaseConversationCreationTable,
     SupabaseConversationVisibilityTable,
     SupabaseConversationReadTable,
     SupabaseMessageEditingTable {
     suspend fun getAuthenticatedUserId(): String?
-    suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto>
     suspend fun findConversation(conversationId: String): SupabaseConversationDto?
     suspend fun isParticipant(conversationId: String, userId: String): Boolean
     suspend fun getParticipants(conversationId: String): List<SupabaseConversationParticipantDto>
@@ -77,31 +73,16 @@ internal class PostgrestSupabaseMessagesTable(
         return supabase.auth.currentUserOrNull()?.id
     }
 
-    override suspend fun getInboxConversations(userId: String): List<SupabaseConversationInboxDto> {
-        val response = measuredMessagesOperation(
-            instrumentation,
-            "inbox_request_body",
-            MessagesMeasurement(responseBytes = { it.data.encodeToByteArray().size })
-        ) {
-            supabase.from(SupabaseMessagesRepository.CONVERSATIONS_TABLE).select(columns = INBOX_COLUMNS) {
-                filter {
-                    eq("membership.user_id", userId)
-                    filter("membership.deleted_at", FilterOperator.IS, "null")
-                }
-                order("user_id", Order.ASCENDING, referencedTable = "participants")
-                order("created_at", Order.DESCENDING, referencedTable = "messages")
-                order("id", Order.DESCENDING, referencedTable = "messages")
-                limit(1, referencedTable = "messages")
-            }
-        }
-        return measuredMessagesOperation(
-            instrumentation,
-            "inbox_decode",
-            MessagesMeasurement(count = { it.size }, callCount = { 0 })
-        ) {
-            response.decodeList<SupabaseConversationInboxDto>()
-        }
-    }
+    private val inbox = PostgrestInboxTable(supabase, instrumentation)
+
+    override suspend fun getInboxConversations(userId: String) = inbox.getInboxConversations(userId)
+    override suspend fun getInboxPage(userId: String, offset: Int, limit: Int) = inbox.getInboxPage(
+        userId,
+        offset,
+        limit
+    )
+    override suspend fun getInboxConversation(userId: String, conversationId: String) =
+        inbox.getInboxConversation(userId, conversationId)
 
     override suspend fun hideConversation(conversationId: String): Boolean =
         supabase.postgrest.rpc(
@@ -236,12 +217,6 @@ internal class PostgrestSupabaseMessagesTable(
     private companion object {
         val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id,history_visible_after")
         val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name),last_read_at")
-        val INBOX_COLUMNS = Columns.raw(
-            "id,updated_at,listing_id,membership:conversation_participants!inner(user_id,history_visible_after)," +
-                "participants:conversation_participants(user_id,profiles(full_name),last_read_at)," +
-                "messages(id,conversation_id,sender_id,body,created_at,edited_at,deleted_at," +
-                "profiles(full_name),reports(id,status))"
-        )
         val MESSAGE_COLUMNS = Columns.raw(
             "id,conversation_id,sender_id,body,created_at,edited_at,deleted_at,profiles(full_name),reports(id,status)"
         )

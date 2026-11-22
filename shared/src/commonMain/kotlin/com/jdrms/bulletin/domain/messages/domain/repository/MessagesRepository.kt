@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.domain.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.map
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
@@ -29,6 +30,17 @@ interface MessagesRepository {
         listingId: ListingReferenceId
     ): Result<Conversation>
     suspend fun getConversations(userId: SenderId): Result<List<Conversation>>
+
+    /** Visible inbox rows, ordered by updated time descending with stable ties; offsets are zero based. */
+    suspend fun getConversationPage(userId: SenderId, offset: Int, limit: Int): Result<List<Conversation>> =
+        getConversations(userId).map { rows ->
+            rows.sortedByDescending { it.updatedAtMillis }
+                .drop(offset).take(limit)
+        }
+
+    /** Returns null for a missing, hidden, or inaccessible inbox row. */
+    suspend fun getConversation(userId: SenderId, conversationId: ConversationId): Result<Conversation?> =
+        getConversations(userId).map { rows -> rows.firstOrNull { it.id == conversationId } }
     suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit>
     suspend fun getMessagePage(
         userId: SenderId,
