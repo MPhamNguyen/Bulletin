@@ -10,7 +10,8 @@ data class MarketplaceListingPreview(
     val listingId: String,
     val sellerId: String,
     val sellerName: String,
-    val content: MarketplaceListingPreviewContent
+    val content: MarketplaceListingPreviewContent,
+    val sellerAvatarUrl: String? = null
 ) {
     val id: MarketplaceItemId get() = MarketplaceItemId(listingId)
 }

@@ -3,8 +3,10 @@ package com.jdrms.bulletin.app
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.geometry.Rect
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.integration.toCachedMarketplaceDetailPreview
 import com.jdrms.bulletin.app.integration.toMarketplaceDetailPreview
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
@@ -19,6 +21,7 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun MainAppContent(
@@ -28,6 +31,7 @@ internal fun MainAppContent(
     profileAnchorInWindow: Rect? = null,
     onSaveCelebration: (Float) -> Unit = {}
 ) {
+    val scope = rememberCoroutineScope()
     val container = content.container
     val navigation = content.navigation
     val models = content.models
@@ -64,10 +68,12 @@ internal fun MainAppContent(
                     navigation.currentDestination = AppDestination.MARKETPLACE
                 },
                 onViewListing = { listingId ->
-                    val preview = models.messages.uiState.value.listingPreviews[listingId]
-                        ?.toMarketplaceDetailPreview(listingId)
-                    models.marketplace.onListingClicked(listingId, preview)
-                    navigation.openListing(listingId)
+                    scope.launch {
+                        val preview = models.messages.uiState.value.listingPreviews[listingId]
+                            ?.toCachedMarketplaceDetailPreview(listingId, container.profile.publicProfilePhotos)
+                        models.marketplace.onListingClicked(listingId, preview)
+                        navigation.openListing(listingId)
+                    }
                 }
             )
             AppDestination.PROFILE -> ProfileDestinationContent(container, navigation, models, content.profile)
