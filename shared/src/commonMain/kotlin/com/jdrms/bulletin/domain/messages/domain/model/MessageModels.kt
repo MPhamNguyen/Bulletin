@@ -26,7 +26,8 @@ value class ListingReferenceId(val value: String) {
 data class ConversationParticipant(
     val id: SenderId,
     val displayName: String,
-    val lastReadAt: Instant? = null
+    val lastReadAt: Instant? = null,
+    val avatarUrl: String? = null
 )
 
 data class Message(
@@ -63,7 +64,8 @@ class Conversation(
     val lastMessage: Message? = null,
     val updatedAtMillis: Long = 0L,
     val listingId: ListingReferenceId? = null,
-    val historyVisibleAfter: Instant? = null
+    val historyVisibleAfter: Instant? = null,
+    val listingThumbnailUrl: String? = null
 ) {
     val participants: List<ConversationParticipant> = participants.toList()
     val participantNames: List<String> get() = participants.map { it.displayName }
@@ -98,7 +100,8 @@ class Conversation(
                 lastMessage = lastMessage,
                 updatedAtMillis = updatedAtMillis,
                 listingId = listingId,
-                historyVisibleAfter = historyVisibleAfter
+                historyVisibleAfter = historyVisibleAfter,
+                listingThumbnailUrl = listingThumbnailUrl
             )
         )
     }
@@ -144,7 +147,8 @@ class Conversation(
                 lastMessage = resolved,
                 updatedAtMillis = maxOf(updatedAtMillis, message.timestampMillis),
                 listingId = listingId,
-                historyVisibleAfter = historyVisibleAfter
+                historyVisibleAfter = historyVisibleAfter,
+                listingThumbnailUrl = listingThumbnailUrl
             )
         )
     }

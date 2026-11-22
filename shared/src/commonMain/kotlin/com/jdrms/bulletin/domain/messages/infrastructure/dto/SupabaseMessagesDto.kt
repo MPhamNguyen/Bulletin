@@ -26,7 +26,8 @@ data class SupabaseConversationInboxDto(
     @SerialName("listing_id") val listingId: String? = null,
     @SerialName("membership") val membership: List<SupabaseInboxMembershipDto> = emptyList(),
     @SerialName("participants") val participants: List<SupabaseInboxParticipantDto> = emptyList(),
-    @SerialName("messages") val latestMessages: List<SupabaseMessageDto> = emptyList()
+    @SerialName("messages") val latestMessages: List<SupabaseMessageDto> = emptyList(),
+    @SerialName("listing") val listing: SupabaseInboxListingDto? = null
 )
 
 @Serializable
@@ -52,7 +53,8 @@ data class SupabaseConversationParticipantDto(
 
 @Serializable
 data class SupabaseMessageProfileDto(
-    @SerialName("full_name") val fullName: String? = null
+    @SerialName("full_name") val fullName: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null
 )
 
 @Serializable

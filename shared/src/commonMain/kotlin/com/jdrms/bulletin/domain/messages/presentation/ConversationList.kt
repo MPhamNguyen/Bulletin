@@ -36,7 +36,8 @@ internal fun ConversationList(state: MessagesUiState, viewModel: MessagesViewMod
                 viewerId = state.viewerId,
                 isSelected = state.isConversationOpen && conversation.id == state.selectedConversationId,
                 attention = conversationInboxAttention(conversation, state, reviews),
-                listingPreviewUrl = conversation.listingId?.value?.let(state.listingPreviews::get)?.imageUrl,
+                listingPreviewUrl = conversation.listingThumbnailUrl
+                    ?: conversation.listingId?.value?.let(state.listingPreviews::get)?.imageUrl,
                 onClick = { viewModel.selectConversation(conversation.id) },
                 onRemove = { pendingRemoval = conversation.id }
             )

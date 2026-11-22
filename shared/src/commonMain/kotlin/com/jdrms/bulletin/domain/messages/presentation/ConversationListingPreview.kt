@@ -11,38 +11,42 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import coil3.compose.LocalPlatformContext
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.jdrms.bulletin.core.common.cropSettings
-import com.jdrms.bulletin.core.common.imageRequestUrl
 
 @Composable
-internal fun ConversationListingPreview(imageUrl: String?, imageSize: Dp = 64.dp) {
-    if (imageUrl == null) {
+internal fun ConversationListingPreview(imageUrl: String?, imageSize: Dp = ConversationListingImageSize) {
+    val context = LocalPlatformContext.current
+    val sizePixels = with(LocalDensity.current) { imageSize.roundToPx() }
+    androidx.compose.foundation.layout.Box(
+        Modifier.size(imageSize).clip(MaterialTheme.shapes.small).clipToBounds()
+    ) {
         ListingPreviewPlaceholder(imageSize)
-        return
+        if (imageUrl.isNullOrBlank()) return@Box
+        val crop = imageUrl.cropSettings()
+        SubcomposeAsyncImage(
+            model = conversationListingImageRequest(context, imageUrl, sizePixels),
+            contentDescription = "Listing image",
+            modifier = Modifier.size(imageSize),
+            contentScale = ContentScale.Crop,
+            loading = {},
+            error = {},
+            success = {
+                SubcomposeAsyncImageContent(
+                    Modifier.graphicsLayer {
+                        scaleX = crop.scale
+                        scaleY = crop.scale
+                        translationX = -crop.offsetX * this.size.width * crop.scale
+                        translationY = -crop.offsetY * this.size.height * crop.scale
+                    }
+                )
+            }
+        )
     }
-    val crop = imageUrl.cropSettings()
-    SubcomposeAsyncImage(
-        model = imageUrl.imageRequestUrl(),
-        contentDescription = "Listing image",
-        modifier = Modifier.size(imageSize).clip(MaterialTheme.shapes.small).clipToBounds(),
-        contentScale = ContentScale.Crop,
-        loading = { ListingPreviewPlaceholder(imageSize) },
-        error = { ListingPreviewPlaceholder(imageSize) },
-        success = {
-            SubcomposeAsyncImageContent(
-                Modifier.graphicsLayer {
-                    scaleX = crop.scale
-                    scaleY = crop.scale
-                    translationX = -crop.offsetX * this.size.width * crop.scale
-                    translationY = -crop.offsetY * this.size.height * crop.scale
-                }
-            )
-        }
-    )
 }
 
 @Composable

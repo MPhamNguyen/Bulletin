@@ -216,7 +216,7 @@ internal class PostgrestSupabaseMessagesTable(
 
     private companion object {
         val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id,history_visible_after")
-        val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name),last_read_at")
+        val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name,avatar_url),last_read_at")
         val MESSAGE_COLUMNS = Columns.raw(
             "id,conversation_id,sender_id,body,created_at,edited_at,deleted_at,profiles(full_name),reports(id,status)"
         )

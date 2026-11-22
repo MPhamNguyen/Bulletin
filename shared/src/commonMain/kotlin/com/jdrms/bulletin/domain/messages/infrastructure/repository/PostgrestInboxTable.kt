@@ -39,6 +39,8 @@ internal class PostgrestInboxTable(
                     eq("membership.user_id", userId)
                     filter("membership.deleted_at", FilterOperator.IS, "null")
                 }
+                order("position", Order.ASCENDING, referencedTable = "listing.listing_images")
+                limit(1, referencedTable = "listing.listing_images")
                 order("updated_at", Order.DESCENDING)
                 order("id", Order.DESCENDING)
                 if (pageSize != null) range(offset.toLong(), (offset + pageSize - 1).toLong())
@@ -59,8 +61,10 @@ internal class PostgrestInboxTable(
 
     private companion object {
         val INBOX_COLUMNS = Columns.raw(
-            "id,updated_at,listing_id,membership:conversation_participants!inner(user_id,history_visible_after)," +
-                "participants:conversation_participants(user_id,profiles(full_name),last_read_at)," +
+            "id,updated_at,listing_id," +
+                "listing:listings(listing_images(object_path,position,crop_scale,crop_offset_x,crop_offset_y))," +
+                "membership:conversation_participants!inner(user_id,history_visible_after)," +
+                "participants:conversation_participants(user_id,profiles(full_name,avatar_url),last_read_at)," +
                 "messages(id,conversation_id,sender_id,body,created_at,edited_at,deleted_at," +
                 "profiles(full_name),reports(id,status))"
         )

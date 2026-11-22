@@ -177,11 +177,7 @@ private fun ConversationCardContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
     ) {
-        MessageParticipantPhoto(
-            conversationTitle(conversation, viewerId),
-            conversation.participants.singleOrNull { it.id != viewerId }?.id
-                .takeIf { viewerId != null && conversation.includes(viewerId) && !conversation.isReadOnly }
-        )
+        InboxConversationAvatar(conversation, viewerId)
         ConversationSummary(
             conversation,
             viewerId,

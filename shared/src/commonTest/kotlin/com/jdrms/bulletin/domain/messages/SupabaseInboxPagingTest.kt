@@ -10,6 +10,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class SupabaseInboxPagingTest {
     @Test
@@ -18,6 +19,10 @@ class SupabaseInboxPagingTest {
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine { request ->
+                assertTrue(request.url.parameters["select"].orEmpty().contains("profiles(full_name,avatar_url)"))
+                assertTrue(request.url.parameters["select"].orEmpty().contains("listing:listings(listing_images("))
+                assertEquals("1", request.url.parameters["listing.listing_images.limit"])
+                assertEquals("position.asc.nullslast", request.url.parameters["listing.listing_images.order"])
                 assertEquals("eq.alice-id", request.url.parameters["membership.user_id"])
                 assertEquals("is.null", request.url.parameters["membership.deleted_at"])
                 if (page) {

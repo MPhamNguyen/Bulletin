@@ -70,7 +70,11 @@ internal fun MainAppContent(
                 onViewListing = { listingId ->
                     scope.launch {
                         val preview = models.messages.uiState.value.listingPreviews[listingId]
-                            ?.toCachedMarketplaceDetailPreview(listingId, container.profile.publicProfilePhotos)
+                            ?.toCachedMarketplaceDetailPreview(
+                                listingId,
+                                container.profile.publicProfilePhotos,
+                                models.messages.uiState.value.conversations
+                            )
                         models.marketplace.onListingClicked(listingId, preview)
                         navigation.openListing(listingId)
                     }

@@ -20,10 +20,10 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.MessageReportAlreadySubmittedException
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
-import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseMessagesMapper
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -31,12 +31,19 @@ import kotlin.time.Instant
 
 class SupabaseMessagesRepository internal constructor(
     private val messagesTable: SupabaseMessagesTable,
-    private val instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
+    private val instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation,
+    listingImageUrl: (String) -> String = { it }
 ) : MessagesRepository {
     constructor(
         supabase: SupabaseClient,
         instrumentation: MessagesInstrumentation = NoOpMessagesInstrumentation
-    ) : this(PostgrestSupabaseMessagesTable(supabase, instrumentation), instrumentation)
+    ) : this(
+        PostgrestSupabaseMessagesTable(supabase, instrumentation),
+        instrumentation,
+        { path -> supabase.storage.from("listing_imgs").publicUrl(path) }
+    )
+
+    private val inbox = SupabaseInboxReader(messagesTable, instrumentation, listingImageUrl)
 
     override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> =
         measuredMessagesOperation(
@@ -48,29 +55,18 @@ class SupabaseMessagesRepository internal constructor(
             )
         ) {
             repositoryCall {
-                val rows = messagesTable.getInboxConversations(userId.value)
-                measuredMessagesOperation(
-                    instrumentation,
-                    "inbox_mapping",
-                    MessagesMeasurement(count = { it.size }, callCount = { 0 })
-                ) {
-                    rows.distinctBy(SupabaseConversationInboxDto::id)
-                        .map(SupabaseMessagesMapper::toInboxConversation)
-                        .sortedByDescending(Conversation::updatedAtMillis)
-                }
+                inbox.all(userId)
             }
         }
 
     override suspend fun getConversationPage(userId: SenderId, offset: Int, limit: Int): Result<List<Conversation>> =
         repositoryCall {
-            require(offset >= 0 && limit > 0)
-            messagesTable.getInboxPage(userId.value, offset, limit).map(SupabaseMessagesMapper::toInboxConversation)
+            inbox.page(userId, offset, limit)
         }
 
     override suspend fun getConversation(userId: SenderId, conversationId: ConversationId): Result<Conversation?> =
         repositoryCall {
-            messagesTable.getInboxConversation(userId.value, conversationId.value)
-                ?.let(SupabaseMessagesMapper::toInboxConversation)
+            inbox.conversation(userId, conversationId)
         }
 
     override suspend fun hideConversation(userId: SenderId, conversationId: ConversationId): Result<Unit> =

@@ -1,7 +1,12 @@
 package com.jdrms.bulletin.app.integration
 
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
+import com.jdrms.bulletin.domain.messages.domain.model.Conversation
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
+import com.jdrms.bulletin.domain.profile.domain.repository.PublicProfilePhotoRepository
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.ProfileReadCache
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.PublicProfilePhotoCache
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.SupabasePublicProfilePhotoRepository
@@ -17,6 +22,26 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class CachedConversationListingDetailPreviewTest {
+    @Test
+    fun inboxAvatarIsReusedWithoutAnotherCacheOrDatabaseLookup() = runTest {
+        val listing = InMemoryListingsRepository().getAllListings().first()
+        val participant = ConversationParticipant(
+            SenderId(listing.sellerId.value),
+            "Seller",
+            avatarUrl = "https://example.com/inbox.jpg"
+        )
+        val conversation = Conversation(ConversationId("chat"), listOf(participant))
+        val photos = PublicProfilePhotoRepository { error("No photo request should be made") }
+        val preview = assertNotNull(
+            listing.toConversationPreview().toCachedMarketplaceDetailPreview(
+                listing.id.value,
+                photos,
+                listOf(conversation)
+            )
+        )
+        assertEquals(participant.avatarUrl, preview.sellerAvatarUrl)
+    }
+
     @Test
     fun previewReusesMessagesPhotoAndNeverQueriesForMissingOrExpiredPhotos() = runTest {
         var requests = 0

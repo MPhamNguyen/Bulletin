@@ -13,6 +13,7 @@ import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.createRegistrationViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
@@ -28,6 +29,7 @@ internal fun AppRoot(
     var currentScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
     val session by container.profile.sessionRepository.state.collectAsState()
     val authState = session.toAuthSessionState()
+    ConversationMediaPrefetchRoute(container, (session as? SessionState.Authenticated)?.profile?.id?.value)
     val recoveryState by recovery.uiState.collectAsState()
     LaunchedEffect(container) { container.profile.sessionRepository.restore() }
     LaunchedEffect(authState) { currentScreen = resolveRootScreen(currentScreen, authState) }
