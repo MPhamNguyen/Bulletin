@@ -35,7 +35,7 @@ internal fun SellerProfileHero(profile: MarketplaceSellerProfile) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
         ) {
-            SellerAvatar(profile)
+            SellerAvatar(profile.name, profile.avatarUrl)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.s)
@@ -63,11 +63,11 @@ internal fun SellerProfileHero(profile: MarketplaceSellerProfile) {
 }
 
 @Composable
-private fun SellerAvatar(profile: MarketplaceSellerProfile) {
-    if (profile.avatarUrl != null) {
+internal fun SellerAvatar(name: String?, avatarUrl: String?) {
+    if (avatarUrl != null) {
         AsyncImage(
-            model = profile.avatarUrl,
-            contentDescription = "${profile.name} avatar",
+            model = avatarUrl,
+            contentDescription = "${name ?: "Seller"} avatar",
             modifier = Modifier.size(88.dp).clip(CircleShape),
             contentScale = ContentScale.Crop
         )
@@ -79,7 +79,7 @@ private fun SellerAvatar(profile: MarketplaceSellerProfile) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = profileInitials(profile.name ?: "Student"),
+                text = profileInitials(name ?: "Student"),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary
             )

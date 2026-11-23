@@ -161,7 +161,7 @@ class MessagesViewModelTest {
 
     @Test
     fun storageReadFailureStopsLoadingWithoutExposingTechnicalDetails() = runTest {
-        val repository = object : MessagesRepository by messagesRepository() {
+        val repository = object : InboxInterceptingMessagesRepository(messagesRepository()) {
             override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> =
                 Result.Error(IllegalStateException("Private transport detail"))
         }

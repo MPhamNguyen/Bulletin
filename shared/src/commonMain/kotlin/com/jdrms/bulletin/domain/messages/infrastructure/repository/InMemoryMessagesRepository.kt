@@ -158,7 +158,8 @@ class InMemoryMessagesRepository(
             lastMessage?.takeIf { cutoff == null || it.orderingTimestamp > cutoff },
             updatedAtMillis,
             listingId,
-            cutoff
+            cutoff,
+            listingThumbnailUrl
         )
     }
 

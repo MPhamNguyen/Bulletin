@@ -43,7 +43,7 @@ internal class MessageSendingActions(
                     showFailure(sent)
                 } else if (sent.exception is ConversationReadOnlyException) {
                     finish(conversationId, sent.exception.message)
-                    inbox.refresh()
+                    inbox.refreshConversation(conversationId)
                 } else {
                     finish(conversationId, "Unable to send message. Check your connection and try again.")
                 }

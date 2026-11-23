@@ -18,6 +18,7 @@ import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceInterestsSc
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreen
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenActions
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceScreenNavigation
+import com.jdrms.bulletin.domain.marketplace.presentation.SellerProfilePreview
 import com.jdrms.bulletin.domain.messages.presentation.MessagesScreen
 
 @Composable
@@ -64,8 +65,11 @@ internal fun MainAppContent(
                     navigation.currentDestination = AppDestination.MARKETPLACE
                 },
                 onViewListing = { listingId ->
-                    val preview = models.messages.uiState.value.listingPreviews[listingId]
-                        ?.toMarketplaceDetailPreview(listingId)
+                    val messages = models.messages.uiState.value
+                    val preview = messages.listingPreviews[listingId]?.toMarketplaceDetailPreview(
+                        listingId,
+                        messages.conversations.flatMap { it.participants }
+                    )
                     models.marketplace.onListingClicked(listingId, preview)
                     navigation.openListing(listingId)
                 }
@@ -90,6 +94,10 @@ private fun MarketplaceDestination(
         listingReportViewModel = models.listingReport,
         userBlockViewModel = models.marketplaceUserBlock,
         navigation = MarketplaceScreenNavigation(
+            sellerProfilePreview = models.messages.uiState.value.conversations
+                .flatMap { it.participants }
+                .firstOrNull { it.id.value == navigation.pendingSellerProfileId }
+                ?.let { SellerProfilePreview(it.id.value, it.displayName, it.avatarUrl) },
             scrollToTopRequest = navigation.marketplaceScrollToTopRequest,
             sellerProfileIdToOpen = navigation.pendingSellerProfileId,
             sellerReviewsIdToOpen = navigation.pendingSellerReviewsId,

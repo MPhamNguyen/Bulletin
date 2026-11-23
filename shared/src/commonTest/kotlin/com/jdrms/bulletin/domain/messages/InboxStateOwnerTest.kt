@@ -9,7 +9,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.InboxInvalidation
 import com.jdrms.bulletin.domain.messages.domain.repository.InboxObserver
-import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.presentation.InboxConnectionState
 import com.jdrms.bulletin.domain.messages.presentation.InboxStateOwner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,10 +24,10 @@ import kotlin.test.assertNull
 @OptIn(ExperimentalCoroutinesApi::class)
 class InboxStateOwnerTest {
     @Test
-    fun burstsOfChangesCoalesceIntoOneAuthorizedRefresh() = runTest {
+    fun changesRefreshTheirConversationWithoutReloadingTheInbox() = runTest {
         val backing = messagesRepository()
         var loads = 0
-        val repository = object : MessagesRepository by backing {
+        val repository = object : InboxInterceptingMessagesRepository(backing) {
             override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> {
                 loads++
                 return backing.getConversations(userId)
@@ -50,10 +49,10 @@ class InboxStateOwnerTest {
         events.emit(InboxInvalidation.Changed(conversationId))
         advanceTimeBy(299)
         runCurrent()
-        assertEquals(1, loads)
+        assertEquals(3, loads)
         advanceTimeBy(1)
         runCurrent()
-        assertEquals(2, loads)
+        assertEquals(3, loads)
         owner.close()
     }
 

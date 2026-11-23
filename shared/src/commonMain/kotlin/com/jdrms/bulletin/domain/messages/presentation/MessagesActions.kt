@@ -88,7 +88,7 @@ internal class MessagesActions(
                             statusMessage = "Conversation removed from your inbox."
                         )
                     }
-                    inbox.refresh()
+                    inbox.refreshConversation(conversationId)
                 }
             }
         }

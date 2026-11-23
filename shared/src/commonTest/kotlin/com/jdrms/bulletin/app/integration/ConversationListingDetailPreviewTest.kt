@@ -4,12 +4,16 @@ import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryList
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceItemId
 import com.jdrms.bulletin.domain.marketplace.infrastructure.repository.InMemoryMarketplaceRepository
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
+import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ConversationListingDetailPreviewTest {
     @Test
@@ -52,5 +56,36 @@ class ConversationListingDetailPreviewTest {
     @Test
     fun cardWithoutDetailSnapshotUsesNormalDetailLoading() {
         assertNull(ConversationListingPreview("Desk", "$20.00", null).toMarketplaceDetailPreview("listing:1"))
+    }
+
+    @Test
+    fun sellerAvatarComesFromTheMatchingInboxParticipant() = runTest {
+        val listing = InMemoryListingsRepository().getAllListings().first()
+        val card = listing.toConversationPreview()
+        val seller = ConversationParticipant(
+            SenderId(listing.sellerId.value),
+            "Seller",
+            avatarUrl = "https://example.com/seller.jpg"
+        )
+        val buyer = ConversationParticipant(SenderId("buyer"), "Buyer", avatarUrl = "https://example.com/buyer.jpg")
+        val preview = assertNotNull(card.toMarketplaceDetailPreview(listing.id.value, listOf(buyer, seller)))
+        assertEquals(seller.avatarUrl, preview.sellerAvatarUrl)
+        assertTrue(preview.sellerAvatarKnown)
+    }
+
+    @Test
+    fun missingOrUnrelatedParticipantsKeepAvatarUnknown() = runTest {
+        val listing = InMemoryListingsRepository().getAllListings().first()
+        val card = listing.toConversationPreview()
+        val id = listing.id.value
+        val blank = ConversationParticipant(SenderId(listing.sellerId.value), "Seller", avatarUrl = " ")
+        val other = ConversationParticipant(SenderId("other"), "Other", avatarUrl = "https://example.com/o.jpg")
+        assertFalse(assertNotNull(card.toMarketplaceDetailPreview(id)).sellerAvatarKnown)
+        assertFalse(assertNotNull(card.toMarketplaceDetailPreview(id, listOf(other))).sellerAvatarKnown)
+        for (seller in listOf(blank, blank.copy(avatarUrl = null))) {
+            val preview = assertNotNull(card.toMarketplaceDetailPreview(id, listOf(seller, other)))
+            assertNull(preview.sellerAvatarUrl)
+            assertTrue(preview.sellerAvatarKnown)
+        }
     }
 }

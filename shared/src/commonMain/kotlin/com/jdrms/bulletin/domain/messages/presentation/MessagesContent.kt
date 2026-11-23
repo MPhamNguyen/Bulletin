@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,10 +56,7 @@ internal fun MessagesInboxContent(
         }
         val isEmpty = state.conversations.isEmpty() && state.unmatchedReviewRequests.isEmpty()
         when {
-            state.isLoading && isEmpty -> CenterMessage(
-                "Loading conversations...",
-                loading = true
-            )
+            state.isLoading && isEmpty -> ConversationListSkeleton()
             isEmpty -> CenterMessage(
                 "No conversations yet. Message a seller to start a conversation."
             )
@@ -72,10 +68,9 @@ internal fun MessagesInboxContent(
 private val CONVERSATION_TITLE_SPACING = 8.dp
 
 @Composable
-private fun CenterMessage(text: String, loading: Boolean = false, modifier: Modifier = Modifier.fillMaxSize()) {
+private fun CenterMessage(text: String, modifier: Modifier = Modifier.fillMaxSize()) {
     Box(modifier, contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (loading) CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             Text(
                 text,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

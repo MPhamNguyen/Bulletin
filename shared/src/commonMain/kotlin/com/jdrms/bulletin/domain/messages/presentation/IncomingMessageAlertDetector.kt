@@ -53,19 +53,41 @@ internal class IncomingMessageAlertDetector {
         val alerts = mutableListOf<IncomingMessageAlert>()
         val cleared = mutableListOf<ConversationId>()
         for (conversation in state.conversations) {
-            val last = conversation.lastMessage ?: continue
-            val isNewer = recordIfNewer(conversation.id, last)
-            val unread = conversation.hasUnreadIncoming(viewer, last)
-            when {
-                !unread || conversation.id == suppressed ->
-                    if (alerted.remove(conversation.id)) cleared += conversation.id
-                isNewer -> {
-                    alerted += conversation.id
-                    alerts += last.toAlert(viewer, conversation.listingId)
-                }
-            }
+            detectConversation(
+                conversation,
+                viewer,
+                suppressed,
+                conversation.id in state.historicalConversationIds,
+                alerts,
+                cleared
+            )
         }
         return AlertDetection(alerts, cleared)
+    }
+
+    private fun detectConversation(
+        conversation: Conversation,
+        viewer: SenderId,
+        suppressed: ConversationId?,
+        historical: Boolean,
+        alerts: MutableList<IncomingMessageAlert>,
+        cleared: MutableList<ConversationId>
+    ) {
+        val last = conversation.lastMessage ?: return
+        if (historical && conversation.id !in seen) {
+            seen[conversation.id] = Seen(last.id, last.orderingTimestamp)
+            return
+        }
+        val isNewer = recordIfNewer(conversation.id, last)
+        val unread = conversation.hasUnreadIncoming(viewer, last)
+        when {
+            !unread || conversation.id == suppressed ->
+                if (alerted.remove(conversation.id)) cleared += conversation.id
+            isNewer -> {
+                alerted += conversation.id
+                alerts += last.toAlert(viewer, conversation.listingId)
+            }
+        }
     }
 
     /** Records [last] as the latest seen message and reports whether it is new (see class docs). */

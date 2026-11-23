@@ -91,7 +91,15 @@ private fun detailActions(
     onSubmitReview = viewModel.reviewActions::submitReview,
     onReportListing = { beginMarketplaceListingReport(listingReportViewModel, state.detail.listing) },
     onSellerClick = { sellerId ->
-        sellerProfileViewModel.load(sellerId)
+        sellerProfileViewModel.load(
+            sellerId,
+            SellerProfilePreview(
+                sellerId = sellerId,
+                name = state.detail.listing?.takeIf { it.sellerId == sellerId }?.sellerName
+                    ?: state.detail.preview?.takeIf { it.sellerId == sellerId }?.sellerName,
+                avatarUrl = state.detail.listing?.takeIf { it.sellerId == sellerId }?.sellerAvatarUrl
+            )
+        )
         onNavigate(MarketplaceDestination.SELLER_PROFILE)
     },
     onMessageSeller = actions.onMessageSeller,

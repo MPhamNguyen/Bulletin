@@ -4,7 +4,6 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import kotlinx.coroutines.CoroutineDispatcher
 
 internal class MessageSendingRecoveryFixture(dispatcher: CoroutineDispatcher) {
@@ -14,7 +13,7 @@ internal class MessageSendingRecoveryFixture(dispatcher: CoroutineDispatcher) {
     var sendCount = 0
         private set
     var refreshFails = false
-    private val repository = object : MessagesRepository by backing {
+    private val repository = object : InboxInterceptingMessagesRepository(backing) {
         override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> {
             inboxReads++
             return if (refreshFails) historyFailure() else backing.getConversations(userId)

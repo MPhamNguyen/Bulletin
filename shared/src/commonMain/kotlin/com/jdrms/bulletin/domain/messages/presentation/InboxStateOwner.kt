@@ -15,11 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -37,6 +36,7 @@ class InboxStateOwner(
     val state: StateFlow<InboxState> = mutableState.asStateFlow()
     private val refreshMutex = Mutex()
     private var observationJob: Job? = null
+    private val reviews = InboxReviewLoader(getConversations, mutableState, scope)
     private val sessionJob = scope.launch {
         identity.observeUserIds().distinctUntilChanged().collect(::setSession)
     }
@@ -44,6 +44,7 @@ class InboxStateOwner(
     private fun setSession(userId: SenderId?) {
         if (state.value.viewerId == userId && (userId != null || !state.value.isLoading)) return
         observationJob?.cancel()
+        reviews.cancel()
         observationJob = null
         mutableState.value = InboxState(
             viewerId = userId,
@@ -118,7 +119,7 @@ class InboxStateOwner(
     }
 
     private fun launchObservation(userId: SenderId): Job = scope.launch {
-        observeInboxInvalidations(userId).collectLatest { invalidation ->
+        observeInboxInvalidations(userId).collect { invalidation ->
             when (invalidation) {
                 InboxInvalidation.Subscribed -> {
                     if (state.value.viewerId == userId) {
@@ -127,8 +128,7 @@ class InboxStateOwner(
                     refreshFor(userId)
                 }
                 is InboxInvalidation.Changed -> {
-                    delay(INBOX_COALESCE_MILLIS)
-                    refreshFor(userId)
+                    refreshConversation(userId, invalidation.conversationId)
                 }
                 InboxInvalidation.Disconnected, is InboxInvalidation.Failed -> {
                     if (state.value.viewerId == userId) {
@@ -142,7 +142,8 @@ class InboxStateOwner(
     private suspend fun refreshFor(userId: SenderId) = refreshMutex.withLock {
         if (state.value.viewerId != userId) return@withLock
         mutableState.update { it.copy(isLoading = true) }
-        val result = getConversations()
+        val limit = maxOf(GetConversations.PAGE_SIZE, state.value.pagingOffset)
+        val result = getConversations(offset = 0, includeReviews = false, limit = limit)
         if (state.value.viewerId != userId) return@withLock
         when (result) {
             is Result.Success -> if (result.data.viewerId == userId) {
@@ -154,9 +155,12 @@ class InboxStateOwner(
                         unmatchedReviewRequests = result.data.unmatchedReviewRequests
                             ?: snapshot.unmatchedReviewRequests,
                         isLoading = false,
+                        hasMore = result.data.conversations.size == limit,
+                        pagingOffset = result.data.conversations.size,
                         errorMessage = null
                     )
                 }
+                reviews.refresh(userId)
             } else {
                 mutableState.update {
                     it.copy(
@@ -175,6 +179,55 @@ class InboxStateOwner(
         }
     }
 
+    fun loadMore() {
+        val snapshot = state.value
+        val userId = snapshot.viewerId ?: return
+        if (!snapshot.hasMore || snapshot.isLoadingMore || snapshot.isLoading) return
+        if (snapshot.errorMessage != null) return
+        mutableState.update { it.copy(isLoadingMore = true) }
+        scope.launch {
+            refreshMutex.withLock {
+                if (state.value.viewerId != userId) return@withLock
+                val result = getConversations(offset = state.value.pagingOffset, includeReviews = false)
+                if (state.value.viewerId != userId) return@withLock
+                mutableState.update { current ->
+                    when (result) {
+                        is Result.Success -> current.copy(
+                            conversations = (current.conversations + result.data.conversations).distinctBy(
+                                Conversation::id
+                            ),
+                            pagingOffset = current.pagingOffset + result.data.conversations.size,
+                            historicalConversationIds = current.historicalConversationIds +
+                                result.data.conversations.map(Conversation::id),
+                            hasMore = result.data.conversations.size == GetConversations.PAGE_SIZE,
+                            isLoadingMore = false
+                        )
+                        is Result.Error -> current.copy(
+                            isLoadingMore = false,
+                            errorMessage = "Unable to load more conversations."
+                        )
+                    }
+                }
+                reviews.refresh(userId)
+            }
+        }
+    }
+
+    fun refreshConversation(id: ConversationId) {
+        val userId = state.value.viewerId ?: return
+        scope.launch { refreshConversation(userId, id) }
+    }
+
+    private suspend fun refreshConversation(userId: SenderId, id: ConversationId) = refreshMutex.withLock {
+        val result = getConversations.conversation(userId, id)
+        if (state.value.viewerId != userId || result !is Result.Success) return@withLock
+        mutableState.update {
+            val fetched = it.conversations.filterNot { row -> row.id == id } + listOfNotNull(result.data)
+            it.copy(conversations = InboxReconciliation.merge(it.conversations, fetched))
+        }
+        reviews.refresh(userId)
+    }
+
     fun close() {
         sessionJob.cancel()
         observationJob?.cancel()
@@ -182,5 +235,3 @@ class InboxStateOwner(
         mutableState.value = InboxState(isLoading = false)
     }
 }
-
-private const val INBOX_COALESCE_MILLIS = 300L

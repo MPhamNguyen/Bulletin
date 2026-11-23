@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +24,7 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 /** Placeholder mirroring the seller profile hero, stats, and about cards. */
 @Composable
-internal fun SellerProfileSkeleton() {
+internal fun SellerProfileSkeleton(preview: SellerProfilePreview? = null) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,8 +38,20 @@ internal fun SellerProfileSkeleton() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
             ) {
-                BulletinSkeletonBlock(Modifier.size(AVATAR_SIZE), BulletinShapes.pill)
-                BulletinSkeletonBlock(Modifier.width(160.dp).height(24.dp))
+                if (preview != null) {
+                    SellerAvatar(preview.name, preview.avatarUrl)
+                } else {
+                    BulletinSkeletonBlock(Modifier.size(AVATAR_SIZE), BulletinShapes.pill)
+                }
+                if (!preview?.name.isNullOrBlank()) {
+                    Text(
+                        text = preview?.name.orEmpty(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                } else {
+                    BulletinSkeletonBlock(Modifier.width(160.dp).height(24.dp))
+                }
                 BulletinSkeletonBlock(Modifier.width(200.dp).height(16.dp))
             }
         }

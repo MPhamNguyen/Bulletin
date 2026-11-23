@@ -46,7 +46,7 @@ internal fun ConversationHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(BulletinSpacing.m)
             ) {
-                MessageParticipantPhoto(name, counterpart?.id)
+                MessageParticipantPhoto(name, counterpart?.id, initialUrl = counterpart?.avatarUrl)
                 Column(Modifier.weight(1f)) {
                     Text(
                         name,
