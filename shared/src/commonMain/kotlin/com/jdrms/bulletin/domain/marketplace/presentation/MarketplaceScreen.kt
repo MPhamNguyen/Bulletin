@@ -108,7 +108,7 @@ fun MarketplaceScreen(
             sellerProfileViewModel = sellerProfileViewModel,
             listingReportViewModel = listingReportViewModel,
             actions = actions.copy(onListingClosed = navigation.onListingClosed),
-            onContentNoLongerScrollable = navigation.onContentNoLongerScrollable,
+            navigation = navigation,
             onNavigate = { destination ->
                 val context = state.detail.listing
                     ?.takeIf { destination == MarketplaceDestination.SELLER_PROFILE }
@@ -186,11 +186,13 @@ private fun MarketplaceSellerProfileFlow(
             sellerProfileViewModel = viewModels.sellerProfile,
             listingReportViewModel = viewModels.listingReport,
             actions = actions,
-            onNavigate = onNavigate,
-            onDetailDismiss = {
-                viewModels.marketplace.dismissListingDetail()
-                onNavigate(MarketplaceDestination.SELLER_PROFILE)
-            }
+            navigation = MarketplaceDetailNavigation(
+                onNavigate = onNavigate,
+                onDismiss = {
+                    viewModels.marketplace.dismissListingDetail()
+                    onNavigate(MarketplaceDestination.SELLER_PROFILE)
+                }
+            )
         )
     }
     LaunchedEffect(state.sellerProfileState.profile?.sellerId) {

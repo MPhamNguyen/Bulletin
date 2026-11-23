@@ -27,7 +27,7 @@ internal fun MessagesChatContent(
     val isBlocked = counterpart != null && state.block.isBlocked(counterpart.id)
     var optionsOpen by remember(conversation.id, state.viewerId) { mutableStateOf(false) }
     LaunchedEffect(counterpart?.id, state.viewerId) { counterpart?.let { viewModel.refreshBlockStatus(it.id) } }
-    Column(modifier.imePadding()) {
+    Column(modifier.conversationBackSwipe(viewModel::returnToInbox).imePadding()) {
         ConversationHeader(
             counterpart,
             if (accountDeleted) Message.MISSING_SENDER_NAME else conversationTitle(conversation, state.viewerId),
@@ -38,17 +38,8 @@ internal fun MessagesChatContent(
                 { optionsOpen = true }
             )
         )
-        conversation.listingId?.let { listingId ->
-            ConversationListingCard(
-                state.listingPreviews[listingId.value],
-                onClick = navigation.onViewListing?.let { onViewListing ->
-                    {
-                        onViewListing(listingId.value)
-                    }
-                },
-                modifier = Modifier.padding(horizontal = BulletinSpacing.m, vertical = BulletinSpacing.s)
-            )
-        }
+        ConversationListingSection(state, viewModel, conversation, counterpart, navigation)
+        state.listingSaleError?.let { ListingSaleError(it) }
         ChatStatusMessages(state, viewModel)
         MessageHistoryRetryNotice(state, viewModel::retryHistory)
         MessageList(
@@ -59,6 +50,19 @@ internal fun MessagesChatContent(
             Modifier.weight(1f).padding(horizontal = BulletinSpacing.m),
             navigation.onViewProfile
         )
+        val listingPreview = conversation.listingId?.value?.let(state.listingPreviews::get)
+        val reviews by viewModel.reviews.state.collectAsState()
+        val hasReview = conversation.id in state.pendingReviewConversationIds ||
+            reviews[conversation.listingId?.value] == ConversationReviewState.Submitted
+        buyerRatingPromptSeller(listingPreview, state.viewerId, counterpart)?.takeIf { hasReview }?.let { seller ->
+            key(state.viewerId, conversation.listingId) {
+                BuyerSaleNotice(
+                    seller,
+                    reviews[conversation.listingId?.value] ?: ConversationReviewState.Ready,
+                    viewModel.reviews::submit
+                )
+            }
+        }
         if (lockReason != null) {
             ReadOnlyConversationNotice(lockReason)
         } else if (counterpart != null && isBlocked) {

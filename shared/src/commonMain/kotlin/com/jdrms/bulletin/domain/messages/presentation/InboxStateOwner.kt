@@ -26,16 +26,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-data class InboxState(
-    val viewerId: SenderId? = null,
-    val conversations: List<Conversation> = emptyList(),
-    val isLoading: Boolean = true,
-    val errorMessage: String? = null,
-    val connectionState: InboxConnectionState = InboxConnectionState.CONNECTING
-)
-
-enum class InboxConnectionState { CONNECTING, CONNECTED, DISCONNECTED }
-
 /** One inbox snapshot and one user-topic subscription for the signed-in app session. */
 class InboxStateOwner(
     private val getConversations: GetConversations,
@@ -159,6 +149,10 @@ class InboxStateOwner(
                 mutableState.update { snapshot ->
                     snapshot.copy(
                         conversations = InboxReconciliation.merge(snapshot.conversations, result.data.conversations),
+                        pendingReviewConversationIds = result.data.pendingReviewConversationIds
+                            ?: snapshot.pendingReviewConversationIds,
+                        unmatchedReviewRequests = result.data.unmatchedReviewRequests
+                            ?: snapshot.unmatchedReviewRequests,
                         isLoading = false,
                         errorMessage = null
                     )

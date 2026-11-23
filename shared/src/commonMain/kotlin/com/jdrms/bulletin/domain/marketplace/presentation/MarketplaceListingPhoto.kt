@@ -36,35 +36,48 @@ internal fun MarketplaceListingPhoto(
     onBookmarkClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val photoUrl = item.photos.firstOrNull()
     Box(modifier = modifier.aspectRatio(1f).clipToBounds()) {
-        if (photoUrl == null) {
-            MarketplaceListingPhotoFallback()
-        } else {
-            SubcomposeAsyncImage(
-                model = photoUrl.imageRequestUrl(),
-                contentDescription = "${item.title} photo",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                loading = { MarketplaceListingPhotoFallback() },
-                error = { MarketplaceListingPhotoFallback() },
-                success = {
-                    val crop = photoUrl.cropSettings()
-                    SubcomposeAsyncImageContent(
-                        Modifier.graphicsLayer {
-                            scaleX = crop.scale
-                            scaleY = crop.scale
-                            translationX = -crop.offsetX * size.width * crop.scale
-                            translationY = -crop.offsetY * size.height * crop.scale
-                        }
-                    )
-                }
-            )
-        }
+        MarketplaceListingPhotoImage(
+            photoUrl = item.photos.firstOrNull(),
+            contentDescription = "${item.title} photo",
+            modifier = Modifier.fillMaxSize()
+        )
         MarketplaceBookmarkButton(
             isBookmarked = isBookmarked,
             onClick = onBookmarkClick,
             modifier = Modifier.align(Alignment.TopEnd).padding(BOOKMARK_CORNER_INSET)
+        )
+    }
+}
+
+/** The cropped listing photo, or a placeholder when there is none; shared by the card and the zoom hero. */
+@Composable
+internal fun MarketplaceListingPhotoImage(
+    photoUrl: String?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier
+) {
+    if (photoUrl == null) {
+        MarketplaceListingPhotoFallback(modifier)
+    } else {
+        SubcomposeAsyncImage(
+            model = photoUrl.imageRequestUrl(),
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = ContentScale.Crop,
+            loading = { MarketplaceListingPhotoFallback() },
+            error = { MarketplaceListingPhotoFallback() },
+            success = {
+                val crop = photoUrl.cropSettings()
+                SubcomposeAsyncImageContent(
+                    Modifier.graphicsLayer {
+                        scaleX = crop.scale
+                        scaleY = crop.scale
+                        translationX = -crop.offsetX * size.width * crop.scale
+                        translationY = -crop.offsetY * size.height * crop.scale
+                    }
+                )
+            }
         )
     }
 }
@@ -77,7 +90,9 @@ private fun MarketplaceBookmarkButton(
 ) {
     IconButton(onClick = onClick, modifier = modifier.size(48.dp)) {
         Box(
-            modifier = Modifier.size(36.dp).background(MaterialTheme.colorScheme.background, CircleShape),
+            modifier = Modifier.size(
+                36.dp
+            ).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -91,9 +106,9 @@ private fun MarketplaceBookmarkButton(
 }
 
 @Composable
-private fun MarketplaceListingPhotoFallback() {
+private fun MarketplaceListingPhotoFallback(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f)
             .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)),

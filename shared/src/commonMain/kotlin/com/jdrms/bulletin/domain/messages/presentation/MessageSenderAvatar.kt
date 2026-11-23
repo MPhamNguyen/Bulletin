@@ -15,8 +15,9 @@ import com.jdrms.bulletin.domain.messages.domain.model.Message
 @Composable
 internal fun MessageSenderAvatar(message: Message, showAvatar: Boolean, onViewProfile: () -> Unit) {
     if (showAvatar) {
-        ConversationAvatar(
+        MessageParticipantPhoto(
             message.displaySenderName,
+            message.senderId,
             Modifier.clip(CircleShape).clickable(
                 enabled = message.senderId != null,
                 onClickLabel = "View profile",

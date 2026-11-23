@@ -134,10 +134,10 @@ class RemoveMarketplaceListingBookmark(
 }
 
 class ViewMarketplaceListing(
-    private val repository: MarketplaceRepository,
-    private val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider,
-    private val blockedUserProvider: MarketplaceBlockedUserProvider? = null,
-    private val reportedListingProvider: MarketplaceReportedListingProvider =
+    internal val repository: MarketplaceRepository,
+    internal val sellerProfileProvider: MarketplaceSellerProfileProvider = EmptyMarketplaceSellerProfileProvider,
+    internal val blockedUserProvider: MarketplaceBlockedUserProvider? = null,
+    internal val reportedListingProvider: MarketplaceReportedListingProvider =
         EmptyMarketplaceReportedListingProvider
 ) {
     suspend fun hasReview(listingId: String, reviewerId: String): Boolean =
@@ -176,22 +176,21 @@ class ViewMarketplaceListing(
         }
     }
 
-    private suspend fun Listing.withResolvedSellerName(): Listing {
-        val profile = sellerProfileProvider.getSellerProfile(sellerId)
-        return if (profile != null) {
-            copy(
-                sellerName = profile.name?.takeIf(String::isNotBlank) ?: sellerName,
-                sellerSchool = profile.school?.takeIf(String::isNotBlank) ?: sellerSchool,
-                sellerAvatarUrl = profile.avatarUrl?.takeIf(String::isNotBlank) ?: sellerAvatarUrl,
-                sellerMajor = profile.major?.takeIf(String::isNotBlank) ?: sellerMajor,
-                sellerReputationScore = profile.reputationScore ?: sellerReputationScore,
-                sellerReviewCount = profile.reviewCount ?: sellerReviewCount,
-                sellerIsVerified = profile.isVerified
-            )
-        } else {
-            this
-        }
-    }
+    private suspend fun Listing.withResolvedSellerName(): Listing =
+        withSellerProfile(sellerProfileProvider.getSellerProfile(sellerId))
+}
+
+internal fun Listing.withSellerProfile(profile: MarketplaceSellerProfile?): Listing {
+    if (profile == null) return this
+    return copy(
+        sellerName = profile.name?.takeIf(String::isNotBlank) ?: sellerName,
+        sellerSchool = profile.school?.takeIf(String::isNotBlank) ?: sellerSchool,
+        sellerAvatarUrl = profile.avatarUrl?.takeIf(String::isNotBlank) ?: sellerAvatarUrl,
+        sellerMajor = profile.major?.takeIf(String::isNotBlank) ?: sellerMajor,
+        sellerReputationScore = profile.reputationScore ?: sellerReputationScore,
+        sellerReviewCount = profile.reviewCount ?: sellerReviewCount,
+        sellerIsVerified = profile.isVerified
+    )
 }
 
 data class MarketplaceSellerProfile(

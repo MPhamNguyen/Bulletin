@@ -13,5 +13,6 @@ object BulletinMotion {
     const val LONG = 500
     const val CELEBRATION = 800
     const val SPIN = 900
+    const val SHIMMER = 1_200
     const val TICK_MILLIS = 1_000L
 }

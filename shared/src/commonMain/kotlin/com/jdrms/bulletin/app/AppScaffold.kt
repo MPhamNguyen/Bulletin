@@ -210,7 +210,7 @@ internal fun navigateTo(
     if (destination == AppDestination.LISTINGS) {
         navigation.openCreateListing()
     } else {
-        navigation.apply(navigation.snapshot().selectBottomNavigationDestination(destination))
+        navigation.selectTab(destination)
     }
 }
 

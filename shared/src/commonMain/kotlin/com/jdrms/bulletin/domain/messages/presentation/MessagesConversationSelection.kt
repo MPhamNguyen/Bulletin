@@ -36,7 +36,8 @@ internal class MessagesConversationSelection(
                 failedHistoryRequest = null,
                 failedOlderHistoryRequest = null,
                 errorMessage = null,
-                statusMessage = null
+                statusMessage = null,
+                listingSaleError = null
             )
         }
         if (isDestinationActive() && conversationId != null) {

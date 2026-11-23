@@ -2,10 +2,7 @@ package com.jdrms.bulletin.domain.marketplace.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -13,29 +10,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jdrms.bulletin.core.designsystem.skeleton
 import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @Composable
 internal fun MarketplaceListingHeader(listing: Listing) {
-    // Title & Price Row
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = listing.title,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = listing.price.formatted,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
+    MarketplaceListingHeader(listing.title, listing.price.formatted, listing.category.name, listing.condition)
+}
+
+@Composable
+internal fun MarketplaceListingHeader(
+    title: String?,
+    price: String?,
+    category: String?,
+    condition: String?,
+    isLoading: Boolean = false
+) {
+    MarketplaceListingTitleRow(title, price, isLoading)
 
     // Metadata Badges (Category & Condition)
     Row(
@@ -43,22 +34,27 @@ internal fun MarketplaceListingHeader(listing: Listing) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
+            modifier = Modifier.skeleton(isLoading && category == null),
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ) {
             Text(
-                text = listing.category.name,
+                text = category ?: "CATEGORY",
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
         Surface(
+            modifier = Modifier.skeleton(
+                isLoading && condition == null,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ),
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
-            val conditionText = listing.condition.replace("_", " ")
+            val conditionText = (condition ?: "CONDITION").replace("_", " ")
             Text(
                 text = conditionText,
                 style = MaterialTheme.typography.labelMedium,

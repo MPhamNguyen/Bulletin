@@ -19,23 +19,6 @@ import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Instant
 
-data class MessageInbox(val viewerId: SenderId, val conversations: List<Conversation>)
-
-class GetConversations(
-    private val repository: MessagesRepository,
-    private val currentSenderProvider: CurrentMessageSenderProvider
-) {
-    suspend operator fun invoke(): Result<MessageInbox> {
-        return when (val sender = currentSenderProvider.getCurrentSender()) {
-            is Result.Success -> when (val conversations = repository.getConversations(sender.data.id)) {
-                is Result.Success -> Result.Success(MessageInbox(sender.data.id, conversations.data))
-                is Result.Error -> conversations
-            }
-            is Result.Error -> sender
-        }
-    }
-}
-
 class GetConversationMessages(
     private val repository: MessagesRepository,
     private val currentSenderProvider: CurrentMessageSenderProvider

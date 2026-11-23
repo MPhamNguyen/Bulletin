@@ -17,21 +17,13 @@ class MarketplaceConversationListingPreviewProvider(
         val id = listingId.value.removePrefix(LISTING_ID_PREFIX)
         val listing = listingsRepository.getListing(ListingId(id))
         if (listing != null) {
-            return ConversationListingPreview(
-                title = listing.title,
-                formattedPrice = listing.price.formatted,
-                imageUrl = listing.images.firstOrNull()
-            )
+            return listing.toConversationPreview()
         }
         val item = marketplaceRepository.getItem(MarketplaceItemId(id)) ?: return null
-        return ConversationListingPreview(
-            title = item.title,
-            formattedPrice = item.price.formatted,
-            imageUrl = item.photos.firstOrNull()
-        )
+        return item.toConversationPreview()
     }
 
-    private companion object {
+    internal companion object {
         const val LISTING_ID_PREFIX = "listing:"
     }
 }

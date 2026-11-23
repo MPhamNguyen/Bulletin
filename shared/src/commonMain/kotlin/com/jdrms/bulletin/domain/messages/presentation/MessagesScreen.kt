@@ -10,8 +10,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -19,16 +17,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
+import com.jdrms.bulletin.domain.messages.application.MessageSenderPhotoProvider
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationLockReason
 import com.jdrms.bulletin.domain.messages.domain.model.Message
@@ -41,7 +38,28 @@ fun MessagesScreen(
     onViewProfile: (String) -> Unit = {},
     onConversationVisibilityChanged: (Boolean) -> Unit = {},
     onReportUser: (String) -> Unit = {},
-    onViewListing: ((String) -> Unit)? = null
+    onViewListing: ((String) -> Unit)? = null,
+    senderPhotos: MessageSenderPhotoProvider? = null
+) {
+    CompositionLocalProvider(LocalMessageSenderPhotos provides senderPhotos) {
+        MessagesScreenContent(
+            viewModel,
+            onViewProfile,
+            onConversationVisibilityChanged,
+            onReportUser,
+            onViewListing
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun MessagesScreenContent(
+    viewModel: MessagesViewModel,
+    onViewProfile: (String) -> Unit,
+    onConversationVisibilityChanged: (Boolean) -> Unit,
+    onReportUser: (String) -> Unit,
+    onViewListing: ((String) -> Unit)?
 ) {
     DisposableEffect(viewModel) {
         viewModel.onDestinationActiveChanged(true)
@@ -124,22 +142,3 @@ internal fun conversationPreviewText(conversation: Conversation): String =
 
 internal fun messageBodyText(message: Message, isRevealed: Boolean): String =
     if (message.isReported && !isRevealed) "Reported message hidden" else message.content
-
-@Composable
-internal fun ConversationAvatar(name: String, modifier: Modifier = Modifier) {
-    val initials = name.trim()
-        .split(Regex("\\s+"))
-        .take(2)
-        .mapNotNull { it.firstOrNull()?.uppercase() }
-        .joinToString("")
-    Surface(
-        modifier = modifier.size(40.dp).semantics { contentDescription = "$name avatar" },
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-    ) {
-        androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
-            Text(initials.ifBlank { "?" }, style = MaterialTheme.typography.labelLarge)
-        }
-    }
-}

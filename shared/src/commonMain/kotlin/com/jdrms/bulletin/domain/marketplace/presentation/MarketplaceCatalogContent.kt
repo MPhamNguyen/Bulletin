@@ -13,8 +13,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,7 +30,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinCard
@@ -49,14 +46,15 @@ internal fun MarketplaceCatalogContent(
     sellerProfileViewModel: SellerProfileViewModel,
     listingReportViewModel: ListingReportViewModel,
     actions: MarketplaceScreenActions,
-    onContentNoLongerScrollable: () -> Unit,
+    navigation: MarketplaceScreenNavigation,
     onNavigate: (MarketplaceDestination) -> Unit
 ) {
-    val gridState = rememberLazyGridState()
+    val gridState = rememberMarketplaceCatalogScrollState(navigation.scrollToTopRequest)
     val focusManager = LocalFocusManager.current
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(Offset.Zero) }
     var filtersBeforeCategoryReset by remember { mutableStateOf<MarketplaceFilterState?>(null) }
+    var zoomOrigin by remember { mutableStateOf<ListingZoomOrigin?>(null) }
     val headerActions = MarketplaceCatalogHeaderActions(
         onQueryChanged = viewModel::onSearchQueryChanged,
         onFiltersApplied = viewModel::onFiltersApplied,
@@ -72,7 +70,7 @@ internal fun MarketplaceCatalogContent(
         }
     )
     LaunchedEffect(gridState.canScrollForward) {
-        if (!gridState.canScrollForward) onContentNoLongerScrollable()
+        if (!gridState.canScrollForward) navigation.onContentNoLongerScrollable()
     }
     LaunchedEffect(
         gridState,
@@ -120,9 +118,9 @@ internal fun MarketplaceCatalogContent(
             horizontalArrangement = Arrangement.spacedBy(CATALOG_GAP)
         ) {
             marketplaceCatalogHeader(state, headerActions)
-            marketplaceLoadingItem(state.isLoading && !state.isRefreshing)
+            marketplaceSkeletonItems(state.layoutPreference.columns, state.isLoading && !state.isRefreshing)
             marketplaceEmptyResultsItem(state)
-            marketplaceListingItems(state, viewModel)
+            marketplaceListingItems(state, viewModel) { zoomOrigin = it }
             marketplacePaginationItem(state)
             marketplaceErrorItems(state, viewModel)
         }
@@ -146,21 +144,15 @@ internal fun MarketplaceCatalogContent(
             sellerProfileViewModel,
             listingReportViewModel,
             actions,
-            onNavigate,
-            {
-                viewModel.dismissListingDetail()
-                actions.onListingClosed()
-            }
+            MarketplaceDetailNavigation(
+                onNavigate = onNavigate,
+                onDismiss = {
+                    viewModel.dismissListingDetail()
+                    actions.onListingClosed()
+                }
+            ),
+            zoomOrigin = zoomOrigin
         )
-    }
-}
-
-private fun LazyGridScope.marketplaceLoadingItem(isLoading: Boolean) {
-    if (!isLoading) return
-    fullWidthItem {
-        Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
     }
 }
 
@@ -177,14 +169,18 @@ private fun LazyGridScope.marketplaceEmptyResultsItem(state: MarketplaceUiState)
     }
 }
 
-private fun LazyGridScope.marketplaceListingItems(state: MarketplaceUiState, viewModel: MarketplaceViewModel) {
+private fun LazyGridScope.marketplaceListingItems(
+    state: MarketplaceUiState,
+    viewModel: MarketplaceViewModel,
+    onOriginCaptured: (ListingZoomOrigin?) -> Unit
+) {
     items(items = state.items, key = { item -> item.id.value }) { item ->
         MarketplaceItemCard(
             item = item,
-            columns = state.layoutPreference.columns,
             isBookmarked = item.id in state.bookmarkedItemIds,
             onBookmarkClick = { viewModel.toggleBookmark(item.id) },
-            onCardClick = { viewModel.onListingClicked(item.id.value) }
+            onCardClick = { viewModel.onListingClicked(item.id.value) },
+            onOriginCaptured = onOriginCaptured
         )
     }
 }
@@ -194,7 +190,7 @@ private fun LazyGridScope.marketplacePaginationItem(state: MarketplaceUiState) {
     fullWidthItem(key = "marketplace-pagination-trigger") {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             if (state.isLoadingMore) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                MarketplaceItemCardSkeletonRow(state.layoutPreference.columns)
             }
         }
     }
@@ -225,5 +221,5 @@ private fun LazyGridScope.fullWidthItem(
 ) = item(key = key, span = { GridItemSpan(maxLineSpan) }) { content() }
 
 private const val PREFETCH_ITEM_THRESHOLD = 6
-private val CATALOG_GUTTER = 20.dp
-private val CATALOG_GAP = 14.dp
+private val CATALOG_GUTTER = BulletinSpacing.l
+private val CATALOG_GAP = BulletinSpacing.m

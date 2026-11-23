@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +46,7 @@ fun SellerProfileScreen(
             showUserActions = options.showUserActions
         )
         when {
-            state.isLoading -> SellerProfileLoading()
+            state.isLoading -> SellerProfileSkeleton()
             state.errorMessage != null -> SellerProfileError(state.errorMessage)
             state.profile != null -> LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -133,13 +132,6 @@ data class SellerProfileReviewActions(
     val onRetryReviews: () -> Unit = {},
     val onListingClick: (String) -> Unit = {}
 )
-
-@Composable
-private fun SellerProfileLoading() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-    }
-}
 
 @Composable
 private fun SellerProfileError(message: String) {

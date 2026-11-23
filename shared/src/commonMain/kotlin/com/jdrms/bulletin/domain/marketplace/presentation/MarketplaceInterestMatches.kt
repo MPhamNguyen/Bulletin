@@ -33,7 +33,6 @@ internal fun MarketplaceInterestMatches(
             listings.forEach { listing ->
                 MarketplaceItemCard(
                     item = listing,
-                    columns = 1,
                     isBookmarked = false,
                     onBookmarkClick = { /* no-op in interests view */ },
                     onCardClick = { onListingClick(listing.id.value) }

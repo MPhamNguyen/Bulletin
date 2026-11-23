@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
+import com.jdrms.bulletin.domain.messages.application.PendingConversationReview
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
@@ -12,6 +13,8 @@ import com.jdrms.bulletin.domain.reporting.domain.model.ReportReason
 data class MessagesUiState(
     val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
+    val pendingReviewConversationIds: Set<ConversationId> = emptySet(),
+    val unmatchedReviewRequests: List<PendingConversationReview> = emptyList(),
     val listingPreviews: Map<String, ConversationListingPreview?> = emptyMap(),
     val selectedConversationId: ConversationId? = null,
     val isConversationOpen: Boolean = false,
@@ -32,8 +35,11 @@ data class MessagesUiState(
     val messageReportForm: MessageReportFormState? = null,
     val errorMessage: String? = null,
     val statusMessage: String? = null,
+    val listingSaleUpdate: ConversationListingSaleUpdate? = null,
+    val listingSaleError: String? = null,
     val block: ConversationBlockUiState = ConversationBlockUiState()
 ) {
+    val isUpdatingListingSale: Boolean get() = listingSaleUpdate != null
     val isSending: Boolean get() = sendStates[selectedConversationId] == MessageSendState.Sending
     val sendErrorMessage: String? get() = (sendStates[selectedConversationId] as? MessageSendState.Failed)?.message
 }

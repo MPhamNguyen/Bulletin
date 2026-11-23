@@ -5,6 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.geometry.Rect
 import com.jdrms.bulletin.app.di.AppContainer
+import com.jdrms.bulletin.app.integration.toMarketplaceDetailPreview
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
 import com.jdrms.bulletin.app.navigation.ProfileDestination
@@ -30,37 +31,47 @@ internal fun MainAppContent(
     val container = content.container
     val navigation = content.navigation
     val models = content.models
-    when (navigation.currentDestination) {
-        AppDestination.HOME -> HomeScreen(
-            models.home,
-            profileAnchorInWindow = profileAnchorInWindow,
-            onSaveCelebration = onSaveCelebration
-        )
-        AppDestination.MARKETPLACE -> MarketplaceDestination(container, navigation, models, onContentNoLongerScrollable)
-        AppDestination.LISTINGS -> ListingsScreen(
-            models.listings,
-            onClose = {
-                models.listings.clearMessages()
-                navigation.closeCreateListing()
-            }
-        )
-        AppDestination.MESSAGES -> MessagesScreen(
-            viewModel = models.messages,
-            onViewProfile = { sellerId ->
-                navigation.pendingSellerProfileId = sellerId
-                navigation.currentDestination = AppDestination.MARKETPLACE
-            },
-            onConversationVisibilityChanged = onConversationVisibilityChanged,
-            onReportUser = { id ->
-                navigation.pendingUserReportId = id
-                navigation.currentDestination = AppDestination.MARKETPLACE
-            },
-            onViewListing = { listingId ->
-                models.marketplace.onListingClicked(listingId)
-                navigation.openListing(listingId)
-            }
-        )
-        AppDestination.PROFILE -> ProfileDestinationContent(container, navigation, models, content.profile)
+    MainDestinationState(navigation.currentDestination) {
+        when (navigation.currentDestination) {
+            AppDestination.HOME -> HomeScreen(
+                models.home,
+                profileAnchorInWindow = profileAnchorInWindow,
+                onSaveCelebration = onSaveCelebration
+            )
+            AppDestination.MARKETPLACE -> MarketplaceDestination(
+                container,
+                navigation,
+                models,
+                onContentNoLongerScrollable
+            )
+            AppDestination.LISTINGS -> ListingsScreen(
+                models.listings,
+                onClose = {
+                    models.listings.clearMessages()
+                    navigation.closeCreateListing()
+                }
+            )
+            AppDestination.MESSAGES -> MessagesScreen(
+                viewModel = models.messages,
+                senderPhotos = container.messages.messageSenderPhotoProvider,
+                onViewProfile = { sellerId ->
+                    navigation.pendingSellerProfileId = sellerId
+                    navigation.currentDestination = AppDestination.MARKETPLACE
+                },
+                onConversationVisibilityChanged = onConversationVisibilityChanged,
+                onReportUser = { id ->
+                    navigation.pendingUserReportId = id
+                    navigation.currentDestination = AppDestination.MARKETPLACE
+                },
+                onViewListing = { listingId ->
+                    val preview = models.messages.uiState.value.listingPreviews[listingId]
+                        ?.toMarketplaceDetailPreview(listingId)
+                    models.marketplace.onListingClicked(listingId, preview)
+                    navigation.openListing(listingId)
+                }
+            )
+            AppDestination.PROFILE -> ProfileDestinationContent(container, navigation, models, content.profile)
+        }
     }
 }
 
@@ -79,6 +90,7 @@ private fun MarketplaceDestination(
         listingReportViewModel = models.listingReport,
         userBlockViewModel = models.marketplaceUserBlock,
         navigation = MarketplaceScreenNavigation(
+            scrollToTopRequest = navigation.marketplaceScrollToTopRequest,
             sellerProfileIdToOpen = navigation.pendingSellerProfileId,
             sellerReviewsIdToOpen = navigation.pendingSellerReviewsId,
             userReportIdToOpen = navigation.pendingUserReportId,
@@ -119,7 +131,9 @@ private fun ProfileDestinationContent(
             profilePresentation.viewModel,
             models.sellerProfile,
             onListingClick = { listingId ->
-                models.marketplace.onListingClicked(listingId)
+                val preview = models.messages.uiState.value.listingPreviews[listingId]
+                    ?.toMarketplaceDetailPreview(listingId)
+                models.marketplace.onListingClicked(listingId, preview)
                 navigation.openListing(listingId)
             },
             onBack = { navigation.profileDestination = ProfileDestination.SETTINGS }
@@ -129,7 +143,9 @@ private fun ProfileDestinationContent(
             viewModel = profilePresentation.marketplaceInterestsViewModel,
             onBack = { navigation.profileDestination = ProfileDestination.PROFILE },
             onListingClick = { listingId ->
-                models.marketplace.onListingClicked(listingId)
+                val preview = models.messages.uiState.value.listingPreviews[listingId]
+                    ?.toMarketplaceDetailPreview(listingId)
+                models.marketplace.onListingClicked(listingId, preview)
                 navigation.openListing(listingId)
             }
         )
