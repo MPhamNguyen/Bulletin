@@ -8,6 +8,15 @@ import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 data class InboxState(
     val viewerId: SenderId? = null,
     val conversations: List<Conversation> = emptyList(),
+    val hasMore: Boolean = false,
+    /**
+     * Number of rows consumed by paginated fetches; unlike [conversations].size
+     * it ignores single-conversation refreshes.
+     */
+    val pagingOffset: Int = 0,
+    /** Conversations appended from historical pages; they seed notification history and never raise alerts. */
+    val historicalConversationIds: Set<ConversationId> = emptySet(),
+    val isLoadingMore: Boolean = false,
     val isLoading: Boolean = true,
     val pendingReviewConversationIds: Set<ConversationId> = emptySet(),
     val unmatchedReviewRequests: List<PendingConversationReview> = emptyList(),

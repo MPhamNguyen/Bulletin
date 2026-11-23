@@ -45,22 +45,36 @@ object MessagesMapper {
     fun toDomain(dto: ConversationDto): Conversation {
         return Conversation(
             id = ConversationId(dto.id),
-            participants = dto.participants.map { ConversationParticipant(SenderId(it.id), it.displayName) },
+            participants = dto.participants.map {
+                ConversationParticipant(
+                    SenderId(it.id),
+                    it.displayName,
+                    avatarUrl = it.avatarUrl
+                )
+            },
             listingId = dto.listingId?.let(::ListingReferenceId),
             lastMessage = dto.lastMessage?.let { toDomain(it) },
             updatedAtMillis = dto.updatedAtMillis,
-            isListingSold = dto.isListingSold
+            isListingSold = dto.isListingSold,
+            listingThumbnailUrl = dto.listingThumbnailUrl
         )
     }
 
     fun toDto(domain: Conversation): ConversationDto {
         return ConversationDto(
             id = domain.id.value,
-            participants = domain.participants.map { ConversationParticipantDto(it.id.value, it.displayName) },
+            participants = domain.participants.map {
+                ConversationParticipantDto(
+                    it.id.value,
+                    it.displayName,
+                    it.avatarUrl
+                )
+            },
             listingId = domain.listingId?.value,
             lastMessage = domain.lastMessage?.let { toDto(it) },
             updatedAtMillis = domain.updatedAtMillis,
-            isListingSold = domain.isListingSold
+            isListingSold = domain.isListingSold,
+            listingThumbnailUrl = domain.listingThumbnailUrl
         )
     }
 }

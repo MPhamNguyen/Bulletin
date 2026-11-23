@@ -40,9 +40,11 @@ internal class BoundedMemoryCache<K : Any, V : Any>(
             mutex.withLock {
                 result.onSuccess { value ->
                     if (value != null && generation == loadGeneration) putLocked(key, value)
-                    if (pending[key] === deferred) pending.remove(key)?.complete(value)
+                    if (pending[key] === deferred) pending.remove(key)
+                    deferred.complete(value)
                 }.onFailure { error ->
-                    if (pending[key] === deferred) pending.remove(key)?.completeExceptionally(error)
+                    if (pending[key] === deferred) pending.remove(key)
+                    deferred.completeExceptionally(error)
                 }
             }
         }
@@ -55,17 +57,20 @@ internal class BoundedMemoryCache<K : Any, V : Any>(
         mutex.withLock {
             generation++
             entries.remove(key)
+            pending.remove(key)
         }
     }
 
     suspend fun clear() = mutex.withLock {
         generation++
         entries.clear()
+        pending.clear()
     }
 
     suspend fun clearWhere(predicate: (K) -> Boolean) = mutex.withLock {
         generation++
         entries.keys.filter(predicate).forEach(entries::remove)
+        pending.keys.filter(predicate).forEach(pending::remove)
     }
 
     private fun getLocked(key: K): V? {

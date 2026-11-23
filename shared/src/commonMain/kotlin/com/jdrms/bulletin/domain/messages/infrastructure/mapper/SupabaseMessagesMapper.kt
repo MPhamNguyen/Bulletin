@@ -39,7 +39,10 @@ object SupabaseMessagesMapper {
         )
     }
 
-    fun toInboxConversation(dto: SupabaseConversationInboxDto): Conversation {
+    fun toInboxConversation(
+        dto: SupabaseConversationInboxDto,
+        imageUrl: (String) -> String = { it }
+    ): Conversation {
         val cutoff = dto.membership.singleOrNull()?.historyVisibleAfter?.let(Instant::parse)
         val lastMessage = dto.latestMessages.firstOrNull()?.let(::toMessage)?.takeIf { message ->
             cutoff == null || message.orderingTimestamp > cutoff
@@ -54,14 +57,16 @@ object SupabaseMessagesMapper {
                 ConversationParticipant(
                     id = SenderId(participant.userId),
                     displayName = participant.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
-                    lastReadAt = participant.lastReadAt?.let(Instant::parse)
+                    lastReadAt = participant.lastReadAt?.let(Instant::parse),
+                    avatarUrl = participant.profile?.avatarUrl?.takeIf(String::isNotBlank)
                 )
             },
             listingId = dto.listingId?.let(::ListingReferenceId),
             lastMessage = lastMessage,
             updatedAtMillis = updatedAtMillis,
             historyVisibleAfter = cutoff,
-            isListingSold = dto.isListingSold
+            isListingSold = dto.isListingSold,
+            listingThumbnailUrl = dto.listing?.toThumbnailUrl(imageUrl)
         )
     }
 
@@ -69,7 +74,8 @@ object SupabaseMessagesMapper {
         return ConversationParticipant(
             id = SenderId(dto.userId),
             displayName = dto.profile?.fullName?.takeIf(String::isNotBlank) ?: DEFAULT_DISPLAY_NAME,
-            lastReadAt = dto.lastReadAt?.let(Instant::parse)
+            lastReadAt = dto.lastReadAt?.let(Instant::parse),
+            avatarUrl = dto.profile?.avatarUrl?.takeIf(String::isNotBlank)
         )
     }
 

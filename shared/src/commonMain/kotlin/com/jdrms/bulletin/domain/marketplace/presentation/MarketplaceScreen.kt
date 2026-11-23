@@ -38,7 +38,7 @@ fun MarketplaceScreen(
         navigation.sellerProfileIdToOpen?.let { sellerId ->
             sellerNavigation = sellerNavigation.navigate(MarketplaceDestination.SELLER_PROFILE)
             sellerProfileOpenedFromInbox = true
-            sellerProfileViewModel.load(sellerId)
+            sellerProfileViewModel.load(sellerId, navigation.sellerProfilePreview)
             navigation.onSellerProfileRequestHandled()
         }
     }

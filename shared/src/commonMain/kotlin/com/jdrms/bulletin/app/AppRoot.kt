@@ -3,7 +3,6 @@ package com.jdrms.bulletin.app
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,6 +12,7 @@ import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.di.createRegistrationViewModel
 import com.jdrms.bulletin.app.navigation.AppRootScreen
 import com.jdrms.bulletin.app.theme.ThemeViewModel
+import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
 import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryViewModel
@@ -28,16 +28,13 @@ internal fun AppRoot(
     var currentScreen by remember { mutableStateOf(AppRootScreen.SIGN_IN) }
     val session by container.profile.sessionRepository.state.collectAsState()
     val authState = session.toAuthSessionState()
+    ConversationMediaPrefetchRoute(container, (session as? SessionState.Authenticated)?.profile?.id?.value)
     val recoveryState by recovery.uiState.collectAsState()
     LaunchedEffect(container) { container.profile.sessionRepository.restore() }
     LaunchedEffect(authState) { currentScreen = resolveRootScreen(currentScreen, authState) }
     if (authState == AuthSessionState.CHECKING) {
-        Box(
-            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
+        // The platform splash screen covers this wait. If it gives up first, show the plain background, not a spinner.
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
     } else {
         val screen = resolveRootScreen(currentScreen, authState)
         when (screen) {

@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.InboxInterceptingMessagesRepository
 import com.jdrms.bulletin.domain.messages.MutableMessageSenderProvider
 import com.jdrms.bulletin.domain.messages.alice
 import com.jdrms.bulletin.domain.messages.carol
@@ -11,7 +12,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationLockReason
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.draftViewModel
 import com.jdrms.bulletin.domain.messages.message
 import com.jdrms.bulletin.domain.messages.messagesRepository
@@ -95,7 +95,7 @@ private class SoldConversationFixture {
     var isSold = false
     var sendCalls = 0
     private val backing = messagesRepository(messages = listOf(message()))
-    val repository = object : MessagesRepository by backing {
+    val repository = object : InboxInterceptingMessagesRepository(backing) {
         override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> = Result.Success(
             listOf(
                 Conversation(

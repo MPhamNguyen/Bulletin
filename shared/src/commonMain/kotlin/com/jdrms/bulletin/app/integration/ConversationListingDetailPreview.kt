@@ -4,9 +4,15 @@ import com.jdrms.bulletin.core.designsystem.ItemDetailRow
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceListingPreview
 import com.jdrms.bulletin.domain.marketplace.presentation.MarketplaceListingPreviewContent
 import com.jdrms.bulletin.domain.messages.application.ConversationListingPreview
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
 
-internal fun ConversationListingPreview.toMarketplaceDetailPreview(listingId: String): MarketplaceListingPreview? {
+/** Preserve known participant photos, including their absence, while fresh listing details load. */
+internal fun ConversationListingPreview.toMarketplaceDetailPreview(
+    listingId: String,
+    knownParticipants: List<ConversationParticipant> = emptyList()
+): MarketplaceListingPreview? {
     val snapshot = details ?: return null
+    val seller = knownParticipants.firstOrNull { it.id.value == snapshot.sellerId }
     return MarketplaceListingPreview(
         listingId = listingId,
         sellerId = snapshot.sellerId,
@@ -21,6 +27,8 @@ internal fun ConversationListingPreview.toMarketplaceDetailPreview(listingId: St
             attributes = snapshot.attributes.map { ItemDetailRow(it.label, it.value) },
             createdAtMillis = snapshot.createdAtMillis,
             updatedAtMillis = snapshot.updatedAtMillis
-        )
+        ),
+        sellerAvatarUrl = seller?.avatarUrl?.takeIf(String::isNotBlank),
+        sellerAvatarKnown = seller != null
     )
 }

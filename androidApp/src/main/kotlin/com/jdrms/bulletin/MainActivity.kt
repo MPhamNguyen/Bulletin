@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -23,18 +24,29 @@ import com.jdrms.bulletin.notifications.MessageNotificationIntents
 import com.jdrms.bulletin.notifications.NotificationSettingsHost
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+
+private const val SPLASH_MAX_WAIT_MILLIS = 3_000L
 
 class MainActivity : ComponentActivity() {
     private val bulletin get() = application as BulletinApplication
     private var leftForBrowser = false
+    private var splashDone = false
     private val notificationPermission =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { /* Alerts simply stay off if denied. */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must run before super.onCreate. Holds the splash until the stored session is resolved so Home or sign-in
+        // appears directly, rather than a spinner. Capped so a slow network cannot keep users on the splash.
+        installSplashScreen().setKeepOnScreenCondition { !splashDone }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            withTimeoutOrNull(SPLASH_MAX_WAIT_MILLIS) { bulletin.container.isSessionResolved.first { it } }
+            splashDone = true
+        }
         if (savedInstanceState == null) handleNotificationTap(intent)
         handleCallback(intent)
         bulletin.container.startMessageNotifications(bulletin.messageNotifier)

@@ -1,11 +1,11 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.InboxInterceptingMessagesRepository
 import com.jdrms.bulletin.domain.messages.MutableMessageSenderProvider
 import com.jdrms.bulletin.domain.messages.conversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.message
 import com.jdrms.bulletin.domain.messages.messagesRepository
 import com.jdrms.bulletin.domain.messages.testInboxOwner
@@ -27,7 +27,7 @@ class MessagesStreamCallbacksFactoryTest {
         val provider = MutableMessageSenderProvider()
         val backing = messagesRepository()
         var conversationVisible = false
-        val repository = object : MessagesRepository by backing {
+        val repository = object : InboxInterceptingMessagesRepository(backing) {
             override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> =
                 if (conversationVisible) backing.getConversations(userId) else Result.Success(emptyList())
         }

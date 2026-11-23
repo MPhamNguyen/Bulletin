@@ -8,7 +8,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.MessageCursor
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.MessagePage
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
-import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import kotlinx.coroutines.CoroutineDispatcher
 
 internal data class HistoryPageCall(
@@ -25,7 +24,7 @@ internal class MessageHistoryRetryFixture(dispatcher: CoroutineDispatcher, messa
     var inboxReads = 0
         private set
     var readPage: suspend (HistoryPageCall) -> Result<MessagePage> = ::storedPage
-    private val repository = object : MessagesRepository by backing {
+    private val repository = object : InboxInterceptingMessagesRepository(backing) {
         override suspend fun getConversations(userId: SenderId): Result<List<Conversation>> {
             inboxReads++
             return backing.getConversations(userId)

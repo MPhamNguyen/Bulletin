@@ -76,7 +76,7 @@ internal class MessagesStreamCallbacksFactory(
                 pendingViewerId = viewerId
                 pendingMessages[message.id] = message
                 if (pendingMessages.size > MAX_PENDING_MESSAGES) pendingMessages.remove(pendingMessages.keys.first())
-                inbox.refresh()
+                inbox.refreshConversation(conversationId)
                 return@onReceived
             }
             deliver(message, conversation)
@@ -97,13 +97,13 @@ internal class MessagesStreamCallbacksFactory(
         if (!conversation.includes(viewerId) || !conversation.canSee(message)) return
         if (message.senderId != null && !conversation.includes(message.senderId)) {
             // A row event queued before deletion may arrive after the membership refresh.
-            inbox.refresh()
+            inbox.refreshConversation(conversation.id)
             reloadSelectedConversation(conversation.id)
             return
         }
         val senderName = conversation.participants.firstOrNull { it.id == message.senderId }?.displayName
         val resolvedMessage = message.copy(senderName = senderName ?: message.displaySenderName)
-        if (message.senderId == null) inbox.refresh()
+        if (message.senderId == null) inbox.refreshConversation(conversation.id)
         when (val recorded = inbox.recordMessage(resolvedMessage)) {
             is Result.Error -> showFailure(recorded)
             is Result.Success -> {

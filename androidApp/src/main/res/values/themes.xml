@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The theme the app runs with once the splash screen is dismissed. -->
+    <style name="Theme.Bulletin" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+        Launch theme for MainActivity. The splash screen stays up until MainActivity reports that the stored
+        session is resolved, so users go from the splash straight to Home instead of seeing a spinner first.
+        The brand background keeps the same look in light and dark mode.
+    -->
+    <style name="Theme.Bulletin.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#3E5C76</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Bulletin</item>
+    </style>
+</resources>

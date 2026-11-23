@@ -30,6 +30,7 @@ internal class FakeSupabaseMessagesTable(
     var authenticatedUserId: String? = alice.id.value,
     private val now: (() -> Instant)? = null
 ) : SupabaseMessagesTable {
+    private val thumbnails = conversations.associate { it.id.value to it.listingThumbnailUrl }
     private var clockMillis = maxOf(messages.maxOfOrNull(Message::timestampMillis) ?: 0L, 41L)
     private fun serverNow(): Instant = now?.invoke() ?: Instant.fromEpochMilliseconds(++clockMillis)
     private val conversationRows = conversations.associate { conversation ->
@@ -45,7 +46,7 @@ internal class FakeSupabaseMessagesTable(
             SupabaseConversationParticipantDto(
                 conversationId = conversation.id.value,
                 userId = participant.id.value,
-                profile = SupabaseMessageProfileDto(participant.displayName),
+                profile = SupabaseMessageProfileDto(participant.displayName, participant.avatarUrl),
                 lastReadAt = participant.lastReadAt?.toString()
             )
         }
@@ -100,6 +101,7 @@ internal class FakeSupabaseMessagesTable(
                     updatedAt = conversation.updatedAt,
                     listingId = conversation.listingId,
                     isListingSold = conversation.isListingSold,
+                    listing = thumbnails[id]?.let(::inboxListingImage),
                     membership = listOf(
                         SupabaseInboxMembershipDto(userId, historyVisibleAfter[id to userId]?.toString())
                     ),

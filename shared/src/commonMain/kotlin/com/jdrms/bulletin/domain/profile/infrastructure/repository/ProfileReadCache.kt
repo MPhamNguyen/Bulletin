@@ -10,6 +10,7 @@ import kotlinx.coroutines.sync.withLock
 internal class ProfileReadCache(
     currentTimeMillis: () -> Long = ::profileCacheTimeMillis
 ) {
+    val publicPhotos = PublicProfilePhotoCache(currentTimeMillis)
     private val sessionMutex = Mutex()
     private var sessionId: String? = null
     private val currentProfiles = BoundedMemoryCache<UserId, StudentProfile>(
@@ -46,6 +47,7 @@ internal class ProfileReadCache(
     ) = reputationCache(isCurrentUser).getOrLoad(id, loader)!!
 
     suspend fun invalidate(id: UserId) {
+        publicPhotos.invalidate(id)
         currentProfiles.invalidate(id)
         publicProfiles.invalidate(id)
         currentReputations.invalidate(id)
@@ -53,6 +55,7 @@ internal class ProfileReadCache(
     }
 
     suspend fun clear() {
+        publicPhotos.clear()
         currentProfiles.clear()
         publicProfiles.clear()
         currentReputations.clear()
@@ -60,6 +63,7 @@ internal class ProfileReadCache(
     }
 
     suspend fun clearCurrentSession() {
+        publicPhotos.clear()
         currentProfiles.clear()
         currentReputations.clear()
         sessionMutex.withLock { sessionId = null }
@@ -68,6 +72,7 @@ internal class ProfileReadCache(
     suspend fun observeSession(currentSessionId: String?) {
         sessionMutex.withLock {
             if (sessionId != currentSessionId) {
+                publicPhotos.clear()
                 currentProfiles.clear()
                 currentReputations.clear()
                 sessionId = currentSessionId

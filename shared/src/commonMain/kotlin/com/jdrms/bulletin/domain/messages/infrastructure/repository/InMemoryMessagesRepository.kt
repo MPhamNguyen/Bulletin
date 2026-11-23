@@ -159,7 +159,8 @@ class InMemoryMessagesRepository(
             updatedAtMillis,
             listingId,
             cutoff,
-            isListingSold = isListingSold
+            isListingSold = isListingSold,
+            listingThumbnailUrl = listingThumbnailUrl
         )
     }
 
