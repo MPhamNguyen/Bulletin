@@ -20,14 +20,15 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetConversationsReviewsTest {
     @Test
-    fun matchesOnlyTheBuyersListingAndSeller() = runTest {
+    fun soldConversationMatchesOnlyTheBuyersListingAndSeller() = runTest {
         val chat = conversation()
         val repository = messagesRepository(
             listOf(
                 Conversation(
                     chat.id,
                     chat.participants,
-                    listingId = ListingReferenceId("listing:1")
+                    listingId = ListingReferenceId("listing:1"),
+                    isListingSold = true
                 )
             )
         )
@@ -47,6 +48,38 @@ class GetConversationsReviewsTest {
             val inbox = get().getOrThrow()
             assertEquals(expected, inbox.pendingReviewConversationIds)
             assertEquals(if (expected.isEmpty()) 1 else 0, inbox.unmatchedReviewRequests?.size)
+        }
+    }
+
+    @Test
+    fun deletedAccountsDoNotMatchPendingReviewsEvenWhenTheListingIsSold() = runTest {
+        val request = PendingConversationReview(ListingReferenceId("1"), carol.id)
+        val deletedAccountConversations = listOf(
+            Conversation(
+                conversationId,
+                conversation(senders = listOf(alice)).participants,
+                listingId = ListingReferenceId("1"),
+                isListingSold = true
+            ),
+            Conversation(
+                conversationId,
+                conversation().participants,
+                lastMessage = message(carol).copy(senderId = null),
+                listingId = ListingReferenceId("1"),
+                isListingSold = true
+            )
+        )
+        for (chat in deletedAccountConversations) {
+            val get = GetConversations(
+                messagesRepository(listOf(chat)),
+                MutableMessageSenderProvider(),
+                PendingConversationReviews { Result.Success(listOf(request)) }
+            )
+
+            val inbox = get().getOrThrow()
+
+            assertTrue(inbox.pendingReviewConversationIds.orEmpty().isEmpty())
+            assertEquals(listOf(request), inbox.unmatchedReviewRequests)
         }
     }
 
