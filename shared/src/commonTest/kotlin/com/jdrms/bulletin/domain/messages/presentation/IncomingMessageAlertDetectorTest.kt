@@ -102,6 +102,27 @@ class IncomingMessageAlertDetectorTest {
     }
 
     @Test
+    fun `historical page conversations seed history without alerting`() {
+        val detector = IncomingMessageAlertDetector()
+        detector.detect(inbox(), null)
+        val older = Conversation(
+            id = ConversationId("older"),
+            participants = listOf(ConversationParticipant(me, "Me"), ConversationParticipant(other, "Other")),
+            lastMessage = Message(MessageId("old1"), ConversationId("older"), other, "Other", "hi", 500)
+        )
+        val paged = InboxState(me, listOf(older), isLoading = false, historicalConversationIds = setOf(older.id))
+        assertTrue(detector.detect(paged, null).alerts.isEmpty())
+        assertTrue(detector.detect(paged, null).alerts.isEmpty())
+        val newer = Conversation(
+            id = older.id,
+            participants = older.participants,
+            lastMessage = Message(MessageId("old2"), ConversationId("older"), other, "Other", "hi", 2_000)
+        )
+        val next = detector.detect(paged.copy(conversations = listOf(newer)), null)
+        assertEquals(listOf(MessageId("old2")), next.alerts.map { it.messageId })
+    }
+
+    @Test
     fun `first snapshot clears notifications left by a previous process`() {
         val detector = IncomingMessageAlertDetector()
         assertTrue(detector.detect(inbox(viewer = null), null).clearAll)

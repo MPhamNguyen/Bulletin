@@ -142,7 +142,7 @@ class InboxStateOwner(
     private suspend fun refreshFor(userId: SenderId) = refreshMutex.withLock {
         if (state.value.viewerId != userId) return@withLock
         mutableState.update { it.copy(isLoading = true) }
-        val limit = maxOf(GetConversations.PAGE_SIZE, state.value.conversations.size)
+        val limit = maxOf(GetConversations.PAGE_SIZE, state.value.pagingOffset)
         val result = getConversations(offset = 0, includeReviews = false, limit = limit)
         if (state.value.viewerId != userId) return@withLock
         when (result) {
@@ -156,6 +156,7 @@ class InboxStateOwner(
                             ?: snapshot.unmatchedReviewRequests,
                         isLoading = false,
                         hasMore = result.data.conversations.size == limit,
+                        pagingOffset = result.data.conversations.size,
                         errorMessage = null
                     )
                 }
@@ -187,7 +188,7 @@ class InboxStateOwner(
         scope.launch {
             refreshMutex.withLock {
                 if (state.value.viewerId != userId) return@withLock
-                val result = getConversations(offset = state.value.conversations.size, includeReviews = false)
+                val result = getConversations(offset = state.value.pagingOffset, includeReviews = false)
                 if (state.value.viewerId != userId) return@withLock
                 mutableState.update { current ->
                     when (result) {
@@ -195,6 +196,9 @@ class InboxStateOwner(
                             conversations = (current.conversations + result.data.conversations).distinctBy(
                                 Conversation::id
                             ),
+                            pagingOffset = current.pagingOffset + result.data.conversations.size,
+                            historicalConversationIds = current.historicalConversationIds +
+                                result.data.conversations.map(Conversation::id),
                             hasMore = result.data.conversations.size == GetConversations.PAGE_SIZE,
                             isLoadingMore = false
                         )

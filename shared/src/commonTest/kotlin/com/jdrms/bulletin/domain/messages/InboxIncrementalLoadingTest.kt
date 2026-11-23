@@ -82,4 +82,34 @@ class InboxIncrementalLoadingTest {
         assertEquals(initialCalls, pageCalls)
         assertTrue(owner.state.value.conversations.isNotEmpty())
     }
+
+    @Test
+    fun refreshedConversationDoesNotShiftTheNextPageOffset() = runTest {
+        val identity = MutableMessageSenderProvider()
+        val owner = InboxStateOwner(
+            GetConversations(
+                messagesRepository((1..23).map { conversation(ConversationId("chat-$it")) }),
+                identity
+            ),
+            ObserveInboxInvalidations(InboxObserver { MutableSharedFlow() }),
+            identity,
+            backgroundScope
+        )
+        runCurrent()
+        val firstPage = owner.state.value.conversations.map { it.id }.toSet()
+        val outsideFirstPage = (1..23).map { ConversationId("chat-$it") }.first { it !in firstPage }
+        owner.refreshConversation(outsideFirstPage)
+        runCurrent()
+        assertEquals(11, owner.state.value.conversations.size)
+        assertEquals(10, owner.state.value.pagingOffset)
+        owner.loadMore()
+        owner.loadMore()
+        runCurrent()
+        assertEquals(20, owner.state.value.pagingOffset)
+        owner.loadMore()
+        runCurrent()
+        assertEquals(23, owner.state.value.pagingOffset)
+        assertEquals(23, owner.state.value.conversations.size)
+        assertEquals(23, owner.state.value.conversations.map { it.id }.toSet().size)
+    }
 }
