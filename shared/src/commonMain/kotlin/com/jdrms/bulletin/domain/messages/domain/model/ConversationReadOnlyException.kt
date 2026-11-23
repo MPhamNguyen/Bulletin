@@ -1,5 +1,5 @@
 package com.jdrms.bulletin.domain.messages.domain.model
 
-class ConversationReadOnlyException : IllegalStateException(
-    "This conversation is read-only because the other account was deleted."
-)
+class ConversationReadOnlyException(
+    val reason: ConversationLockReason = ConversationLockReason.ACCOUNT_DELETED
+) : IllegalStateException(reason.description)

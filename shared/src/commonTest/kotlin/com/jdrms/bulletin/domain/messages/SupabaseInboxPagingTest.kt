@@ -19,6 +19,7 @@ class SupabaseInboxPagingTest {
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine { request ->
+                assertTrue("listing_is_sold" in request.url.parameters["select"].orEmpty().split(','))
                 assertTrue(request.url.parameters["select"].orEmpty().contains("profiles(full_name,avatar_url)"))
                 assertTrue(request.url.parameters["select"].orEmpty().contains("listing:listings(listing_images("))
                 assertEquals("1", request.url.parameters["listing.listing_images.limit"])

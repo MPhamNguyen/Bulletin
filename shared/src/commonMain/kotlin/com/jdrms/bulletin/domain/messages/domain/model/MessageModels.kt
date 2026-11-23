@@ -65,6 +65,7 @@ class Conversation(
     val updatedAtMillis: Long = 0L,
     val listingId: ListingReferenceId? = null,
     val historyVisibleAfter: Instant? = null,
+    val isListingSold: Boolean = false,
     val listingThumbnailUrl: String? = null
 ) {
     val participants: List<ConversationParticipant> = participants.toList()
@@ -79,11 +80,18 @@ class Conversation(
 
     fun includes(senderId: SenderId): Boolean = participants.any { it.id == senderId }
 
-    val isReadOnly: Boolean get() = participants.size < 2 || (lastMessage != null && lastMessage.senderId == null)
+    val lockReason: ConversationLockReason? get() = when {
+        participants.size < 2 || (lastMessage != null && lastMessage.senderId == null) ->
+            ConversationLockReason.ACCOUNT_DELETED
+        isListingSold -> ConversationLockReason.LISTING_SOLD
+        else -> null
+    }
+
+    val isReadOnly: Boolean get() = lockReason != null
 
     fun authorizeSending(senderId: SenderId?): Result<Unit> = when {
         senderId == null || !includes(senderId) -> Result.Error(ConversationAccessException())
-        isReadOnly -> Result.Error(ConversationReadOnlyException())
+        isReadOnly -> Result.Error(ConversationReadOnlyException(checkNotNull(lockReason)))
         else -> Result.Success(Unit)
     }
 
@@ -101,6 +109,7 @@ class Conversation(
                 updatedAtMillis = updatedAtMillis,
                 listingId = listingId,
                 historyVisibleAfter = historyVisibleAfter,
+                isListingSold = isListingSold,
                 listingThumbnailUrl = listingThumbnailUrl
             )
         )
@@ -148,6 +157,7 @@ class Conversation(
                 updatedAtMillis = maxOf(updatedAtMillis, message.timestampMillis),
                 listingId = listingId,
                 historyVisibleAfter = historyVisibleAfter,
+                isListingSold = isListingSold,
                 listingThumbnailUrl = listingThumbnailUrl
             )
         )

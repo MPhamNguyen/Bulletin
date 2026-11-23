@@ -164,7 +164,7 @@ The scheduled 30-day account deletion worker and its incremental migration are p
 Deployment and Cron activation are manual; adding these files does not enable automatic deletion.
 The worker removes attributable Storage files before hard-deleting Auth and respects moderation holds.
 
-Review readers accept null `reviewer_id` and `listing_id` references after hard deletion. Profile and marketplace seller reviews display **Student** with no author avatar when the reviewer is deleted, and retained reviews continue contributing to reputation. New listing reviews may contain only a rating; the sold-listing buyer, rating range and duplicate-review checks still apply. New profile-only reviews require comment text, and new submissions require a reviewer identity. The `was_listing_review` flag preserves rating-only listing reviews after their listing disappears, but that historical flag alone cannot authorize a new rating-only submission without a listing reference. This application support does not schedule account deletion or change database policies.
+Review readers accept null `reviewer_id` and `listing_id` references after hard deletion. Profile and marketplace seller reviews display **Student** with no author avatar when the reviewer is deleted, and retained reviews continue contributing to reputation. Both listing and profile-only reviews may contain only a rating; comments are optional. New submissions still require a reviewer identity and reject self-reviews. The sold-listing buyer, rating range and duplicate listing-review checks still apply. The `was_listing_review` flag preserves listing origin after a listing disappears.
 
 ---
 

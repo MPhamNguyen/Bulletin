@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages.application
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationLockReason
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 
@@ -52,7 +53,7 @@ class GetConversations(
         repository.getConversation(userId, id)
 
     private fun Conversation.matchesReview(request: PendingConversationReview, viewer: SenderId): Boolean =
-        includes(viewer) && !isReadOnly &&
+        includes(viewer) && lockReason != ConversationLockReason.ACCOUNT_DELETED &&
             request.listingId.value.removePrefix("listing:") == listingId?.value?.removePrefix("listing:") &&
             counterpartId(viewer) == request.sellerId
 

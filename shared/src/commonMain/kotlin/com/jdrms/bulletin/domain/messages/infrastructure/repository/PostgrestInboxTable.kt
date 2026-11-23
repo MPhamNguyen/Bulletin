@@ -61,7 +61,7 @@ internal class PostgrestInboxTable(
 
     private companion object {
         val INBOX_COLUMNS = Columns.raw(
-            "id,updated_at,listing_id," +
+            "id,updated_at,listing_id,listing_is_sold," +
                 "listing:listings(listing_images(object_path,position,crop_scale,crop_offset_x,crop_offset_y))," +
                 "membership:conversation_participants!inner(user_id,history_visible_after)," +
                 "participants:conversation_participants(user_id,profiles(full_name,avatar_url),last_read_at)," +

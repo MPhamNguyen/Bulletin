@@ -19,6 +19,7 @@ data class ConversationDto(
     val listingId: String? = null,
     val lastMessage: MessageDto? = null,
     val updatedAtMillis: Long = 0L,
+    val isListingSold: Boolean = false,
     val listingThumbnailUrl: String? = null
 )
 

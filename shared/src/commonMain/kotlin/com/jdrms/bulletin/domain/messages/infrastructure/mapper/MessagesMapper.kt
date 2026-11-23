@@ -55,6 +55,7 @@ object MessagesMapper {
             listingId = dto.listingId?.let(::ListingReferenceId),
             lastMessage = dto.lastMessage?.let { toDomain(it) },
             updatedAtMillis = dto.updatedAtMillis,
+            isListingSold = dto.isListingSold,
             listingThumbnailUrl = dto.listingThumbnailUrl
         )
     }
@@ -72,6 +73,7 @@ object MessagesMapper {
             listingId = domain.listingId?.value,
             lastMessage = domain.lastMessage?.let { toDto(it) },
             updatedAtMillis = domain.updatedAtMillis,
+            isListingSold = domain.isListingSold,
             listingThumbnailUrl = domain.listingThumbnailUrl
         )
     }

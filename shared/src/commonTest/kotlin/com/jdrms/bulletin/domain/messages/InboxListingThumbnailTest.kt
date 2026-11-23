@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.messages
 import com.jdrms.bulletin.core.common.ImageCropSettings
 import com.jdrms.bulletin.core.common.withCropSettings
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationLockReason
 import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesRepository
 import com.jdrms.bulletin.domain.messages.infrastructure.dto.SupabaseConversationInboxDto
@@ -19,12 +20,13 @@ import kotlin.time.Instant
 
 class InboxListingThumbnailTest {
     @Test
-    fun repositoriesAndConversationUpdatesPreserveTheThumbnail() = runTest {
+    fun repositoriesAndConversationUpdatesPreserveTheThumbnailAndSoldLock() = runTest {
         val image = "https://example.com/cover.jpg".withCropSettings(ImageCropSettings(1.5f, 0.2f, -0.3f))
         val chat = Conversation(
             conversationId,
             conversation().participants,
             listingId = ListingReferenceId("listing"),
+            isListingSold = true,
             listingThumbnailUrl = image
         )
         val repositories: List<MessagesRepository> = listOf(
@@ -33,13 +35,16 @@ class InboxListingThumbnailTest {
         )
         for (repository in repositories) {
             val loaded = repository.getConversationPage(alice.id, 0, 10).getOrThrow().single()
-            assertEquals(image, loaded.listingThumbnailUrl)
-            assertEquals(image, repository.getConversation(alice.id, conversationId).getOrThrow()?.listingThumbnailUrl)
-            assertEquals(image, loaded.recordMessage(message()).getOrThrow().listingThumbnailUrl)
-            assertEquals(
-                image,
-                loaded.recordReadAt(alice.id, Instant.fromEpochMilliseconds(100)).getOrThrow().listingThumbnailUrl
+            val snapshots = listOf(
+                loaded,
+                repository.getConversation(alice.id, conversationId).getOrThrow(),
+                loaded.recordMessage(message()).getOrThrow(),
+                loaded.recordReadAt(alice.id, Instant.fromEpochMilliseconds(100)).getOrThrow()
             )
+            for (snapshot in snapshots) {
+                assertEquals(image, snapshot?.listingThumbnailUrl)
+                assertEquals(ConversationLockReason.LISTING_SOLD, snapshot?.lockReason)
+            }
         }
     }
 
