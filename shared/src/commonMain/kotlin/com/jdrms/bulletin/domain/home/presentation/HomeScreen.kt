@@ -132,6 +132,8 @@ private fun HomeDeckContent(
             anchor,
             photoPlaybackPaused
         )
+        // The first page has no card to show yet; later appends keep the spinner below.
+        state.isLoading -> HomeDeckSkeleton(Modifier.fillMaxSize())
         state.isDeckLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }

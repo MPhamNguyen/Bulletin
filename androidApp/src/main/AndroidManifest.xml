@@ -16,6 +16,7 @@
         <activity
                 android:exported="true"
                 android:name=".MainActivity"
+                android:theme="@style/Theme.Bulletin.Starting"
                 android:launchMode="singleTask"
                 android:windowSoftInputMode="adjustResize">
             <intent-filter>

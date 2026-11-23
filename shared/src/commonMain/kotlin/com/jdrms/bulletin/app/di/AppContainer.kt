@@ -19,6 +19,7 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.presentation.InboxNotificationCoordinator
 import com.jdrms.bulletin.domain.messages.presentation.NotificationConversationRequest
+import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.infrastructure.repository.ExternalAuthBrowser
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.Flow
@@ -73,6 +74,10 @@ class AppContainer(
             AuthMarketplaceInterestIdentity(profile.sessionRepository)
         )
     }
+
+    /** False until the stored session has been resolved; platform code holds its splash screen while false. */
+    val isSessionResolved: Flow<Boolean>
+        get() = profile.sessionRepository.state.map { it != SessionState.Checking }.distinctUntilChanged()
 
     /** True while a user is signed in; platform code uses it to time the notification permission request. */
     val isSignedIn: Flow<Boolean>
