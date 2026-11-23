@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationLockReason
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 
@@ -113,7 +114,7 @@ fun MessagesScreen(
 }
 
 internal fun conversationTitle(conversation: Conversation, viewerId: SenderId?): String {
-    if (conversation.isReadOnly) return Message.MISSING_SENDER_NAME
+    if (conversation.lockReason == ConversationLockReason.ACCOUNT_DELETED) return Message.MISSING_SENDER_NAME
     val otherNames = viewerId?.takeIf(conversation::includes)?.let(conversation::otherParticipantNames).orEmpty()
     return otherNames.joinToString(", ").ifBlank { "Conversation" }
 }

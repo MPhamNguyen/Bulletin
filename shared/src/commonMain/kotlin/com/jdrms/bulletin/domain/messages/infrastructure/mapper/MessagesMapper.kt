@@ -48,7 +48,8 @@ object MessagesMapper {
             participants = dto.participants.map { ConversationParticipant(SenderId(it.id), it.displayName) },
             listingId = dto.listingId?.let(::ListingReferenceId),
             lastMessage = dto.lastMessage?.let { toDomain(it) },
-            updatedAtMillis = dto.updatedAtMillis
+            updatedAtMillis = dto.updatedAtMillis,
+            isListingSold = dto.isListingSold
         )
     }
 
@@ -58,7 +59,8 @@ object MessagesMapper {
             participants = domain.participants.map { ConversationParticipantDto(it.id.value, it.displayName) },
             listingId = domain.listingId?.value,
             lastMessage = domain.lastMessage?.let { toDto(it) },
-            updatedAtMillis = domain.updatedAtMillis
+            updatedAtMillis = domain.updatedAtMillis,
+            isListingSold = domain.isListingSold
         )
     }
 }

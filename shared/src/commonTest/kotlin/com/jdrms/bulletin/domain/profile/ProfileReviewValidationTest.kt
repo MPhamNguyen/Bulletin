@@ -7,7 +7,6 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import com.jdrms.bulletin.domain.profile.domain.model.UserId
 import com.jdrms.bulletin.domain.profile.domain.service.ProfileValidationPolicy
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class ProfileReviewValidationTest {
@@ -21,9 +20,9 @@ class ProfileReviewValidationTest {
     }
 
     @Test
-    fun historicalOriginFlagCannotReplaceAListingReferenceForNewRatingOnlyReviews() {
+    fun ratingOnlyReviewsDoNotRequireAListingReference() {
         for (listingId in listOf(null, "", "   ")) {
-            assertIs<Result.Error>(policy.validateNewReview(review(listingId = listingId)))
+            assertIs<Result.Success<Unit>>(policy.validateNewReview(review(listingId = listingId)))
         }
     }
 
@@ -35,13 +34,12 @@ class ProfileReviewValidationTest {
     }
 
     @Test
-    fun profileOnlyReviewStillRequiresAComment() {
-        assertFailsWith<IllegalArgumentException> {
-            review(listingId = null, wasListingReview = false)
+    fun profileOnlyReviewAllowsEmptyWhitespaceAndNonemptyComments() {
+        for (comment in listOf("", "   ", "\t\n", "Helpful seller")) {
+            assertIs<Result.Success<Unit>>(
+                policy.validateNewReview(review(listingId = null, wasListingReview = false, comment = comment))
+            )
         }
-        assertIs<Result.Success<Unit>>(
-            policy.validateNewReview(review(listingId = null, wasListingReview = false, comment = "Helpful seller"))
-        )
     }
 
     private fun review(

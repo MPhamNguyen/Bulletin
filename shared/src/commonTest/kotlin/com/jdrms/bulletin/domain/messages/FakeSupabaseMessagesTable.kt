@@ -36,7 +36,8 @@ internal class FakeSupabaseMessagesTable(
         conversation.id.value to SupabaseConversationDto(
             id = conversation.id.value,
             updatedAt = Instant.fromEpochMilliseconds(conversation.updatedAtMillis).toString(),
-            listingId = conversation.listingId?.value
+            listingId = conversation.listingId?.value,
+            isListingSold = conversation.isListingSold
         )
     }.toMutableMap()
     private val participantRows = conversations.flatMap { conversation ->
@@ -98,6 +99,7 @@ internal class FakeSupabaseMessagesTable(
                     id = conversation.id,
                     updatedAt = conversation.updatedAt,
                     listingId = conversation.listingId,
+                    isListingSold = conversation.isListingSold,
                     membership = listOf(
                         SupabaseInboxMembershipDto(userId, historyVisibleAfter[id to userId]?.toString())
                     ),

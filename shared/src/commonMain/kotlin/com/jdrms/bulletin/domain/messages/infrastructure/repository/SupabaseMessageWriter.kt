@@ -4,8 +4,6 @@ import com.jdrms.bulletin.domain.messages.domain.model.ConversationAccessExcepti
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageEdit
-import com.jdrms.bulletin.domain.messages.domain.model.MessageEditException
-import com.jdrms.bulletin.domain.messages.domain.model.MessageEditFailure
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import com.jdrms.bulletin.domain.messages.infrastructure.mapper.SupabaseMessagesMapper
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
@@ -18,7 +16,11 @@ internal class SupabaseMessageWriter(
     suspend fun send(message: Message): Message {
         val sender = message.senderId ?: throw ConversationAccessException()
         requireWritable(requireAuthenticatedUser(sender), message.conversationId)
-        table.insertMessage(SupabaseMessagesMapper.toInsertDto(message))
+        try {
+            table.insertMessage(SupabaseMessagesMapper.toInsertDto(message))
+        } catch (exception: PostgrestRestException) {
+            throw exception.toMessageWriteFailure(isEdit = false)
+        }
         val stored = checkNotNull(table.findMessage(message.conversationId.value, message.id.value)) {
             "Inserted message was not returned"
         }
@@ -30,16 +32,7 @@ internal class SupabaseMessageWriter(
         try {
             return SupabaseMessagesMapper.toMessage(table.editMessage(edit))
         } catch (exception: PostgrestRestException) {
-            val failure = when (exception.code) {
-                "BM001", "42501" -> MessageEditFailure.UNAVAILABLE
-                "BM002" -> MessageEditFailure.EXPIRED
-                "BM003" -> MessageEditFailure.REPORTED
-                "BM004" -> MessageEditFailure.CONFLICT
-                "BM005" -> MessageEditFailure.INVALID
-                else -> null
-            }
-            if (failure != null) throw MessageEditException(failure)
-            throw exception
+            throw exception.toMessageWriteFailure(isEdit = true)
         }
     }
 

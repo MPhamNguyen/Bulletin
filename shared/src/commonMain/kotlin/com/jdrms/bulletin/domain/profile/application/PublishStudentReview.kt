@@ -20,7 +20,6 @@ class PublishStudentReview(
         score: Int,
         comment: String
     ): Result<Unit> {
-        if (comment.isBlank()) return Result.Error(IllegalArgumentException("Review comment cannot be empty"))
         if (score !in 1..5) return Result.Error(IllegalArgumentException("Rating must be between 1 and 5."))
         val review = StudentReview(
             newId(),

@@ -237,7 +237,8 @@ internal class PostgrestSupabaseMessagesTable(
         val MEMBERSHIP_COLUMNS = Columns.raw("conversation_id,history_visible_after")
         val PARTICIPANT_COLUMNS = Columns.raw("conversation_id,user_id,profiles(full_name),last_read_at")
         val INBOX_COLUMNS = Columns.raw(
-            "id,updated_at,listing_id,membership:conversation_participants!inner(user_id,history_visible_after)," +
+            "id,updated_at,listing_id,listing_is_sold," +
+                "membership:conversation_participants!inner(user_id,history_visible_after)," +
                 "participants:conversation_participants(user_id,profiles(full_name),last_read_at)," +
                 "messages(id,conversation_id,sender_id,body,created_at,edited_at,deleted_at," +
                 "profiles(full_name),reports(id,status))"

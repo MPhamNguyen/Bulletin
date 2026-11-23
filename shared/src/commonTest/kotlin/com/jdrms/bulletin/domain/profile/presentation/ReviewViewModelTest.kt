@@ -30,7 +30,6 @@ class ReviewViewModelTest {
 
         val target = UserId("seller")
         vm.begin(target)
-        vm.changeComment("Great exchange")
         var submitted = false
         vm.submit { submitted = true }
         advanceUntilIdle()
@@ -38,6 +37,7 @@ class ReviewViewModelTest {
         val review = fixture.profiles.getReputation(target).reviews.single()
         assertEquals(reviewer.id.value, review.reviewerId)
         assertEquals(reviewer.fullName, review.reviewerName)
+        assertEquals("", review.comment)
         assertEquals(123L, review.createdAtMillis)
     }
 }

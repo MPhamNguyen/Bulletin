@@ -7,7 +7,6 @@ import com.jdrms.bulletin.domain.profile.domain.model.StudentReview
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class ProfileReviewSubmissionContractTest {
     @Test
@@ -20,7 +19,12 @@ class ProfileReviewSubmissionContractTest {
         verifySubmission("Helpful seller")
     }
 
-    private suspend fun verifySubmission(comment: String) {
+    @Test
+    fun ratingOnlyProfileReviewIsSubmittedAndReadBackInBothRepositories() = runTest {
+        verifySubmission("", listingId = null)
+    }
+
+    private suspend fun verifySubmission(comment: String, listingId: String? = "listing-1") {
         val fixture = ProfileReviewSubmissionFixture()
         try {
             fixture.signIn()
@@ -33,13 +37,13 @@ class ProfileReviewSubmissionContractTest {
                     revieweeId = revieweeId,
                     rating = Rating(5),
                     comment = comment,
-                    relatedListingId = "listing-1"
+                    relatedListingId = listingId
                 )
                 SubmitStudentReview(repository)(revieweeId, review).getOrThrow()
                 val stored = repository.getReputation(revieweeId).reviews.single()
                 assertEquals(comment, stored.comment)
-                assertEquals("listing-1", stored.relatedListingId)
-                assertTrue(stored.wasListingReview)
+                assertEquals(listingId, stored.relatedListingId)
+                assertEquals(listingId != null, stored.wasListingReview)
             }
         } finally {
             fixture.client.close()

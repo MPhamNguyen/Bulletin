@@ -34,7 +34,8 @@ object SupabaseMessagesMapper {
             listingId = conversation.listingId?.let(::ListingReferenceId),
             lastMessage = mappedLastMessage,
             updatedAtMillis = updatedAtMillis,
-            historyVisibleAfter = historyVisibleAfter
+            historyVisibleAfter = historyVisibleAfter,
+            isListingSold = conversation.isListingSold
         )
     }
 
@@ -59,7 +60,8 @@ object SupabaseMessagesMapper {
             listingId = dto.listingId?.let(::ListingReferenceId),
             lastMessage = lastMessage,
             updatedAtMillis = updatedAtMillis,
-            historyVisibleAfter = cutoff
+            historyVisibleAfter = cutoff,
+            isListingSold = dto.isListingSold
         )
     }
 

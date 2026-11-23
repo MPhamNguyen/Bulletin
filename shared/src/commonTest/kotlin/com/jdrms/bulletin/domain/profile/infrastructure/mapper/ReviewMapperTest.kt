@@ -4,7 +4,6 @@ import com.jdrms.bulletin.domain.profile.infrastructure.dto.ReviewDto
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -50,10 +49,11 @@ class ReviewMapperTest {
     }
 
     @Test
-    fun profileOnlyReviewsStillRequireCommentText() {
+    fun profileOnlyReviewsAllowEmptyComments() {
         val dto = ReviewDto(reviewerId = "buyer", revieweeId = "seller", score = 5, comment = " ")
 
-        assertFailsWith<IllegalArgumentException> { ReviewMapper.toDomain(dto) }
+        assertEquals(" ", ReviewMapper.toDomain(dto).comment)
+        assertEquals("", ReviewMapper.toDomain(dto.copy(comment = "")).comment)
     }
 
     @Test

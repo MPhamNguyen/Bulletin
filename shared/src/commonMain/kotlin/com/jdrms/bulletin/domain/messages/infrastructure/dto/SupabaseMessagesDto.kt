@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
 data class SupabaseConversationDto(
     @SerialName("id") val id: String,
     @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("listing_id") val listingId: String? = null
+    @SerialName("listing_id") val listingId: String? = null,
+    @SerialName("listing_is_sold") val isListingSold: Boolean = false
 )
 
 @Serializable
@@ -24,6 +25,7 @@ data class SupabaseConversationInboxDto(
     @SerialName("id") val id: String,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("listing_id") val listingId: String? = null,
+    @SerialName("listing_is_sold") val isListingSold: Boolean = false,
     @SerialName("membership") val membership: List<SupabaseInboxMembershipDto> = emptyList(),
     @SerialName("participants") val participants: List<SupabaseInboxParticipantDto> = emptyList(),
     @SerialName("messages") val latestMessages: List<SupabaseMessageDto> = emptyList()

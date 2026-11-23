@@ -158,7 +158,8 @@ class InMemoryMessagesRepository(
             lastMessage?.takeIf { cutoff == null || it.orderingTimestamp > cutoff },
             updatedAtMillis,
             listingId,
-            cutoff
+            cutoff,
+            isListingSold = isListingSold
         )
     }
 
@@ -232,7 +233,9 @@ class InMemoryMessagesRepository(
         if (cutoff != null && messages[index].orderingTimestamp <= cutoff) {
             return Result.Error(MessageEditException(MessageEditFailure.UNAVAILABLE))
         }
-        if (conversation.isReadOnly) return Result.Error(ConversationReadOnlyException())
+        if (conversation.isReadOnly) {
+            return Result.Error(ConversationReadOnlyException(checkNotNull(conversation.lockReason)))
+        }
         return when (val edited = MessageEditing.apply(messages[index], userId, edit, now())) {
             is Result.Error -> edited
             is Result.Success -> {

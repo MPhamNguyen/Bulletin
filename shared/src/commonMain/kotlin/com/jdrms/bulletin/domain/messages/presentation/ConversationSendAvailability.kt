@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.messages.presentation
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.domain.messages.domain.model.ConversationLockReason
 
 internal fun MessagesUiState.canSendToCounterpart(): Boolean {
     val conversation = conversations.firstOrNull { it.id == selectedConversationId } ?: return false
@@ -12,5 +13,11 @@ internal fun MessagesUiState.canSendToCounterpart(): Boolean {
 }
 
 internal val MessagesUiState.isSelectedConversationReadOnly: Boolean
-    get() = conversations.firstOrNull { it.id == selectedConversationId }?.isReadOnly == true ||
-        currentMessages.any { it.conversationId == selectedConversationId && it.senderId == null }
+    get() = selectedConversationLockReason != null
+
+internal val MessagesUiState.selectedConversationLockReason: ConversationLockReason?
+    get() = if (currentMessages.any { it.conversationId == selectedConversationId && it.senderId == null }) {
+        ConversationLockReason.ACCOUNT_DELETED
+    } else {
+        conversations.firstOrNull { it.id == selectedConversationId }?.lockReason
+    }

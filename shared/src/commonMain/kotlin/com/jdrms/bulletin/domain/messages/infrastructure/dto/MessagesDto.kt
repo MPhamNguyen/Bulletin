@@ -18,7 +18,8 @@ data class ConversationDto(
     val participants: List<ConversationParticipantDto>,
     val listingId: String? = null,
     val lastMessage: MessageDto? = null,
-    val updatedAtMillis: Long = 0L
+    val updatedAtMillis: Long = 0L,
+    val isListingSold: Boolean = false
 )
 
 data class ConversationParticipantDto(val id: String, val displayName: String)
