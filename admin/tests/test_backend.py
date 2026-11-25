@@ -111,7 +111,7 @@ class SupabaseTests(unittest.TestCase):
     def test_listing_delete_requests_confirmation_and_uses_conditional_filters(self, open_url):
         open_url.return_value = Response(b'[{"id":"listing-id"}]')
         result = self.backend.request("DELETE", "/rest/v1/listings", query={
-            "id": "eq.listing-id", "updated_at": "eq.2026-10-21T01:00:00+00:00", "select": "id",
+            "id": "eq.listing-id", "edited_at": "is.null", "select": "id",
         })
         request = open_url.call_args.args[0]
         self.assertEqual("DELETE", request.method)

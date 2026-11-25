@@ -10,7 +10,7 @@ data class ConversationListingDetails(
     val photos: List<String>,
     val attributes: List<ConversationListingAttribute>,
     val createdAtMillis: Long,
-    val updatedAtMillis: Long = 0L
+    val editedAtMillis: Long? = null
 )
 
 data class ConversationListingAttribute(val label: String, val value: String)

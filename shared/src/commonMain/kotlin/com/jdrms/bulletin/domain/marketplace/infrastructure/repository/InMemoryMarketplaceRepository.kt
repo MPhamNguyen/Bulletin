@@ -42,7 +42,7 @@ class InMemoryMarketplaceRepository(
                 isBookmarked = listing.isBookmarked,
                 createdAtMillis = listing.createdAtMillis,
                 photos = listing.photos,
-                updatedAtMillis = listing.updatedAtMillis
+                editedAtMillis = listing.editedAtMillis
             )
         }
     }
@@ -188,7 +188,7 @@ class InMemoryMarketplaceRepository(
                 price = it.price,
                 category = it.category,
                 createdAtMillis = it.createdAtMillis,
-                updatedAtMillis = it.updatedAtMillis
+                editedAtMillis = it.editedAtMillis
             )
         }
     }

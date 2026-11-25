@@ -1,29 +1,46 @@
 package com.jdrms.bulletin.domain.listings.infrastructure.repository
 
 import com.jdrms.bulletin.core.common.Result
+import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.ListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.mapper.ListingMapper
 
+/**
+ * Mirrors the hosted timestamp contract: [updateListing] never writes caller-supplied timestamps and advances
+ * `editedAtMillis` (from [nowMillis]) only for [ListingUpdateIntent.EDIT].
+ */
 class InMemoryListingsRepository(
-    initialListings: List<ListingDto> = defaultSeedListings
+    initialListings: List<ListingDto> = defaultSeedListings,
+    private val nowMillis: () -> Long = ::currentTimeMillis
 ) : ListingsRepository {
 
     private val listings = initialListings.map { ListingMapper.toDomain(it) }.toMutableList()
 
     override suspend fun createListing(listing: Listing): Result<Listing> {
-        listings.add(0, listing)
-        return Result.Success(listing)
+        val stored = listing.copy(editedAtMillis = null)
+        listings.add(0, stored)
+        return Result.Success(stored)
     }
 
-    override suspend fun updateListing(listing: Listing): Result<Listing> {
+    override suspend fun updateListing(listing: Listing, intent: ListingUpdateIntent): Result<Listing> {
         val index = listings.indexOfFirst { it.id == listing.id }
         if (index != -1) {
-            listings[index] = listing
-            return Result.Success(listing)
+            val existing = listings[index]
+            val stored = listing.copy(
+                createdAtMillis = existing.createdAtMillis,
+                editedAtMillis = if (intent == ListingUpdateIntent.EDIT) {
+                    maxOf(nowMillis(), existing.editedAtMillis ?: Long.MIN_VALUE)
+                } else {
+                    existing.editedAtMillis
+                }
+            )
+            listings[index] = stored
+            return Result.Success(stored)
         }
         return Result.Error(NoSuchElementException("Listing not found with ID: ${listing.id.value}"))
     }

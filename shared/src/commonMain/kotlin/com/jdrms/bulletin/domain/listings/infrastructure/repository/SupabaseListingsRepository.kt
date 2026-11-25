@@ -4,15 +4,11 @@ import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
-import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
-import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingInsertDto
-import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingWriteDto
 import com.jdrms.bulletin.domain.listings.infrastructure.mapper.SupabaseListingMapper
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.storage.storage
 
 class SupabaseListingsRepository internal constructor(
@@ -68,18 +64,28 @@ class SupabaseListingsRepository internal constructor(
         ).also { result -> if (result is Result.Success) afterSuccessfulMutation() }
     }
 
-    override suspend fun updateListing(listing: Listing): Result<Listing> {
+    override suspend fun updateListing(listing: Listing, intent: ListingUpdateIntent): Result<Listing> {
+        var stage = ListingWriteStage.READ_BEFORE_WRITE
         return runCatching {
             val existing = listingsTable.findById(listing.id.value)
             if (existing == null) {
                 Result.Error(NoSuchElementException("Listing not found with ID: ${listing.id.value}"))
             } else {
-                listingsTable.update(SupabaseListingMapper.toInsertDto(listing))
-                Result.Success(listing)
+                stage = if (intent == ListingUpdateIntent.EDIT) {
+                    ListingWriteStage.EDIT_RPC
+                } else {
+                    ListingWriteStage.ROUTINE_UPDATE
+                }
+                listingsTable.update(SupabaseListingMapper.toInsertDto(listing), intent)
+                stage = ListingWriteStage.READ_AFTER_WRITE
+                Result.Success(
+                    requireNotNull(getListing(listing.id)) { "Saved listing could not be read." }
+                )
             }
         }.fold(
             onSuccess = { it },
             onFailure = { error ->
+                reportListingWriteFailure(stage, error)
                 Result.Error(Exception(CreateListingErrorMessages.GENERIC_FAILURE, error))
             }
         ).also { result -> if (result is Result.Success) afterSuccessfulMutation() }
@@ -126,58 +132,5 @@ class SupabaseListingsRepository internal constructor(
     companion object {
         const val LISTINGS_TABLE = "listings"
         const val LISTING_IMAGE_BUCKET = "listing_imgs"
-    }
-}
-
-internal interface SupabaseListingsTable {
-    suspend fun findById(id: String): SupabaseListingDto?
-    suspend fun insert(listing: SupabaseListingInsertDto)
-    suspend fun update(listing: SupabaseListingWriteDto)
-    suspend fun delete(id: String, sellerId: String)
-    suspend fun getListings(sellerId: String?): List<SupabaseListingDto>
-}
-
-private class PostgrestSupabaseListingsTable(
-    private val supabase: SupabaseClient
-) : SupabaseListingsTable {
-    override suspend fun findById(id: String): SupabaseListingDto? {
-        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull()
-    }
-
-    override suspend fun insert(listing: SupabaseListingInsertDto) {
-        supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).insert(listing)
-    }
-
-    override suspend fun update(listing: SupabaseListingWriteDto) {
-        supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).update(listing) {
-            filter { eq("id", listing.id) }
-        }
-    }
-
-    override suspend fun delete(id: String, sellerId: String) {
-        supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).delete {
-            filter {
-                eq("id", id)
-                eq("user_id", sellerId)
-            }
-        }
-    }
-
-    override suspend fun getListings(sellerId: String?): List<SupabaseListingDto> {
-        return supabase.from(SupabaseListingsRepository.LISTINGS_TABLE).select(columns = LISTING_COLUMNS) {
-            sellerId?.let { filter { eq("user_id", it) } }
-        }.decodeList()
-    }
-
-    private companion object {
-        val LISTING_COLUMNS = Columns.raw(
-            """
-            *,
-            seller_profile:profiles!listings_user_id_fkey ( full_name ),
-            listing_images(object_path,position,crop_scale,crop_offset_x,crop_offset_y)
-            """.trimIndent()
-        )
     }
 }

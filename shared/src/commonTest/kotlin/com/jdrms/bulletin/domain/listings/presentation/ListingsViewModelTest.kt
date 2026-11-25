@@ -18,6 +18,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCategory
 import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationPolicy
@@ -705,11 +706,11 @@ private class CountingListingsRepository(
 
     override suspend fun createListing(listing: Listing): Result<Listing> = delegate.createListing(listing)
 
-    override suspend fun updateListing(listing: Listing): Result<Listing> {
+    override suspend fun updateListing(listing: Listing, intent: ListingUpdateIntent): Result<Listing> {
         updateCount += 1
         delay(10)
         updateFailure?.let { return Result.Error(it) }
-        return delegate.updateListing(listing)
+        return delegate.updateListing(listing, intent)
     }
 
     override suspend fun getListing(id: ListingId): Listing? {

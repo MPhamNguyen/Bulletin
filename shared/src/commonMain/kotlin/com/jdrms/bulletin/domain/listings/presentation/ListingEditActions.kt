@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.core.designsystem.amountToCurrencyDigits
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
@@ -134,8 +133,7 @@ internal class ListingEditActions(
                     condition = draft.condition,
                     images = draft.currentListing.images,
                     attributes = draft.attributes
-                ),
-                updatedAtMillis = currentTimeMillis()
+                )
             )
         }
         if (updatedDetails.isFailure) {
@@ -148,7 +146,7 @@ internal class ListingEditActions(
             return
         }
         val updated = updatedDetails.getOrThrow()
-        when (val result = manageListing.updateListing(updated, seller.id)) {
+        when (val result = manageListing.saveEdit(updated, seller.id)) {
             is Result.Success -> complete(draft, seller, updated)
             is Result.Error -> state.update {
                 it.copy(isUpdating = false, errorMessage = CreateListingErrorMessages.toUserMessage(result.exception))

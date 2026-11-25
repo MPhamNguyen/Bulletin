@@ -3,13 +3,10 @@
 from urllib.parse import quote
 
 from .backend import PortalError
+from .listing_review_state import LISTING_REVIEW_COLUMNS, listing_delete_filters, listing_snapshot
 from .moderation import identifier, snapshot
 
 IMAGE_BUCKET = "listing_imgs"
-
-
-def listing_snapshot(listing):
-    return {key: listing.get(key) for key in ("id", "user_id", "updated_at")}
 
 
 def image_paths(backend, listing_id):
@@ -62,16 +59,15 @@ def delete_reported_listing(backend, report, version):
     if version.get("report") != snapshot(report):
         raise PortalError("This report changed. Reload before deleting the listing.", 409)
     listing_id = identifier(report["listing_id"])
-    listing = backend.one("listings", listing_id, "id,user_id,updated_at")
+    listing = backend.one("listings", listing_id, LISTING_REVIEW_COLUMNS)
     if not listing:
         raise PortalError("The reported listing is no longer available.", 409)
     if version.get("listing") != listing_snapshot(listing):
         raise PortalError("This listing changed. Reload and review it before deleting.", 409)
     paths = image_paths(backend, listing_id)
-    modified = listing.get("updated_at")
     rows = backend.request("DELETE", "/rest/v1/listings", query={
         "id": "eq." + listing_id, "user_id": "eq." + identifier(listing["user_id"]),
-        "updated_at": "is.null" if modified is None else "eq." + modified,
+        **listing_delete_filters(listing),
         "select": "id",
     })
     if not rows:

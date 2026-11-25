@@ -54,10 +54,10 @@ internal fun MarketplaceItemCard(
 
 internal fun formatMarketplaceListingTime(
     createdAtMillis: Long,
-    updatedAtMillis: Long,
+    editedAtMillis: Long?,
     nowMillis: Long
-): String = if (updatedAtMillis > createdAtMillis && updatedAtMillis > 0L) {
-    "Edited ${formatRelativeTime(updatedAtMillis, nowMillis)}"
+): String = if (editedAtMillis != null) {
+    "Edited ${formatRelativeTime(editedAtMillis, nowMillis)}"
 } else {
     formatRelativeTime(createdAtMillis, nowMillis)
 }

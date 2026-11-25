@@ -6,6 +6,7 @@ from uuid import UUID
 from .account_access import account_snapshot, require_active_account
 from .account_suspension import require_suspension_transition
 from .backend import PortalError
+from .listing_review_state import LISTING_REVIEW_COLUMNS
 
 STATUSES = {
     "open": "Open",
@@ -105,7 +106,7 @@ def target_context(backend, report):
         target_id = content.get("sender_id") if content else None
     elif kind == "listing" and report.get("listing_id"):
         content = backend.one("listings", identifier(report["listing_id"]),
-                              "id,user_id,name,description,price,is_sold,updated_at")
+                              LISTING_REVIEW_COLUMNS)
         target_id = content.get("user_id") if content else None
     profile = None
     account = None

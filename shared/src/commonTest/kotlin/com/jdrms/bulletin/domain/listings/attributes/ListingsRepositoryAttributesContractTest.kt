@@ -2,6 +2,7 @@ package com.jdrms.bulletin.domain.listings.attributes
 
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributes
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
@@ -21,7 +22,9 @@ class ListingsRepositoryAttributesContractTest {
         val rows = linkedMapOf<String, SupabaseListingWriteDto>()
         override suspend fun findById(id: String) = rows[id]?.toReadDto()
         override suspend fun insert(listing: SupabaseListingInsertDto) { rows[listing.id] = listing }
-        override suspend fun update(listing: SupabaseListingWriteDto) { rows[listing.id] = listing }
+        override suspend fun update(listing: SupabaseListingWriteDto, intent: ListingUpdateIntent) {
+            rows[listing.id] = listing
+        }
         override suspend fun delete(id: String, sellerId: String) { rows.remove(id) }
         override suspend fun getListings(sellerId: String?) =
             rows.values.filter { sellerId == null || it.userId == sellerId }.map { it.toReadDto() }

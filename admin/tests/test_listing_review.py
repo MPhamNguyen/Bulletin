@@ -70,7 +70,7 @@ class ListingReviewTests(unittest.TestCase):
         self.assertNotIn(LISTING, self.backend.listing_reports)
         self.assertEqual(["unrelated-report"], self.backend.listing_reports["unrelated-listing"])
         self.assertEqual("eq." + LISTING, self.backend.deletes[0]["id"])
-        self.assertEqual("eq.2026-10-01T00:00:00Z", self.backend.deletes[0]["updated_at"])
+        self.assertEqual("is.null", self.backend.deletes[0]["edited_at"])
         self.assertEqual([{"prefixes": [LISTING + "/first image.jpg"]}], self.backend.storage_deletes)
 
     def test_missing_confirmation_does_not_delete_anything(self):
@@ -106,9 +106,50 @@ class ListingReviewTests(unittest.TestCase):
         self.assertEqual(409, self.delete(data).status_code)
         data = self.form()
         data["confirm"] = "delete"
-        self.backend.listing["updated_at"] = "2026-10-21T00:00:00Z"
+        self.backend.listing["edited_at"] = "2026-10-21T00:00:00Z"
         self.assertEqual(409, self.delete(data).status_code)
         self.assertFalse(self.backend.deletes)
+
+    def test_routine_content_change_without_edit_timestamp_requires_a_new_review(self):
+        data = self.form()
+        data["confirm"] = "delete"
+        # A direct status write leaves edited_at unchanged; the content snapshot still catches it.
+        self.backend.listing["is_sold"] = True
+        self.assertEqual(409, self.delete(data).status_code)
+        self.assertFalse(self.backend.deletes)
+
+    def test_an_explicit_edit_timestamp_alone_requires_a_new_review(self):
+        data = self.form()
+        data["confirm"] = "delete"
+        self.backend.listing["edited_at"] = "2026-10-21T00:00:00Z"
+        self.assertEqual(409, self.delete(data).status_code)
+        self.assertFalse(self.backend.deletes)
+
+    def test_never_edited_listing_can_be_deleted_with_null_filter(self):
+        data = self.form()
+        data["confirm"] = "delete"
+        self.assertEqual(303, self.delete(data).status_code)
+        self.assertEqual("is.null", self.backend.deletes[0]["edited_at"])
+        self.assertNotIn("updated_at", self.backend.deletes[0])
+        self.assertEqual('eq."Book"', self.backend.deletes[0]["name"])
+        self.assertEqual('eq."Listing content"', self.backend.deletes[0]["description"])
+        self.assertEqual("eq.12", self.backend.deletes[0]["price"])
+        self.assertEqual("eq.false", self.backend.deletes[0]["is_sold"])
+
+    def test_edited_listing_uses_its_timestamp_as_a_conditional_filter(self):
+        self.backend.listing["edited_at"] = "2026-10-21T00:00:00Z"
+        data = self.form()
+        data["confirm"] = "delete"
+        self.assertEqual(303, self.delete(data).status_code)
+        self.assertEqual("eq.2026-10-21T00:00:00Z", self.backend.deletes[0]["edited_at"])
+
+    def test_missing_timestamp_field_fails_closed(self):
+        self.backend.listing.pop("edited_at")
+        data = self.form()
+        data["confirm"] = "delete"
+        self.assertEqual(502, self.delete(data).status_code)
+        self.assertFalse(self.backend.deletes)
+        self.assertFalse(self.backend.storage_deletes)
 
     def test_deletion_race_retains_report_and_photo_files(self):
         data = self.form()

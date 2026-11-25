@@ -34,7 +34,7 @@ class ListingsMarketplaceListingSource(
                     priceCurrency = listing.price.currency,
                     category = listing.category.toMarketplaceCategory(),
                     createdAtMillis = listing.createdAtMillis,
-                    updatedAtMillis = listing.updatedAtMillis,
+                    editedAtMillis = listing.editedAtMillis,
                     condition = listing.condition.toMarketplaceCondition(),
                     attributes = listing.attributes.toMarketplaceAttributes()
                 )

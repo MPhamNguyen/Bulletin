@@ -26,21 +26,21 @@ import kotlin.test.assertTrue
 
 class SupabaseListingRestoreWriteTest {
     @Test
-    fun restoringSoldListingExplicitlyClearsBuyerInThePatchAndOnReadback() = runTest {
+    fun restoringSoldListingExplicitlyClearsBuyerThroughRpcAndOnReadback() = runTest {
         var stored = Json.parseToJsonElement(
             """{"id":"listing-1","name":"Desk","user_id":"seller","category":"FURNITURE",
                 "condition":"GOOD","price":10.0,"description":"A desk","status":"SOLD","buyer_id":"buyer"}"""
         ).jsonObject
-        var patch: JsonObject? = null
+        var edit: JsonObject? = null
         val client = createSupabaseClient("https://example.supabase.co", "test-anon-key") {
             install(Postgrest)
             httpEngine = MockEngine { request ->
                 val headers = headersOf("Content-Type", "application/json")
-                if (request.method == HttpMethod.Patch) {
+                if (request.url.encodedPath == "/rest/v1/rpc/edit_listing") {
                     val body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
-                    patch = body
-                    // PATCH preserves omitted columns, just as PostgREST does.
-                    stored = JsonObject(stored + body)
+                    assertEquals(HttpMethod.Post, request.method)
+                    edit = body.getValue("p_listing").jsonObject
+                    stored = JsonObject(stored + checkNotNull(edit))
                     respond("", HttpStatusCode.NoContent, headers)
                 } else {
                     respond("[$stored]", HttpStatusCode.OK, headers)
@@ -51,7 +51,7 @@ class SupabaseListingRestoreWriteTest {
             val repository = SupabaseListingsRepository(client)
             val result = RestoreListingToMarketplace(repository)(ListingId("listing-1"), SellerId("seller"))
             assertIs<Result.Success<*>>(result)
-            val payload = checkNotNull(patch)
+            val payload = checkNotNull(edit)
             assertEquals("AVAILABLE", payload.getValue("status").jsonPrimitive.content)
             assertTrue("buyer_id" in payload, "Restore must send buyer_id explicitly; omitting it retains the buyer")
             assertEquals(JsonNull, payload["buyer_id"])

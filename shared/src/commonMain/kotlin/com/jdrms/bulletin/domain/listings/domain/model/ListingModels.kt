@@ -76,7 +76,7 @@ data class Listing(
     val status: ListingStatus = ListingStatus.AVAILABLE,
     val images: List<String> = emptyList(),
     val createdAtMillis: Long = 0L,
-    val updatedAtMillis: Long = 0L,
+    val editedAtMillis: Long? = null,
     val attributes: ListingAttributes = ListingAttributes.EMPTY
 ) {
     init {
@@ -102,8 +102,7 @@ data class Listing(
 
     fun updateDetails(
         editorSellerId: SellerId,
-        details: ListingDetails,
-        updatedAtMillis: Long = this.updatedAtMillis
+        details: ListingDetails
     ): Listing {
         require(isOwnedBy(editorSellerId)) { "Only the owner can edit this listing." }
         return copy(
@@ -113,8 +112,7 @@ data class Listing(
             category = details.category,
             condition = details.condition,
             images = details.images,
-            attributes = details.attributes,
-            updatedAtMillis = updatedAtMillis
+            attributes = details.attributes
         )
     }
 }

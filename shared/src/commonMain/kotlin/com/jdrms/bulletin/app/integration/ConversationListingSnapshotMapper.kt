@@ -30,7 +30,7 @@ internal fun Listing.toConversationPreview() = ConversationListingPreview(
             attributes.toMarketplaceAttributes()
         ).map { ConversationListingAttribute(it.label, it.value) },
         createdAtMillis = createdAtMillis,
-        updatedAtMillis = updatedAtMillis
+        editedAtMillis = editedAtMillis
     )
 )
 
@@ -51,7 +51,7 @@ internal fun MarketplaceItem.toConversationPreview() = ConversationListingPrevie
         attributes = MarketplaceAttributeFormatter.linesFor(category, attributes)
             .map { ConversationListingAttribute(it.label, it.value) },
         createdAtMillis = createdAtMillis,
-        updatedAtMillis = updatedAtMillis
+        editedAtMillis = editedAtMillis
     )
 )
 

@@ -25,7 +25,7 @@ object MarketplaceMapper {
             condition = dto.condition.toMarketplaceCondition(),
             isBookmarked = isBookmarked,
             createdAtMillis = dto.createdAtMillis,
-            updatedAtMillis = dto.updatedAtMillis
+            editedAtMillis = dto.editedAtMillis
         )
     }
 
@@ -40,7 +40,7 @@ object MarketplaceMapper {
             category = domain.category.name,
             condition = domain.condition.name,
             createdAtMillis = domain.createdAtMillis,
-            updatedAtMillis = domain.updatedAtMillis
+            editedAtMillis = domain.editedAtMillis
         )
     }
 
@@ -69,7 +69,7 @@ object MarketplaceMapper {
             sellerReputationScore = score,
             isBookmarked = isBookmarked,
             createdAtMillis = dto.createdAtMillis,
-            updatedAtMillis = dto.updatedAtMillis
+            editedAtMillis = dto.editedAtMillis
         )
     }
 
@@ -88,7 +88,7 @@ object MarketplaceMapper {
             photos = domain.photos,
             reputationScore = domain.sellerReputationScore,
             createdAtMillis = domain.createdAtMillis,
-            updatedAtMillis = domain.updatedAtMillis
+            editedAtMillis = domain.editedAtMillis
         )
     }
 }

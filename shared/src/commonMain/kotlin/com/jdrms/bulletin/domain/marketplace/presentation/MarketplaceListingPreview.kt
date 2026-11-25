@@ -27,7 +27,7 @@ data class MarketplaceListingPreviewContent(
     val photos: List<String>,
     val attributes: List<ItemDetailRow>,
     val createdAtMillis: Long,
-    val updatedAtMillis: Long = 0L
+    val editedAtMillis: Long? = null
 )
 
 internal fun MarketplaceItem.toDetailPreview() = MarketplaceListingPreview(
@@ -46,6 +46,6 @@ internal fun MarketplaceItem.toDetailPreview() = MarketplaceListingPreview(
             attributes
         ).map { ItemDetailRow(it.label, it.value) },
         createdAtMillis = createdAtMillis,
-        updatedAtMillis = updatedAtMillis
+        editedAtMillis = editedAtMillis
     )
 )

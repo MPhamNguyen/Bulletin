@@ -26,7 +26,7 @@ internal fun ConversationListingPreview.toMarketplaceDetailPreview(
             photos = snapshot.photos,
             attributes = snapshot.attributes.map { ItemDetailRow(it.label, it.value) },
             createdAtMillis = snapshot.createdAtMillis,
-            updatedAtMillis = snapshot.updatedAtMillis
+            editedAtMillis = snapshot.editedAtMillis
         ),
         sellerAvatarUrl = seller?.avatarUrl?.takeIf(String::isNotBlank),
         sellerAvatarKnown = seller != null

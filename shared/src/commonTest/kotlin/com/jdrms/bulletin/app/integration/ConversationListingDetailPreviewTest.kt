@@ -35,7 +35,7 @@ class ConversationListingDetailPreviewTest {
             assertEquals(listing.condition.name, condition)
             assertEquals(listing.images, photos)
             assertEquals(listing.createdAtMillis, createdAtMillis)
-            assertEquals(listing.updatedAtMillis, updatedAtMillis)
+            assertEquals(listing.editedAtMillis, editedAtMillis)
         }
     }
 
