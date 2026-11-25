@@ -29,11 +29,15 @@ import androidx.compose.ui.zIndex
 import com.jdrms.bulletin.app.di.AppContainer
 import com.jdrms.bulletin.app.navigation.AppDestination
 import com.jdrms.bulletin.app.navigation.MutableMainNavigationState
+import com.jdrms.bulletin.core.designsystem.BulletinToastHost
 import com.jdrms.bulletin.core.designsystem.LocalNavbarHeight
 import com.jdrms.bulletin.core.designsystem.theme.bulletinColors
 import com.jdrms.bulletin.domain.home.presentation.HomeSaveRetryPresentation
 import com.jdrms.bulletin.domain.home.presentation.LocalHomeSaveRetryPresentation
+import com.jdrms.bulletin.domain.listings.presentation.ListingsViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 internal class MainAppContentState(
     val container: AppContainer,
@@ -91,7 +95,17 @@ internal fun MainAppLayout(content: MainAppContentState, chrome: MainAppChrome, 
                 navbarHeight = with(density) { it.height.toDp() } - inset
             }
         )
+        ListingToast(content.models.listings, Modifier.align(Alignment.TopCenter).zIndex(200f))
     }
+}
+
+/** Shows listing feedback app-wide, so it is visible wherever the seller lands after posting. */
+@Composable
+private fun ListingToast(listings: ListingsViewModel, modifier: Modifier) {
+    val message by remember(listings) {
+        listings.uiState.map { it.successMessage }.distinctUntilChanged()
+    }.collectAsState(initial = null)
+    BulletinToastHost(message, modifier)
 }
 
 @Composable

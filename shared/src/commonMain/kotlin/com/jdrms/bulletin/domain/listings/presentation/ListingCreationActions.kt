@@ -47,6 +47,7 @@ internal class ListingCreationActions(
                 errorMessage = null
             )
         }
+        callbacks.notify(POSTED_MESSAGE)
         scope.launch { submit(draft, form) }
         return true
     }
@@ -104,6 +105,7 @@ internal class ListingCreationActions(
             }
             restored.copy(
                 myListings = restored.myListings.filterNot { it.id == listingId },
+                successMessage = null,
                 errorMessage = message
             )
         }
@@ -125,14 +127,14 @@ internal class ListingCreationActions(
         }
         val warning = (imageResult as? Result.Error)?.exception?.message
         state.update { it.copy(errorMessage = warning) }
-        callbacks.notify(
-            if (warning == null) {
-                "Listing posted successfully!"
-            } else {
-                "Listing posted, but its images could not be uploaded. Edit the listing to retry."
-            }
-        )
+        if (warning != null) {
+            callbacks.notify("Listing posted, but its images could not be uploaded. Edit the listing to retry.")
+        }
         callbacks.reload(seller)
         callbacks.listingChangedSignal?.emit()
+    }
+
+    private companion object {
+        const val POSTED_MESSAGE = "Listing Posted"
     }
 }

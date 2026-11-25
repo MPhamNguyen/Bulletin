@@ -129,11 +129,12 @@ class ListingCreationActionsTest {
     }
 
     @Test
-    fun successfulSubmissionShowsFlashNotificationAndAutoDismisses() = runTest {
+    fun postingShowsTheToastImmediatelyAndItAutoDismisses() = runTest {
         addPhoto()
         viewModel.submitNewListing()
+        assertEquals("Listing Posted", viewModel.uiState.value.successMessage)
         runCurrent()
-        assertEquals("Listing posted successfully!", viewModel.uiState.value.successMessage)
+        assertEquals("Listing Posted", viewModel.uiState.value.successMessage)
 
         advanceTimeBy(ListingsViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
         runCurrent()
@@ -203,6 +204,7 @@ class ListingCreationActionsTest {
         assertEquals("45555", state.newPriceCents)
         assertEquals(1, state.newImages.size)
         assertNotNull(state.errorMessage)
+        assertNull(state.successMessage)
     }
 
     @Test

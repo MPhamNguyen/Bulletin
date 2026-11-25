@@ -24,12 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
@@ -76,18 +74,6 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
                         onClose()
                     }
                 }
-            )
-        }
-        state.successMessage?.let {
-            ListingFlashMessage(
-                message = it,
-                modifier = Modifier.align(
-                    Alignment.TopCenter
-                ).padding(
-                    top = 72.dp,
-                    start = BulletinSpacing.xl,
-                    end = BulletinSpacing.xl
-                )
             )
         }
     }

@@ -1,26 +1,15 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun MyListingsScreen(
@@ -88,21 +77,6 @@ fun MyListingsScreen(
                     onRetryReviewRequestCancellation = viewModel::retryCancelReviewRequests
                 )
             )
-        }
-
-        AnimatedContent(
-            targetState = uiState.successMessage,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 72.dp, start = BulletinSpacing.xl, end = BulletinSpacing.xl)
-                .zIndex(1f),
-            transitionSpec = {
-                (slideInVertically(initialOffsetY = { -it }) + fadeIn()) togetherWith
-                    (slideOutVertically(targetOffsetY = { -it }) + fadeOut())
-            },
-            label = "Listing flash notification"
-        ) { message ->
-            if (message != null) ListingFlashMessage(message = message)
         }
 
         uiState.pendingDeletion?.let { listing ->

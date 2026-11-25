@@ -217,6 +217,12 @@ class ListingsViewModel(
         _uiState.update { it.copy(editCondition = condition) }
     }
     fun saveListingChanges() = editActions.save()
+
+    /** Clears a stale form error without dismissing a toast that is still showing. */
+    fun clearErrorMessage() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
     fun clearMessages() {
         flashNotificationJob?.cancel()
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
