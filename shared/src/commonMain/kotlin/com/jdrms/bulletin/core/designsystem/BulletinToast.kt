@@ -17,6 +17,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -75,7 +76,12 @@ object BulletinToastDefaults {
  * Re-plays its entrance whenever [message] changes. Show it with [BulletinToastHost] so it slides in and out.
  */
 @Composable
-fun BulletinToast(message: String, modifier: Modifier = Modifier) {
+fun BulletinToast(
+    message: String,
+    modifier: Modifier = Modifier,
+    showSuccessIcon: Boolean = true,
+    action: @Composable () -> Unit = {}
+) {
     val pop = remember(message) { Animatable(0f) }
     val label = remember(message) { Animatable(0f) }
     val check = remember(message) { Animatable(0f) }
@@ -106,29 +112,33 @@ fun BulletinToast(message: String, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(BulletinToastDefaults.ContentGap, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(BulletinToastDefaults.IconSize)
-                .graphicsLayer {
-                    scaleX = pop.value
-                    scaleY = pop.value
-                }
-                .background(BulletinToastDefaults.Accent, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(Modifier.size(BulletinToastDefaults.CheckSize)) { drawCheck(check.value) }
+        if (showSuccessIcon) {
+            Box(
+                modifier = Modifier
+                    .size(BulletinToastDefaults.IconSize)
+                    .graphicsLayer {
+                        scaleX = pop.value
+                        scaleY = pop.value
+                    }
+                    .background(BulletinToastDefaults.Accent, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(Modifier.size(BulletinToastDefaults.CheckSize)) { drawCheck(check.value) }
+            }
         }
-        Text(
-            text = message,
-            color = BulletinToastDefaults.Content,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .graphicsLayer {
-                    alpha = label.value
-                    translationX = (1f - label.value) * -LABEL_SLIDE_DP.dp.toPx()
-                }
-        )
+        Column(Modifier.weight(1f, fill = false)) {
+            Text(
+                text = message,
+                color = BulletinToastDefaults.Content,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier
+                    .graphicsLayer {
+                        alpha = label.value
+                        translationX = (1f - label.value) * -LABEL_SLIDE_DP.dp.toPx()
+                    }
+            )
+            action()
+        }
     }
 }
 

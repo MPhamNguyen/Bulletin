@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.home.presentation
 
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarVisuals
@@ -11,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import bulletin.shared.generated.resources.*
+import com.jdrms.bulletin.core.designsystem.BulletinToastSnackbarHost
 import org.jetbrains.compose.resources.stringResource
 
 private data class HomeRetrySnackbarVisuals(
@@ -41,7 +41,7 @@ internal fun HomeSaveRetrySnackbar(state: HomeUiState, actions: HomeCardActions,
     val host = remember { SnackbarHostState() }
     HomeSaveRetryNavigation(true, state, presentation, actions)
     HomeRetrySnackbarDelivery(presentation, host, actions)
-    SnackbarHost(host, modifier)
+    BulletinToastSnackbarHost(host, modifier, showSuccessIcon = false)
 }
 
 @Composable

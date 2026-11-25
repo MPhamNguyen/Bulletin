@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,6 +15,7 @@ import androidx.compose.ui.Modifier
 import com.jdrms.bulletin.app.navigation.ProfileDestination
 import com.jdrms.bulletin.app.theme.ThemeViewModel
 import com.jdrms.bulletin.core.common.UserMessenger
+import com.jdrms.bulletin.core.designsystem.BulletinToastSnackbarHost
 import com.jdrms.bulletin.domain.profile.application.ProfileBookmarkedListing
 
 data class ProfileScreenFlows(
@@ -78,7 +78,7 @@ fun ProfileScreen(
             callbacks,
             options
         )
-        SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
+        BulletinToastSnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
     }
 }
 
