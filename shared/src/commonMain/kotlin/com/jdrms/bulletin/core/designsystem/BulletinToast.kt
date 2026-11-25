@@ -19,13 +19,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +48,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
+import com.jdrms.bulletin.core.designsystem.theme.BulletinTextStyles
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -55,12 +59,12 @@ object BulletinToastDefaults {
     val Accent = Color(0xFF74DD86)
     val Check = Color(0xFF1F2A3C)
     val MaxWidth = 320.dp
-    val MinHeight = BulletinSpacing.control
-    val IconSize = 28.dp
-    val CheckSize = 16.dp
+    val MinHeight = 44.dp
+    val IconSize = 20.dp
+    val CheckSize = 12.dp
     val ContentGap = BulletinSpacing.s
     val HorizontalPadding = BulletinSpacing.l
-    val VerticalPadding = BulletinSpacing.s
+    val VerticalPadding = BulletinSpacing.m
 
     internal const val POP_DELAY_MILLIS = 100L
     internal const val LABEL_DELAY_MILLIS = 150L
@@ -130,7 +134,7 @@ fun BulletinToast(
             Text(
                 text = message,
                 color = BulletinToastDefaults.Content,
-                style = MaterialTheme.typography.titleMedium,
+                style = BulletinTextStyles.toast,
                 modifier = Modifier
                     .graphicsLayer {
                         alpha = label.value
@@ -151,8 +155,8 @@ fun BulletinToastHost(message: String?, modifier: Modifier = Modifier) {
     AnimatedContent(
         targetState = message,
         modifier = modifier
-            .statusBarsPadding()
-            .padding(top = BulletinSpacing.m, start = BulletinSpacing.xl, end = BulletinSpacing.xl),
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+            .padding(top = BulletinSpacing.xl, start = BulletinSpacing.l, end = BulletinSpacing.l),
         transitionSpec = {
             (
                 slideInVertically(tween(BulletinToastDefaults.ENTER_MILLIS)) { -it } +

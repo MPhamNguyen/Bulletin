@@ -72,6 +72,9 @@ internal val BulletinTypography = Typography(
 
 /** Styles beyond the Material typography scale. */
 object BulletinTextStyles {
+    /** Quiet confirmation text below screen headers. */
+    val toast = TextStyle(fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp)
+
     /** Filter and category chips. */
     val chip = TextStyle(fontWeight = FontWeight.Medium, fontSize = 15.sp, lineHeight = 20.sp)
 
