@@ -26,6 +26,6 @@ internal fun ColumnScope.MarketplaceDetailPreview(
         isLoading = true
     )
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    MarketplaceListingDescription(content.description, content.createdAtMillis, content.updatedAtMillis)
+    MarketplaceListingDescription(content.description, content.createdAtMillis, content.editedAtMillis)
     ItemDetailsSection(content.attributes)
 }

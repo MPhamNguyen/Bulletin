@@ -8,6 +8,7 @@ import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.attributes.attributeListing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingImagesRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
@@ -55,6 +56,7 @@ class ListingEditActionsTest {
         advanceUntilIdle()
 
         assertEquals(2, fixture.repository.updateCalls)
+        assertEquals(listOf(ListingUpdateIntent.EDIT, ListingUpdateIntent.ROUTINE), fixture.repository.intents)
         assertNull(fixture.state.value.editingListing)
         assertFalse(fixture.state.value.isUpdating)
         assertNull(fixture.state.value.errorMessage)
@@ -95,13 +97,15 @@ private class ImageSaveRepository(
     private val failImageSave: Boolean
 ) : ListingsRepository by delegate {
     var updateCalls = 0
+    val intents = mutableListOf<ListingUpdateIntent>()
 
-    override suspend fun updateListing(listing: Listing): Result<Listing> {
+    override suspend fun updateListing(listing: Listing, intent: ListingUpdateIntent): Result<Listing> {
         updateCalls++
+        intents += intent
         return if (failImageSave && updateCalls == 2) {
             Result.Error(IllegalStateException("Image list save failed"))
         } else {
-            delegate.updateListing(listing)
+            delegate.updateListing(listing, intent)
         }
     }
 }

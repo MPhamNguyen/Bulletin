@@ -14,7 +14,7 @@ data class MarketplaceItemDto(
     @SerialName("category") val category: String = "OTHER",
     @SerialName("condition") val condition: String? = null,
     @SerialName("created_at_millis") val createdAtMillis: Long = 0L,
-    @SerialName("updated_at_millis") val updatedAtMillis: Long = 0L
+    @SerialName("edited_at_millis") val editedAtMillis: Long? = null
 )
 
 @Serializable
@@ -32,7 +32,7 @@ data class MarketplaceListingDto(
     @SerialName("reputation_score") val reputationScore: Double? = null,
     @SerialName("created_at_millis") val createdAtMillis: Long = 0L,
     @SerialName("buyer_id") val buyerId: String? = null,
-    @SerialName("updated_at_millis") val updatedAtMillis: Long = 0L
+    @SerialName("edited_at_millis") val editedAtMillis: Long? = null
 )
 
 @Serializable

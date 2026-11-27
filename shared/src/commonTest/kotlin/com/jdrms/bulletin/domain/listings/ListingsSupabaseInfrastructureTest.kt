@@ -8,9 +8,11 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingDto
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingInsertDto
+import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingProfileDto
 import com.jdrms.bulletin.domain.listings.infrastructure.dto.SupabaseListingWriteDto
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.SupabaseListingsTable
@@ -161,7 +163,14 @@ class ListingsSupabaseInfrastructureTest {
 
         override suspend fun findById(id: String): SupabaseListingDto? {
             return if (id == existingId) {
-                SupabaseListingDto(id, "Existing", "seller-uuid", "OTHER", "GOOD", 1.0, "Existing")
+                updated?.let { dto ->
+                    SupabaseListingDto(
+                        id, dto.name, dto.userId, dto.category, dto.condition, dto.price, dto.description,
+                        createdAt = "1970-01-01T00:00:00.123Z", status = dto.status,
+                        profile = SupabaseListingProfileDto("Student Seller"),
+                        buyerId = dto.buyerId, attributes = dto.attributes
+                    )
+                } ?: SupabaseListingDto(id, "Existing", "seller-uuid", "OTHER", "GOOD", 1.0, "Existing")
             } else {
                 null
             }
@@ -172,7 +181,7 @@ class ListingsSupabaseInfrastructureTest {
             inserted = listing
         }
 
-        override suspend fun update(listing: SupabaseListingWriteDto) {
+        override suspend fun update(listing: SupabaseListingWriteDto, intent: ListingUpdateIntent) {
             updateError?.let { throw it }
             updated = listing
         }

@@ -70,7 +70,7 @@ data class MarketplaceItem(
     val isBookmarked: Boolean = false,
     val createdAtMillis: Long = 0L,
     val photos: List<String> = emptyList(),
-    val updatedAtMillis: Long = 0L,
+    val editedAtMillis: Long? = null,
     val attributes: MarketplaceAttributes = MarketplaceAttributes.EMPTY
 ) {
     init {
@@ -107,7 +107,7 @@ data class Listing(
     val sellerMajor: String = "",
     val sellerReviewCount: Int = 0,
     val sellerIsVerified: Boolean = false,
-    val updatedAtMillis: Long = 0L,
+    val editedAtMillis: Long? = null,
     val attributes: MarketplaceAttributes = MarketplaceAttributes.EMPTY
 ) {
     init {

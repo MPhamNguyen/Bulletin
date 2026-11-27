@@ -46,8 +46,8 @@ object SupabaseListingMapper {
                     ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY)
                 )
             },
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
-            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrNull() ?: 0L,
+            editedAtMillis = dto.editedAt.toEpochMillisecondsOrNull(),
             attributes = attributes
         )
     }
@@ -70,10 +70,10 @@ object SupabaseListingMapper {
     fun toInsertDto(listing: Listing): SupabaseListingWriteDto =
         toInsertDto(listing, listing.sellerId.value)
 
-    private fun String?.toEpochMillisecondsOrZero(): Long {
+    private fun String?.toEpochMillisecondsOrNull(): Long? {
         return this?.let { timestamp ->
             runCatching { Instant.parse(timestamp).toEpochMilliseconds() }.getOrNull()
-        } ?: 0L
+        }
     }
 
     private fun SupabaseListingDto.toListingStatus(): ListingStatus {

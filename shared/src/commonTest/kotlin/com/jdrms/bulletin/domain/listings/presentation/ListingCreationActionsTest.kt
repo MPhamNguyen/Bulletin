@@ -115,6 +115,16 @@ class ListingCreationActionsTest {
     }
 
     @Test
+    fun photoSyncAfterCreationDoesNotMarkTheListingEdited() = runTest {
+        addPhoto()
+        viewModel.submitNewListing()
+        advanceUntilIdle()
+
+        val listing = repository.getAllListings().single()
+        assertEquals(null, listing.editedAtMillis)
+    }
+
+    @Test
     fun successfulSubmissionShowsFlashNotificationAndAutoDismisses() = runTest {
         addPhoto()
         viewModel.submitNewListing()

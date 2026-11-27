@@ -14,14 +14,14 @@ import com.jdrms.bulletin.domain.marketplace.domain.model.Listing
 
 @Composable
 internal fun MarketplaceListingDescription(listing: Listing) {
-    MarketplaceListingDescription(listing.description, listing.createdAtMillis, listing.updatedAtMillis)
+    MarketplaceListingDescription(listing.description, listing.createdAtMillis, listing.editedAtMillis)
 }
 
 @Composable
 internal fun MarketplaceListingDescription(
     description: String?,
     createdAtMillis: Long?,
-    updatedAtMillis: Long?,
+    editedAtMillis: Long?,
     isLoading: Boolean = false
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -39,7 +39,7 @@ internal fun MarketplaceListingDescription(
         Text(
             text = formatMarketplaceListingTime(
                 createdAtMillis = createdAtMillis ?: 0L,
-                updatedAtMillis = updatedAtMillis ?: 0L,
+                editedAtMillis = editedAtMillis,
                 nowMillis = currentTimeMillis()
             ),
             modifier = Modifier.skeleton(isLoading && createdAtMillis == null),

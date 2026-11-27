@@ -52,7 +52,7 @@ internal fun MarketplaceCardDetails(item: MarketplaceItem, bounds: ListingBounds
 private fun ListingMetadata(item: MarketplaceItem) {
     val listingTime = formatMarketplaceListingTime(
         item.createdAtMillis,
-        item.updatedAtMillis,
+        item.editedAtMillis,
         currentTimeMillis()
     )
     Text(

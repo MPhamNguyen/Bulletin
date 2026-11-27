@@ -3,6 +3,7 @@ package com.jdrms.bulletin.domain.listings.application
 import com.jdrms.bulletin.core.common.Result
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.domain.service.ListingValidationException
@@ -62,7 +63,19 @@ class ManageListing(
     private val listingsRepository: ListingsRepository,
     private val policy: ListingValidationPolicy = ListingValidationPolicy()
 ) {
-    suspend fun updateListing(listing: Listing, editorSellerId: SellerId? = null): Result<Listing> {
+    /** Persists [listing] as bookkeeping. It never advances `edited_at`; use [saveEdit] for a seller's edit. */
+    suspend fun updateListing(listing: Listing, editorSellerId: SellerId? = null): Result<Listing> =
+        persist(listing, editorSellerId, ListingUpdateIntent.ROUTINE)
+
+    /** Persists an intentional edit by the owner (Save Changes) and asks the store to advance `edited_at`. */
+    suspend fun saveEdit(listing: Listing, editorSellerId: SellerId): Result<Listing> =
+        persist(listing, editorSellerId, ListingUpdateIntent.EDIT)
+
+    private suspend fun persist(
+        listing: Listing,
+        editorSellerId: SellerId?,
+        intent: ListingUpdateIntent
+    ): Result<Listing> {
         var canonicalListing = listing
         if (editorSellerId != null) {
             val persistedListing = listingsRepository.getListing(listing.id)
@@ -88,7 +101,7 @@ class ManageListing(
         if (listingValidation.isError()) {
             return Result.Error((listingValidation as Result.Error).exception)
         }
-        return listingsRepository.updateListing(canonicalListing)
+        return listingsRepository.updateListing(canonicalListing, intent)
     }
 }
 
@@ -108,7 +121,7 @@ class MarkListingSold(
         } catch (exception: IllegalArgumentException) {
             return Result.Error(exception)
         }
-        return listingsRepository.updateListing(soldListing)
+        return listingsRepository.updateListing(soldListing, ListingUpdateIntent.EDIT)
     }
 }
 
@@ -128,7 +141,7 @@ class RestoreListingToMarketplace(
         } catch (exception: IllegalArgumentException) {
             return Result.Error(exception)
         }
-        return listingsRepository.updateListing(restoredListing)
+        return listingsRepository.updateListing(restoredListing, ListingUpdateIntent.EDIT)
     }
 }
 

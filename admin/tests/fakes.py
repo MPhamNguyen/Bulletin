@@ -30,7 +30,7 @@ class FakeSupabase:
         self.message = dict(id=MESSAGE, sender_id=TARGET, body="Message content",
                             created_at="2026-10-01T00:00:00Z", conversation_id=LISTING)
         self.listing = dict(id=LISTING, user_id=TARGET, name="Book", description="Listing content",
-                            price=12, is_sold=False, updated_at="2026-10-01T00:00:00Z")
+                            price=12, is_sold=False, edited_at=None)
         self.auth_account = dict(id=TARGET, banned_until=None)
         self.admin_account = dict(id=ADMIN, banned_until=None)
         self.patches = []

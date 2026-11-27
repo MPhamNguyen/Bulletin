@@ -13,5 +13,5 @@ data class ListingDto(
     val images: List<String> = emptyList(),
     val createdAtMillis: Long = 0L,
     val buyerId: String? = null,
-    val updatedAtMillis: Long = 0L
+    val editedAtMillis: Long? = null
 )

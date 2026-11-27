@@ -31,7 +31,7 @@ object SupabaseMarketplaceListingMapper {
             condition = snapshot.condition,
             createdAtMillis = snapshot.createdAtMillis,
             photos = snapshot.photos,
-            updatedAtMillis = snapshot.updatedAtMillis,
+            editedAtMillis = snapshot.editedAtMillis,
             attributes = snapshot.attributes
         )
     }
@@ -80,8 +80,8 @@ object SupabaseMarketplaceListingMapper {
                 imageUrl(image.objectPath)
                     .withCropSettings(ImageCropSettings(image.cropScale, image.cropOffsetX, image.cropOffsetY))
             },
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
-            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrNull() ?: 0L,
+            editedAtMillis = dto.editedAt.toEpochMillisecondsOrNull(),
             attributes = MarketplaceAttributesJsonDecoder.decode(
                 dto.attributes,
                 runCatching { MarketplaceCategory.valueOf(category) }.getOrDefault(MarketplaceCategory.OTHER)
@@ -111,8 +111,8 @@ object SupabaseMarketplaceListingMapper {
             priceAmount = price.coerceAtLeast(0.0),
             priceCurrency = "USD",
             category = category,
-            createdAtMillis = dto.createdAt.toEpochMillisecondsOrZero(),
-            updatedAtMillis = dto.updatedAt.toEpochMillisecondsOrZero(),
+            createdAtMillis = dto.createdAt.toEpochMillisecondsOrNull() ?: 0L,
+            editedAtMillis = dto.editedAt.toEpochMillisecondsOrNull(),
             attributes = MarketplaceAttributesJsonDecoder.decode(dto.attributes, category),
             condition = condition,
             primaryPhotoUrl = dto.listingImages.firstOrNull { it.position == 0 }
@@ -130,8 +130,10 @@ object SupabaseMarketplaceListingMapper {
         )
     }
 
-    private fun String?.toEpochMillisecondsOrZero(): Long {
-        return toInstantOrEpoch().toEpochMilliseconds()
+    private fun String?.toEpochMillisecondsOrNull(): Long? {
+        return this?.let { timestamp ->
+            runCatching { Instant.parse(timestamp).toEpochMilliseconds() }.getOrNull()
+        }
     }
 
     private fun String?.toInstantOrEpoch(): Instant {

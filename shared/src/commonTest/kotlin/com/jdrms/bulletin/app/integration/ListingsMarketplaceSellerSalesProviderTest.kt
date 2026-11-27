@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.listings.domain.model.ListingCondition
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.model.ListingStatus
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.marketplace.domain.model.MarketplaceSellerId
@@ -53,7 +54,8 @@ private class SellerSalesListingsRepository(
         private set
 
     override suspend fun createListing(listing: Listing): Result<Listing> = Result.Success(listing)
-    override suspend fun updateListing(listing: Listing): Result<Listing> = Result.Success(listing)
+    override suspend fun updateListing(listing: Listing, intent: ListingUpdateIntent): Result<Listing> =
+        Result.Success(listing)
     override suspend fun getListing(id: ListingId): Listing? = listings.firstOrNull { it.id == id }
     override suspend fun deleteListing(id: ListingId, sellerId: SellerId): Result<Unit> = Result.Success(Unit)
     override suspend fun getSellerListings(sellerId: SellerId): List<Listing> {
