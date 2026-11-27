@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -25,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -39,31 +41,6 @@ import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import org.jetbrains.compose.resources.painterResource
-
-@Composable
-fun ForgotPasswordScreen(
-    errorMessage: String? = null,
-    isLoading: Boolean = false,
-    onSubmit: (String) -> Unit = {},
-    onBack: () -> Unit = {}
-) {
-    var email by remember { mutableStateOf("") }
-    RecoveryLayout(
-        title = "Forgot your password?",
-        description = "Enter your email to start a password reset.",
-        errorMessage = errorMessage,
-        content = {
-            RecoveryField(label = "Email", value = email, placeholder = "you@university.edu") {
-                email = it
-            }
-            Spacer(Modifier.height(20.dp))
-            RecoveryButton("Continue", isLoading) { onSubmit(email) }
-            BulletinButton(onClick = onBack, variant = BulletinButtonVariant.Text) {
-                Text("Back to sign in")
-            }
-        }
-    )
-}
 
 @Composable
 fun PasswordConfirmationCodeScreen(
@@ -172,11 +149,12 @@ private fun RecoveryLayout(
 }
 
 @Composable
-private fun RecoveryField(
+internal fun RecoveryField(
     label: String,
     value: String,
     placeholder: String,
     isPassword: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
     onValueChange: (String) -> Unit
 ) {
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -205,7 +183,7 @@ private fun RecoveryField(
             }
         ),
         options = BulletinFieldOptions(
-
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             visualTransformation = if (isPassword && !isPasswordVisible) {
                 PasswordVisualTransformation()
             } else {
@@ -216,10 +194,10 @@ private fun RecoveryField(
 }
 
 @Composable
-private fun RecoveryButton(label: String, isLoading: Boolean, onClick: () -> Unit) {
+internal fun RecoveryButton(label: String, isLoading: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
     BulletinButton(
         onClick = onClick,
-        enabled = !isLoading,
+        enabled = enabled && !isLoading,
         modifier = Modifier.fillMaxWidth(),
         variant = BulletinButtonVariant.Primary,
         size = BulletinButtonSize.Large
