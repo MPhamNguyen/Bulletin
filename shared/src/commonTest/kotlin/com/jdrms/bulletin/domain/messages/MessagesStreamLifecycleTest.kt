@@ -10,6 +10,7 @@ import com.jdrms.bulletin.domain.messages.application.ReportMessage
 import com.jdrms.bulletin.domain.messages.application.SendMessage
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.repository.MessageStreamEvent
 import com.jdrms.bulletin.domain.messages.domain.repository.MessagesObserver
@@ -137,7 +138,9 @@ class MessagesStreamLifecycleTest {
             ConversationParticipant(ownSender.id, ownSender.displayName),
             ConversationParticipant(otherSender.id, otherSender.displayName)
         )
-        val repository = messagesRepository(listOf(Conversation(conversationId, participants)))
+        val repository = messagesRepository(
+            listOf(Conversation(conversationId, participants, listingId = ListingReferenceId("listing-1")))
+        )
         val events = MutableSharedFlow<MessageStreamEvent>()
         val viewModel = viewModel(repository, MessagesObserver { _, _ -> events })
         viewModel.onDestinationActiveChanged(true)

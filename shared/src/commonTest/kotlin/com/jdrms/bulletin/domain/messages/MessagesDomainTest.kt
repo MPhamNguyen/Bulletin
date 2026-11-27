@@ -74,7 +74,8 @@ class MessagesDomainTest {
                     listOf(
                         ConversationParticipantDto(senderId.value, "Dominic"),
                         ConversationParticipantDto("recipient-id", "Recipient")
-                    )
+                    ),
+                    listingId = "listing-1"
                 )
             )
         )
