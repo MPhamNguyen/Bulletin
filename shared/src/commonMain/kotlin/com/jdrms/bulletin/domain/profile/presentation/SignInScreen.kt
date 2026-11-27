@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
+import com.jdrms.bulletin.core.designsystem.BulletinLoadingLabel
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
@@ -184,11 +183,7 @@ private fun PasswordSignInActions(isLoading: Boolean, onForgotPassword: () -> Un
         size = BulletinButtonSize.Large
     ) {
         if (isLoading) {
-            CircularProgressIndicator(
-                Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
+            BulletinLoadingLabel("Logging In")
         } else {
             Text("Sign in", style = MaterialTheme.typography.titleMedium)
         }

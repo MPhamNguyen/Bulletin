@@ -90,7 +90,12 @@ fun ForgotPasswordScreen(
                             keyboardType = KeyboardType.Email
                         ) { email = it }
                         Spacer(Modifier.height(BulletinSpacing.xl + BulletinSpacing.s))
-                        RecoveryButton("Send reset link", isLoading, enabled = email.isNotBlank()) { onSubmit(email) }
+                        RecoveryButton(
+                            label = "Send reset link",
+                            loadingLabel = "Sending reset link",
+                            isLoading = isLoading,
+                            enabled = email.isNotBlank()
+                        ) { onSubmit(email) }
                     }
                     Spacer(Modifier.height(BulletinSpacing.xl + BulletinSpacing.s))
                 }

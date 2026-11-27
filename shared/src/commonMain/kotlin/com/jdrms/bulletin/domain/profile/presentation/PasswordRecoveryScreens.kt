@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +36,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinLoadingLabel
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
@@ -60,7 +60,7 @@ fun PasswordConfirmationCodeScreen(
                 code = it
             }
             Spacer(Modifier.height(20.dp))
-            RecoveryButton("Confirm code", isLoading) { onSubmit(code) }
+            RecoveryButton("Confirm code", "Confirming code", isLoading) { onSubmit(code) }
             BulletinButton(onClick = onBack, variant = BulletinButtonVariant.Text) {
                 Text("Back")
             }
@@ -98,7 +98,7 @@ fun ChangePasswordScreen(
                 onValueChange = { confirmation = it }
             )
             Spacer(Modifier.height(20.dp))
-            RecoveryButton("Change password", isLoading) { onSubmit(password, confirmation) }
+            RecoveryButton("Change password", "Changing password", isLoading) { onSubmit(password, confirmation) }
             BulletinButton(onClick = onBack, variant = BulletinButtonVariant.Text) {
                 Text("Back")
             }
@@ -194,7 +194,13 @@ internal fun RecoveryField(
 }
 
 @Composable
-internal fun RecoveryButton(label: String, isLoading: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
+internal fun RecoveryButton(
+    label: String,
+    loadingLabel: String,
+    isLoading: Boolean,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     BulletinButton(
         onClick = onClick,
         enabled = enabled && !isLoading,
@@ -203,11 +209,7 @@ internal fun RecoveryButton(label: String, isLoading: Boolean, enabled: Boolean 
         size = BulletinButtonSize.Large
     ) {
         if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.height(24.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
+            BulletinLoadingLabel(loadingLabel)
         } else {
             Text(label, style = MaterialTheme.typography.titleMedium)
         }

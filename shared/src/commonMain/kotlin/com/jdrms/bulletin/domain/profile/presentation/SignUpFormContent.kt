@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +33,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinLoadingLabel
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
@@ -117,11 +116,7 @@ internal fun SignUpFormContent(
         size = BulletinButtonSize.Large
     ) {
         if (uiState.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
+            BulletinLoadingLabel("Logging In")
         } else {
             Text("Create account", style = MaterialTheme.typography.titleMedium)
         }

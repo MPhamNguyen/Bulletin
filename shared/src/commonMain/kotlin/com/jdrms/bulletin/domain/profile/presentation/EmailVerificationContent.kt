@@ -18,7 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +39,7 @@ import com.jdrms.bulletin.core.designsystem.BulletinButton
 import com.jdrms.bulletin.core.designsystem.BulletinButtonSize
 import com.jdrms.bulletin.core.designsystem.BulletinFieldDecoration
 import com.jdrms.bulletin.core.designsystem.BulletinFieldOptions
+import com.jdrms.bulletin.core.designsystem.BulletinLoadingLabel
 import com.jdrms.bulletin.core.designsystem.BulletinTextField
 import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinMotion
@@ -204,7 +204,7 @@ internal fun EmailVerificationContent(
                 size = BulletinButtonSize.Large
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = colors.onPrimary)
+                    BulletinLoadingLabel("Verifying")
                 } else {
                     Text("Verify email", style = MaterialTheme.typography.titleMedium)
                 }
