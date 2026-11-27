@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.listings.presentation
 
 import com.jdrms.bulletin.core.common.Result
-import com.jdrms.bulletin.core.common.currentTimeMillis
 import com.jdrms.bulletin.domain.listings.application.CreateListingErrorMessages
 import com.jdrms.bulletin.domain.listings.application.CurrentListingSellerProvider
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
@@ -67,8 +66,7 @@ internal class ListingEditSubmission(
                 condition = draft.condition,
                 images = draft.currentListing.images,
                 attributes = draft.attributes
-            ),
-            updatedAtMillis = currentTimeMillis()
+            )
         )
     }.getOrElse { error ->
         state.update { it.copy(errorMessage = error.message ?: "Validation failed") }

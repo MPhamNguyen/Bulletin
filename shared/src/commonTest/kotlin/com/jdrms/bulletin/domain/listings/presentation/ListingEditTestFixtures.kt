@@ -7,8 +7,8 @@ import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.attributes.attributeListing
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
-import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
+import com.jdrms.bulletin.domain.listings.domain.model.ListingUpdateIntent
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingImagesRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
