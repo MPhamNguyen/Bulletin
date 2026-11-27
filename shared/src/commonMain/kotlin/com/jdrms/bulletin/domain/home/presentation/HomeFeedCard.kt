@@ -30,6 +30,9 @@ import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import com.jdrms.bulletin.domain.home.domain.model.HomeFeedItem
 import kotlin.math.max
 
+/** Each side zone covers half the card so previous/next photo taps have the largest possible target. */
+internal const val HOME_PHOTO_ZONE_FRACTION = 0.5f
+
 @Composable
 fun HomeFeedCard(
     item: HomeFeedItem,
@@ -92,14 +95,14 @@ internal fun BoxScope.HomeFeedCardBackground(
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .fillMaxWidth(0.38f)
+                .fillMaxWidth(HOME_PHOTO_ZONE_FRACTION)
                 .fillMaxHeight()
                 .clickable(onClickLabel = "Previous listing photo", onClick = onPreviousPhoto)
         )
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .fillMaxWidth(0.38f)
+                .fillMaxWidth(HOME_PHOTO_ZONE_FRACTION)
                 .fillMaxHeight()
                 .clickable(onClickLabel = "Next listing photo", onClick = onNextPhoto)
         )

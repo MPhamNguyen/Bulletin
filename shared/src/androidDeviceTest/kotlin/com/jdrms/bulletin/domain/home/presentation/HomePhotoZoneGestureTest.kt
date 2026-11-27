@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertEquals
 
-/** Exercises the real wrapper against clickable 38% zones without network-dependent photo loading. */
+/** Exercises the real wrapper against clickable half-width zones without network-dependent photo loading. */
 @RunWith(AndroidJUnit4::class)
 class HomePhotoZoneGestureTest {
     @get:Rule
@@ -37,10 +37,13 @@ class HomePhotoZoneGestureTest {
         showZones()
         compose.onRoot().performTouchInput { click(Offset(width * 0.15f, height * 0.25f)) }
         compose.onRoot().performTouchInput { click(Offset(width * 0.85f, height * 0.25f)) }
+        // Taps just either side of the midline land in the zones too (previously a dead strip).
+        compose.onRoot().performTouchInput { click(Offset(width * 0.45f, height * 0.9f)) }
+        compose.onRoot().performTouchInput { click(Offset(width * 0.55f, height * 0.9f)) }
         compose.runOnIdle {
-            assertEquals(1, previous)
-            assertEquals(1, next)
-            assertEquals(listOf(CardGestureResolver.Release.CANCEL, CardGestureResolver.Release.CANCEL), releases)
+            assertEquals(2, previous)
+            assertEquals(2, next)
+            assertEquals(List(4) { CardGestureResolver.Release.CANCEL }, releases)
         }
     }
 
@@ -78,11 +81,11 @@ class HomePhotoZoneGestureTest {
                     }
                 ) {
                     Box(
-                        Modifier.align(Alignment.TopStart).fillMaxWidth(0.38f).fillMaxHeight()
+                        Modifier.align(Alignment.TopStart).fillMaxWidth(HOME_PHOTO_ZONE_FRACTION).fillMaxHeight()
                             .clickable { previous++ }
                     )
                     Box(
-                        Modifier.align(Alignment.TopEnd).fillMaxWidth(0.38f).fillMaxHeight()
+                        Modifier.align(Alignment.TopEnd).fillMaxWidth(HOME_PHOTO_ZONE_FRACTION).fillMaxHeight()
                             .clickable { next++ }
                     )
                 }

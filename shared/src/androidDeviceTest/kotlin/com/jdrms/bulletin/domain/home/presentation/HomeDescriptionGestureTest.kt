@@ -78,7 +78,7 @@ class HomeDescriptionGestureTest {
             }
         }
         fixture.showWithZeroMotion(compose, description, modifier = Modifier.nestedScroll(parent))
-        compose.onNodeWithText(description).performClick()
+        compose.onNodeWithContentDescription("Expand description").performClick()
         compose.waitForIdle()
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("home-description-first").performTouchInput {
@@ -125,7 +125,7 @@ class HomeDescriptionGestureTest {
 
     private fun showExpanded() {
         fixture.showWithZeroMotion(compose, description)
-        compose.onNodeWithText(description).performClick()
+        compose.onNodeWithContentDescription("Expand description").performClick()
         compose.waitForIdle()
         assertTrue(scrollRange().maxValue() > 0f, compose.onRoot().printToString())
     }
