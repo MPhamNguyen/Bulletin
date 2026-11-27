@@ -16,7 +16,6 @@ import com.jdrms.bulletin.core.designsystem.dismissKeyboardOnTapOutside
 import com.jdrms.bulletin.core.designsystem.theme.BulletinTheme
 import com.jdrms.bulletin.domain.profile.application.SessionState
 import com.jdrms.bulletin.domain.profile.presentation.AuthSessionState
-import com.jdrms.bulletin.domain.profile.presentation.PasswordRecoveryStage
 
 @Composable
 fun App(appContainer: AppContainer? = null) {
@@ -36,12 +35,7 @@ fun App(appContainer: AppContainer? = null) {
     val themeColor by themeViewModel.themeColor.collectAsState()
     val baseColor by themeViewModel.baseColor.collectAsState()
     val recovery = remember(container) { container.profile.createPasswordRecoveryViewModel() }
-    val recoveryState by recovery.uiState.collectAsState()
-    val isDarkTheme = resolveAppIsDarkTheme(
-        preference,
-        isSystemInDarkTheme(),
-        recoveryState.stage != PasswordRecoveryStage.NONE
-    )
+    val isDarkTheme = resolveIsDarkTheme(preference, isSystemInDarkTheme())
     val session by container.profile.sessionRepository.state.collectAsState()
     LaunchedEffect(session) {
         when (val current = session) {
@@ -85,14 +79,4 @@ internal fun resolveIsDarkTheme(
     ThemePreference.SYSTEM -> systemDarkTheme
     ThemePreference.LIGHT -> false
     ThemePreference.DARK -> true
-}
-
-internal fun resolveAppIsDarkTheme(
-    themePreference: ThemePreference,
-    systemDarkTheme: Boolean,
-    isPasswordRecovery: Boolean
-): Boolean = if (isPasswordRecovery) {
-    systemDarkTheme
-} else {
-    resolveIsDarkTheme(themePreference, systemDarkTheme)
 }

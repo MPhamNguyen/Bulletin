@@ -26,14 +26,10 @@ class AppThemeResolutionTest {
     }
 
     @Test
-    fun passwordRecoveryFollowsSystemThemeRegardlessOfSavedPreference() {
-        assertTrue(resolveAppIsDarkTheme(ThemePreference.LIGHT, systemDarkTheme = true, isPasswordRecovery = true))
-        assertFalse(resolveAppIsDarkTheme(ThemePreference.DARK, systemDarkTheme = false, isPasswordRecovery = true))
-    }
-
-    @Test
-    fun otherFlowsContinueToUseSavedThemePreference() {
-        assertFalse(resolveAppIsDarkTheme(ThemePreference.LIGHT, systemDarkTheme = true, isPasswordRecovery = false))
-        assertTrue(resolveAppIsDarkTheme(ThemePreference.DARK, systemDarkTheme = false, isPasswordRecovery = false))
+    fun darkPreferenceStaysDarkOnLightSystemForEveryScreenIncludingPasswordRecovery() {
+        // Regression: password recovery used to ignore the saved preference and follow only the system setting,
+        // so it rendered light while the rest of the app was dark.
+        assertTrue(resolveIsDarkTheme(ThemePreference.DARK, systemDarkTheme = false))
+        assertFalse(resolveIsDarkTheme(ThemePreference.LIGHT, systemDarkTheme = true))
     }
 }
