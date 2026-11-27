@@ -22,15 +22,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 
 @Composable
 fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
@@ -46,15 +43,6 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
     // A rejected attribute value lives on the details step, so take the seller there.
     LaunchedEffect(state.newAttributes.errors) {
         if (state.newAttributes.errors.isNotEmpty()) stepIndex = CreateListingStep.DETAILS.ordinal
-    }
-    // The view model clears the title only after a successful post; close the flow as the X button does.
-    val wasSubmitting = remember { booleanArrayOf(false) }
-    LaunchedEffect(state.isSubmitting) {
-        if (wasSubmitting[0] && !state.isSubmitting && state.newTitle.isEmpty()) {
-            stepIndex = 0
-            onClose()
-        }
-        wasSubmitting[0] = state.isSubmitting
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -77,19 +65,15 @@ fun ListingsScreen(viewModel: ListingsViewModel, onClose: () -> Unit = {}) {
             CreateListingFooter(
                 state = CreateListingFooterState(step, step.canContinue(state), state.isSubmitting),
                 onBack = { stepIndex-- },
-                onContinue = { if (step.isLast) viewModel.submitNewListing() else stepIndex++ }
-            )
-        }
-        state.successMessage?.let {
-            ListingFlashMessage(
-                message = it,
-                modifier = Modifier.align(
-                    Alignment.TopCenter
-                ).padding(
-                    top = 72.dp,
-                    start = BulletinSpacing.xl,
-                    end = BulletinSpacing.xl
-                )
+                onContinue = {
+                    if (!step.isLast) {
+                        stepIndex++
+                    } else if (viewModel.submitNewListing()) {
+                        // Posting is optimistic: close the flow now, the save finishes in the background.
+                        stepIndex = 0
+                        onClose()
+                    }
+                }
             )
         }
     }

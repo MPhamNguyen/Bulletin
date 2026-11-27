@@ -29,14 +29,31 @@ internal class ListingCreationActions(
     private val callbacks: ListingActionCallbacks,
     private val attributeActions: ListingAttributeDraftActions
 ) {
-    fun submit() {
-        val draft = buildDraft() ?: return
-        while (true) {
-            val current = state.value
-            if (current.isSubmitting) return
-            if (state.compareAndSet(current, current.copy(isSubmitting = true, errorMessage = null))) break
+    private var clearedFormOwner: String? = null
+
+    /**
+     * Posts optimistically: the form is cleared and the caller can close the create flow right away, while the
+     * listing is saved in the background. Returns false (and posts nothing) when the draft is invalid. A failed
+     * save removes the optimistic listing and puts the form back.
+     */
+    fun submit(): Boolean {
+        val draft = buildDraft() ?: return false
+        val submissionId = generateUuid()
+        clearedFormOwner = submissionId
+        val form = state.value
+        state.update {
+            it.copy(
+                newTitle = "",
+                newDescription = "",
+                newPriceCents = "",
+                newImages = emptyList(),
+                newAttributes = ListingAttributeDraft(),
+                errorMessage = null
+            )
         }
-        scope.launch { submit(draft) }
+        callbacks.notify(POSTED_MESSAGE)
+        scope.launch { submit(draft, form, submissionId) }
+        return true
     }
 
     private fun buildDraft(): NewListingDraft? {
@@ -46,16 +63,24 @@ internal class ListingCreationActions(
         return validation.draft
     }
 
-    private suspend fun submit(draft: NewListingDraft) {
+    private suspend fun submit(draft: NewListingDraft, form: ListingsUiState, submissionId: String) {
         when (val seller = sellerProvider.getCurrentSeller()) {
-            is Result.Success -> createForSeller(draft, seller.data)
-            is Result.Error -> state.update {
-                it.copy(isSubmitting = false, errorMessage = CreateListingErrorMessages.toUserMessage(seller.exception))
-            }
+            is Result.Success -> createForSeller(draft, seller.data, form, submissionId)
+            is Result.Error -> rollBack(
+                form,
+                submissionId,
+                null,
+                CreateListingErrorMessages.toUserMessage(seller.exception)
+            )
         }
     }
 
-    private suspend fun createForSeller(draft: NewListingDraft, seller: ListingSeller) {
+    private suspend fun createForSeller(
+        draft: NewListingDraft,
+        seller: ListingSeller,
+        form: ListingsUiState,
+        submissionId: String
+    ) {
         val listing = Listing(
             id = ListingId(generateUuid()),
             sellerId = seller.id,
@@ -69,11 +94,39 @@ internal class ListingCreationActions(
             createdAtMillis = currentTimeMillis(),
             attributes = draft.attributes
         )
+        state.update { it.copy(myListings = listOf(listing) + it.myListings) }
         when (val result = createListing(listing)) {
             is Result.Success -> complete(seller, listing, draft.images)
-            is Result.Error -> state.update {
-                it.copy(isSubmitting = false, errorMessage = CreateListingErrorMessages.toUserMessage(result.exception))
+            is Result.Error -> rollBack(
+                form,
+                submissionId,
+                listing.id,
+                CreateListingErrorMessages.toUserMessage(result.exception)
+            )
+        }
+    }
+
+    /** Drops the optimistic listing and restores the form, only while this submission still owns the cleared form. */
+    private fun rollBack(form: ListingsUiState, submissionId: String, listingId: ListingId?, message: String) {
+        state.update { current ->
+            val formIsFree = current.newTitle.isEmpty() && current.newDescription.isEmpty() &&
+                current.newPriceCents.isEmpty() && current.newImages.isEmpty()
+            val restored = if (clearedFormOwner == submissionId && formIsFree) {
+                current.copy(
+                    newTitle = form.newTitle,
+                    newDescription = form.newDescription,
+                    newPriceCents = form.newPriceCents,
+                    newImages = form.newImages,
+                    newAttributes = form.newAttributes
+                )
+            } else {
+                current
             }
+            restored.copy(
+                myListings = restored.myListings.filterNot { it.id == listingId },
+                successMessage = null,
+                errorMessage = message
+            )
         }
     }
 
@@ -92,25 +145,15 @@ internal class ListingCreationActions(
             manageListing.updateListing(listing.copy(images = imageResult.data), seller.id)
         }
         val warning = (imageResult as? Result.Error)?.exception?.message
-        state.update {
-            it.copy(
-                newTitle = "",
-                newDescription = "",
-                newPriceCents = "",
-                newImages = emptyList(),
-                newAttributes = ListingAttributeDraft(),
-                isSubmitting = false,
-                errorMessage = warning
-            )
+        state.update { it.copy(errorMessage = warning) }
+        if (warning != null) {
+            callbacks.notify("Listing posted, but its images could not be uploaded. Edit the listing to retry.")
         }
-        callbacks.notify(
-            if (warning == null) {
-                "Listing posted successfully!"
-            } else {
-                "Listing posted, but its images could not be uploaded. Edit the listing to retry."
-            }
-        )
         callbacks.reload(seller)
         callbacks.listingChangedSignal?.emit()
+    }
+
+    private companion object {
+        const val POSTED_MESSAGE = "Listing Posted"
     }
 }

@@ -48,7 +48,7 @@ internal fun MainAppContent(
             AppDestination.LISTINGS -> ListingsScreen(
                 models.listings,
                 onClose = {
-                    models.listings.clearMessages()
+                    models.listings.clearErrorMessage()
                     navigation.closeCreateListing()
                 }
             )

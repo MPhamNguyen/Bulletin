@@ -9,8 +9,6 @@ import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.ManageListingImages
 import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingAttributeKeys
-import com.jdrms.bulletin.domain.listings.domain.model.ListingDetails
-import com.jdrms.bulletin.domain.listings.domain.model.ListingPrice
 import com.jdrms.bulletin.domain.listings.domain.service.ListingAttributeInputFormatter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,12 +19,15 @@ import kotlinx.coroutines.launch
 internal class ListingEditActions(
     private val state: MutableStateFlow<ListingsUiState>,
     private val scope: CoroutineScope,
-    private val manageListing: ManageListing,
-    private val manageImages: ManageListingImages?,
+    manageListing: ManageListing,
+    manageImages: ManageListingImages?,
     private val sellerProvider: CurrentListingSellerProvider,
     private val callbacks: ListingActionCallbacks,
     private val attributeActions: ListingAttributeDraftActions
 ) {
+    private var editor: ListingSeller? = null
+    private val submission = ListingEditSubmission(state, scope, manageListing, manageImages, sellerProvider, callbacks)
+
     fun start(listing: Listing) {
         callbacks.cancelNotification()
         scope.launch {
@@ -44,6 +45,7 @@ internal class ListingEditActions(
             state.update { it.copy(errorMessage = "Only the owner can edit this listing.") }
             return
         }
+        editor = seller
         state.update {
             it.copy(
                 editingListing = listing,
@@ -76,7 +78,6 @@ internal class ListingEditActions(
                 editPhotos = emptyList(),
                 editAttributes = ListingAttributeDraft(),
                 pendingCategoryChange = null,
-                isUpdating = false,
                 errorMessage = null,
                 successMessage = null
             )
@@ -85,12 +86,8 @@ internal class ListingEditActions(
 
     fun save() {
         val draft = validate() ?: return
-        while (true) {
-            val current = state.value
-            if (current.isUpdating) return
-            if (state.compareAndSet(current, current.copy(isUpdating = true, errorMessage = null))) break
-        }
-        scope.launch { apply(draft) }
+        val seller = editor ?: return
+        submission.submit(draft, seller)
     }
 
     private fun validate(): ValidatedEditDraft? {
@@ -100,92 +97,5 @@ internal class ListingEditActions(
             attributeActions.showErrors(ListingForm.EDIT, validation.attributeErrors)
         }
         return validation.draft
-    }
-
-    private suspend fun apply(draft: ValidatedEditDraft) {
-        when (val sellerResult = sellerProvider.getCurrentSeller()) {
-            is Result.Success -> {
-                val seller = sellerResult.data
-                if (!draft.currentListing.isOwnedBy(seller.id)) {
-                    state.update { it.copy(isUpdating = false, errorMessage = "Only the owner can edit this listing.") }
-                    return
-                }
-                execute(draft, seller)
-            }
-            is Result.Error -> state.update {
-                it.copy(
-                    isUpdating = false,
-                    errorMessage = CreateListingErrorMessages.toUserMessage(sellerResult.exception)
-                )
-            }
-        }
-    }
-
-    private suspend fun execute(draft: ValidatedEditDraft, seller: ListingSeller) {
-        val updatedDetails = runCatching {
-            draft.currentListing.updateDetails(
-                editorSellerId = seller.id,
-                details = ListingDetails(
-                    title = draft.title,
-                    description = draft.description,
-                    price = ListingPrice(draft.price),
-                    category = draft.category,
-                    condition = draft.condition,
-                    images = draft.currentListing.images,
-                    attributes = draft.attributes
-                )
-            )
-        }
-        if (updatedDetails.isFailure) {
-            state.update {
-                it.copy(
-                    isUpdating = false,
-                    errorMessage = updatedDetails.exceptionOrNull()?.message ?: "Validation failed"
-                )
-            }
-            return
-        }
-        val updated = updatedDetails.getOrThrow()
-        when (val result = manageListing.saveEdit(updated, seller.id)) {
-            is Result.Success -> complete(draft, seller, updated)
-            is Result.Error -> state.update {
-                it.copy(isUpdating = false, errorMessage = CreateListingErrorMessages.toUserMessage(result.exception))
-            }
-        }
-    }
-
-    private suspend fun complete(draft: ValidatedEditDraft, seller: ListingSeller, updated: Listing) {
-        if (!synchronizeImages(draft, seller, updated)) return
-        state.update {
-            it.copy(editingListing = null, editAttributes = ListingAttributeDraft(), isUpdating = false)
-        }
-        callbacks.notify("Listing updated successfully!")
-        callbacks.reload(seller)
-        callbacks.listingChangedSignal?.emit()
-    }
-
-    private suspend fun synchronizeImages(draft: ValidatedEditDraft, seller: ListingSeller, listing: Listing): Boolean {
-        val retained = draft.photos.filterIsInstance<ListingPhotoDraft.Existing>().map { it.url }
-        val uploads = draft.photos.filterIsInstance<ListingPhotoDraft.Pending>().map { it.upload }
-        if (draft.currentListing.images.isEmpty() && uploads.isEmpty()) return true
-        val result = manageImages?.synchronize(listing.id, seller.id, retained, uploads)
-            ?: Result.Error(IllegalStateException("Listing image updates are not configured."))
-        val updateResult = when (result) {
-            is Result.Success -> manageListing.updateListing(listing.copy(images = result.data), seller.id)
-            is Result.Error -> result
-        }
-        return when (updateResult) {
-            is Result.Success -> true
-            is Result.Error -> {
-                state.update {
-                    it.copy(
-                        isUpdating = false,
-                        errorMessage = "Listing details were saved, but image changes failed: " +
-                            updateResult.exception.message
-                    )
-                }
-                false
-            }
-        }
     }
 }

@@ -9,13 +9,16 @@ import com.jdrms.bulletin.domain.listings.application.GetSellerListings
 import com.jdrms.bulletin.domain.listings.application.ListingSeller
 import com.jdrms.bulletin.domain.listings.application.ManageListing
 import com.jdrms.bulletin.domain.listings.application.ManageListingImages
+import com.jdrms.bulletin.domain.listings.domain.model.Listing
 import com.jdrms.bulletin.domain.listings.domain.model.ListingId
 import com.jdrms.bulletin.domain.listings.domain.model.ListingImageUpload
 import com.jdrms.bulletin.domain.listings.domain.model.SellerId
 import com.jdrms.bulletin.domain.listings.domain.repository.ListingImagesRepository
+import com.jdrms.bulletin.domain.listings.domain.repository.ListingsRepository
 import com.jdrms.bulletin.domain.listings.domain.service.ListingPhotoPolicy
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingImagesRepository
 import com.jdrms.bulletin.domain.listings.infrastructure.repository.InMemoryListingsRepository
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -31,6 +34,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -125,11 +129,12 @@ class ListingCreationActionsTest {
     }
 
     @Test
-    fun successfulSubmissionShowsFlashNotificationAndAutoDismisses() = runTest {
+    fun postingShowsTheToastImmediatelyAndItAutoDismisses() = runTest {
         addPhoto()
         viewModel.submitNewListing()
+        assertEquals("Listing Posted", viewModel.uiState.value.successMessage)
         runCurrent()
-        assertEquals("Listing posted successfully!", viewModel.uiState.value.successMessage)
+        assertEquals("Listing Posted", viewModel.uiState.value.successMessage)
 
         advanceTimeBy(ListingsViewModel.FLASH_NOTIFICATION_DURATION_MILLIS)
         runCurrent()
@@ -147,6 +152,100 @@ class ListingCreationActionsTest {
 
         assertEquals(1, emittedCount)
         job.cancel()
+    }
+
+    @Test
+    fun postingIsOptimisticSoTheFormClearsAndTheListingAppearsBeforeTheSaveFinishes() = runTest {
+        val save = CompletableDeferred<Result<Listing>>()
+        val slow = slowCreateViewModel(save)
+        addPhoto(slow)
+
+        assertTrue(slow.submitNewListing())
+        runCurrent()
+
+        val state = slow.uiState.value
+        assertFalse(state.isSubmitting)
+        assertEquals("", state.newTitle)
+        assertTrue(state.newImages.isEmpty())
+        assertEquals(listOf("Campus textbook"), state.myListings.map { it.title })
+        assertTrue(repository.getAllListings().isEmpty())
+
+        save.complete(repository.createListing(state.myListings.single()))
+        advanceUntilIdle()
+        assertEquals(1, repository.getAllListings().size)
+        assertEquals(1, slow.uiState.value.myListings.size)
+    }
+
+    @Test
+    fun anInvalidDraftIsNotPostedAndKeepsTheForm() = runTest {
+        assertFalse(viewModel.submitNewListing())
+        advanceUntilIdle()
+
+        assertEquals("Campus textbook", viewModel.uiState.value.newTitle)
+        assertTrue(repository.getAllListings().isEmpty())
+    }
+
+    @Test
+    fun aFailedSaveRemovesTheOptimisticListingAndRestoresTheForm() = runTest {
+        val save = CompletableDeferred<Result<Listing>>()
+        val slow = slowCreateViewModel(save)
+        addPhoto(slow)
+        slow.submitNewListing()
+        runCurrent()
+        assertEquals(1, slow.uiState.value.myListings.size)
+
+        save.complete(Result.Error(IllegalStateException("Network down")))
+        advanceUntilIdle()
+
+        val state = slow.uiState.value
+        assertTrue(state.myListings.isEmpty())
+        assertEquals("Campus textbook", state.newTitle)
+        assertEquals("Meet on campus", state.newDescription)
+        assertEquals("45555", state.newPriceCents)
+        assertEquals(1, state.newImages.size)
+        assertNotNull(state.errorMessage)
+        assertNull(state.successMessage)
+    }
+
+    @Test
+    fun aFailedSaveDoesNotOverwriteANewDraftTheSellerStartedMeanwhile() = runTest {
+        val save = CompletableDeferred<Result<Listing>>()
+        val slow = slowCreateViewModel(save)
+        addPhoto(slow)
+        slow.submitNewListing()
+        runCurrent()
+        slow.onTitleChanged("Second draft")
+
+        save.complete(Result.Error(IllegalStateException("Network down")))
+        advanceUntilIdle()
+
+        assertEquals("Second draft", slow.uiState.value.newTitle)
+        assertTrue(slow.uiState.value.myListings.isEmpty())
+        assertNotNull(slow.uiState.value.errorMessage)
+    }
+
+    private fun slowCreateViewModel(save: CompletableDeferred<Result<Listing>>): ListingsViewModel {
+        val gated = object : ListingsRepository by repository {
+            override suspend fun createListing(listing: Listing): Result<Listing> = save.await()
+        }
+        val sellerProvider = object : CurrentListingSellerProvider {
+            override suspend fun getCurrentSeller() = Result.Success(ListingSeller(SellerId("seller"), "Seller"))
+        }
+        return ListingsViewModel(
+            createListing = CreateListing(gated),
+            manageListing = ManageListing(repository),
+            deleteListing = DeleteListing(repository),
+            getSellerListings = GetSellerListings(repository),
+            session = ListingsViewModelSessionDependencies(sellerProvider, signal, ManageListingImages(images))
+        ).also {
+            it.onTitleChanged("Campus textbook")
+            it.onDescriptionChanged("Meet on campus")
+            it.onPriceChanged("45555")
+        }
+    }
+
+    private fun addPhoto(target: ListingsViewModel) {
+        target.addNewImages(listOf(ListingImageUpload(byteArrayOf(1), "image/jpeg")))
     }
 
     private fun addPhoto() {

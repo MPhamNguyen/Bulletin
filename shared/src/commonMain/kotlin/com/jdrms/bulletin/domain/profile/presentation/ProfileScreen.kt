@@ -4,13 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.jdrms.bulletin.app.navigation.ProfileDestination
@@ -56,7 +53,6 @@ fun ProfileScreen(
 ) {
     val profileState by viewModel.uiState.collectAsState()
     val editState by flows.editing.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(destination) {
         if (destination == ProfileDestination.BOOKMARKED_LISTINGS) {
@@ -65,9 +61,6 @@ fun ProfileScreen(
         if (destination == ProfileDestination.BLOCKED_USERS) {
             flows.blockedUsers.load()
         }
-    }
-    LaunchedEffect(flows.messenger) {
-        flows.messenger.messages.collect { snackbarHostState.showSnackbar(it) }
     }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -78,7 +71,7 @@ fun ProfileScreen(
             callbacks,
             options
         )
-        SnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter))
+        ProfileFeedback(flows.messenger, Modifier.align(Alignment.TopCenter))
     }
 }
 
