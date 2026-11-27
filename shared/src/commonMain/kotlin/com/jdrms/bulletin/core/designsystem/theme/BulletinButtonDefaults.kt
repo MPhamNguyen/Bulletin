@@ -7,11 +7,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 
-/** Emphasis levels for shared buttons. */
+/** Emphasis levels for shared buttons. [Ghost] is the quiet secondary action beside a [Primary] one. */
 enum class BulletinButtonVariant {
-    Primary, Outlined, Text, Neutral, NeutralOutlined, Tonal, Destructive, DestructiveOutlined, DestructiveText
+    Primary, Outlined, Ghost, Text, Neutral, NeutralOutlined, Tonal, Destructive, DestructiveOutlined, DestructiveText
 }
 
 object BulletinButtonDefaults {
@@ -34,6 +35,11 @@ object BulletinButtonDefaults {
             BulletinButtonVariant.Outlined -> ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.Transparent,
                 contentColor = scheme.primary
+            )
+            BulletinButtonVariant.Ghost -> ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.Transparent,
+                // Subtitle tone, nudged toward full-strength text so it stays readable without matching the accent.
+                contentColor = lerp(scheme.onSurfaceVariant, scheme.onSurface, GHOST_CONTENT_BRIGHTEN)
             )
             BulletinButtonVariant.Text -> ButtonDefaults.textButtonColors(
                 contentColor = scheme.primary
@@ -68,7 +74,7 @@ object BulletinButtonDefaults {
     fun border(variant: BulletinButtonVariant, enabled: Boolean = true): BorderStroke? {
         val scheme = MaterialTheme.colorScheme
         val color = when (variant) {
-            BulletinButtonVariant.Outlined -> scheme.outlineVariant
+            BulletinButtonVariant.Outlined, BulletinButtonVariant.Ghost -> scheme.outlineVariant
             BulletinButtonVariant.NeutralOutlined -> scheme.onSurface.copy(alpha = 0.15f)
             BulletinButtonVariant.DestructiveOutlined -> scheme.error.copy(alpha = 0.45f)
             else -> return null
@@ -77,4 +83,5 @@ object BulletinButtonDefaults {
     }
 
     private const val DISABLED_BORDER = 0.5f
+    private const val GHOST_CONTENT_BRIGHTEN = 0.2f
 }

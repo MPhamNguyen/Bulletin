@@ -50,6 +50,7 @@ fun BulletinButton(
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides interactiveSize) {
         when (variant) {
             BulletinButtonVariant.Outlined,
+            BulletinButtonVariant.Ghost,
             BulletinButtonVariant.NeutralOutlined,
             BulletinButtonVariant.DestructiveOutlined -> OutlinedButton(
                 onClick = onClick,
