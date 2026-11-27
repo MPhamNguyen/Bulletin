@@ -1,14 +1,13 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -19,10 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import bulletin.shared.generated.resources.Res
-import bulletin.shared.generated.resources.ic_arrow_back
-import bulletin.shared.generated.resources.ic_graduation_cap
-import org.jetbrains.compose.resources.painterResource
+import com.jdrms.bulletin.core.designsystem.BulletinMark
 
 @Composable
 internal fun SignUpTopBar(
@@ -45,7 +41,7 @@ internal fun SignUpTopBar(
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
                 Icon(
-                    painter = painterResource(Res.drawable.ic_arrow_back),
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -63,18 +59,6 @@ internal fun SignUpTopBar(
 @Composable
 internal fun SignUpLogoHeader(verticalPadding: Dp) {
     Spacer(modifier = Modifier.height(verticalPadding))
-    Box(
-        modifier = Modifier
-            .size(96.dp)
-            .background(MaterialTheme.colorScheme.primary, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            painter = painterResource(Res.drawable.ic_graduation_cap),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(54.dp)
-        )
-    }
+    BulletinMark()
     Spacer(modifier = Modifier.height(verticalPadding * 0.75f))
 }
