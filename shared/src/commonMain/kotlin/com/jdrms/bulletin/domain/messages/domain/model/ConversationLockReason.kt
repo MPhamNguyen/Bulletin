@@ -6,5 +6,8 @@ enum class ConversationLockReason(val description: String) {
     ),
     LISTING_SOLD(
         "This listing has been sold. This conversation is read-only; you can't send or edit messages."
+    ),
+    LISTING_UNAVAILABLE(
+        "This conversation isn't linked to a listing. You can view past messages, but you can't send or edit messages."
     )
 }

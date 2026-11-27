@@ -9,6 +9,7 @@ import com.jdrms.bulletin.domain.messages.application.ObserveInboxInvalidations
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.Message
 import com.jdrms.bulletin.domain.messages.domain.model.MessageId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
@@ -35,7 +36,11 @@ internal val conversationId = ConversationId("conversation-a")
 internal fun conversation(
     id: ConversationId = conversationId,
     senders: List<MessageSender> = listOf(alice, carol)
-) = Conversation(id, senders.map { ConversationParticipant(it.id, it.displayName) })
+) = Conversation(
+    id,
+    senders.map { ConversationParticipant(it.id, it.displayName) },
+    listingId = ListingReferenceId("listing-a")
+)
 
 internal fun message(
     sender: MessageSender = alice,

@@ -84,6 +84,7 @@ class Conversation(
         participants.size < 2 || (lastMessage != null && lastMessage.senderId == null) ->
             ConversationLockReason.ACCOUNT_DELETED
         isListingSold -> ConversationLockReason.LISTING_SOLD
+        listingId == null -> ConversationLockReason.LISTING_UNAVAILABLE
         else -> null
     }
 
