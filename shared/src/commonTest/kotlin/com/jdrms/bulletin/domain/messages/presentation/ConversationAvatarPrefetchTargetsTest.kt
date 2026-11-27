@@ -7,6 +7,7 @@ import com.jdrms.bulletin.domain.messages.conversation
 import com.jdrms.bulletin.domain.messages.domain.model.Conversation
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationId
 import com.jdrms.bulletin.domain.messages.domain.model.ConversationParticipant
+import com.jdrms.bulletin.domain.messages.domain.model.ListingReferenceId
 import com.jdrms.bulletin.domain.messages.domain.model.SenderId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +22,8 @@ class ConversationAvatarPrefetchTargetsTest {
                 listOf(
                     ConversationParticipant(alice.id, "Viewer"),
                     ConversationParticipant(SenderId("peer-$index"), "Peer")
-                )
+                ),
+                listingId = ListingReferenceId("listing-$index")
             )
         }
         assertEquals(
