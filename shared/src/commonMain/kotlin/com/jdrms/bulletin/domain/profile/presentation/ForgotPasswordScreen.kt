@@ -1,6 +1,7 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,12 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,10 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import bulletin.shared.generated.resources.Res
-import bulletin.shared.generated.resources.ic_arrow_back
 import bulletin.shared.generated.resources.ic_graduation_cap
-import com.jdrms.bulletin.core.designsystem.BulletinButton
-import com.jdrms.bulletin.core.designsystem.theme.BulletinButtonVariant
 import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
 import org.jetbrains.compose.resources.painterResource
@@ -53,6 +54,7 @@ fun ForgotPasswordScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        ForgotPasswordBackBar(onBack)
         Column(
             modifier = Modifier
                 .widthIn(max = 480.dp)
@@ -81,27 +83,40 @@ fun ForgotPasswordScreen(
                 Spacer(Modifier.height(BulletinSpacing.xl))
                 RecoveryButton("Send reset link", isLoading, enabled = email.isNotBlank()) { onSubmit(email) }
             }
-            Spacer(Modifier.height(BulletinSpacing.l))
-            BulletinButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth(),
-                variant = BulletinButtonVariant.Ghost
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_arrow_back),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(BulletinSpacing.s))
-                Text("Back to sign in", style = MaterialTheme.typography.labelLarge)
-            }
+        }
+    }
+}
+
+@Composable
+private fun ForgotPasswordBackBar(onBack: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .widthIn(max = 480.dp)
+            .fillMaxWidth()
+            .padding(horizontal = BulletinSpacing.xl, vertical = BulletinSpacing.s)
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .size(40.dp)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, BulletinShapes.pill),
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = "Back to sign in",
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
 
 @Composable
 private fun ForgotPasswordHeader() {
-    Spacer(Modifier.height(BulletinSpacing.xl))
+    Spacer(Modifier.height(BulletinSpacing.m))
     Box(
         modifier = Modifier.size(80.dp).background(MaterialTheme.colorScheme.primary, BulletinShapes.pill),
         contentAlignment = Alignment.Center
