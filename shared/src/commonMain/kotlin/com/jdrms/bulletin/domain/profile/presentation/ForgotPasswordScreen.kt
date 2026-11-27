@@ -1,7 +1,6 @@
 package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,7 +19,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -36,11 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import bulletin.shared.generated.resources.Res
-import bulletin.shared.generated.resources.ic_graduation_cap
-import com.jdrms.bulletin.core.designsystem.theme.BulletinShapes
+import com.jdrms.bulletin.core.designsystem.BulletinMark
 import com.jdrms.bulletin.core.designsystem.theme.BulletinSpacing
-import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun ForgotPasswordScreen(
@@ -115,16 +111,13 @@ private fun ForgotPasswordBackBar(onBack: () -> Unit) {
     ) {
         IconButton(
             onClick = onBack,
-            modifier = Modifier
-                .size(40.dp)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, BulletinShapes.pill),
+            modifier = Modifier.size(40.dp),
             colors = IconButtonDefaults.iconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back to sign in",
                 modifier = Modifier.size(24.dp)
             )
@@ -134,17 +127,7 @@ private fun ForgotPasswordBackBar(onBack: () -> Unit) {
 
 @Composable
 private fun ForgotPasswordHeader() {
-    Box(
-        modifier = Modifier.size(80.dp).background(MaterialTheme.colorScheme.primary, BulletinShapes.pill),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            painter = painterResource(Res.drawable.ic_graduation_cap),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(40.dp)
-        )
-    }
+    BulletinMark()
     Spacer(Modifier.height(BulletinSpacing.xl + BulletinSpacing.s))
     Text(
         "Forgot password?",
