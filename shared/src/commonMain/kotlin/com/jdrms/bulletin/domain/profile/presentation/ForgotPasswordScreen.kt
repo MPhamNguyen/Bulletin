@@ -2,13 +2,16 @@ package com.jdrms.bulletin.domain.profile.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -55,33 +58,43 @@ fun ForgotPasswordScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ForgotPasswordBackBar(onBack)
-        Column(
-            modifier = Modifier
-                .widthIn(max = 480.dp)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = BulletinSpacing.xl, vertical = BulletinSpacing.l),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ForgotPasswordHeader()
-            errorMessage?.let {
-                Text(
-                    it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(BulletinSpacing.m))
-            }
-            Column(Modifier.fillMaxWidth()) {
-                RecoveryField(
-                    label = "Email",
-                    value = email,
-                    placeholder = "you@university.edu",
-                    keyboardType = KeyboardType.Email
-                ) { email = it }
-                Spacer(Modifier.height(BulletinSpacing.xl))
-                RecoveryButton("Send reset link", isLoading, enabled = email.isNotBlank()) { onSubmit(email) }
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            val viewportHeight = maxHeight
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 480.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = viewportHeight)
+                    .padding(horizontal = BulletinSpacing.xl)
+                    .padding(top = contentTopGap, bottom = BulletinSpacing.xl),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    ForgotPasswordHeader()
+                    errorMessage?.let {
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(BulletinSpacing.m))
+                    }
+                    Column(Modifier.fillMaxWidth()) {
+                        RecoveryField(
+                            label = "Email",
+                            value = email,
+                            placeholder = "you@university.edu",
+                            keyboardType = KeyboardType.Email
+                        ) { email = it }
+                        Spacer(Modifier.height(BulletinSpacing.xl + BulletinSpacing.s))
+                        RecoveryButton("Send reset link", isLoading, enabled = email.isNotBlank()) { onSubmit(email) }
+                    }
+                    Spacer(Modifier.height(BulletinSpacing.xl + BulletinSpacing.s))
+                }
+                ForgotPasswordSignInAction(onBack)
             }
         }
     }
@@ -116,7 +129,6 @@ private fun ForgotPasswordBackBar(onBack: () -> Unit) {
 
 @Composable
 private fun ForgotPasswordHeader() {
-    Spacer(Modifier.height(BulletinSpacing.m))
     Box(
         modifier = Modifier.size(80.dp).background(MaterialTheme.colorScheme.primary, BulletinShapes.pill),
         contentAlignment = Alignment.Center
@@ -128,14 +140,14 @@ private fun ForgotPasswordHeader() {
             modifier = Modifier.size(40.dp)
         )
     }
-    Spacer(Modifier.height(BulletinSpacing.xl))
+    Spacer(Modifier.height(BulletinSpacing.xl + BulletinSpacing.s))
     Text(
         "Forgot password?",
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center
     )
-    Spacer(Modifier.height(BulletinSpacing.s))
+    Spacer(Modifier.height(BulletinSpacing.m))
     Text(
         "Enter your university email to receive reset instructions",
         style = MaterialTheme.typography.bodyMedium,
@@ -143,5 +155,7 @@ private fun ForgotPasswordHeader() {
         textAlign = TextAlign.Center,
         modifier = Modifier.widthIn(max = 320.dp)
     )
-    Spacer(Modifier.height(28.dp))
+    Spacer(Modifier.height(BulletinSpacing.xl + BulletinSpacing.l))
 }
+
+private val contentTopGap = 64.dp
