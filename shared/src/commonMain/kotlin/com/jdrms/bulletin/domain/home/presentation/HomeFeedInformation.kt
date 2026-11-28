@@ -42,8 +42,16 @@ internal fun HomeFeedInformation(item: HomeFeedItem, expanded: Boolean, onToggle
         modifier = modifier
             .fillMaxWidth()
             .testTag("home-description-${item.id.value}")
-            .homeDescriptionScroll(expanded, scroll, fling, scope)
-            .verticalScroll(scroll, enabled = false)
+            .then(
+                // Only the expanded description owns pointer input (to scroll). Collapsed, the overlay has none,
+                // so taps fall through to the photo zones beneath and only the chevron is hit.
+                if (expanded) {
+                    Modifier.homeDescriptionScroll(expanded, scroll, fling, scope)
+                        .verticalScroll(scroll, enabled = false)
+                } else {
+                    Modifier
+                }
+            )
             .padding(horizontal = 18.dp, vertical = BulletinSpacing.l)
     ) {
         HomeFeedDetails(item)
